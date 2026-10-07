@@ -613,20 +613,7 @@ textarea{font:inherit;color:inherit}
 /* ---------- adaptatif ---------- */
 @media (max-width:1100px){.studio,.tok-grid{grid-template-columns:1fr}.preview{position:static}}
 @media (max-width:900px){
-  .app{grid-template-columns:minmax(0,1fr)}
-  .side{position:sticky;top:0;z-index:30;height:auto;flex-direction:row;align-items:center;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line);scrollbar-width:none}
-  .side::-webkit-scrollbar{display:none}
-  .logo{padding:10px 12px 10px 16px;font-size:16px}
-  .logo .mark{width:28px;height:28px}
-  .cmdk{margin:0 4px;padding:7px 9px}
-  .cmdk span,.cmdk kbd{display:none}
-  .menu{flex-direction:row;padding:6px 8px}
-  .menu button{white-space:nowrap;min-height:38px;padding:8px 10px}
-  .menu .count,.side-foot,.menu-label{display:none}
-  .top{position:static}
-  .topbar,.body{padding-left:16px;padding-right:16px}
-  .kpi{padding:9px 16px}
-  .simbar,.lowbal{padding-left:16px;padding-right:16px}
+  .cmdk kbd{display:none}
   aside.detail{position:static;max-width:none;max-height:none}
   .studio{gap:14px}
 }
@@ -638,17 +625,79 @@ textarea{font:inherit;color:inherit}
   .f{grid-template-columns:minmax(0,1fr) minmax(112px,44%)}
   .kpi .s{display:none}
   .page-head h1{font-size:22px}
-  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .kpi{border-bottom:1px solid var(--line)}
   .status{display:none}
   .forms{grid-template-columns:1fr}
 }
+/* ---------- navigation : rail réductible (bureau), tiroir + onglets bas (mobile) ---------- */
+.mbar,.bnav,.side-x,.scrim{display:none}
+.side-col{display:flex;align-items:center;gap:10px;margin:6px 12px 0;padding:8px 11px;background:none;border:1px dashed var(--line);border-radius:var(--r-sm);color:var(--dim);cursor:pointer;font-size:13px;font-weight:500}
+.side-col:hover{color:var(--text);border-color:var(--line2)}
+.side-col svg.i{transition:transform .2s}
+.app{transition:grid-template-columns .22s ease}
+.app.side-min{grid-template-columns:76px minmax(0,1fr)}
+.app.side-min .logo{justify-content:center;padding:20px 0 16px}
+.app.side-min .logo>span,.app.side-min .menu-label,.app.side-min .ml,.app.side-min .menu .count,.app.side-min .cmdk span,.app.side-min .cmdk kbd,.app.side-min .side-foot,.app.side-min .side-col span{display:none}
+.app.side-min .cmdk,.app.side-min .side-col{justify-content:center;margin-left:14px;margin-right:14px}
+.app.side-min .menu{padding:4px 14px}
+.app.side-min .menu button{justify-content:center;padding:9px 0}
+.app.side-min .side-col svg.i{transform:rotate(180deg)}
+.app.side-min .menu-sep{display:block;height:1px;background:var(--line);margin:10px 4px}
+.menu-sep{display:none}
+.icon-btn{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--text);cursor:pointer;flex:none}
+.icon-btn:hover{border-color:var(--line2)}
+.icon-btn.side-x{display:none}
+@media (max-width:900px){
+  .app,.app.side-min{grid-template-columns:minmax(0,1fr)}
+  .side,.app.side-min .side{position:fixed;top:0;bottom:0;left:0;width:min(310px,86vw);height:100%;z-index:75;transform:translateX(-104%);transition:transform .26s cubic-bezier(.2,.8,.2,1);overflow-y:auto;overscroll-behavior:contain;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);border-right:1px solid var(--line2)}
+  .app.nav-open .side{transform:none;box-shadow:24px 0 60px -20px rgba(0,0,0,.8)}
+  .app.side-min .logo>span,.app.side-min .menu-label,.app.side-min .ml,.app.side-min .menu .count,.app.side-min .cmdk span,.app.side-min .side-foot{display:revert}
+  .app.side-min .menu button{justify-content:flex-start;padding:9px 11px}
+  .side-col{display:none}
+  .icon-btn.side-x{display:grid;position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:12px;width:38px;height:38px}
+  .scrim{display:block;position:fixed;inset:0;z-index:74;background:color-mix(in oklab,#000 55%,transparent);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s}
+  .app.nav-open~.scrim{opacity:1;pointer-events:auto}
+  .menu button{min-height:46px;font-size:15px}
+  .mbar{display:flex;position:sticky;top:0;z-index:40;align-items:center;gap:10px;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:color-mix(in oklab,var(--bg) 88%,transparent);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border-bottom:1px solid var(--line)}
+  .mbar .mlogo{display:flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:-.3px}
+  .mbar .mlogo b{color:var(--accent)}
+  .mbar .mlogo .mark{width:30px;height:30px;border-radius:9px;background:var(--accent-bg);border:1px solid var(--accent-line);display:grid;place-items:center;color:var(--accent)}
+  .top{position:static;background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .topbar{padding:14px 16px 12px}
+  .page-title{font-size:22px}
+  .kpis{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .kpis::-webkit-scrollbar{display:none}
+  .kpi{flex:0 0 auto;min-width:138px;scroll-snap-align:start;padding:10px 16px}
+  .simbar,.lowbal{padding:9px 16px;font-size:13px;gap:8px}
+  .simbar svg.i{display:none}
+  .simbar button{margin-left:0}
+  .body{padding:18px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+  .bnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:60;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:color-mix(in oklab,var(--bg2) 92%,transparent);backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);border-top:1px solid var(--line)}
+  .bnav button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;border:none;border-radius:12px;color:var(--dim);font-size:11.5px;font-weight:600;min-height:54px;cursor:pointer;padding:4px 2px}
+  .bnav button svg.i{width:22px;height:22px}
+  .bnav button.active{color:var(--accent-ink);background:var(--accent-bg)}
+  .bnav button.active svg.i{color:var(--accent)}
+  .bnav .bct{position:absolute;top:4px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:var(--accent);color:#120d2b;font-size:10.5px;font-family:var(--mono);display:grid;place-items:center}
+  .toasts{left:16px;right:16px;bottom:calc(80px + env(safe-area-inset-bottom,0px));max-width:none}
+}
+@media (max-width:700px){
+  .modal{padding:0;place-items:end stretch}
+  .modal.open{display:grid;align-items:end}
+  .modal .box,.modal .box.wide{max-width:none;width:100%;border-radius:22px 22px 0 0;max-height:92vh;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));animation:sheetIn .24s cubic-bezier(.2,.8,.2,1)}
+  .modal .box:before{content:'';display:block;width:42px;height:4px;border-radius:4px;background:var(--line2);margin:-6px auto 14px}
+  .modal .row{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));background:var(--panel);padding-top:12px;margin-top:6px}
+  .modal .row .btn{flex:1}
+  .pal{padding:calc(10px + env(safe-area-inset-top,0px)) 10px 10px}
+  .card{padding:16px}
+  .page-head{margin-bottom:14px}
+}
+@keyframes sheetIn{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
 </style>
 </head>
 <body>
 <div class="app">
-  <aside class="side">
+  <aside class="side" id="side">
+    <button class="icon-btn side-x" id="sideClose" type="button" aria-label="Fermer le menu"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div class="logo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Pump<b>Studio</b></span></div>
     <button class="cmdk" id="cmdkBtn" type="button" aria-label="Ouvrir la palette de commandes"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Rechercher</span><kbd>Ctrl K</kbd></button>
     <nav class="menu" id="menu">
@@ -663,10 +712,12 @@ textarea{font:inherit;color:inherit}
       <div class="menu-label">Outil</div>
       <button data-page="settings" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Réglages</button>
     </nav>
+    <button class="side-col" id="sideCol" type="button" title="Réduire le menu"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg><span>Réduire le menu</span></button>
     <div class="side-foot"><div class="mode" id="footMode">● Simulation</div><div class="sc-title">État du studio</div><div class="sc-list" id="sideCheck"></div><div class="sc-note">Ta clé privée ne quitte jamais ton wallet.</div></div>
   </aside>
 
   <div>
+    <div class="mbar"><button class="icon-btn" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-controls="side"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="mlogo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Pump<b>Studio</b></span></div><div class="spacer"></div><button class="icon-btn" id="mSearch" type="button" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
     <header class="top">
       <div class="topbar">
         <div><div class="page-eyebrow" id="pageEyebrow">Créer</div><div class="page-title" id="pageTitle">Lancer un token</div><div class="page-sub" id="pageSub">Du concept à la publication sur pump.fun</div></div>
@@ -843,6 +894,8 @@ textarea{font:inherit;color:inherit}
     </main></div>
   </div>
 </div>
+<div class="scrim" id="scrim"></div>
+<nav class="bnav" id="bnav" aria-label="Navigation principale"><button type="button" data-page="launch"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg><span>Lancer</span></button><button type="button" data-page="mine"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Mes tokens</span></button><button type="button" data-page="trade"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span>Trader</span></button><button type="button" data-page="orders"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Ordres</span><i class="bct" id="bOrders" hidden></i></button><button type="button" id="bnavMore"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span>Menu</span></button></nav>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="pal" id="pal" hidden role="dialog" aria-modal="true" aria-label="Palette de commandes"><div class="pal-box"><div class="pal-in"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="palQ" placeholder="Aller à une page, lancer une action, coller une adresse de token…" autocomplete="off" spellcheck="false" aria-controls="palList"><kbd>Échap</kbd></div><div class="pal-list" id="palList" role="listbox"></div><div class="pal-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> choisir</span><span><kbd>Entrée</kbd> exécuter</span><span><kbd>Ctrl</kbd> <kbd>K</kbd> ou <kbd>/</kbd> ouvrir</span></div></div></div>
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="box" id="mBox"><h3 id="mTitle"></h3><div id="mBody"></div><div class="row" id="mRow"></div></div></div>
@@ -1511,7 +1564,7 @@ Message: ${r}.
     const user = new web3.PublicKey(S.wallet.pk), m = new web3.PublicKey(mint);
     if (side === 'buy') {
       const s = await st.online.fetchBuyState(m, user, tp);
-      if (s.bondingCurve.complete) throw new Error('Token migré : active PumpPortal dans Réglages pour trader les tokens migrés.');
+      if (s.bondingCurve.complete) throw new Error('MIGRATED');
       const solAmount = new BN(Math.round(amt * 1e9));
       const amount = P.getBuyTokenAmountFromSolAmount({ global: st.global, feeConfig: st.fee, mintSupply: s.bondingCurve.tokenTotalSupply, bondingCurve: s.bondingCurve, amount: solAmount, quoteMint: s.quoteMint });
       const ixs = await P.PUMP_SDK.buyInstructions({ global: st.global, bondingCurveAccountInfo: s.bondingCurveAccountInfo, bondingCurve: s.bondingCurve, associatedUserAccountInfo: s.associatedUserAccountInfo, mint: m, user, amount, solAmount, slippage, tokenProgram: tp });
@@ -1519,7 +1572,7 @@ Message: ${r}.
     }
     let s;
     try { s = await st.online.fetchSellState(m, user, tp); } catch (e) { throw new Error(/Associated token account/.test(e.message) ? 'Tu ne détiens pas ce token dans ce wallet.' : e.message); }
-    if (s.bondingCurve.complete) throw new Error('Token migré : active PumpPortal dans Réglages pour trader les tokens migrés.');
+    if (s.bondingCurve.complete) throw new Error('MIGRATED');
     const amount = new BN(String(amt));
     const solAmount = P.getSellSolAmountFromTokenAmount({ global: st.global, feeConfig: st.fee, mintSupply: s.bondingCurve.tokenTotalSupply, bondingCurve: s.bondingCurve, amount });
     const ixs = await P.PUMP_SDK.sellInstructions({ global: st.global, bondingCurveAccountInfo: s.bondingCurveAccountInfo, bondingCurve: s.bondingCurve, mint: m, user, amount, solAmount, slippage, tokenProgram: tp, mayhemMode: !!s.bondingCurve.isMayhemMode });
@@ -1714,16 +1767,20 @@ Message: ${r}.
         (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : S.wallet.id === 'session' ? '<p>Le wallet rapide signe dès que tu confirmes : aucune autre fenêtre.</p>' : '<p>Ton wallet va te présenter la transaction : vérifie le montant avant de signer.</p>');
       if (!(await confirmBox(opts.title || (side === 'buy' ? 'Acheter ' : 'Vendre ') + sym + ' ?', recap, cfg.sim ? 'Simuler' : (side === 'buy' ? 'Préparer l\'achat' : 'Préparer la vente'), side === 'sell'))) return;
       const body = { publicKey: S.wallet.pk, action: side, mint, amount, denominatedInSol: denom, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: C.curve.complete ? 'auto' : 'pump' };
-      const direct = cfg.engine !== 'portal';
+      // token migré (PumpSwap) : PumpPortal automatiquement, quel que soit le moteur choisi
+      const migrated = !!C.curve.complete, direct = cfg.engine !== 'portal' && !migrated;
+      const viaPortal = async (x) => { x.tx = await portalTx(Object.assign({}, body, { pool: 'auto' })); return migrated ? 'token migré, routé par PumpPortal' : ''; };
       const steps = [
         { label: direct ? 'Préparation de la transaction (programme pump.fun)' : 'Préparation de la transaction (PumpPortal)', run: async (x) => {
-          if (!direct) { x.tx = await portalTx(body); return; }
-          if (side === 'buy') { x.tx = await directTrade(mint, 'buy', amount); return; }
-          const raw = await tokenRaw(S.wallet.pk, mint);
-          let sellRaw = typeof amount === 'string' ? raw * BigInt(Math.round(num(amount) * 100)) / 10000n : BigInt(Math.floor(amount * 1e6));
-          if (sellRaw > raw) sellRaw = raw;
-          if (sellRaw <= 0n) throw new Error('Tu ne détiens pas ce token dans ce wallet.');
-          x.tx = await directTrade(mint, 'sell', sellRaw.toString());
+          if (!direct) return viaPortal(x);
+          try {
+            if (side === 'buy') { x.tx = await directTrade(mint, 'buy', amount); return; }
+            const raw = await tokenRaw(S.wallet.pk, mint);
+            let sellRaw = typeof amount === 'string' ? raw * BigInt(Math.round(num(amount) * 100)) / 10000n : BigInt(Math.floor(amount * 1e6));
+            if (sellRaw > raw) sellRaw = raw;
+            if (sellRaw <= 0n) throw new Error('Tu ne détiens pas ce token dans ce wallet.');
+            x.tx = await directTrade(mint, 'sell', sellRaw.toString());
+          } catch (e) { if (e.message !== 'MIGRATED') throw e; await viaPortal(x); return 'token migré entre-temps, routé par PumpPortal'; }
         } },
         { label: 'Vérification par simulation', run: async (x) => { const v = await simulate(x.tx); x.logs = (v.logs || []).slice(-12).join('\n'); if (v.err) throw new Error(simError(v)); x.logs = ''; return 'acceptée' + (direct && LAST_FEE ? ' · priorité ' + LAST_FEE.label.toLowerCase() + ' ≈ ' + fSol(LAST_FEE.sol, 5) : ''); } },
       ];
@@ -2495,11 +2552,12 @@ Message: ${r}.
       sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'RPC Solana', S.rpcOk ? (cfg.rpc ? 'privé' : 'public') : S.rpcOk === false ? 'en erreur' : 'non testé') +
       sc(cfg.sim ? 'data-act="simoff"' : 'data-act="simon"', cfg.sim ? 'demo' : 'bad', 'Mode', cfg.sim ? 'simulation' : 'réel');
     ppStatus();
-    $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; $('cJournal').textContent = S.journal.length;
+    $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length;
   }
   function setPage(p) {
     S.page = p;
-    document.querySelectorAll('#menu button[data-page]').forEach((b) => b.classList.toggle('active', b.dataset.page === p));
+    document.querySelectorAll('#menu button[data-page], #bnav button[data-page]').forEach((b) => b.classList.toggle('active', b.dataset.page === p));
+    navOpen(false);
     document.querySelectorAll('.page').forEach((s) => s.classList.toggle('active', s.id === 'p-' + p));
     $('pageTitle').textContent = PAGES[p][0]; $('pageSub').textContent = PAGES[p][1];
     $('pageEyebrow').textContent = { launch: 'Créer', social: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
@@ -2755,7 +2813,7 @@ Message: ${r}.
 
   /* ---------- réglages : formulaires avec Valider / Annuler */
   const FORMS = [
-    { id: 'engine', title: 'Moteur de transaction', fields: [['engine', 'Construction des transactions', 'sel', 'Direct : programme pump.fun, sans intermédiaire ni frais en plus. PumpPortal : secours, nécessaire pour les tokens migrés.', [['direct', 'Direct (pump.fun)'], ['portal', 'PumpPortal (+0,5 %)']]]] },
+    { id: 'engine', title: 'Moteur de transaction', fields: [['engine', 'Construction des transactions', 'sel', 'Direct : programme pump.fun, sans intermédiaire ni frais en plus. PumpPortal : secours. Les tokens migrés passent automatiquement par PumpPortal, quel que soit ce choix.', [['direct', 'Direct (pump.fun)'], ['portal', 'PumpPortal (+0,5 %)']]]] },
     { id: 'conn', title: 'Connexion à Solana', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct PumpPortal', 'bool', 'Prix et transactions pump.fun en temps réel : les ordres se déclenchent en moins d\'une seconde. Gratuit, sans clé.']] },
     { id: 'meta', title: 'Métadonnées du token', fields: [['metaMethod', 'Envoi du logo', 'sel', 'pump.fun direct, ou Pinata si le navigateur bloque', [['pump', 'pump.fun (IPFS)'], ['pinata', 'Pinata (IPFS)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
     { id: 'speed', title: 'Vitesse d\'exécution', fields: [['speed', 'Priorité des transactions', 'sel', 'Calculée sur les frais réellement payés sur pump.fun ces dernières secondes', [['eco', 'Économique'], ['fast', 'Rapide (conseillé)'], ['turbo', 'Turbo'], ['manual', 'Manuelle']]], ['maxPriority', 'Plafond des frais de priorité', 'num', 'Jamais plus que ce montant par transaction', 'SOL'], ['priorityFee', 'Frais de priorité manuels', 'num', 'Utilisés seulement en mode Manuelle', 'SOL']] },
@@ -2935,7 +2993,7 @@ Message: ${r}.
   function sellOrder(o) { trade(o.mint, 'sell', o.tokens ? String(Math.floor(o.tokens)) : o.pct + '%', { title: 'Ordre déclenché · vendre ' + o.pct + ' % de ' + o.symbol + ' ?', note: 'Condition atteinte : ' + (o.kind === 'trail' ? 'recul de ' + o.value + ' % depuis le plus haut' : o.kind === 'tp' ? 'prix +' + o.value + ' %' : o.kind === 'sl' ? 'prix −' + o.value + ' %' : 'capitalisation ' + fUsd(o.value)) + '.' }).then((ok) => { if (ok) o.done = true; save(LS.orders, S.orders); renderAll(); }); } // vente refusée ou échouée : l'ordre reste « à signer »
   /* ---------- exécution automatique par le wallet rapide */
   let AUTOQ = Promise.resolve();
-  function canAuto() { return !!(cfg.autoExec && S.wallet && S.wallet.id === 'session' && SESSW.kp && cfg.engine !== 'portal'); }
+  function canAuto() { return !!(cfg.autoExec && S.wallet && S.wallet.id === 'session' && SESSW.kp); }
   async function autoSell(o) {
     const t0 = performance.now(), sym = o.symbol, pk = S.wallet.pk;
     const slip = o.kind === 'sl' || o.kind === 'trail' ? Math.max(cfg.slippage, cfg.slSlippage) : cfg.slippage;
@@ -2949,7 +3007,9 @@ Message: ${r}.
         if (sellRaw > raw) sellRaw = raw;
         if (sellRaw <= 0n) throw new Error('Plus aucun ' + sym + ' dans le wallet rapide.');
         const C = S.cache[o.mint], q = C && C.curve && C.curve.exists ? quoteSell(C.curve, Number(sellRaw) / 1e6) : null;
-        const tx = await directTrade(o.mint, 'sell', sellRaw.toString(), slip);
+        let tx = null;
+        if (cfg.engine !== 'portal' && !(C && C.curve && C.curve.complete)) { try { tx = await directTrade(o.mint, 'sell', sellRaw.toString(), slip); } catch (e) { if (e.message !== 'MIGRATED') throw e; } }
+        if (!tx) tx = await portalTx({ publicKey: pk, action: 'sell', mint: o.mint, amount: Number(sellRaw) / 1e6, denominatedInSol: 'false', slippage: slip, priorityFee: cfg.priorityFee, pool: 'auto' }); // token migré ou moteur PumpPortal
         if (cfg.sim) {
           const v = await simulate(tx); if (v.err) throw new Error(simError(v));
           journalAdd({ type: 'sell', mint: o.mint, symbol: sym, sim: true, status: 'ok', sol: q ? q.sol : 0, tokens: q ? -q.tokens : 0, est: true, auto: true });
@@ -2970,7 +3030,7 @@ Message: ${r}.
       } catch (e) {
         lastErr = e;
         // pas de nouvel essai si la transaction a pu passer (sinon double vente) ou si rien ne peut changer
-        if (/Plus aucun|verrouillé|migré|Pas de confirmation/.test(e.message) || (sent && !/rejetée/.test(e.message))) break;
+        if (/Plus aucun|verrouillé|Pas de confirmation/.test(e.message) || (sent && !/rejetée/.test(e.message))) break;
         await sleep(300);
       }
     }
@@ -3269,6 +3329,32 @@ Message: ${r}.
   });
   $('rSort').addEventListener('change', (e) => { RADAR.sort = e.target.value; renderRadar(); });
   try { S.ltab = localStorage.getItem('pstudio_ltab') === 'radar' ? 'radar' : 'studio'; } catch (e) { S.ltab = 'studio'; }
+
+
+  /* ================================================================ navigation : tiroir mobile, rail réductible */
+  const APP = document.querySelector('.app');
+  function navOpen(on) {
+    if (!APP) return; const was = APP.classList.contains('nav-open'); if (was === !!on) return;
+    APP.classList.toggle('nav-open', !!on); document.body.style.overflow = on ? 'hidden' : '';
+    const mb = $('menuBtn'); if (mb) mb.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (on) { const f = $('sideClose'); if (f) setTimeout(() => f.focus(), 50); }
+  }
+  document.querySelectorAll('#menu button[data-page]').forEach((b) => {
+    [...b.childNodes].forEach((n) => { if (n.nodeType === 3 && n.textContent.trim()) { const sp = document.createElement('span'); sp.className = 'ml'; sp.textContent = n.textContent; b.replaceChild(sp, n); b.title = n.textContent.trim(); } });
+  });
+  document.querySelectorAll('#menu .menu-label').forEach((l) => l.insertAdjacentHTML('beforebegin', '<div class="menu-sep" aria-hidden="true"></div>'));
+  try { if (localStorage.getItem('pstudio_sidemin') === '1') APP.classList.add('side-min'); } catch (e) {}
+  $('sideCol').addEventListener('click', () => { const on = !APP.classList.contains('side-min'); APP.classList.toggle('side-min', on); $('sideCol').title = on ? 'Agrandir le menu' : 'Réduire le menu'; try { localStorage.setItem('pstudio_sidemin', on ? '1' : '0'); } catch (e) {} });
+  $('menuBtn').addEventListener('click', () => navOpen(true));
+  $('bnavMore').addEventListener('click', () => navOpen(true));
+  $('sideClose').addEventListener('click', () => navOpen(false));
+  $('scrim').addEventListener('click', () => navOpen(false));
+  $('mSearch').addEventListener('click', () => $('cmdkBtn').click());
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && APP.classList.contains('nav-open')) navOpen(false); });
+  document.addEventListener('click', (e) => { if (e.target.closest('#side [data-sc], #side .cmdk')) navOpen(false); });
+  // balayage vers la gauche pour fermer le tiroir
+  let swX = null; $('side').addEventListener('touchstart', (e) => { swX = e.touches[0].clientX; }, { passive: true });
+  $('side').addEventListener('touchend', (e) => { if (swX != null && e.changedTouches[0].clientX - swX < -60) navOpen(false); swX = null; }, { passive: true });
 
   /* ================================================================ palette de commandes (Ctrl K) */
   const PAL = { open: false, items: [], sel: 0 };
