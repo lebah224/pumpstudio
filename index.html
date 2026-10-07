@@ -129,7 +129,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-
 .card-h{display:flex;align-items:baseline;gap:6px 12px;margin-bottom:14px;flex-wrap:wrap}
 .card-h h3{margin:0;font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:-.2px}
 .card-h p{margin:0;font-size:13.5px;color:var(--muted);flex-basis:100%;max-width:70ch}
-.notice{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--amber-line);background:var(--amber-bg);color:var(--amber-ink);border-radius:var(--r-sm);padding:11px 14px;margin-bottom:14px;font-size:14px;line-height:1.5}
+.notice{display:block;border:1px solid var(--amber-line);background:var(--amber-bg);color:var(--amber-ink);border-radius:var(--r-sm);padding:11px 14px;margin-bottom:14px;font-size:14px;line-height:1.5}
 .notice.info{border-color:var(--blue-line);background:var(--blue-bg);color:var(--blue-ink)}
 .notice.bad{border-color:var(--red-line);background:var(--red-bg);color:var(--red-ink)}
 .notice a{color:inherit;text-decoration:underline}
@@ -720,7 +720,7 @@ textarea{font:inherit;color:inherit}
 .sw-bal em{font-style:normal;font-family:var(--mono);font-size:13px;color:var(--muted)}
 .sw-usd{font-size:12.5px;color:var(--dim);font-family:var(--mono);margin-top:1px}
 .sw-act{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:12px}
-.sw-act.two{grid-template-columns:1fr 1fr}
+.sw-act.two{grid-template-columns:1fr}
 .wact{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;letter-spacing:-.1px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;min-width:0}
 .wact span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .wact:hover{color:var(--text);border-color:var(--line2);background:var(--panel3)}
@@ -751,6 +751,35 @@ textarea{font:inherit;color:inherit}
   #sideWallet{margin:4px 14px 10px}
   .sw-bal b{font-size:30px}
 }
+/* ---------- bot de trading ---------- */
+.bot-hero{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:radial-gradient(600px 180px at 0% 0%,color-mix(in oklab,var(--green) 12%,transparent),transparent 70%),var(--panel);border:1px solid var(--line2);border-radius:var(--r);padding:18px 20px;margin-bottom:14px}
+.bot-hero .bh-t{flex:1 1 300px;min-width:0}
+.bot-hero b.ttl{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:18px}
+.bot-state{display:flex;gap:9px;align-items:flex-start;margin-top:6px;font-size:13.5px;color:var(--muted)}
+.bot-state .dot{margin-top:6px}
+.bot-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:16px;align-items:start}
+.bot-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.bot-stats .stat .v{font-size:16px}
+.bot-eq{margin-bottom:16px}
+.bpos{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel2);margin-bottom:8px}
+.bpos-h{display:flex;justify-content:space-between;gap:10px;font-size:15px}
+.bpos-m{font-size:12.5px;color:var(--dim);margin:3px 0 10px}
+.bfeed{max-height:420px;overflow:auto;display:flex;flex-direction:column}
+.bfd{display:grid;grid-template-columns:72px auto minmax(0,1fr);gap:4px 10px;align-items:baseline;padding:8px 2px;border-top:1px solid var(--line);font-size:13px}
+.bfd:first-child{border-top:none}
+.bfd-t{color:var(--dim);font-size:12px}
+.bfd b{font-size:13px}
+.bfd span:last-child{color:var(--muted)}
+.bfd.ok b{color:var(--green)}
+.bfd.ok span:last-child{color:var(--text)}
+.bempty{padding:22px 10px;text-align:center;color:var(--dim);font-size:13.5px}
+.bset{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 16px}
+.bset .field{margin-bottom:8px}
+.bset .field input{font-family:var(--mono)}
+.bnote{font-size:12.5px;color:var(--dim);margin:10px 0 0;line-height:1.5}
+.bot-grid>div{min-width:0}
+@media (max-width:1100px){.bot-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.bot-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){.bot-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.bfd{grid-template-columns:auto minmax(0,1fr)}.bfd-t{grid-column:1/-1}}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
 </style>
 </head>
@@ -768,6 +797,7 @@ textarea{font:inherit;color:inherit}
       <div class="menu-label">Suivre</div>
       <button data-page="mine" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Mes tokens<span class="count" id="cMine">0</span></button>
       <button data-page="trade" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Trader</button>
+      <button data-page="bot" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg>Bot de trading</button>
       <button data-page="orders" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Ordres préparés<span class="count" id="cOrders">0</span></button>
       <button data-page="journal" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Journal<span class="count" id="cJournal">0</span></button>
       <div class="menu-label">Outil</div>
@@ -911,6 +941,60 @@ textarea{font:inherit;color:inherit}
         <div class="page-head"><div><h1>Trader</h1><p>Colle l'adresse d'un token pump.fun : analyse de risque, puis achat ou vente signés dans ton wallet.</p></div></div>
         <div class="card"><div class="toolbar" style="margin:0"><input class="search" id="tradeMint" placeholder="Adresse du token (mint)" style="flex:1;font-family:var(--mono)"><button class="btn primary" id="tradeGo" type="button">Analyser</button></div></div>
         <div id="tradeDetail"></div>
+      </section>
+
+      <!-- BOT -->
+      <section class="page" id="p-bot">
+        <div class="bot-hero">
+          <div class="bh-t"><b class="ttl">Bot de trading <span class="badge v">mode papier</span></b>
+            <div class="bot-state" id="botState"></div></div>
+          <button class="btn primary" id="botToggle" type="button">Démarrer le bot</button>
+        </div>
+        <div class="notice info">Étape 1 : le bot trade <b>sur les vraies données en direct</b> mais <b>simule</b> ses achats et ventes, avec les frais pump.fun, l'impact sur la courbe, une pénalité de latence et les frais réseau. Aucun SOL n'est engagé. L'exécution réelle viendra quand les résultats papier seront positifs sur des centaines de trades. Garde cet onglet ouvert et visible pendant que le bot tourne.</div>
+        <div class="bot-stats" id="botStats"></div>
+        <div class="card bot-eq"><div class="card-h"><h3>Courbe d'équité</h3><p>Résultat cumulé des trades clos, frais compris.</p></div><canvas id="botEq" height="150"></canvas></div>
+        <div class="bot-grid">
+          <div>
+            <div class="card"><div class="card-h"><h3>Positions ouvertes</h3></div><div id="botPos"></div></div>
+            <div class="card"><div class="card-h"><h3>Stratégie</h3><p>Le bot observe chaque nouveau token, n'achète que si tous les filtres passent, puis sort par palier, stop suiveur, stop, stop temporel ou durée maximale.</p></div>
+              <div class="tp-presets"><button class="tp-pre" data-botpre="prudent" type="button"><b>Prudent</b><span>Filtres stricts, petites mises</span></button><button class="tp-pre" data-botpre="equilibre" type="button"><b>Équilibré</b><span>Le point de départ conseillé</span></button><button class="tp-pre" data-botpre="agressif" type="button"><b>Agressif</b><span>Plus d'entrées, plus de risque</span></button></div>
+              <div class="r-lbl">Entrée</div>
+              <div class="bset">
+                <div class="field"><label for="bk-minAge">Observer au moins <small>s</small></label><input id="bk-minAge" data-botk="minAge" type="number" min="5" step="5"></div>
+                <div class="field"><label for="bk-maxAge">Abandonner après <small>s</small></label><input id="bk-maxAge" data-botk="maxAge" type="number" min="10" step="10"></div>
+                <div class="field"><label for="bk-minBuyers">Acheteurs différents min</label><input id="bk-minBuyers" data-botk="minBuyers" type="number" min="1" step="1"></div>
+                <div class="field"><label for="bk-minNet">Flux net min <small>SOL achetés − vendus</small></label><input id="bk-minNet" data-botk="minNet" type="number" min="0" step="0.5"></div>
+                <div class="field"><label for="bk-progMin">Courbe entre <small>% min</small></label><input id="bk-progMin" data-botk="progMin" type="number" min="0" max="100" step="1"></div>
+                <div class="field"><label for="bk-progMax">et <small>% max</small></label><input id="bk-progMax" data-botk="progMax" type="number" min="0" max="100" step="1"></div>
+                <div class="field"><label for="bk-top10Max">Top 10 détenteurs max <small>%</small></label><input id="bk-top10Max" data-botk="top10Max" type="number" min="1" max="100" step="1"></div>
+                <div class="field"><label for="bk-devMax">Part du créateur max <small>%</small></label><input id="bk-devMax" data-botk="devMax" type="number" min="0" max="100" step="1"></div>
+                <div class="field"><label for="bk-snipMax">Snipers max <small>3 premières s</small></label><input id="bk-snipMax" data-botk="snipMax" type="number" min="0" step="1"></div>
+              </div>
+              <div class="r-lbl">Sortie</div>
+              <div class="bset">
+                <div class="field"><label for="bk-tp1">Palier à <small>× le prix d'entrée</small></label><input id="bk-tp1" data-botk="tp1" type="number" min="1.05" step="0.1"></div>
+                <div class="field"><label for="bk-tp1Pct">Vendre au palier <small>%</small></label><input id="bk-tp1Pct" data-botk="tp1Pct" type="number" min="1" max="100" step="5"></div>
+                <div class="field"><label for="bk-trail">Stop suiveur après palier <small>%</small></label><input id="bk-trail" data-botk="trail" type="number" min="1" max="99" step="1"></div>
+                <div class="field"><label for="bk-stop">Stop absolu <small>%</small></label><input id="bk-stop" data-botk="stop" type="number" min="1" max="99" step="1"></div>
+                <div class="field"><label for="bk-timeStop">Stop temporel <small>s sans nouveau plus haut</small></label><input id="bk-timeStop" data-botk="timeStop" type="number" min="10" step="10"></div>
+                <div class="field"><label for="bk-maxHold">Durée max <small>s</small></label><input id="bk-maxHold" data-botk="maxHold" type="number" min="60" step="60"></div>
+              </div>
+              <div class="r-lbl">Risque</div>
+              <div class="bset">
+                <div class="field"><label for="bk-size">Mise par trade <small>SOL</small></label><input id="bk-size" data-botk="size" type="number" min="0.01" step="0.01"></div>
+                <div class="field"><label for="bk-maxPos">Positions simultanées max</label><input id="bk-maxPos" data-botk="maxPos" type="number" min="1" step="1"></div>
+                <div class="field"><label for="bk-dayLoss">Perte max du jour <small>SOL, puis arrêt des entrées</small></label><input id="bk-dayLoss" data-botk="dayLoss" type="number" min="0.01" step="0.1"></div>
+                <div class="field"><label for="bk-latSlip">Pénalité de latence <small>% par exécution</small></label><input id="bk-latSlip" data-botk="latSlip" type="number" min="0" step="0.5"></div>
+              </div>
+              <p class="bnote">Après 3 pertes d'affilée, le bot fait une pause de 10 minutes. Aucun réglage ne garantit un gain : sur pump.fun, la plupart des nouveaux tokens finissent à zéro. Juge la stratégie sur ses résultats papier, pas sur un bon départ.</p>
+            </div>
+          </div>
+          <div>
+            <div class="card"><div class="card-h"><h3>Décisions en direct</h3><p>Chaque token observé, et pourquoi le bot l'a acheté ou rejeté.</p></div><div class="bfeed" id="botFeed"></div></div>
+            <div class="card"><div class="card-h"><h3>Trades clos</h3><button class="btn sm ghost" id="botReset" type="button" style="margin-left:auto">Effacer les résultats</button></div><div id="botHist"></div></div>
+          </div>
+        </div>
+        <div id="botBody" hidden></div>
       </section>
 
       <!-- ORDRES -->
@@ -2587,7 +2671,7 @@ Message: ${r}.
   }
 
   /* ================================================================ rendu : en-tête */
-  const PAGES = { launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { bot: ['Bot de trading', 'Mode papier sur les données en direct de pump.fun'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
@@ -2622,7 +2706,7 @@ Message: ${r}.
     navOpen(false);
     document.querySelectorAll('.page').forEach((s) => s.classList.toggle('active', s.id === 'p-' + p));
     $('pageTitle').textContent = PAGES[p][0]; $('pageSub').textContent = PAGES[p][1];
-    $('pageEyebrow').textContent = { launch: 'Créer', social: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
+    $('pageEyebrow').textContent = { bot: 'Trader', launch: 'Créer', social: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
     try { localStorage.setItem('pstudio_page', p); } catch (e) {}
     renderPage(); window.scrollTo(0, 0); ppSync(liveSet());
     if (p === 'launch') setLaunchTab(S.ltab);
@@ -2920,6 +3004,209 @@ Message: ${r}.
     toast('Réglages enregistrés', FORMS.find((F) => F.id === fs.dataset.form).title, 'g'); renderTop();
   }
   function formCancel(fs) { fieldsOf(fs).forEach(([k, , type]) => { const el = fs.querySelector('[data-k="' + k + '"]'); if (type === 'bool') el.checked = !!cfg[k]; else el.value = cfg[k]; el.classList.remove('err'); }); fs.querySelectorAll('.ferr').forEach((e) => e.remove()); fs.classList.remove('dirty'); }
+  /* ================================================================ bot de trading (étape 1 : mode papier sur données en direct)
+     Écoute les créations pump.fun via PumpPortal, observe chaque token pendant une fenêtre,
+     n'entre que si tous les filtres passent, puis gère la sortie. Les exécutions sont simulées
+     avec les frais pump.fun, l'impact sur la courbe, une pénalité de latence et les frais réseau. */
+  const BOT_PRESETS = {
+    prudent: { n: 'Prudent', d: 'Filtres stricts, petites mises', minBuyers: 20, minNet: 4, minAge: 60, maxAge: 180, progMin: 12, progMax: 40, top10Max: 25, devMax: 5, snipMax: 4, size: 0.05, tp1: 1.6, tp1Pct: 50, trail: 20, stop: 20, timeStop: 90 },
+    equilibre: { n: 'Équilibré', d: 'Le point de départ conseillé', minBuyers: 15, minNet: 3, minAge: 45, maxAge: 180, progMin: 8, progMax: 45, top10Max: 30, devMax: 8, snipMax: 6, size: 0.1, tp1: 1.5, tp1Pct: 50, trail: 25, stop: 25, timeStop: 120 },
+    agressif: { n: 'Agressif', d: 'Plus d\'entrées, plus de risque', minBuyers: 10, minNet: 2, minAge: 30, maxAge: 150, progMin: 5, progMax: 55, top10Max: 35, devMax: 10, snipMax: 8, size: 0.1, tp1: 2, tp1Pct: 40, trail: 30, stop: 30, timeStop: 150 },
+  };
+  const BOT_BASE = { preset: 'equilibre', maxPos: 3, dayLoss: 1, latSlip: 2, txCost: 0.0006, maxHold: 900, lossStreak: 3, cooldown: 600 };
+  const BOT_LS = 'pstudio_bot_v1';
+  const botSaved = load(BOT_LS, {});
+  const BOT = {
+    on: false, cfg: Object.assign({}, BOT_BASE, BOT_PRESETS.equilibre, botSaved.cfg || {}), trades: botSaved.trades || [],
+    cands: new Map(), pos: new Map(), feed: [], seen: 0, seenAt: [], pausedUntil: 0, pauseWhy: '', startedAt: 0, rt: 0,
+  };
+  const VTOK0 = INIT_CURVE.vTok - INIT_CURVE.realTok;
+  const botSave = () => save(BOT_LS, { cfg: BOT.cfg, trades: BOT.trades.slice(0, 500) });
+  const botCurve = (vs, vt) => { const c = { exists: true, vSol: vs * 1e9, vTok: vt * 1e6, supply: 1e15 }; c.realTok = Math.max(0, c.vTok - VTOK0); c.realSol = Math.max(0, c.vSol - INIT_CURVE.vSol); c.complete = c.realTok <= 0; return c; };
+  const botProg = (c) => clamp((1 - c.realTok / INIT_CURVE.realTok) * 100, 0, 100);
+  function botFeed(x, ok, msg) { BOT.feed.unshift({ t: Date.now(), mint: x.mint, sym: x.symbol || short(x.mint), ok, msg }); if (BOT.feed.length > 80) BOT.feed.length = 80; botDirty(); }
+  function botSet() { return new Set([...BOT.cands.keys(), ...BOT.pos.keys()]); }
+  // ---- réception des messages PumpPortal
+  function botMsg(m) {
+    if (!BOT.on) return;
+    if (m.txType === 'create') return botCreate(m);
+    const x = BOT.cands.get(m.mint), p = BOT.pos.get(m.mint);
+    if (x) botTradeCand(x, m);
+    if (p) botTradePos(p, m);
+  }
+  function botCreate(m) {
+    const now = Date.now(); BOT.seen++; BOT.seenAt.push(now); while (BOT.seenAt.length && now - BOT.seenAt[0] > 60000) BOT.seenAt.shift();
+    const vs = +m.vSolInBondingCurve, vt = +m.vTokensInBondingCurve, c = vs > 0 && vt > 0 ? botCurve(vs, vt) : null;
+    const devTok = +m.initialBuy || 0, devPct = devTok / 1e7;   // offre totale : 1 milliard de tokens
+    const x = { mint: m.mint, name: m.name || '', symbol: m.symbol || '', creator: m.traderPublicKey || '', t0: now, curve: c, price: c ? vs / vt : 0, peak: 0,
+      buyers: new Set(), sellers: new Set(), volB: 0, volS: 0, nB: 0, nS: 0, early: new Set(), hold: new Map(), devSold: false, devPct };
+    if (m.traderPublicKey && devTok) x.hold.set(m.traderPublicKey, devTok);
+    x.peak = x.price;
+    if (devPct > BOT.cfg.devMax) return botFeed(x, false, 'Créateur : ' + fr(devPct, 1) + ' % de l\'offre achetés à la création (max ' + BOT.cfg.devMax + ' %)');
+    if (BOT.cands.size >= 40) { const old = [...BOT.cands.values()].sort((a, b) => a.t0 - b.t0)[0]; BOT.cands.delete(old.mint); }
+    BOT.cands.set(m.mint, x); botSync();
+  }
+  function botTradeCand(x, m) {
+    const sol = +m.solAmount || 0, w = m.traderPublicKey || '', vs = +m.vSolInBondingCurve, vt = +m.vTokensInBondingCurve;
+    if (vs > 0 && vt > 0) { x.curve = botCurve(vs, vt); x.price = vs / vt; if (x.price > x.peak) x.peak = x.price; }
+    if (m.txType === 'buy') { x.nB++; x.volB += sol; if (w && w !== x.creator) x.buyers.add(w); if (Date.now() - x.t0 < 3000 && w !== x.creator) x.early.add(w); }
+    if (m.txType === 'sell') { x.nS++; x.volS += sol; if (w) x.sellers.add(w); if (w && w === x.creator) x.devSold = true; }
+    if (w && m.newTokenBalance != null) { const b = +m.newTokenBalance; if (b > 0) x.hold.set(w, b); else x.hold.delete(w); }
+    if (m.txType === 'migrate') { BOT.cands.delete(x.mint); botSync(); return; }
+    botEval(x);
+  }
+  // ---- filtres d'entrée : renvoie la première raison de refus, ou null
+  function botCheck(x) {
+    const k = BOT.cfg, c = x.curve; if (!c) return 'courbe inconnue';
+    if (x.devSold) return 'le créateur a vendu';
+    if (x.early.size > k.snipMax) return x.early.size + ' snipers dans les 3 premières secondes (max ' + k.snipMax + ')';
+    if (x.buyers.size < k.minBuyers) return x.buyers.size + ' acheteurs (min ' + k.minBuyers + ')';
+    const net = x.volB - x.volS; if (net < k.minNet) return 'flux net ' + fr(net, 2) + ' SOL (min ' + k.minNet + ')';
+    if (x.volS > 0 && x.volB / x.volS < 1.5) return 'pression vendeuse : achats ' + fr(x.volB / x.volS, 1) + ' × ventes';
+    const pr = botProg(c); if (pr < k.progMin) return 'courbe à ' + fr(pr, 0) + ' % (min ' + k.progMin + ' %)';
+    if (pr > k.progMax) return 'courbe à ' + fr(pr, 0) + ' % (max ' + k.progMax + ' %)';
+    const top = [...x.hold.values()].sort((a, b) => b - a).slice(0, 10).reduce((s2, v) => s2 + v, 0) / 1e7;
+    if (top > k.top10Max) return 'top 10 des détenteurs : ' + fr(top, 0) + ' % (max ' + k.top10Max + ' %)';
+    const dev = (x.hold.get(x.creator) || 0) / 1e7; if (dev > k.devMax) return 'créateur détient ' + fr(dev, 1) + ' %';
+    if (x.peak > 0 && x.price < x.peak * 0.8) return 'recul de ' + fr((1 - x.price / x.peak) * 100, 0) + ' % depuis le plus haut';
+    return null;
+  }
+  function botEval(x) {
+    if (!BOT.cands.has(x.mint)) return;
+    const age = (Date.now() - x.t0) / 1000, k = BOT.cfg;
+    if (x.devSold) { BOT.cands.delete(x.mint); botSync(); return botFeed(x, false, 'Le créateur a vendu pendant l\'observation'); }
+    if (age < k.minAge) return;
+    const why = botCheck(x);
+    if (!why) { BOT.cands.delete(x.mint); return botEnter(x); }
+    if (age > k.maxAge) { BOT.cands.delete(x.mint); botSync(); botFeed(x, false, 'Fenêtre de ' + k.maxAge + ' s écoulée : ' + why); }
+  }
+  // ---- garde-fous
+  function botBlocked() {
+    const k = BOT.cfg, now = Date.now();
+    if (BOT.pos.size >= k.maxPos) return 'positions max (' + k.maxPos + ') atteintes';
+    const day = new Date(); day.setHours(0, 0, 0, 0);
+    const today = BOT.trades.filter((t) => t.t1 >= day.getTime()).reduce((s2, t) => s2 + t.pnl, 0);
+    if (today <= -k.dayLoss) { BOT.pauseWhy = 'Perte max du jour atteinte (' + fSol(today, 3) + ')'; return BOT.pauseWhy; }
+    if (BOT.pausedUntil > now) return 'pause après ' + k.lossStreak + ' pertes d\'affilée (' + Math.ceil((BOT.pausedUntil - now) / 60000) + ' min)';
+    return null;
+  }
+  // ---- positions simulées
+  function botEnter(x) {
+    const k = BOT.cfg, block = botBlocked();
+    if (block) { botSync(); return botFeed(x, false, 'Signal valide, entrée bloquée : ' + block); }
+    const q = quoteBuy(x.curve, k.size); if (!q || !(q.tokens > 0)) { botSync(); return botFeed(x, false, 'Devis d\'achat impossible'); }
+    const tokens = q.tokens * (1 - k.latSlip / 100), entry = k.size / tokens;
+    const p = { mint: x.mint, symbol: x.symbol, name: x.name, t0: Date.now(), tokens, left: tokens, solIn: k.size + k.txCost, solOut: 0, entry, mkt: x.price, price: x.price, peak: x.price, highT: Date.now(), tp: false, curve: x.curve, why: x.buyers.size + ' acheteurs · flux ' + fr(x.volB - x.volS, 1) + ' SOL · courbe ' + fr(botProg(x.curve), 0) + ' %' };
+    BOT.pos.set(x.mint, p); botSync();
+    botFeed(x, true, 'Achat simulé de ' + fSol(k.size, 2) + ' : ' + p.why);
+  }
+  function botTradePos(p, m) {
+    const vs = +m.vSolInBondingCurve, vt = +m.vTokensInBondingCurve;
+    if (m.txType === 'migrate') return botExit(p, 1, 'migration du token');
+    if (!(vs > 0 && vt > 0)) return;
+    p.curve = botCurve(vs, vt); p.price = vs / vt;
+    if (p.price > p.peak) { p.peak = p.price; p.highT = Date.now(); }
+    botManage(p);
+  }
+  function botManage(p) {
+    if (!BOT.pos.has(p.mint)) return;
+    const k = BOT.cfg, g = p.price / p.mkt, age = (Date.now() - p.t0) / 1000;
+    if (!p.tp && g >= k.tp1) { p.tp = true; botExit(p, k.tp1Pct / 100, 'palier ×' + fr(k.tp1, 1)); if (!BOT.pos.has(p.mint)) return; }
+    if (g <= 1 - k.stop / 100) return botExit(p, 1, 'stop −' + k.stop + ' %');
+    if (p.tp && p.price <= p.peak * (1 - k.trail / 100)) return botExit(p, 1, 'stop suiveur −' + k.trail + ' % depuis le plus haut');
+    if ((Date.now() - p.highT) / 1000 > k.timeStop && g < 1.1) return botExit(p, 1, 'pas de nouveau plus haut en ' + k.timeStop + ' s');
+    if (age > k.maxHold) return botExit(p, 1, 'durée max de ' + Math.round(k.maxHold / 60) + ' min');
+  }
+  function botExit(p, frac, why) {
+    const k = BOT.cfg, tok = frac >= 1 ? p.left : p.left * frac;
+    const q = p.curve && !p.curve.complete ? quoteSell(p.curve, tok) : null;
+    const sol = (q ? q.sol : tok * p.price * (1 - feeRate())) * (1 - k.latSlip / 100) - k.txCost;
+    p.left -= tok; p.solOut += Math.max(0, sol);
+    if (p.left > tok * 1e-6 && frac < 1) { botFeed(p, true, 'Vente simulée de ' + Math.round(frac * 100) + ' % : ' + why + ' (+' + fSol(sol, 3) + ')'); botDirty(); return; }
+    BOT.pos.delete(p.mint); botSync();
+    const pnl = p.solOut - p.solIn, t = { mint: p.mint, symbol: p.symbol, name: p.name, t0: p.t0, t1: Date.now(), solIn: p.solIn, solOut: p.solOut, pnl, pct: pnl / p.solIn * 100, why, entry: p.why };
+    BOT.trades.unshift(t); botSave();
+    const streak = BOT.trades.slice(0, k.lossStreak); if (streak.length === k.lossStreak && streak.every((x) => x.pnl < 0)) BOT.pausedUntil = Date.now() + k.cooldown * 1000;
+    botFeed(p, pnl >= 0, 'Sortie simulée : ' + why + ' · ' + (pnl >= 0 ? '+' : '') + fSol(pnl, 4) + ' (' + (pnl >= 0 ? '+' : '') + fr(t.pct, 1) + ' %)');
+  }
+  function botTick() {
+    if (!BOT.on) return;
+    BOT.cands.forEach((x) => botEval(x));
+    BOT.pos.forEach((p) => botManage(p));
+    botDirty();
+  }
+  function botSync() { ppSync(PP.ui || new Set()); }
+  function botStart() {
+    if (!cfg.ppLive) { cfg.ppLive = true; save(LS.cfg, cfg); }
+    if (!window.WebSocket) return toast('Navigateur incompatible', 'Le bot a besoin des WebSockets.', 'r');
+    BOT.on = true; BOT.startedAt = Date.now(); BOT.pauseWhy = ''; botSync(); botDirty();
+    toast('Bot démarré · mode papier', 'Il observe les nouveaux tokens et simule ses trades. Garde cet onglet ouvert et visible.', 'g');
+  }
+  function botStop() {
+    BOT.on = false; BOT.cands.clear(); botSync(); botDirty();
+    toast('Bot arrêté', BOT.pos.size ? BOT.pos.size + ' position(s) simulée(s) restent suivies jusqu\'à leur sortie : redémarre-le ou ferme-les.' : 'Plus rien n\'est observé.', '');
+  }
+  setInterval(botTick, 1000);
+  // ---- statistiques
+  function botStats() {
+    const T = BOT.trades, n = T.length, wins = T.filter((t) => t.pnl > 0).length, pnl = T.reduce((s2, t) => s2 + t.pnl, 0);
+    let eq = 0, pk = 0, dd = 0; [...T].reverse().forEach((t) => { eq += t.pnl; pk = Math.max(pk, eq); dd = Math.min(dd, eq - pk); });
+    const hold = n ? T.reduce((s2, t) => s2 + (t.t1 - t.t0), 0) / n / 1000 : 0, best = n ? Math.max(...T.map((t) => t.pct)) : null, worst = n ? Math.min(...T.map((t) => t.pct)) : null;
+    const open = [...BOT.pos.values()].reduce((s2, p) => { const q = p.curve && !p.curve.complete ? quoteSell(p.curve, p.left) : null; return s2 + p.solOut + (q ? q.sol : 0) - p.solIn; }, 0);
+    return { n, wins, pnl, dd, hold, best, worst, open, rate: n ? wins / n * 100 : null };
+  }
+  // ---- rendu
+  let botRT = 0;
+  function botDirty() { if (S.page !== 'bot' || botRT) return; botRT = setTimeout(() => { botRT = 0; renderBot(); }, 400); }
+  const fDur = (s) => s < 60 ? Math.round(s) + ' s' : s < 3600 ? Math.floor(s / 60) + ' min ' + String(Math.round(s % 60)).padStart(2, '0') : Math.floor(s / 3600) + ' h ' + Math.round((s % 3600) / 60) + ' min';
+  function renderBot() {
+    if (!$('botBody')) return;
+    const k = BOT.cfg, st = botStats(), block = BOT.on ? botBlocked() : null;
+    $('botToggle').textContent = BOT.on ? 'Arrêter le bot' : 'Démarrer le bot';
+    $('botToggle').className = 'btn ' + (BOT.on ? 'danger' : 'primary');
+    $('botState').innerHTML = BOT.on
+      ? '<span class="dot ' + (PP.state === 'on' ? 'on' : 'wait') + '"></span><span><b>' + (PP.state === 'on' ? 'En marche' : 'Connexion au flux…') + '</b> depuis ' + fDur((Date.now() - BOT.startedAt) / 1000) + ' · ' + BOT.seenAt.length + ' nouveaux tokens/min · ' + BOT.cands.size + ' en observation' + (block ? ' · <span class="warn">' + esc(block) + '</span>' : '') + '</span>'
+      : '<span class="dot"></span><span><b>À l\'arrêt.</b> Démarre-le pour observer les nouveaux tokens en direct.</span>';
+    const tile = (l, v, s2, c) => '<div class="stat"><div class="l">' + l + '</div><div class="v ' + (c || '') + '">' + v + '</div><div class="s">' + s2 + '</div></div>';
+    $('botStats').innerHTML =
+      tile('Résultat net', (st.pnl >= 0 ? '+' : '') + fSol(st.pnl, 4), S.solUsd ? '≈ ' + fUsd(st.pnl * S.solUsd) : 'trades clos', cls(st.pnl)) +
+      tile('Trades', String(st.n), st.n ? st.wins + ' gagnants' : 'aucun pour l\'instant') +
+      tile('Taux de réussite', st.rate == null ? '—' : fr(st.rate, 0) + ' %', st.n ? 'meilleur ' + fr(st.best, 0) + ' % · pire ' + fr(st.worst, 0) + ' %' : '—') +
+      tile('En position', String(BOT.pos.size), BOT.pos.size ? 'latent ' + (st.open >= 0 ? '+' : '') + fSol(st.open, 4) : 'max ' + k.maxPos, cls(st.open)) +
+      tile('Perte max (creux)', fSol(st.dd, 4), 'pire recul de l\'équité', st.dd < 0 ? 'neg' : '') +
+      tile('Durée moyenne', st.n ? fDur(st.hold) : '—', 'par trade');
+    drawBotEquity();
+    $('botPos').innerHTML = BOT.pos.size ? [...BOT.pos.values()].map((p) => { const g = (p.price / p.mkt - 1) * 100; return '<div class="bpos"><div class="bpos-h"><b>' + esc(p.symbol || short(p.mint)) + '</b><span class="' + cls(g) + ' mono">' + (g >= 0 ? '+' : '') + fr(g, 1) + ' %</span></div><div class="bpos-m">' + fDur((Date.now() - p.t0) / 1000) + ' · ' + (p.tp ? 'palier pris, stop suiveur actif' : 'palier ×' + fr(k.tp1, 1) + ' en attente') + '</div><div class="row-btns"><a class="btn sm ghost" href="https://pump.fun/coin/' + p.mint + '" target="_blank" rel="noopener">pump.fun ↗</a><button class="btn sm" data-botclose="' + p.mint + '" type="button">Fermer</button></div></div>'; }).join('') : '<div class="bempty">Aucune position. Le bot n\'entre que si tous les filtres passent.</div>';
+    $('botFeed').innerHTML = BOT.feed.length ? BOT.feed.slice(0, 40).map((f) => '<div class="bfd ' + (f.ok ? 'ok' : 'no') + '"><span class="bfd-t mono">' + new Date(f.t).toLocaleTimeString('fr-FR') + '</span><b>' + esc(f.sym) + '</b><span>' + esc(f.msg) + '</span></div>').join('') : '<div class="bempty">' + (BOT.on ? 'En attente des premiers tokens…' : 'Les décisions du bot apparaîtront ici, avec leur raison.') + '</div>';
+    $('botHist').innerHTML = BOT.trades.length ? '<div class="tablebox"><table><thead><tr><th>Token</th><th>Sortie</th><th class="num">Durée</th><th class="num">Mise</th><th class="num">Résultat</th></tr></thead><tbody>' + BOT.trades.slice(0, 30).map((t) => '<tr><td><b>' + esc(t.symbol || short(t.mint)) + '</b></td><td class="dim" style="white-space:normal">' + esc(t.why) + '</td><td class="num">' + fDur((t.t1 - t.t0) / 1000) + '</td><td class="num">' + fSol(t.solIn, 3) + '</td><td class="num ' + cls(t.pnl) + '">' + (t.pnl >= 0 ? '+' : '') + fSol(t.pnl, 4) + ' · ' + fr(t.pct, 0) + ' %</td></tr>').join('') + '</tbody></table></div>' : '<div class="bempty">Aucun trade clos.</div>';
+    document.querySelectorAll('[data-botpre]').forEach((b) => b.classList.toggle('on', b.dataset.botpre === k.preset));
+    document.querySelectorAll('[data-botk]').forEach((el) => { if (el !== document.activeElement) el.value = k[el.dataset.botk]; });
+  }
+  function drawBotEquity() {
+    const cv = $('botEq'); if (!cv) return;
+    const { g, w, h } = setupCanvas(cv), T = [...BOT.trades].reverse(); let eq = 0; const pts = [0].concat(T.map((t) => (eq += t.pnl)));
+    g.font = '12px "Geist Mono","JetBrains Mono",monospace';
+    if (pts.length < 2) { g.fillStyle = '#848ba2'; g.textAlign = 'center'; g.fillText('La courbe d\'équité apparaîtra après le premier trade clos.', w / 2, h / 2 + 4); return; }
+    const lo = Math.min(0, ...pts), hi = Math.max(0, ...pts), pad = (hi - lo) * 0.12 || 0.01, y0 = lo - pad, y1 = hi + pad, X = (i) => 8 + i / (pts.length - 1) * (w - 16), Y = (v) => 8 + (1 - (v - y0) / (y1 - y0)) * (h - 16);
+    g.strokeStyle = '#2d3247'; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(8, Y(0)); g.lineTo(w - 8, Y(0)); g.stroke(); g.setLineDash([]);
+    const up = pts[pts.length - 1] >= 0, col = up ? '#34d58c' : '#ff5d6c';
+    g.beginPath(); pts.forEach((v, i) => (i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)))); g.lineTo(X(pts.length - 1), Y(0)); g.lineTo(X(0), Y(0)); g.closePath(); g.fillStyle = up ? 'rgba(52,213,140,.12)' : 'rgba(255,93,108,.12)'; g.fill();
+    g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); pts.forEach((v, i) => (i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)))); g.stroke();
+    g.fillStyle = col; g.beginPath(); g.arc(X(pts.length - 1), Y(pts[pts.length - 1]), 3.5, 0, Math.PI * 2); g.fill();
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'botToggle') return BOT.on ? botStop() : botStart();
+    if (b.dataset.botpre) { BOT.cfg = Object.assign({}, BOT.cfg, BOT_PRESETS[b.dataset.botpre], { preset: b.dataset.botpre }); botSave(); renderBot(); return toast('Stratégie ' + BOT_PRESETS[b.dataset.botpre].n, 'Appliquée aux prochaines décisions.', 'g'); }
+    if (b.dataset.botclose) { const p = BOT.pos.get(b.dataset.botclose); if (p) botExit(p, 1, 'fermée à la main'); return renderBot(); }
+    if (b.id === 'botReset') { if (!BOT.trades.length) return; BOT.trades = []; BOT.pausedUntil = 0; botSave(); renderBot(); return toast('Résultats effacés', 'Les statistiques repartent de zéro.', 'g'); }
+  });
+  document.addEventListener('change', (e) => {
+    const el = e.target; if (!el.dataset || !el.dataset.botk) return;
+    const v = num(el.value); if (v == null || v < 0) { el.value = BOT.cfg[el.dataset.botk]; return toast('Valeur invalide', 'Nombre positif attendu.', 'r'); }
+    BOT.cfg[el.dataset.botk] = v; BOT.cfg.preset = 'perso'; botSave(); renderBot();
+  });
+
   /* ================================================================ temps réel : flux PumpPortal (gratuit, sans clé)
      Une seule connexion WebSocket pour tous les tokens suivis : PumpPortal bannit les clients qui en ouvrent plusieurs. */
   const PP = { ws: null, state: 'off', subs: new Set(), want: new Set(), retry: 0, timer: null, last: 0, msgs: 0, pending: new Set() };
@@ -2931,13 +3218,13 @@ Message: ${r}.
     clearTimeout(PP.timer); PP.state = 'connecting'; ppStatus();
     let ws; try { ws = new WebSocket(PP_URL); } catch (e) { PP.state = 'error'; ppStatus(); return ppRetry(); }
     PP.ws = ws;
-    ws.onopen = () => { PP.state = 'on'; PP.retry = 0; PP.subs = new Set(); ppStatus(); ppDiff(); };
-    ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } if (m && m.mint && m.txType) { try { ppApply(m); } catch (e) {} } };
+    ws.onopen = () => { PP.state = 'on'; PP.retry = 0; PP.subs = new Set(); PP.newSub = false; ppStatus(); ppDiff(); };
+    ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } if (m && m.mint && m.txType) { try { botMsg(m); } catch (e) {} if (m.txType !== 'create') { try { ppApply(m); } catch (e) {} } } };
     ws.onerror = () => { PP.state = 'error'; ppStatus(); };
     ws.onclose = () => { if (PP.ws === ws) { PP.ws = null; PP.subs = new Set(); if (PP.state !== 'off') { PP.state = 'error'; ppStatus(); ppRetry(); } } };
   }
   function ppRetry() {
-    if (!cfg.ppLive || !PP.want.size) return;
+    if (!cfg.ppLive || (!PP.want.size && !BOT.on)) return;
     const wait = [1000, 2000, 5000, 10000, 30000][Math.min(PP.retry++, 4)];
     clearTimeout(PP.timer); PP.timer = setTimeout(ppConnect, wait);
   }
@@ -2948,15 +3235,18 @@ Message: ${r}.
     const add = [...PP.want].filter((m) => !PP.subs.has(m)), del = [...PP.subs].filter((m) => !PP.want.has(m));
     if (add.length && ppSend({ method: 'subscribeTokenTrade', keys: add })) add.forEach((m) => PP.subs.add(m));
     if (del.length && ppSend({ method: 'unsubscribeTokenTrade', keys: del })) del.forEach((m) => PP.subs.delete(m));
+    if (BOT.on && !PP.newSub && ppSend({ method: 'subscribeNewToken' })) PP.newSub = true;
+    if (!BOT.on && PP.newSub && ppSend({ method: 'unsubscribeNewToken' })) PP.newSub = false;
   }
   function ppSync(set) {
-    PP.want = new Set(cfg.ppLive ? [...set].filter(Boolean) : []);
-    if (!PP.want.size) { if (PP.ws && PP.subs.size) ppDiff(); return; }
+    PP.ui = new Set([...set].filter(Boolean));               // tokens suivis par l'interface (fiches, ordres)
+    PP.want = new Set(cfg.ppLive ? [...PP.ui, ...botSet()] : []);
+    if (!PP.want.size && !BOT.on) { if (PP.ws && (PP.subs.size || PP.newSub)) ppDiff(); return; }
     if (!PP.ws) ppConnect(); else ppDiff();
   }
   function ppApply(m) {
     const mint = m.mint, C = S.cache[mint];
-    if (!C) { if (PP.want.has(mint) && !PP.pending.has(mint)) { PP.pending.add(mint); loadToken(mint, false).catch(() => {}).finally(() => PP.pending.delete(mint)); } return; }
+    if (!C) { if (PP.ui && PP.ui.has(mint) && !PP.pending.has(mint)) { PP.pending.add(mint); loadToken(mint, false).catch(() => {}).finally(() => PP.pending.delete(mint)); } return; }
     const vs = +m.vSolInBondingCurve, vt = +m.vTokensInBondingCurve, sol = +m.solAmount, tok = +m.tokenAmount;
     if (vs > 0 && vt > 0) {
       const c = Object.assign({ supply: 1e15 }, C.curve || {}, { exists: true, vSol: vs * 1e9, vTok: vt * 1e6 });
@@ -2977,6 +3267,7 @@ Message: ${r}.
   }
   function ppLabel() {
     if (!cfg.ppLive) return ['', 'coupé'];
+    if (PP.state === 'on' && BOT.on) return ['on', 'bot · ' + PP.subs.size + ' suivis'];
     if (PP.state === 'on') return ['on', PP.subs.size ? PP.subs.size + ' suivi' + (PP.subs.size > 1 ? 's' : '') : 'prêt'];
     if (PP.state === 'connecting') return ['wait', 'connexion…'];
     if (PP.state === 'error') return ['bad', 'reconnexion'];
@@ -3110,6 +3401,7 @@ Message: ${r}.
     else if (S.page === 'mine') renderMine();
     else if (S.page === 'trade') { if (S.view.trade) { if (!S.cache[S.view.trade] || !S.cache[S.view.trade].curve) showToken('trade', S.view.trade); else renderTokenView('trade'); } }
     else if (S.page === 'orders') renderOrders();
+    else if (S.page === 'bot') renderBot();
     else if (S.page === 'journal') renderJournal();
     else if (S.page === 'social') renderSocial();
   }
@@ -3478,6 +3770,7 @@ Message: ${r}.
     }
     Object.keys(PAGES).forEach((p) => out.push({ g: 'Aller à', ic: navIcon(p), label: PAGES[p][0], hint: PAGES[p][1], kw: p, run: () => setPage(p) }));
     out.push(
+      { g: 'Actions', ic: IC.pulse, label: BOT.on ? 'Arrêter le bot de trading' : 'Démarrer le bot de trading (mode papier)', hint: 'données en direct', kw: 'bot trading automatique', run: () => { setPage('bot'); BOT.on ? botStop() : botStart(); } },
       { g: 'Actions', ic: IC.pulse, label: 'Ouvrir le Radar des tendances', hint: 'tokens qui prennent de l\'élan', kw: 'radar tendance trend dexscreener', run: () => { setPage('launch'); setLaunchTab('radar'); } },
       { g: 'Actions', ic: IC.spark, label: 'Tout générer automatiquement', hint: 'nom, ticker, logo, description', kw: 'auto concept idee', run: () => { setPage('launch'); setLaunchTab('studio'); clickWhenReady('autoGo'); } },
       { g: 'Actions', ic: IC.spark, label: 'Générer de nouvelles idées', hint: 'étape Concept', kw: 'idee nom ticker', run: () => { S.step = 1; setPage('launch'); clickWhenReady('genGo'); } },
@@ -3558,7 +3851,7 @@ Message: ${r}.
     }, 5000);
     window.addEventListener('resize', () => { ['mine', 'trade'].forEach((c) => { document.querySelectorAll('#' + (c === 'mine' ? 'mineDetail' : 'tradeDetail') + ' canvas.pchart').forEach((cv) => drawPriceChart(cv, S.cache[cv.dataset.mint] || {})); }); });
   }
-  window.PumpStudio = { PP, S, cfg, SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE };
+  window.PumpStudio = { BOT, PP, S, cfg, SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 </script>
