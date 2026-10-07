@@ -929,6 +929,13 @@ textarea{font:inherit;color:inherit}
 .app.side-min .side-theme{justify-content:center}
 .app.side-min .side-theme span:last-child{display:none}
 @media (max-width:520px){.uit-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.uit-prev{height:74px;padding:6px}.uit-side{width:18px}.uit-card-in{padding:0 6px}.uit-t{padding:7px 9px 8px}}
+/* ---------- panneaux (Réglages, Paramètres) : même fenêtre que « Personnaliser » ---------- */
+.modal .box.wide.panel{max-width:760px}
+#modal .pb-pg{display:block;animation:none}
+#modal .forms{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+#modal .strat-card{margin-bottom:12px;border:none;background:none;padding:0;border-top:none !important}
+#modal .strat-card .strat-head{padding-bottom:12px;border-bottom:1px solid var(--line)}
+#pb-stratCards[data-only="equilibree"] .strat-card:not([data-sid="equilibree"]),#pb-stratCards[data-only="migration"] .strat-card:not([data-sid="migration"]),#pb-stratCards[data-only="flash"] .strat-card:not([data-sid="flash"]){display:none}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
 </style>
 </head>
@@ -1377,13 +1384,26 @@ Message: ${r}.
     setTimeout(() => el.remove(), 6000);
   }
   let modalResolve = null;
+  // Panneau : affiche un bloc existant de la page dans la fenêtre (comme « Personnaliser »), puis le remet en place à la fermeture
+  const PANEL = { cur: null, susp: null };
+  function panelRestore() { const c = PANEL.cur; if (!c) return; PANEL.cur = null; try { c.ph.replaceWith(c.node); } catch (e) {} if (c.onClose) { try { c.onClose(); } catch (e) {} } }
+  function openPanel(title, node, opts) {
+    if (!node) return; opts = opts || {};
+    panelRestore();
+    const ph = document.createComment('panneau'), p = modal(title, opts.intro || '', [{ label: 'Fermer', cls: 'primary' }], true);
+    node.replaceWith(ph); $('mBody').appendChild(node); $('mBox').classList.add('panel');
+    PANEL.cur = { node, ph, onClose: opts.onClose, reopen: () => openPanel(title, node, opts) };
+    if (opts.onOpen) { try { opts.onOpen(); } catch (e) {} }
+    p.then(() => { if (PANEL.cur && PANEL.cur.node === node) panelRestore(); });
+  }
   function modal(title, html, buttons, wide) {
+    if (PANEL.cur) { PANEL.susp = PANEL.cur.reopen; panelRestore(); }  // une confirmation demandée depuis un panneau : on rouvre le panneau après
     $('mTitle').textContent = title; $('mBody').innerHTML = html; $('mBox').className = 'box' + (wide ? ' wide' : '');
     $('mRow').innerHTML = (buttons || []).map((b, i) => '<button class="btn ' + (b.cls || '') + '" data-mb="' + i + '" type="button">' + esc(b.label) + '</button>').join('');
     $('modal').classList.add('open');
-    return new Promise((res) => { modalResolve = (i) => { modalResolve = null; res(i); }; $('mRow').onclick = (e) => { const b = e.target.closest('[data-mb]'); if (!b) return; const i = +b.dataset.mb; if (!buttons[i].keep) closeModal(); if (modalResolve) modalResolve(i); }; });
+    return new Promise((res) => { modalResolve = (i) => { modalResolve = null; res(i); if (PANEL.susp && !PANEL.cur) { const r = PANEL.susp; PANEL.susp = null; setTimeout(r, 40); } }; $('mRow').onclick = (e) => { const b = e.target.closest('[data-mb]'); if (!b) return; const i = +b.dataset.mb; if (!buttons[i].keep) closeModal(); if (modalResolve) modalResolve(i); }; });
   }
-  function closeModal() { $('modal').classList.remove('open'); }
+  function closeModal() { $('modal').classList.remove('open'); if (PANEL.cur) panelRestore(); }
   const confirmBox = (title, html, ok, danger) => modal(title, html, [{ label: 'Annuler' }, { label: ok || 'Confirmer', cls: danger ? 'danger' : 'primary' }], true).then((i) => i === 1);
 
   /* ================================================================ RPC Solana */
@@ -3114,7 +3134,15 @@ Message: ${r}.
     ppStatus(); renderWalletCard();
     $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length;
   }
+  function openSettings() {
+    const sec = $('p-settings'); if (!sec) return;
+    let body = $('setBody');
+    if (!body) { body = document.createElement('div'); body.id = 'setBody'; [...sec.children].filter((c) => !c.classList.contains('page-head')).forEach((c) => body.appendChild(c)); sec.appendChild(body); }
+    navOpen(false);
+    openPanel('Réglages', body, { intro: '<p class="muted" style="margin:0 0 14px">Chaque bloc a ses boutons Valider et Annuler : rien n\'est appliqué avant validation.</p>' });
+  }
   function setPage(p) {
+    if (p === 'settings') return openSettings();
     S.page = p;
     document.querySelectorAll('#menu button[data-page], #bnav button[data-page]').forEach((b) => b.classList.toggle('active', b.dataset.page === p));
     navOpen(false);
@@ -4042,7 +4070,7 @@ Message: ${r}.
       return;
     }
     setFormsHtml();
-    const p = localStorage.getItem('pstudio_page'); if (p && PAGES[p]) S.page = p;
+    const p = localStorage.getItem('pstudio_page'); if (p && PAGES[p] && p !== 'settings') S.page = p;
     setPage(S.page);
     if (!S.ideas.length) genIdeas();
     await solPrice(); renderTop();
@@ -4069,7 +4097,7 @@ Message: ${r}.
     }, 5000);
     window.addEventListener('resize', () => { ['mine', 'trade'].forEach((c) => { document.querySelectorAll('#' + (c === 'mine' ? 'mineDetail' : 'tradeDetail') + ' canvas.pchart').forEach((cv) => drawPriceChart(cv, S.cache[cv.dataset.mint] || {})); }); });
   }
-  window.PumpStudio = { PP, S, cfg, setPage, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
+  window.PumpStudio = { PP, S, cfg, setPage, openPanel, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
     pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => PP.state },
     SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE };
@@ -5348,11 +5376,13 @@ function pickStrat(id) {
   toast('Stratégie active', id === 'all' ? 'Toutes les stratégies' : stratById(id).name, 'g');
   markAll(); render(true);
 }
-$('stratTune').addEventListener('click', () => {
-  const on = STRATS.filter((s) => s.enabled), id = on.length === 1 ? on[0].id : S.view;
-  goPage('strategies');
-  setTimeout(() => { const c = ROOT.querySelector('.strat-card[data-sid="' + id + '"]'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
-});
+function openTune() {
+  const on = STRATS.filter((s) => s.enabled), one = on.length === 1 ? on[0] : null, box = $('stratCards');
+  if (one) box.dataset.only = one.id; else delete box.dataset.only;
+  PS.openPanel(one ? 'Paramètres · ' + one.name : 'Paramètres des stratégies', box, { onClose: () => { delete box.dataset.only; } });
+}
+function openTermSettings() { PS.openPanel('Réglages du terminal', $('p-settings')); }
+$('stratTune').addEventListener('click', openTune);
 $('stratSel').addEventListener('click', (e) => { const b = e.target.closest('[data-strat]'); if (b) pickStrat(b.dataset.strat); });
 function buildViewSelect() {
   $('viewStrat').innerHTML = STRATS.map((s) => '<option value="' + s.id + '"' + (S.view === s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>').join('');
@@ -5469,7 +5499,7 @@ function goPage(p) {
   markAll(); render(true);
 }
 function selectToken(m) { S.selected = m; for (const t of S.tokens.values()) t.ver++; markAll(); render(true); }
-$('menu').addEventListener('click', (e) => { const b = e.target.closest('button[data-pb]'); if (b) goPage(b.dataset.pb); });
+$('menu').addEventListener('click', (e) => { const b = e.target.closest('button[data-pb]'); if (!b) return; if (b.dataset.pb === 'settings') return openTermSettings(); goPage(b.dataset.pb); });
 $('btnConn').addEventListener('click', async () => {
   if (S.wantConn) { if (await confirmBox('Déconnecter le terminal ?', 'Il arrête de recevoir les tokens et les trades. Les positions papier ouvertes ne seront plus mises à jour.', 'Déconnecter')) disconnect(); }
   else connect();
@@ -5491,7 +5521,7 @@ $('jStrat').addEventListener('change', (e) => { S.jStrat = e.target.value; S.jRe
 $('jReason').addEventListener('click', (e) => { const b = e.target.closest('[data-r]'); if (!b) return; S.jReason = b.dataset.r; S.dirty.journal = true; render(true); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.selected && ROOT.classList.contains('active') && !document.querySelector('.modal.open')) selectToken(null); });
 
-ROOT.addEventListener('click', async (e) => {
+const rootClick = async (e) => {
   const x = e.target.closest('[data-pbx]');
   if (x) {
     e.preventDefault();
@@ -5533,9 +5563,15 @@ ROOT.addEventListener('click', async (e) => {
   }
   const row = e.target.closest('tbody tr[data-mint]');
   if (row && S.tokens.has(row.dataset.mint)) selectToken(row.dataset.mint);
-});
+};
+ROOT.addEventListener('click', rootClick);
 ROOT.addEventListener('input', onFormInput);
 ROOT.addEventListener('change', onFormInput);
+// les blocs du terminal ouverts en panneau restent actifs dans la fenêtre
+const inPanel = (e) => e.target.closest && e.target.closest('#modal #pb-stratCards, #modal #pb-p-settings');
+document.getElementById('modal').addEventListener('click', (e) => { if (inPanel(e)) rootClick(e); });
+document.getElementById('modal').addEventListener('input', (e) => { if (inPanel(e)) onFormInput(e); });
+document.getElementById('modal').addEventListener('change', (e) => { if (inPanel(e)) onFormInput(e); });
 
 $('expTokens').addEventListener('click', async () => { const r = await IDB.all('tokens'); if (!r.length) return toast('Rien à exporter', 'Aucun token en base.', 'a'); download('pumpstudio-tokens-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' tokens', 'g'); });
 $('expTrades').addEventListener('click', async () => { const r = await IDB.all('trades'); if (!r.length) return toast('Rien à exporter', 'Aucun trade en base.', 'a'); download('pumpstudio-trades-' + stamp() + '.json', JSON.stringify(r), 'application/json'); toast('Export prêt', r.length + ' trades', 'g'); });
@@ -5588,7 +5624,7 @@ window.PumpBotUI = {
   buildViewSelect(); buildSettings(); buildStratCards(); buildStratSel();
   setConn('', 'Déconnecté');
   delete cfg.apiKey; saveCfg();
-  try { const p = localStorage.getItem('pstudio_pb_page'); if (p && $('p-' + p)) goPage(p); } catch (e) {}
+  try { const p = localStorage.getItem('pstudio_pb_page'); if (p && p !== 'settings' && $('p-' + p)) goPage(p); } catch (e) {}
   await IDB.open();
   await loadFromDb();
   setInterval(tick, 1000);
