@@ -1158,12 +1158,13 @@ Message: ${r}.
     const https = location.protocol === 'https:';
     const deep = 'https://phantom.app/ul/browse/' + encodeURIComponent(location.href) + '?ref=' + encodeURIComponent(location.origin);
     const html = isMobile()
-      ? (https ? '<p>Sur téléphone, les wallets ne s\'injectent que dans leur propre navigateur. Ouvre le studio dans l\'app Phantom :</p><p><a class="btn primary" href="' + esc(deep) + '">Ouvrir dans Phantom</a></p>'
+      ? (https ? '<p>Sur téléphone, Chrome et Safari ne peuvent pas utiliser l\'extension Phantom : Phantom ne se connecte aux sites que dans le navigateur intégré à son app.</p><p><a class="btn" href="' + esc(deep) + '">Ouvrir le studio dans l\'app Phantom</a></p><p class="dim" style="font-size:13px">Chaque navigateur garde ses propres données : dans l\'app Phantom, il faudra restaurer ton wallet rapide avec son code de sauvegarde.</p>'
         : '<p>Sur téléphone, il faut ouvrir le studio dans le navigateur intégré de l\'app Phantom. Pour cela, le studio doit être en ligne (adresse https), pas ouvert comme fichier.</p><p>Mets le fichier en ligne (GitHub Pages, Vercel, Netlify), puis ouvre son adresse dans Phantom → onglet Explorer.</p>')
       : location.protocol === 'file:'
         ? '<p>Le studio est ouvert comme <b>fichier</b> : Chrome n\'y laisse pas entrer les extensions comme Phantom, sauf si tu l\'autorises.</p><ol class="steps"><li>Ouvre <span class="mono">chrome://extensions</span> dans un nouvel onglet.</li><li>Sur <b>Phantom</b>, clique <b>Détails</b>.</li><li>Active <b>Autoriser l\'accès aux URL de fichier</b>.</li><li>Recharge cette page, puis reclique sur « Connecter le wallet ».</li></ol><p style="margin-top:12px">Si Phantom n\'est pas installé : <b>phantom.app</b>. Autre solution : mettre le studio en ligne (adresse https).</p>'
         : '<p>Aucun wallet Solana détecté dans ce navigateur. Installe l\'extension <b>Phantom</b> (phantom.app) ou <b>Solflare</b>, puis recharge la page.</p>';
-    modal('Aucun wallet détecté', html, [{ label: 'Fermer' }]);
+    const fast = '<div class="wcard" style="margin-top:14px"><div class="wh"><b>Ou utiliser le wallet rapide</b><span class="badge g">fonctionne ici</span></div><p>Il marche dans ce navigateur, sans extension ni app : il signe seul, et tes ventes automatiques partent sans fenêtre de confirmation. Déjà créé sur un autre appareil ? Restaure-le avec son code de sauvegarde.</p><div class="row-btns"><button class="btn sm primary" data-sw="create" type="button">Créer un wallet rapide</button><button class="btn sm" data-sw="import" type="button">Restaurer un wallet rapide</button></div></div>';
+    modal('Aucun wallet détecté', html + fast, [{ label: 'Fermer' }]);
   }
 
   /* ================================================================ wallet rapide (clé du studio, chiffrée dans ce navigateur) */
