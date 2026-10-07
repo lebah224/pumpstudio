@@ -53,6 +53,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-
 
 /* ---------- squelette ---------- */
 .app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+.app>div{min-width:0}
 .side{background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
 .logo{display:flex;align-items:center;gap:11px;padding:20px 20px 16px;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.3px}
 .logo b{color:var(--accent);font-weight:700}
@@ -493,10 +494,124 @@ textarea{font:inherit;color:inherit}
 .skbox [data-blur="1"]{filter:blur(6px);user-select:none}
 .wallet-btn .dot{display:inline-block;width:8px;height:8px;min-width:8px;margin-right:2px}
 
+/* ---------- sous-onglets du lancement ---------- */
+.ltabs{display:inline-flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px;max-width:100%;overflow-x:auto}
+.ltabs button{display:inline-flex;align-items:center;gap:8px;background:none;border:none;border-radius:9px;padding:9px 16px;color:var(--muted);cursor:pointer;font-weight:600;white-space:nowrap;min-height:40px}
+.ltabs button:hover{color:var(--text)}
+.ltabs button.on{background:var(--accent-bg);color:var(--accent-ink);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.ltabs .new{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;padding:1px 7px;border-radius:999px;background:var(--accent);color:#120d2b}
+
+/* ---------- logo ---------- */
+.logo-gen{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.logo-gen .muted{font-size:13px}
+.logo-vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px;margin-bottom:16px}
+.lvar{display:flex;flex-direction:column;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:8px;cursor:pointer;color:var(--text);text-align:left;transition:border-color .15s,transform .15s}
+.lvar:hover{border-color:var(--line2);transform:translateY(-1px)}
+.lvar.on{border-color:var(--accent-line);box-shadow:0 0 0 1px var(--accent-line) inset;background:var(--accent-bg)}
+.lvar img{width:100%;aspect-ratio:1;border-radius:10px;display:block}
+.lvar span{font-size:13px;font-weight:600;line-height:1.25;padding:0 2px 2px}
+.lvar small{display:block;font-weight:400;color:var(--dim);font-size:12px}
+.logo-stage{position:relative;width:260px;max-width:100%}
+.logo-stage .logo-canvas{width:100%}
+.safe-ring{display:none;position:absolute;inset:0;border-radius:22px;pointer-events:none;background:radial-gradient(circle at center,transparent 49.6%,rgba(0,0,0,.62) 50%)}
+.safe-ring:after{content:'';position:absolute;inset:6%;border-radius:50%;border:1px dashed rgba(255,255,255,.55)}
+.logo-stage.safe .safe-ring{display:block}
+.sm-check{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:0;cursor:pointer}
+.sm-check input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.logo-src{font-size:13px;color:var(--muted);margin-top:2px;max-width:260px}
+.logo-src.warn{color:var(--amber-ink)}
+.logo-prev{margin-top:14px;max-width:260px}
+.lp-t{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);font-weight:600;margin-bottom:8px}
+.lp-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.lp-row figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.lp-row figcaption{font-size:12px;color:var(--dim);text-align:center;line-height:1.25}
+.lp-card{width:84px;height:84px;border-radius:8px;object-fit:cover;display:block;background:var(--panel3)}
+.lp-list{width:40px;height:40px;border-radius:6px;object-fit:cover;display:block;background:var(--panel3)}
+.lp-round{width:40px;height:40px;border-radius:50%;object-fit:cover;display:block;background:var(--panel3)}
+.lp-tiny{width:22px;height:22px;border-radius:50%;object-fit:cover;display:block;background:var(--panel3)}
+.drop{display:flex;flex-direction:column;gap:4px;text-align:left}
+.drop b{color:var(--text);font-weight:600}
+.drop span{font-size:13px}
+.drop.over{border-color:var(--accent);background:var(--accent-bg);color:var(--text)}
+#logoBackGen{margin-top:8px}
+
+/* ---------- plan de prise de profit ---------- */
+.tp-plan{padding:18px 20px}
+.tp-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px}
+.tp-head .switch{margin-top:2px;flex:none}
+.tp-head h4{margin:0;font-family:var(--display);font-size:16px}
+.tp-head p{margin:3px 0 0;color:var(--muted);font-size:13.5px;max-width:70ch}
+.tp-off{margin:0;color:var(--dim);font-size:13.5px}
+.tp-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 14px}
+.tp-pre{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 12px;cursor:pointer;color:var(--text)}
+.tp-pre:hover{border-color:var(--line2)}
+.tp-pre b{font-size:14px}
+.tp-pre span{font-size:12.5px;color:var(--muted)}
+.tp-pre.on{border-color:var(--accent-line);background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.tp-table{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.tp-tr{display:grid;grid-template-columns:34px minmax(150px,1.3fr) minmax(100px,1fr) minmax(110px,1fr) minmax(130px,1.1fr) 40px;gap:10px;align-items:center;padding:9px 12px;border-top:1px solid var(--line);font-size:14px}
+.tp-tr:first-child{border-top:none}
+.tp-th{background:var(--panel2);font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);font-weight:600;padding:9px 12px}
+.tp-th small{text-transform:none;letter-spacing:0;font-weight:400}
+.tp-n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent-ink);font-family:var(--mono);font-size:13px}
+.tp-in{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.tp-in em{font-style:normal;color:var(--muted);font-family:var(--mono)}
+.tp-in input{width:76px;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:6px 8px;font-family:var(--mono);min-height:36px}
+.tp-in input:focus{outline:none;border-color:var(--accent);box-shadow:var(--focus)}
+.tp-in small{color:var(--dim);font-family:var(--mono);font-size:12px;white-space:nowrap}
+.tp-v{font-family:var(--mono);font-size:13.5px;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.tp-foot{margin:10px 0 0}
+.tp-ladder{margin:14px 0 4px}
+.tp-bar{display:flex;height:30px;border-radius:9px;overflow:hidden;border:1px solid var(--line2);background:var(--bg)}
+.tp-bar i{display:flex;align-items:center;justify-content:center;background:var(--accent);min-width:0;border-right:1px solid var(--bg)}
+.tp-bar i span{font-family:var(--mono);font-size:12px;color:#120d2b;font-weight:600;white-space:nowrap;overflow:hidden;padding:0 4px}
+.tp-bar i.keep{background:repeating-linear-gradient(135deg,var(--panel3) 0 6px,var(--panel2) 6px 12px);opacity:1 !important}
+.tp-bar i.keep span{color:var(--muted)}
+.tp-bar.over{border-color:var(--red)}
+.tp-bar-l{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.tp-stop{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.tp-stop>div{flex:1 1 280px;min-width:0}
+.tp-stop b{font-size:14px}
+.tp-stop p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.tp-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.tp-sum .stat .v{font-size:16px}
+.tp-note{margin:10px 0 0;color:var(--dim);font-size:12.5px;line-height:1.45}
+
+/* ---------- radar ---------- */
+.radar-intro{display:flex;align-items:center;gap:14px;background:radial-gradient(600px 160px at 0% 0%,color-mix(in oklab,var(--blue) 14%,transparent),transparent 70%),var(--panel);border:1px solid var(--blue-line);border-radius:var(--r);padding:16px 20px;margin-bottom:14px}
+.radar-intro b{display:block;font-family:var(--display);font-size:17px}
+.radar-intro span{color:var(--muted);font-size:13.5px}
+.rsort{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+#rAt{font-size:12.5px}
+.r-lbl{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);font-weight:600;margin:4px 0 8px}
+.rthemes{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:16px}
+.rtheme{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 12px;cursor:pointer;color:var(--text)}
+.rtheme:hover{border-color:var(--line2)}
+.rtheme b{font-size:14px}
+.rtheme span{font-size:12.5px;color:var(--muted)}
+.rtheme.on{border-color:var(--accent-line);background:var(--accent-bg)}
+.rel{display:flex;align-items:center;gap:8px;min-width:110px}
+.rel .bar{flex:1;height:7px}
+.rel+small{display:block;font-size:12px;margin-top:2px}
+.rtable .oa{display:flex;gap:6px;justify-content:flex-end}
+.rtable .av img{width:100%;height:100%;object-fit:cover}
+#rInspire .why-score .badge{font-size:11.5px}
+@media (max-width:760px){
+  .tp-presets,.tp-sum{grid-template-columns:1fr}
+  .tp-th{display:none}
+  .tp-tr{grid-template-columns:30px 1fr 1fr 36px;row-gap:6px}
+  .tp-tr .tp-v{grid-column:2/4}
+  .logo-stage,.logo-src,.logo-prev{max-width:none}
+  .ltabs{display:flex}
+  .ltabs button{flex:1;justify-content:center;padding:9px 10px}
+  .ltabs .new{display:none}
+  .tp-in small{display:none}
+}
+
 /* ---------- adaptatif ---------- */
 @media (max-width:1100px){.studio,.tok-grid{grid-template-columns:1fr}.preview{position:static}}
 @media (max-width:900px){
-  .app{grid-template-columns:1fr}
+  .app{grid-template-columns:minmax(0,1fr)}
   .side{position:sticky;top:0;z-index:30;height:auto;flex-direction:row;align-items:center;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line);scrollbar-width:none}
   .side::-webkit-scrollbar{display:none}
   .logo{padding:10px 12px 10px 16px;font-size:16px}
@@ -567,6 +682,8 @@ textarea{font:inherit;color:inherit}
 
       <!-- LANCER -->
       <section class="page active" id="p-launch">
+        <div class="ltabs" id="launchTabs" role="tablist"><button class="on" data-ltab="studio" type="button" role="tab" aria-selected="true">Studio de création</button><button data-ltab="radar" type="button" role="tab" aria-selected="false">Radar des tendances<span class="new">nouveau</span></button></div>
+        <div id="lt-studio">
         <div class="autogen" id="autogen">
           <div class="ag-ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z"/></svg></div>
           <div><b>Génération automatique</b><span>Nom, ticker, description, logo et plan de prise de profit en un clic. Tu vérifies, puis tu lances.</span></div>
@@ -595,10 +712,14 @@ textarea{font:inherit;color:inherit}
             </div>
             <!-- étape 2 -->
             <div class="card" data-stepcard="2" hidden>
-              <div class="card-h"><h3>Logo</h3><p>Généré en 1024 × 1024, net sur tous les écrans, ou importé. Il sera affiché en carré arrondi sur pump.fun.</p></div>
+              <div class="card-h"><h3>Logo</h3><p>Image carrée 1024 × 1024, composée pour rester lisible en petit et quand une plateforme l'affiche en rond.</p></div>
+              <div class="logo-gen"><button class="btn primary" id="logoGen" type="button">Générer le logo du token</button><button class="btn" id="logoVary" type="button">Varier</button><span class="muted" id="logoGenHint"></span></div>
+              <div class="logo-vars" id="logoVars" hidden></div>
               <div class="logo-wrap">
-                <div><canvas class="logo-canvas" id="logoCv" width="1024" height="1024"></canvas>
-                  <div class="toolbar" style="margin-top:10px"><button class="btn sm" id="logoDl" type="button">Télécharger le PNG</button><span class="muted" style="font-size:13px" id="logoSrc"></span></div></div>
+                <div><div class="logo-stage" id="logoStage"><canvas class="logo-canvas" id="logoCv" width="1024" height="1024"></canvas><div class="safe-ring" aria-hidden="true"></div></div>
+                  <div class="toolbar" style="margin-top:10px"><button class="btn sm" id="logoDl" type="button">Télécharger l'image</button><label class="check sm-check"><input type="checkbox" id="logoSafe">Voir en rond</label></div>
+                  <div class="logo-src" id="logoSrc"></div>
+                  <div class="logo-prev" id="logoPrev"></div></div>
                 <div class="logo-opts">
                   <div class="field"><label>Style</label><div class="chips" id="logoStyles"></div></div>
                   <div class="field"><label>Couleurs</label><div class="swatches" id="logoPal"></div></div>
@@ -606,7 +727,8 @@ textarea{font:inherit;color:inherit}
                     <div class="field"><label for="logoEmoji">Symbole <small>style Mascotte</small></label><input id="logoEmoji" maxlength="4" placeholder="🦦"></div>
                     <div class="field"><label for="logoText">Texte</label><input id="logoText" maxlength="8" placeholder="TICKER"></div>
                   </div>
-                  <label class="drop" id="logoDrop">Ou importer ton image (PNG, JPG, GIF, WEBP · 4 Mo max)<input type="file" id="logoFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                  <label class="drop" id="logoDrop"><b>Importer ton image</b><span>Glisse un fichier ici ou clique. PNG, JPG, GIF ou WEBP, 4 Mo max. Elle remplace le logo actuel, recadrée en carré.</span><input type="file" id="logoFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                  <button class="btn sm ghost" id="logoBackGen" type="button" hidden>Revenir au logo généré</button>
                 </div>
               </div>
             </div>
@@ -651,6 +773,14 @@ textarea{font:inherit;color:inherit}
               <div id="readyList" style="margin-top:8px"></div>
             </div>
           </aside>
+        </div>
+        </div>
+        <div id="lt-radar" hidden>
+          <div class="radar-intro"><div><b>Radar des tendances</b><span>Les tokens qui prennent de l'élan en ce moment sur Solana, Base, BNB Chain et Ethereum. Repère les thèmes qui montent, puis génère un concept original dans le même filon.</span></div></div>
+          <div class="toolbar"><div class="chips" id="rChains"></div><div class="spacer"></div><label class="rsort" for="rSort">Trier par <select id="rSort" class="sel"><option value="el">Élan</option><option value="vol">Volume 24 h</option><option value="pc1">Hausse sur 1 h</option><option value="new">Plus récents</option></select></label><span class="muted" id="rAt"></span><button class="btn sm" data-rload="1" type="button">Actualiser</button></div>
+          <div id="rThemesWrap" hidden><div class="r-lbl">Thèmes qui montent</div><div class="rthemes" id="rThemes"></div></div>
+          <div class="card" id="rInspire" hidden></div>
+          <div id="radarBody"></div>
         </div>
       </section>
 
@@ -792,7 +922,7 @@ Message: ${r}.
     set(v) { S.ext = v; }, enumerable: true,
   });
   // brouillons des versions précédentes : univers, ton et style de logo d'avant
-  (function migrate() { const d = S.draft; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
+  (function migrate() { const d = S.draft; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
 
   /* ================================================================ outils binaires */
   function b64ToBytes(b64) { const s = atob(b64), out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
@@ -1506,6 +1636,7 @@ Message: ${r}.
   }
 
   /* ---------- création */
+  const imgExt = (b) => ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp' }[b && b.type] || 'png');
   async function uploadMeta(d) {
     const blob = S.imgBlob || (d.image ? await (await fetch(d.image)).blob() : null);
     if (!blob) throw new Error('Logo manquant.');
@@ -1517,12 +1648,12 @@ Message: ${r}.
         if (!r.ok) throw new Error('Pinata a refusé l\'envoi (' + r.status + ').');
         const j = await r.json(); return 'https://ipfs.io/ipfs/' + j.data.cid;
       };
-      const img = await up(blob, 'logo.png');
+      const img = await up(blob, 'logo.' + imgExt(blob));
       const meta = { name: d.name, symbol: d.symbol, description: d.desc, image: img, showName: true, createdOn: 'https://pump.fun', twitter: d.tw || undefined, telegram: d.tg || undefined, website: d.web || undefined };
       return up(new Blob([JSON.stringify(meta)], { type: 'application/json' }), 'metadata.json');
     }
     const fd = new FormData();
-    fd.append('file', blob, 'logo.png'); fd.append('name', d.name); fd.append('symbol', d.symbol); fd.append('description', d.desc);
+    fd.append('file', blob, 'logo.' + imgExt(blob)); fd.append('name', d.name); fd.append('symbol', d.symbol); fd.append('description', d.desc);
     fd.append('twitter', d.tw || ''); fd.append('telegram', d.tg || ''); fd.append('website', d.web || ''); fd.append('showName', 'true');
     let r;
     try { r = await fetch('https://pump.fun/api/ipfs', { method: 'POST', body: fd }); }
@@ -1703,19 +1834,23 @@ Message: ${r}.
     return n;
   }
   function genIdeas() {
-    const th = THEMES[S.draft.theme] || THEMES.meme, word = (S.draft.word || '').trim().replace(/[^A-Za-z0-9 ]/g, '');
+    const th = THEMES[S.draft.theme] || THEMES.luxe, word = (S.draft.word || '').trim().replace(/[^A-Za-z0-9 ]/g, '');
+    S.ideas = makeIdeas(th, word, 8); renderIdeas();
+  }
+  function makeIdeas(th, word, count, reject) {
     const out = [], seen = new Set(), tick = new Set();
     let guard = 0;
-    while (out.length < 8 && guard++ < 300) {
+    while (out.length < count && guard++ < 400) {
       const name = nameFor(th, word).replace(/\s+/g, ' ').trim().slice(0, 24);
       if (!name || seen.has(name.toLowerCase())) continue;
       const ticker = tickerFor(name); if (tick.has(ticker)) continue;
+      if (reject && reject(name, ticker)) continue;
       seen.add(name.toLowerCase()); tick.add(ticker);
       const sc = scoreIdea(name, ticker, word);
       out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: (th.pal + out.length * 3) % PALS.length, style: th.premium ? rnd(['mono', 'coin', 'orb', 'word', 'mono', 'coin']) : rnd(['mono', 'coin', 'orb', 'geo', 'word']) });
     }
     out.sort((a, b) => b.score - a.score);
-    S.ideas = out; renderIdeas();
+    return out;
   }
   function descFor(name, ticker, n1, short, idx) {
     const lang = DESC[S.draft.lang] ? S.draft.lang : 'en', tone = DESC[lang][S.draft.tone] ? S.draft.tone : 'witty';
@@ -1748,7 +1883,7 @@ Message: ${r}.
     { n: 'Pétrole et cuivre', bg: ['#03141a', '#0c363e'], m: ['#ffe3c8', '#e3925a', '#a65524', '#572a0f'], fg: '#e3925a', ac: '#ffe3c8' },
     { n: 'Champagne', bg: ['#e6d5b4', '#f9f2e4'], m: ['#fff3cf', '#b8892e', '#7d5a17', '#3f2c08'], fg: '#9c7322', ac: '#3f2c08', light: true },
   ];
-  const STYLES = { mono: 'Monogramme', coin: 'Pièce frappée', orb: 'Sphère', geo: 'Emblème', word: 'Logotype', mascot: 'Médaillon' };
+  const STYLES = { mono: 'Monogramme', coin: 'Pièce frappée', orb: 'Sphère', shield: 'Écusson', hex: 'Insigne', seal: 'Sceau de cire', glass: 'Cristal', geo: 'Emblème', word: 'Logotype', mascot: 'Médaillon' };
   const LOGO_FONTS = { serif: '"Cormorant Garamond","DM Serif Display",Georgia,serif', caps: '"Cinzel","Cormorant Garamond",Georgia,serif', display: '"Syne","Inter Tight",system-ui,sans-serif', grotesk: '"Space Grotesk","Inter Tight",system-ui,sans-serif' };
   let fontsReady = false;
   function loadFonts() {
@@ -1799,7 +1934,7 @@ Message: ${r}.
     g.font = '600 ' + Math.round(50 * u) + 'px ' + LOGO_FONTS.caps; g.textBaseline = 'alphabetic';
     const sp = 15 * u, tw = spaced(g, txt, 0, 0, sp, false), by = midY(g, txt, y);
     g.fillStyle = metal(g, W / 2 - tw / 2, y - 30 * u, W / 2 + tw / 2, y + 30 * u, P); spaced(g, txt, W / 2, by, sp);
-    const x0 = W / 2 - tw / 2 - 34 * u, x1 = W / 2 + tw / 2 + 34 * u, len = 70 * u;
+    const x0 = W / 2 - tw / 2 - 30 * u, x1 = W / 2 + tw / 2 + 30 * u, len = 44 * u;
     g.fillStyle = hexA(P.m[1], 0.75); g.fillRect(x0 - len, y - 1.5 * u, len, 3 * u); g.fillRect(x1, y - 1.5 * u, len, 3 * u);
     gem(g, x0 - len - 14 * u, y, 9 * u); gem(g, x1 + len + 14 * u, y, 9 * u);
   }
@@ -1865,7 +2000,7 @@ Message: ${r}.
       const hl = g.createLinearGradient(0, -r * 0.4, 0, r * 0.4); hl.addColorStop(0, 'rgba(255,255,255,.8)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = hl; circle(g, 0, 0, r * 0.4); g.fill(); g.restore();
     } else if (L.style === 'geo') {
-      const cx = W / 2, cy = W * 0.44, kind = Math.floor(R() * 5), s = W * 0.27;
+      const cx = W / 2, cy = W * 0.41, kind = Math.floor(R() * 5), s = W * 0.25;
       const glow = g.createRadialGradient(cx, cy, 0, cx, cy, s * 1.6); glow.addColorStop(0, hexA(P.m[1], P.light ? 0.12 : 0.22)); glow.addColorStop(1, hexA(P.m[1], 0)); g.fillStyle = glow; g.fillRect(0, 0, W, W);
       g.save(); dropShadow(g, u, P.light ? 0.2 : 0.45);
       if (kind === 0) { // diamant taillé
@@ -1905,7 +2040,54 @@ Message: ${r}.
         g.fillStyle = hexA(P.m[3], 0.8); [0.25, 0.5, 0.75].forEach((k) => gem(g, x0 + k * bw, by + 10 * u + bh / 2, bh * 0.32));
       }
       g.restore();
-      caption(g, W, P, txt, W * 0.86, u);
+      caption(g, W, P, txt, W * 0.8, u);
+    } else if (L.style === 'shield') { // écusson
+      const cx = W / 2, cy = W * 0.48, w = W * 0.56, h = W * 0.62;
+      const path = (k, dy) => { const ww = w * k, hh = h * k, x0 = cx - ww / 2, x1 = cx + ww / 2, y0 = cy + (dy || 0) - hh / 2, y1 = cy + (dy || 0) + hh / 2;
+        g.beginPath(); g.moveTo(x0, y0 + hh * 0.07); g.quadraticCurveTo(cx, y0 - hh * 0.05, x1, y0 + hh * 0.07); g.lineTo(x1, y0 + hh * 0.5);
+        g.bezierCurveTo(x1, y0 + hh * 0.78, cx + ww * 0.2, y0 + hh * 0.9, cx, y1); g.bezierCurveTo(cx - ww * 0.2, y0 + hh * 0.9, x0, y0 + hh * 0.78, x0, y0 + hh * 0.5); g.closePath(); };
+      g.save(); dropShadow(g, u, P.light ? 0.25 : 0.55); g.fillStyle = metal(g, cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2, P); path(1); g.fill(); g.restore();
+      const fd = g.createRadialGradient(cx, cy - h * 0.25, 0, cx, cy, h * 0.6); fd.addColorStop(0, P.bg[1]); fd.addColorStop(1, P.bg[0]);
+      g.fillStyle = fd; path(0.86, -h * 0.01); g.fill();
+      g.strokeStyle = hexA(P.m[0], P.light ? 0.5 : 0.35); g.lineWidth = 2.5 * u; path(0.8, -h * 0.015); g.stroke();
+      g.fillStyle = metal(g, cx - 60 * u, cy - h * 0.36, cx + 60 * u, cy - h * 0.3, P); [-1, 0, 1].forEach((k) => gem(g, cx + k * 44 * u, cy - h * 0.32, (k ? 9 : 13) * u));
+      serifLetter(g, P, letter, cx, cy + h * 0.03, w * 0.55, Math.round(h * 0.5), u);
+    } else if (L.style === 'hex') { // insigne hexagonal biseauté
+      const cx = W / 2, cy = W / 2, r = W * 0.39, ri = r * 0.84;
+      const pts = (rr) => Array.from({ length: 6 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; return [cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]; });
+      const O = pts(r), I = pts(ri), poly = (A) => { g.beginPath(); A.forEach((p, j) => (j ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); };
+      g.save(); dropShadow(g, u, P.light ? 0.25 : 0.55); g.fillStyle = P.m[2]; poly(O); g.fill(); g.restore();
+      const tones = [P.m[0], P.m[1], P.m[2], P.m[3], P.m[2], P.m[1]];
+      for (let i = 0; i < 6; i++) { const j = (i + 1) % 6; g.fillStyle = tones[i]; poly([O[i], O[j], I[j], I[i]]); g.fill(); }
+      const fd = g.createRadialGradient(cx, cy - ri * 0.4, 0, cx, cy, ri); fd.addColorStop(0, P.bg[1]); fd.addColorStop(1, P.bg[0]); g.fillStyle = fd; poly(I); g.fill();
+      g.strokeStyle = hexA(P.m[1], 0.55); g.lineWidth = 2 * u; poly(pts(ri * 0.9)); g.stroke();
+      serifLetter(g, P, letter, cx, cy, ri * 1.05, Math.round(ri * 1.2), u);
+    } else if (L.style === 'seal') { // sceau de cire
+      const cx = W / 2, cy = W / 2, r = W * 0.37, n = 30, pts = [];
+      for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, rr = r * (0.94 + R() * 0.09); pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]); }
+      g.save(); dropShadow(g, u, P.light ? 0.3 : 0.6);
+      const wax = g.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.05, cx, cy, r * 1.05); wax.addColorStop(0, P.m[1]); wax.addColorStop(0.55, P.m[2]); wax.addColorStop(1, P.m[3]);
+      g.fillStyle = wax; g.beginPath();
+      pts.forEach((p, i) => { const q = pts[(i + 1) % n], mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2; if (!i) g.moveTo(mx, my); else g.quadraticCurveTo(p[0], p[1], mx, my); });
+      const p0 = pts[0], p1 = pts[1]; g.quadraticCurveTo(p0[0], p0[1], (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2); g.closePath(); g.fill(); g.restore();
+      const ri = r * 0.72, inner = g.createRadialGradient(cx + ri * 0.2, cy + ri * 0.25, 0, cx, cy, ri); inner.addColorStop(0, P.m[1]); inner.addColorStop(1, P.m[2]);
+      g.fillStyle = inner; circle(g, cx, cy, ri); g.fill();
+      const bv = g.createLinearGradient(cx - ri, cy - ri, cx + ri, cy + ri); bv.addColorStop(0, hexA(P.m[3], 0.85)); bv.addColorStop(1, hexA(P.m[0], 0.75));
+      g.strokeStyle = bv; g.lineWidth = 9 * u; circle(g, cx, cy, ri); g.stroke();
+      g.fillStyle = hexA(P.m[3], 0.55); for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2; circle(g, cx + Math.cos(a) * ri * 0.86, cy + Math.sin(a) * ri * 0.86, 3.2 * u); g.fill(); }
+      const s = fitText(g, letter, '700 {s}px ' + LOGO_FONTS.serif, ri * 1.05, Math.round(ri * 1.15));
+      g.font = '700 ' + s + 'px ' + LOGO_FONTS.serif; const y = midY(g, letter, cy);
+      g.fillStyle = hexA(P.m[0], 0.6); g.fillText(letter, cx + 3 * u, y + 4 * u);
+      g.fillStyle = hexA(P.m[3], 0.9); g.fillText(letter, cx, y);
+    } else if (L.style === 'glass') { // tuile de cristal sur halo coloré
+      const cx = W / 2, cy = W / 2, hs = W * 0.31, rr = W * 0.085;
+      [[0.32, 0.34, P.m[1], 0.55], [0.68, 0.62, P.m[2], 0.5], [0.55, 0.28, P.m[0], 0.35]].forEach((b) => { const bg2 = g.createRadialGradient(W * b[0], W * b[1], 0, W * b[0], W * b[1], W * 0.36); bg2.addColorStop(0, hexA(b[2], b[3])); bg2.addColorStop(1, hexA(b[2], 0)); g.fillStyle = bg2; g.fillRect(0, 0, W, W); });
+      const tile = () => { g.beginPath(); g.moveTo(cx - hs + rr, cy - hs); g.arcTo(cx + hs, cy - hs, cx + hs, cy + hs, rr); g.arcTo(cx + hs, cy + hs, cx - hs, cy + hs, rr); g.arcTo(cx - hs, cy + hs, cx - hs, cy - hs, rr); g.arcTo(cx - hs, cy - hs, cx + hs, cy - hs, rr); g.closePath(); };
+      g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 60 * u; g.shadowOffsetY = 24 * u; g.fillStyle = P.light ? 'rgba(255,255,255,.45)' : 'rgba(255,255,255,.07)'; tile(); g.fill(); g.restore();
+      const gl = g.createLinearGradient(cx, cy - hs, cx, cy + hs); gl.addColorStop(0, 'rgba(255,255,255,.2)'); gl.addColorStop(0.5, 'rgba(255,255,255,.04)'); gl.addColorStop(1, 'rgba(255,255,255,.1)'); g.fillStyle = gl; tile(); g.fill();
+      const st = g.createLinearGradient(cx - hs, cy - hs, cx + hs, cy + hs); st.addColorStop(0, 'rgba(255,255,255,.75)'); st.addColorStop(0.5, 'rgba(255,255,255,.12)'); st.addColorStop(1, 'rgba(255,255,255,.4)');
+      g.strokeStyle = st; g.lineWidth = 3 * u; tile(); g.stroke();
+      serifLetter(g, P, letter, cx, cy, hs * 1.3, Math.round(hs * 1.45), u);
     } else if (L.style === 'word') {
       const sp0 = 0.09; let s = Math.round(220 * u), tw;
       do { g.font = '700 ' + s + 'px ' + LOGO_FONTS.caps; tw = spaced(g, txt, 0, 0, s * sp0, false); s -= 4; } while (tw > W * 0.76 && s > 30);
@@ -1919,7 +2101,7 @@ Message: ${r}.
       g.fillRect(W / 2 - half, bot - 1.5 * u, half * 2, 3 * u);
       g.fillStyle = hexA(P.m[1], 0.9); [-1, 0, 1].forEach((k) => gem(g, W / 2 + k * 36 * u, bot + 40 * u, 8 * u));
     } else if (L.style === 'mascot') {
-      const cx = W / 2, cy = W * 0.45, r = W * 0.335, f = r * 0.84;
+      const cx = W / 2, cy = W * 0.43, r = W * 0.29, f = r * 0.84;
       g.save(); dropShadow(g, u, P.light ? 0.25 : 0.55); g.fillStyle = metal(g, cx - r, cy - r, cx + r, cy + r, P); circle(g, cx, cy, r); g.fill(); g.restore();
       g.strokeStyle = hexA(P.m[3], 0.5); g.lineWidth = 2 * u; circle(g, cx, cy, r * 0.93); g.stroke();
       const fd = g.createRadialGradient(cx, cy - f * 0.3, 0, cx, cy, f); fd.addColorStop(0, P.bg[1]); fd.addColorStop(1, P.bg[0]); g.fillStyle = fd; circle(g, cx, cy, f); g.fill();
@@ -1928,14 +2110,14 @@ Message: ${r}.
       g.font = Math.round(f * 1.05) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.fillText(L.emoji || '✨', cx, cy + 10 * u); g.restore();
       g.save(); circle(g, cx, cy, f); g.clip(); g.translate(cx, cy - f * 0.62); g.scale(1, 0.42);
       const gl = g.createLinearGradient(0, -f * 0.7, 0, f * 0.7); gl.addColorStop(0, 'rgba(255,255,255,.2)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gl; circle(g, 0, 0, f * 0.8); g.fill(); g.restore();
-      caption(g, W, P, txt, W * 0.885, u);
+      caption(g, W, P, txt, W * 0.8, u);
     } else { // monogramme
-      const cx = W / 2, cy = W * 0.45, r = W * 0.335;
+      const cx = W / 2, cy = W * 0.43, r = W * 0.29;
       g.strokeStyle = metal(g, cx - r, cy - r, cx + r, cy + r, P);
       [[r, 7], [r - 20 * u, 2.5]].forEach((k) => { const gap = 34 * u / k[0]; g.lineWidth = k[1] * u; [-Math.PI / 2, Math.PI / 2].forEach((a) => { g.beginPath(); g.arc(cx, cy, k[0], a + gap, a + Math.PI - gap); g.stroke(); }); });
       g.fillStyle = metal(g, cx - 20 * u, cy - r - 20 * u, cx + 20 * u, cy - r + 20 * u, P); gem(g, cx, cy - r, 16 * u); gem(g, cx, cy + r, 16 * u);
       serifLetter(g, P, letter, cx, cy + 4 * u, r * 1.15, Math.round(r * 1.5), u);
-      caption(g, W, P, txt, W * 0.885, u);
+      caption(g, W, P, txt, W * 0.8, u);
     }
     finish(g, W, P);
     g.restore();
@@ -1950,8 +2132,8 @@ Message: ${r}.
     if (cv.width !== 1024) { cv.width = 1024; cv.height = 1024; }
     if (S.draft.imgSrc === 'upload') { renderLaunchSide(); return; }
     paintLogo(cv, S.draft.logo, S.draft.symbol);
-    try { S.draft.image = cv.toDataURL('image/png'); } catch (e) {}
-    if (cv.toBlob) cv.toBlob((b) => { if (b && S.draft.imgSrc !== 'upload') S.imgBlob = b; }, 'image/png');
+    try { S.draft.image = cv.toDataURL('image/jpeg', 0.92); } catch (e) {}
+    if (cv.toBlob) cv.toBlob((b) => { if (b && S.draft.imgSrc !== 'upload') S.imgBlob = b; }, 'image/jpeg', 0.92);
     S.draft.imgSrc = 'gen'; saveDraft();
     renderLaunchSide();
     if (!fontsReady) loadFonts().then(() => { if (S.draft.imgSrc !== 'upload') drawLogo(); renderIdeas(); });
@@ -1961,6 +2143,107 @@ Message: ${r}.
     paintLogo(c, { style: x.style, pal: x.pal, text: x.ticker, emoji: x.emo, seed: [...x.name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261) }, x.ticker);
     try { return c.toDataURL('image/png'); } catch (e) { return ''; }
   }
+
+  /* ================================================================ logo : génération pour le token, import, aperçus */
+  S.logoVars = null; S.uploadWarn = [];
+  const shuffled = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
+  function logoThumb(L, sym, size) {
+    const c = document.createElement('canvas'); c.width = c.height = size || 256;
+    paintLogo(c, L, sym);
+    try { return c.toDataURL('image/jpeg', 0.9); } catch (e) { return ''; }
+  }
+  function logoTicker() { const d = S.draft; return (d.symbol || '').trim() || (d.name.trim() ? tickerFor(d.name) : ''); }
+  // Six propositions pour le nom et le ticker en cours : styles et palettes tous différents
+  function logoVariants() {
+    const d = S.draft, txt = logoTicker();
+    if (!txt) { toast('Nom du token manquant', 'Choisis une idée à l\'étape 1, ou saisis un nom et un ticker à l\'étape 3.', 'a'); return; }
+    const th = THEMES[d.theme] || THEMES.luxe;
+    const styles = shuffled(Object.keys(STYLES).filter((k) => k !== 'mascot')).slice(0, 5).concat('mascot');
+    const pals = shuffled(PALS.map((_, i) => i).filter((i) => i !== th.pal)); pals.unshift(th.pal);
+    const emoji = d.logo.emoji || rnd(th.mascot || ['✨']);
+    S.logoVars = shuffled(styles).map((st, i) => ({ style: st, pal: pals[i % pals.length], seed: Math.floor(Math.random() * 1e6), emoji, text: txt }));
+    S.logoVars.forEach((v) => { v.img = logoThumb(v, txt); });
+    renderLogoVars();
+    if (!fontsReady) loadFonts().then(() => { if (S.logoVars) { S.logoVars.forEach((v) => { v.img = logoThumb(v, v.text); }); renderLogoVars(); } });
+  }
+  function renderLogoVars() {
+    const el = $('logoVars'); if (!el) return;
+    const txt = logoTicker();
+    $('logoGenHint').textContent = txt ? 'Pour $' + txt + (S.draft.name ? ' · ' + S.draft.name : '') : 'Choisis d\'abord un nom à l\'étape 1 ou 3.';
+    if (!S.logoVars) { el.hidden = true; return; }
+    el.hidden = false;
+    const L = S.draft.logo, cur = S.draft.imgSrc !== 'upload';
+    el.innerHTML = S.logoVars.map((v, i) => '<button class="lvar' + (cur && L.style === v.style && L.pal === v.pal && L.seed === v.seed ? ' on' : '') + '" data-lvar="' + i + '" type="button"><img src="' + v.img + '" alt=""><span>' + esc(STYLES[v.style]) + '<small>' + esc(PALS[v.pal].n) + '</small></span></button>').join('');
+  }
+  function applyLogoVar(i) {
+    const v = S.logoVars && S.logoVars[i]; if (!v) return;
+    S.draft.logo = Object.assign({}, S.draft.logo, { style: v.style, pal: v.pal, seed: v.seed, emoji: v.emoji, text: v.text, textCustom: false });
+    S.draft.imgSrc = 'gen'; S.imgBlob = null; S.uploadWarn = [];
+    saveDraft(); renderLaunch();
+  }
+  function renderLogoSrc() {
+    const up = S.draft.imgSrc === 'upload';
+    $('logoSrc').innerHTML = up ? '<b>Image importée.</b> ' + (S.uploadWarn.length ? esc(S.uploadWarn.join(' · ')) : 'Elle remplace le logo généré.') : 'Logo généré · JPEG 1024 × 1024';
+    $('logoSrc').classList.toggle('warn', up && S.uploadWarn.length > 0);
+    $('logoBackGen').hidden = !up;
+  }
+  // L'image importée occupe tout le canevas (recadrage carré déjà fait à l'import)
+  function drawUploaded() {
+    const cv = $('logoCv'); if (!cv || !S.draft.image) return;
+    const im = new Image();
+    im.onload = () => { const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); const sd = Math.min(im.naturalWidth, im.naturalHeight); g.drawImage(im, (im.naturalWidth - sd) / 2, (im.naturalHeight - sd) / 2, sd, sd, 0, 0, cv.width, cv.height); };
+    im.src = S.draft.image;
+  }
+  function readFile(f) { return new Promise((res, rej) => { const rd = new FileReader(); rd.onload = () => res(rd.result); rd.onerror = () => rej(new Error('Lecture du fichier impossible.')); rd.readAsDataURL(f); }); }
+  function loadImg(src) { return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('Image illisible ou corrompue.')); im.src = src; }); }
+  // Carré centré, 512 à 1024 px, JPEG si opaque, PNG si transparent ; les GIF animés sont gardés tels quels
+  async function importLogo(f) {
+    if (!/^image\/(png|jpeg|gif|webp)$/.test(f.type)) return toast('Format refusé', 'PNG, JPG, GIF ou WEBP uniquement.', 'r');
+    if (f.size > 4 * 1024 * 1024) return toast('Image trop lourde', '4 Mo maximum. Réduis-la ou exporte-la en JPG.', 'r');
+    try {
+      const src = await readFile(f), im = await loadImg(src), w = im.naturalWidth, h = im.naturalHeight, warn = [];
+      if (Math.min(w, h) < 400) warn.push('petite image (' + w + ' × ' + h + '), elle peut paraître floue');
+      let url = src, blob = f;
+      if (f.type === 'image/gif') {
+        if (Math.abs(w - h) > 2) warn.push('GIF non carré : les plateformes le recadreront');
+      } else {
+        const side = Math.min(w, h), size = Math.min(1024, Math.max(512, side)), c = document.createElement('canvas'); c.width = c.height = size;
+        const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(im, (w - side) / 2, (h - side) / 2, side, side, 0, 0, size, size);
+        if (Math.abs(w - h) > 2) warn.push('recadrée au centre en carré');
+        let alpha = false; try { const px = g.getImageData(0, 0, size, size).data; for (let i = 3; i < px.length; i += 4 * 13) if (px[i] < 250) { alpha = true; break; } } catch (e) {}
+        if (alpha) warn.push('fond transparent : il prendra la couleur de chaque plateforme');
+        const type = alpha ? 'image/png' : 'image/jpeg';
+        url = c.toDataURL(type, 0.92); blob = await new Promise((r) => c.toBlob(r, type, 0.92)) || f;
+      }
+      S.draft.image = url; S.draft.imgSrc = 'upload'; S.imgBlob = blob; S.uploadWarn = warn; S.logoVars = null;
+      saveDraft(); renderLaunch();
+      toast('Logo remplacé', f.name + (warn.length ? ' · ' + warn[0] : ''), warn.length ? 'a' : 'g');
+    } catch (e) { toast('Import impossible', e.message, 'r'); }
+  }
+  // Aperçus aux tailles réelles des plateformes
+  function renderLogoPrev() {
+    const el = $('logoPrev'); if (!el) return;
+    const img = S.draft.image, i = (cls) => img ? '<img class="' + cls + '" src="' + esc(img) + '" alt="">' : '<span class="' + cls + ' none"></span>';
+    el.innerHTML = '<div class="lp-t">Aperçu sur les plateformes</div><div class="lp-row">' +
+      '<figure>' + i('lp-card') + '<figcaption>pump.fun<br>fiche</figcaption></figure>' +
+      '<figure>' + i('lp-list') + '<figcaption>pump.fun<br>liste</figcaption></figure>' +
+      '<figure>' + i('lp-round') + '<figcaption>Phantom,<br>DexScreener</figcaption></figure>' +
+      '<figure>' + i('lp-tiny') + '<figcaption>Notification</figcaption></figure></div>';
+  }
+  const drop = $('logoDrop');
+  if (drop) {
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) importLogo(f); });
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'logoGen') return logoVariants();
+    if (b.id === 'logoVary') { if (!logoTicker()) return logoVariants(); S.draft.logo.seed = Math.floor(Math.random() * 1e6); S.draft.logo.pal = (S.draft.logo.pal + 1 + Math.floor(Math.random() * (PALS.length - 1))) % PALS.length; S.draft.logo.text = S.draft.logo.textCustom ? S.draft.logo.text : logoTicker(); S.draft.imgSrc = 'gen'; S.imgBlob = null; S.uploadWarn = []; saveDraft(); renderLaunch(); return; }
+    if (b.dataset.lvar != null) return applyLogoVar(+b.dataset.lvar);
+    if (b.id === 'logoBackGen') { S.draft.imgSrc = 'gen'; S.imgBlob = null; S.uploadWarn = []; saveDraft(); renderLaunch(); toast('Logo généré rétabli', 'L\'image importée n\'est plus utilisée.', 'g'); }
+  });
+  document.addEventListener('change', (e) => { if (e.target.id === 'logoSafe') $('logoStage').classList.toggle('safe', e.target.checked); });
 
   /* ================================================================ préparation (checklist) */
   function readiness() {
@@ -1995,15 +2278,67 @@ Message: ${r}.
     if (d.sl && !(d.sl > 0 && d.sl < 100)) errs.push('Stop entre 1 et 99 %');
     return { ok: !errs.length, errs, sum };
   }
-  function renderTpPlan() {
-    const d = S.draft, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null, V = tpValid();
-    const rows = d.tp.map((l, i) => '<div class="tp-row"><span>Quand le prix atteint ×</span><input type="number" min="1.1" step="0.1" data-tpx="' + i + '" value="' + l.x + '"><span>vendre</span><input type="number" min="1" max="100" step="1" data-tpp="' + i + '" value="' + l.pct + '"><span class="est">' + (q ? '% de l\'achat · ≈ ' + fSol(dev * l.x * l.pct / 100 * (1 - feeRate()), 3) : '% de l\'achat initial') + '</span><button class="btn sm ghost" data-tpdel="' + i + '" type="button" aria-label="Supprimer le palier">✕</button></div>').join('');
-    $('tpPlan').innerHTML = '<h4><span class="switch"><input type="checkbox" id="tpOn"' + (d.tpOn ? ' checked' : '') + '><i></i></span>Plan de prise de profit</h4>' +
-      '<p>Défini maintenant, activé dès le lancement. Le studio surveille le prix et te présente chaque vente à signer.' + (dev > 0 ? '' : ' Il faut un achat du créateur pour avoir des tokens à vendre.') + '</p>' +
-      (d.tpOn ? rows + '<div class="tp-row"><span>Si le prix baisse de</span><input type="number" min="0" max="99" step="1" id="tpSl" value="' + (d.sl || '') + '" placeholder="—"><span>% → vendre le reste</span><span></span><span class="est">facultatif</span><span></span></div>' +
-        '<div class="tp-foot">' + (d.tp.length < 5 ? '<button class="btn sm" data-tpadd="1" type="button">Ajouter un palier</button>' : '') + '<button class="btn sm ghost" data-tpdef="1" type="button">Plan par défaut</button><span class="sum ' + (V.sum > 100 ? 'neg' : '') + '">' + V.sum + ' % vendu · ' + Math.max(0, 100 - V.sum) + ' % gardé</span></div>' +
-        (V.ok ? '' : '<div class="danger-note">' + V.errs.map(esc).join(' · ') + '</div>') + '<p class="dim" style="margin:8px 0 0">Estimations hors impact sur le prix : la vente réelle peut rapporter un peu moins.</p>' : '');
+  const TP_PRESETS = {
+    safe: { n: 'Prudent', d: 'Mise récupérée dès ×2', tp: [{ x: 1.5, pct: 30 }, { x: 2, pct: 30 }, { x: 3, pct: 20 }], sl: 35 },
+    balanced: { n: 'Équilibré', d: 'Mise récupérée à ×2, le reste court', tp: [{ x: 2, pct: 55 }, { x: 4, pct: 20 }, { x: 8, pct: 15 }], sl: 50 },
+    bold: { n: 'Ambitieux', d: 'Vise les gros multiplicateurs', tp: [{ x: 3, pct: 25 }, { x: 6, pct: 20 }, { x: 10, pct: 20 }, { x: 20, pct: 15 }], sl: 0 },
+  };
+  const fx = (x) => '×' + fr(x, x % 1 ? 1 : 0);
+  // Ce que rapporte chaque palier, en part de la mise (1 = mise récupérée), frais déduits, hors impact sur le prix
+  function tpCalc() {
+    const d = S.draft, dev = num(d.dev) || 0, f = 1 - feeRate();
+    let cum = 0, sold = 0, back = null;
+    const rows = d.tp.map((l, i) => { const x = l.x || 0, p = l.pct || 0, part = x * p / 100 * f; cum += part; sold += p; if (back == null && cum >= 1) back = i; return { x, p, part, cum }; });
+    const last = rows.length ? rows[rows.length - 1].x : 1, keep = Math.max(0, 100 - sold);
+    return { dev, rows, sold, keep, back, cum, keepVal: keep / 100 * last * f, slLoss: d.sl > 0 ? 1 - (1 - d.sl / 100) * f : null };
   }
+  const tpAmt = (k, dev) => dev > 0 ? fSol(dev * k, 3) : fr(k * 100, 0) + ' % de la mise';
+  function renderTpPlan() {
+    const d = S.draft, dev = num(d.dev) || 0;
+    const head = '<div class="tp-head"><span class="switch"><input type="checkbox" id="tpOn"' + (d.tpOn ? ' checked' : '') + ' aria-label="Activer le plan de prise de profit"><i></i></span><div><h4>Plan de prise de profit</h4><p>Des ventes par paliers, préparées dès le lancement : tu sécurises tes gains quand le prix monte, sans rester devant l\'écran.</p></div></div>';
+    if (!d.tpOn) { $('tpPlan').innerHTML = head + '<p class="tp-off">Désactivé. Tu pourras toujours créer des ordres plus tard depuis « Ordres préparés ».</p>'; return; }
+    const pre = '<div class="tp-presets">' + Object.keys(TP_PRESETS).map((k) => '<button class="tp-pre" data-tppre="' + k + '" type="button"><b>' + TP_PRESETS[k].n + '</b><span>' + TP_PRESETS[k].d + '</span></button>').join('') + '</div>';
+    const rows = d.tp.map((l, i) => '<div class="tp-tr"><span class="tp-n">' + (i + 1) + '</span>' +
+      '<span class="tp-in"><em>×</em><input type="number" min="1.1" step="0.1" data-tpx="' + i + '" value="' + l.x + '" aria-label="Multiplicateur du palier ' + (i + 1) + '"><small id="tpG' + i + '"></small></span>' +
+      '<span class="tp-in"><input type="number" min="1" max="100" step="1" data-tpp="' + i + '" value="' + l.pct + '" aria-label="Part vendue au palier ' + (i + 1) + '"><em>%</em></span>' +
+      '<span class="tp-v" id="tpE' + i + '"></span><span class="tp-v" id="tpC' + i + '"></span>' +
+      '<button class="btn sm ghost" data-tpdel="' + i + '" type="button" aria-label="Supprimer le palier ' + (i + 1) + '">✕</button></div>').join('');
+    $('tpPlan').innerHTML = head + (dev > 0 ? '' : '<div class="notice info">Le plan vend les tokens de ton achat de créateur. Indique un montant ci-dessus pour qu\'il s\'applique ; les montants sont affichés en part de la mise en attendant.</div>') + pre +
+      '<div class="tp-table"><div class="tp-tr tp-th"><span>#</span><span>Quand le prix atteint</span><span>Vendre <small>de tes tokens</small></span><span>Tu récupères</span><span>Cumul</span><span></span></div>' + rows + '</div>' +
+      '<div class="tp-foot">' + (d.tp.length < 6 ? '<button class="btn sm" data-tpadd="1" type="button">Ajouter un palier</button>' : '') + '</div>' +
+      '<div class="tp-ladder" id="tpLadder"></div>' +
+      '<div class="tp-stop"><div><b>Stop de protection</b><p>Si le prix descend sous ton prix d\'achat de ce pourcentage, tout ce qui reste est vendu. Laisse vide pour ne pas en mettre.</p></div><span class="tp-in"><em>−</em><input type="number" min="0" max="99" step="1" id="tpSl" value="' + (d.sl || '') + '" placeholder="aucun" aria-label="Seuil du stop en pourcentage"><em>%</em></span></div>' +
+      '<div class="tp-sum" id="tpSum"></div><div id="tpErr"></div>' +
+      '<p class="tp-note">Estimations frais pump.fun déduits, hors impact de ta vente sur le prix : une grosse vente rapporte un peu moins. Le multiplicateur se compte depuis ton prix d\'achat.</p>';
+    renderTpLive();
+  }
+  // Mise à jour sans reconstruire les champs (la saisie garde le focus)
+  function renderTpLive() {
+    if (!$('tpSum')) return;
+    const d = S.draft, C = tpCalc(), V = tpValid();
+    C.rows.forEach((r, i) => {
+      const g = $('tpG' + i), e = $('tpE' + i), c = $('tpC' + i); if (!g) return;
+      g.textContent = r.x > 1 ? '+' + fr((r.x - 1) * 100, 0) + ' %' : '';
+      e.textContent = tpAmt(r.part, C.dev);
+      c.innerHTML = '<span class="' + (r.cum >= 1 ? 'pos' : '') + '">' + fr(r.cum * 100, 0) + ' %</span>' + (C.back === i ? ' <span class="badge g">mise récupérée</span>' : '');
+    });
+    const over = C.sold > 100;
+    $('tpLadder').innerHTML = '<div class="tp-bar' + (over ? ' over' : '') + '">' + C.rows.map((r, i) => '<i style="flex:' + Math.max(0, r.p) + ';opacity:' + (1 - i * 0.14) + '" title="' + fx(r.x) + ' : ' + r.p + ' %"><span>' + fx(r.x) + '</span></i>').join('') + (C.keep > 0 ? '<i class="keep" style="flex:' + C.keep + '"><span>gardé</span></i>' : '') + '</div>' +
+      '<div class="tp-bar-l"><span>' + (over ? '<b class="neg">' + C.sold + ' % vendu : plus que tes tokens</b>' : C.sold + ' % vendu par paliers') + '</span><span>' + C.keep + ' % gardé jusqu\'à ta décision</span></div>';
+    const st = (l, v, s, cl) => '<div class="stat"><div class="l">' + l + '</div><div class="v ' + (cl || '') + '">' + v + '</div><div class="s">' + s + '</div></div>';
+    $('tpSum').innerHTML =
+      st('Mise récupérée', C.back != null ? 'à ' + fx(C.rows[C.back].x) : 'jamais', C.back != null ? 'au palier ' + (C.back + 1) + ', le reste est du bonus' : 'augmente la part vendue aux premiers paliers', C.back != null ? 'pos' : 'warn') +
+      st('Si tous les paliers sont atteints', tpAmt(C.cum, C.dev), C.keep > 0 ? '+ ' + C.keep + ' % gardés (≈ ' + tpAmt(C.keepVal, C.dev) + ' au dernier palier)' : 'tout est vendu', 'pos') +
+      st('Perte maximale', C.slLoss != null ? '−' + tpAmt(C.slLoss, C.dev).replace(/^-/, '') : 'non limitée', C.slLoss != null ? 'si le stop se déclenche avant le 1er palier' : 'pas de stop : le prix peut aller jusqu\'à 0', C.slLoss != null ? '' : 'neg');
+    $('tpErr').innerHTML = V.ok ? '' : '<div class="danger-note">' + V.errs.map(esc).join(' · ') + '</div>';
+    const cur = JSON.stringify({ tp: d.tp.map((l) => ({ x: l.x, pct: l.pct })), sl: d.sl || 0 });
+    document.querySelectorAll('[data-tppre]').forEach((b) => { const p = TP_PRESETS[b.dataset.tppre]; b.classList.toggle('on', JSON.stringify({ tp: p.tp, sl: p.sl }) === cur); });
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tppre]'); if (!b) return;
+    const p = TP_PRESETS[b.dataset.tppre]; S.draft.tp = p.tp.map((l) => Object.assign({}, l)); S.draft.sl = p.sl; S.draft.tpOn = true;
+    saveDraft(); renderTpPlan(); renderLaunchSide();
+  });
 
   /* ================================================================ génération automatique */
   const AUTO_THEMES = Object.keys(THEMES);
@@ -2058,6 +2393,7 @@ Message: ${r}.
     $('pageEyebrow').textContent = { launch: 'Créer', social: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
     try { localStorage.setItem('pstudio_page', p); } catch (e) {}
     renderPage(); window.scrollTo(0, 0);
+    if (p === 'launch') setLaunchTab(S.ltab);
   }
 
   /* ================================================================ rendu : lancer */
@@ -2073,9 +2409,10 @@ Message: ${r}.
     $('logoPal').innerHTML = PALS.map((p, i) => '<button type="button" data-pal="' + i + '" class="' + (S.draft.logo.pal === i ? 'on' : '') + '" style="background:linear-gradient(135deg,' + p.bg[1] + ' 0 55%,' + p.fg + ' 55% 100%)" title="' + esc(p.n) + '" aria-label="' + esc(p.n) + '"></button>').join('');
     if ($('logoEmoji') !== document.activeElement) $('logoEmoji').value = S.draft.logo.emoji || '';
     if ($('logoText') !== document.activeElement) $('logoText').value = S.draft.logo.text || '';
-    $('logoSrc').textContent = S.draft.imgSrc === 'upload' ? 'Image importée (le générateur est en pause)' : 'Logo généré';
-    if (S.draft.imgSrc === 'upload' && S.draft.image) { const im = new Image(); im.onload = () => { const g = $('logoCv').getContext('2d'); g.clearRect(0, 0, 512, 512); g.drawImage(im, 0, 0, 512, 512); }; im.src = S.draft.image; }
+    renderLogoSrc();
+    if (S.draft.imgSrc === 'upload' && S.draft.image) drawUploaded();
     else drawLogo();
+    renderLogoVars();
     fillFields(); renderDevQuote(); renderLaunchSide(); renderTpPlan();
   }
   function renderIdeas() {
@@ -2104,6 +2441,7 @@ Message: ${r}.
   function renderLaunchSide() {
     const d = S.draft;
     $('pvImg').innerHTML = d.image ? '<img src="' + esc(d.image) + '" alt="">' : 'pas de logo';
+    renderLogoPrev();
     $('pvName').textContent = d.name || 'Nom du token'; $('pvSym').textContent = '$' + (d.symbol || 'TICKER');
     $('pvDesc').textContent = d.desc || 'La description apparaîtra ici.';
     $('pvLinks').innerHTML = [['X', d.tw], ['Telegram', d.tg], ['Site', d.web]].filter((x) => x[1]).map((x) => '<span>' + x[0] + '</span>').join('');
@@ -2481,13 +2819,13 @@ Message: ${r}.
     if (d.lang) { S.draft.lang = d.lang; saveDraft(); genIdeas(); renderLaunch(); return; }
     if (b.id === 'genGo') { genIdeas(); return; }
     if (b.id === 'autoGo') { autoGenerate(); return; }
-    if (d.tpadd) { const last = S.draft.tp[S.draft.tp.length - 1]; S.draft.tp.push({ x: last ? Math.round((last.x * 2) * 10) / 10 : 2, pct: 10 }); saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
+    if (d.tpadd) { const last = S.draft.tp[S.draft.tp.length - 1]; S.draft.tp.push({ x: last ? Math.round((last.x * 2) * 10) / 10 : 2, pct: Math.max(1, Math.min(10, 100 - S.draft.tp.reduce((a, l) => a + (l.pct || 0), 0))) }); saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (d.tpdel != null) { S.draft.tp.splice(+d.tpdel, 1); saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
-    if (d.tpdef) { S.draft.tp = [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }]; S.draft.sl = 0; saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
+    if (d.tpdef) { S.draft.tp = TP_PRESETS.balanced.tp.map((l) => Object.assign({}, l)); S.draft.sl = TP_PRESETS.balanced.sl; saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (d.idea != null) { pickIdea(+d.idea); return; }
     if (d.lstyle) { S.draft.logo.style = d.lstyle; S.draft.logo.seed = Math.floor(Math.random() * 1e6); S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (d.pal != null) { S.draft.logo.pal = +d.pal; S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
-    if (b.id === 'logoDl') { const a = document.createElement('a'); a.href = S.draft.image || $('logoCv').toDataURL('image/png'); a.download = (S.draft.symbol || 'logo').toLowerCase() + '.png'; a.click(); return; }
+    if (b.id === 'logoDl') { const a = document.createElement('a'), src = S.draft.image || $('logoCv').toDataURL('image/jpeg', 0.92), ext = (/^data:image\/(\w+)/.exec(src) || [])[1] || 'png'; a.href = src; a.download = (S.draft.symbol || 'logo').toLowerCase() + '.' + (ext === 'jpeg' ? 'jpg' : ext); a.click(); return; }
     if (b.id === 'descRegen') { if (!S.draft.name) return toast('Nom manquant', 'Choisis d\'abord un nom.', 'a'); S.draft.desc = descFor(S.draft.name, S.draft.symbol, S.draft.name.split(' ').pop()); saveDraft(); fillFields(); renderLaunchSide(); return; }
     if (d.dev != null) { S.draft.dev = +d.dev; saveDraft(); fillFields(); renderLaunchSide(); renderTpPlan(); return; }
     if (b.id === 'launchBtn') return launch();
@@ -2528,8 +2866,8 @@ Message: ${r}.
     if (map[t.id]) { S.draft[map[t.id]] = t.id === 'fDev' ? (num(t.value) || 0) : t.value; saveDraft(); fillFields(); renderLaunchSide(); if (t.id === 'fDev') renderTpPlan(); return; }
     if (t.id === 'fSymbol') { const v = t.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (t.value !== v) t.value = v; S.draft.symbol = v; saveDraft(); fillFields(); renderLaunchSide(); if (S.draft.imgSrc !== 'upload' && !S.draft.logo.textCustom) { S.draft.logo.text = v; drawLogo(); } return; }
     if (t.id === 'genWord') { S.draft.word = t.value; saveDraft(); return; }
-    if (t.dataset && (t.dataset.tpx != null || t.dataset.tpp != null)) { const i = +(t.dataset.tpx != null ? t.dataset.tpx : t.dataset.tpp), v = num(t.value); if (t.dataset.tpx != null) S.draft.tp[i].x = v || 0; else S.draft.tp[i].pct = v || 0; saveDraft(); const V = tpValid(); const foot = document.querySelector('.tp-foot .sum'); if (foot) { foot.textContent = V.sum + ' % vendu · ' + Math.max(0, 100 - V.sum) + ' % gardé'; foot.classList.toggle('neg', V.sum > 100); } renderLaunchSide(); return; }
-    if (t.id === 'tpSl') { S.draft.sl = num(t.value) || 0; saveDraft(); renderLaunchSide(); return; }
+    if (t.dataset && (t.dataset.tpx != null || t.dataset.tpp != null)) { const i = +(t.dataset.tpx != null ? t.dataset.tpx : t.dataset.tpp), v = num(t.value); if (t.dataset.tpx != null) S.draft.tp[i].x = v || 0; else S.draft.tp[i].pct = v || 0; saveDraft(); renderTpLive(); renderLaunchSide(); return; }
+    if (t.id === 'tpSl') { S.draft.sl = num(t.value) || 0; saveDraft(); renderTpLive(); renderLaunchSide(); return; }
     if (t.id === 'logoEmoji') { S.draft.logo.emoji = t.value; S.draft.imgSrc = 'gen'; saveDraft(); drawLogo(); return; }
     if (t.id === 'logoText') { S.draft.logo.text = t.value.toUpperCase(); S.draft.logo.textCustom = true; S.draft.imgSrc = 'gen'; saveDraft(); drawLogo(); return; }
     if (t.id && t.id.startsWith('amt-')) { updateQuote(t.id.slice(4)); return; }
@@ -2539,10 +2877,7 @@ Message: ${r}.
   document.addEventListener('change', (e) => {
     const t = e.target;
     if (t.id === 'logoFile') {
-      const f = t.files && t.files[0]; if (!f) return;
-      if (!/^image\/(png|jpeg|gif|webp)$/.test(f.type)) return toast('Format refusé', 'PNG, JPG, GIF ou WEBP uniquement.', 'r');
-      if (f.size > 4 * 1024 * 1024) return toast('Image trop lourde', '4 Mo maximum.', 'r');
-      const rd = new FileReader(); rd.onload = () => { S.draft.image = rd.result; S.draft.imgSrc = 'upload'; S.imgBlob = f; saveDraft(); renderLaunch(); toast('Image importée', f.name, 'g'); }; rd.readAsDataURL(f);
+      const f = t.files && t.files[0]; t.value = ''; if (f) importLogo(f);
       return;
     }
     if (t.id === 'soTok' || t.id === 'soNfa') { renderSocial(); return; }
@@ -2553,6 +2888,192 @@ Message: ${r}.
   $('modal').addEventListener('click', (e) => { if (e.target === $('modal') && $('mRow').hidden === false) { closeModal(); if (modalResolve) modalResolve(-1); } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target && e.target.type === 'password' && $('modal').classList.contains('open')) { const pb = $('mRow').querySelector('.primary, .danger'); if (pb) { e.preventDefault(); pb.click(); } } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('modal').classList.contains('open') && !$('mRow').hidden) { closeModal(); if (modalResolve) modalResolve(-1); } });
+
+  /* ================================================================ radar des tendances (DexScreener + GeckoTerminal, lecture seule) */
+  const RADAR = { rows: [], loading: false, errs: [], at: 0, chain: 'all', theme: '', sort: 'el', sel: null, ideas: [], checks: {} };
+  const R_CHAINS = { solana: { n: 'Solana', gt: 'solana' }, base: { n: 'Base', gt: 'base' }, bsc: { n: 'BNB Chain', gt: 'bsc' }, ethereum: { n: 'Ethereum', gt: 'eth' } };
+  // Ordre = priorité de détection. th : univers du générateur utilisé pour s'inspirer (null : pas de génération)
+  const R_THEMES = [
+    { k: 'people', n: 'Personnalités', th: null, re: /\b(trump|elon|musk|biden|kamala|obama|putin|vitalik|tate|kanye|drake|taylor|melania|barron|pope|president|cz)\b/i },
+    { k: 'animal', n: 'Animaux', th: 'meme', re: /\b(dog|doge|inu|shib|cat|kitty|meow|frog|pepe|toad|otter|penguin|pengu|monkey|ape|bear|bull|fish|hamster|capy|capybara|hippo|cow|goat|duck|goose|bird|owl|fox|wolf|panda|koala|sloth|seal|whale|shark|bunny|rabbit|mouse|rat|pig|horse|lion|tiger|chicken|snail|turtle|crab|lobster|squirrel|beaver|raccoon|gecko|lizard|dragon|moodeng|pnut)\b/i },
+    { k: 'ai', n: 'IA et tech', th: 'tech', re: /\b(ai|agent|agents|agi|gpt|bot|robot|neural|cyber|quantum|compute|gpu|llm|protocol|byte|virtual)\b/i },
+    { k: 'space', n: 'Espace', th: 'space', re: /\b(mars|space|star|astro|rocket|galaxy|nova|orbit|alien|ufo|cosmic|planet|comet|moon)\b/i },
+    { k: 'meme', n: 'Mèmes internet', th: 'internet', re: /\b(chad|wojak|sigma|based|npc|rizz|aura|cope|gm|wagmi|degen|lol|kek|meme|troll|giga|brain|vibe|cooked|delulu|retard|fart|coin)\b/i },
+    { k: 'luxe', n: 'Luxe et argent', th: 'luxe', re: /\b(gold|golden|rich|money|cash|diamond|king|queen|royal|crown|lux|luxury|billion|million|bank|vault)\b/i },
+    { k: 'myth', n: 'Mythes et héros', th: 'myth', re: /\b(god|zeus|thor|odin|titan|hero|legend|myth|phoenix|kraken|samurai|ninja|knight|wizard|magic)\b/i },
+    { k: 'food', n: 'Nourriture', th: 'brand', re: /\b(pizza|burger|taco|sushi|banana|apple|cookie|donut|coffee|tea|milk|cheese|bread|fries|noodle|ramen|candy|cake)\b/i },
+  ];
+  const R_OTHER = { k: 'other', n: 'Autres', th: 'brand' };
+  const rTheme = (k) => R_THEMES.find((t) => t.k === k) || R_OTHER;
+  async function rget(url) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
+    try { const r = await fetch(url, { signal: ctl.signal, headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }
+    finally { clearTimeout(t); }
+  }
+  const nnum = (v) => { const n = parseFloat(v); return isFinite(n) ? n : null; };
+  function rAdd(map, r) {
+    if (!r.address) return; const k = r.chain + ':' + r.address.toLowerCase(), o = map.get(k);
+    if (!o) { map.set(k, r); return; }
+    Object.keys(r).forEach((f) => { if ((o[f] == null || o[f] === '' || (typeof o[f] === 'number' && !isFinite(o[f]))) && r[f] != null && r[f] !== '') o[f] = r[f]; });
+    if (r.src && !o.src.includes(r.src)) o.src += ' · ' + r.src;
+  }
+  function fromGecko(c, p, inc) {
+    const a = p.attributes || {}, bid = (((p.relationships || {}).base_token || {}).data || {}).id || '', bt = inc[bid] || {};
+    const tx = (a.transactions || {}).h1 || {}, pc = a.price_change_percentage || {}, vol = a.volume_usd || {};
+    const img = bt.image_url && !/missing/.test(bt.image_url) ? bt.image_url : '';
+    return { chain: c, address: bt.address || bid.split('_').slice(1).join('_'), name: bt.name || String(a.name || '').split(' / ')[0], symbol: bt.symbol || '', image: img, desc: '',
+      pc1: nnum(pc.h1), pc24: nnum(pc.h24), v1: nnum(vol.h1), v24: nnum(vol.h24), liq: nnum(a.reserve_in_usd), mcap: nnum(a.market_cap_usd) || nnum(a.fdv_usd),
+      b1: nnum(tx.buys), s1: nnum(tx.sells), created: Date.parse(a.pool_created_at) || null, url: 'https://www.geckoterminal.com/' + R_CHAINS[c].gt + '/pools/' + a.address, src: 'GeckoTerminal' };
+  }
+  function fromDex(c, p, boost) {
+    const tx = (p.txns || {}).h1 || {}, pc = p.priceChange || {}, vol = p.volume || {};
+    return { chain: c, address: p.baseToken.address, name: p.baseToken.name || '', symbol: p.baseToken.symbol || '', image: (p.info || {}).imageUrl || '', desc: (boost && boost.description) || '',
+      pc1: nnum(pc.h1), pc24: nnum(pc.h24), v1: nnum(vol.h1), v24: nnum(vol.h24), liq: nnum((p.liquidity || {}).usd), mcap: nnum(p.marketCap) || nnum(p.fdv),
+      b1: nnum(tx.buys), s1: nnum(tx.sells), created: p.pairCreatedAt || null, url: p.url || '', src: 'DexScreener' };
+  }
+  // Élan 0 à 100 : volume, accélération, hausse, pression acheteuse, jeunesse, activité ; pénalités si liquidité faible
+  function rScore(r) {
+    const v24 = r.v24 || 0, v1 = r.v1 || 0, acc = v24 > 0 ? v1 * 24 / v24 : 0, tx = (r.b1 || 0) + (r.s1 || 0), br = tx ? (r.b1 || 0) / tx : 0.5;
+    const ageH = r.created ? (Date.now() - r.created) / 3.6e6 : null;
+    let s = clamp(Math.log10(v24 + 1) / Math.log10(5e6), 0, 1) * 25 + clamp((acc - 0.5) / 2.5, 0, 1) * 20 + clamp((r.pc1 || 0) / 40, 0, 1) * 15 + clamp((r.pc24 || 0) / 300, 0, 1) * 10
+      + clamp((br - 0.45) / 0.25, 0, 1) * 10 + (ageH == null ? 3 : ageH < 6 ? 10 : ageH < 24 ? 7 : ageH < 72 ? 4 : 1) + clamp(Math.log10(tx + 1) / 3, 0, 1) * 10;
+    const thin = (r.liq || 0) < 10000, conc = r.mcap && r.liq && r.liq / r.mcap < 0.03;
+    if (thin) s -= 15; if (conc) s -= 10;
+    r.el = Math.round(clamp(s, 0, 100)); r.ageH = ageH; r.acc = acc; r.br = br; r.thin = thin;
+    r.theme = (R_THEMES.find((t) => t.re.test(r.name + ' ' + r.symbol + ' ' + (r.desc || ''))) || R_OTHER).k;
+    return r;
+  }
+  async function radarLoad(force) {
+    if (RADAR.loading) return;
+    if (!force && RADAR.rows.length && Date.now() - RADAR.at < 90000) { renderRadar(); return; }
+    RADAR.loading = true; renderRadar();
+    const chains = RADAR.chain === 'all' ? Object.keys(R_CHAINS) : [RADAR.chain], map = new Map(), errs = [];
+    await Promise.all([
+      ...chains.map(async (c) => {
+        try {
+          const j = await rget('https://api.geckoterminal.com/api/v2/networks/' + R_CHAINS[c].gt + '/trending_pools?include=base_token&page=1');
+          const inc = {}; (j.included || []).forEach((x) => { inc[x.id] = x.attributes || {}; });
+          (j.data || []).forEach((p) => rAdd(map, fromGecko(c, p, inc)));
+        } catch (e) { errs.push('GeckoTerminal (' + R_CHAINS[c].n + ')'); }
+      }),
+      (async () => {
+        try {
+          const boosts = await rget('https://api.dexscreener.com/token-boosts/top/v1'), by = {};
+          (Array.isArray(boosts) ? boosts : []).forEach((b) => { if (chains.includes(b.chainId)) (by[b.chainId] = by[b.chainId] || []).push(b); });
+          await Promise.all(Object.keys(by).map(async (c) => {
+            const list = by[c].slice(0, 30), pairs = await rget('https://api.dexscreener.com/tokens/v1/' + c + '/' + list.map((b) => b.tokenAddress).join(',')), best = {};
+            (Array.isArray(pairs) ? pairs : []).forEach((p) => { const k = p.baseToken && p.baseToken.address; if (k && (!best[k] || ((p.liquidity || {}).usd || 0) > ((best[k].liquidity || {}).usd || 0))) best[k] = p; });
+            list.forEach((b) => { if (best[b.tokenAddress]) rAdd(map, fromDex(c, best[b.tokenAddress], b)); });
+          }));
+        } catch (e) { errs.push('DexScreener'); }
+      })(),
+    ]);
+    RADAR.rows = [...map.values()].filter((r) => r.name || r.symbol).map(rScore);
+    RADAR.errs = errs; RADAR.at = Date.now(); RADAR.loading = false;
+    renderRadar();
+  }
+  function rFiltered() {
+    const k = { el: (r) => r.el, vol: (r) => r.v24 || 0, pc1: (r) => r.pc1 == null ? -1e9 : r.pc1, new: (r) => r.created || 0 }[RADAR.sort] || ((r) => r.el);
+    return RADAR.rows.filter((r) => !RADAR.theme || r.theme === RADAR.theme).sort((a, b) => k(b) - k(a));
+  }
+  const fAge = (h) => h == null ? '—' : h < 1 ? Math.max(1, Math.round(h * 60)) + ' min' : h < 48 ? Math.round(h) + ' h' : Math.round(h / 24) + ' j';
+  const fPctS = (x) => x == null ? '—' : '<span class="' + cls(x) + '">' + (x > 0 ? '+' : '') + fr(x, Math.abs(x) >= 100 ? 0 : 1) + ' %</span>';
+  function renderRadar() {
+    const el = $('radarBody'); if (!el) return;
+    $('rChains').innerHTML = [['all', 'Toutes']].concat(Object.keys(R_CHAINS).map((c) => [c, R_CHAINS[c].n])).map((c) => '<button class="chip ' + (RADAR.chain === c[0] ? 'on' : '') + '" data-rchain="' + c[0] + '" type="button">' + c[1] + '</button>').join('');
+    $('rSort').value = RADAR.sort;
+    $('rAt').textContent = RADAR.loading ? 'Chargement…' : RADAR.at ? 'Mis à jour à ' + new Date(RADAR.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+    // thèmes qui montent
+    const T = {}; RADAR.rows.forEach((r) => { const t = T[r.theme] = T[r.theme] || { n: 0, s: 0 }; t.n++; t.s += r.el; });
+    const tk = Object.keys(T).sort((a, b) => (T[b].s / T[b].n + T[b].n * 3) - (T[a].s / T[a].n + T[a].n * 3));
+    $('rThemes').innerHTML = tk.length ? tk.map((k) => '<button class="rtheme' + (RADAR.theme === k ? ' on' : '') + '" data-rth="' + k + '" type="button"><b>' + esc(rTheme(k).n) + '</b><span>' + T[k].n + ' token' + (T[k].n > 1 ? 's' : '') + ' · élan moyen ' + Math.round(T[k].s / T[k].n) + '</span></button>').join('') : '';
+    $('rThemesWrap').hidden = !tk.length;
+    renderRadarInspire();
+    if (RADAR.loading && !RADAR.rows.length) { el.innerHTML = '<div class="empty"><b>Lecture des marchés…</b>DexScreener et GeckoTerminal, sur ' + (RADAR.chain === 'all' ? 'quatre blockchains' : R_CHAINS[RADAR.chain].n) + '.</div>'; return; }
+    if (!RADAR.rows.length) {
+      el.innerHTML = '<div class="empty"><b>' + (RADAR.errs.length ? 'Sources injoignables' : 'Aucun token pour l\'instant') + '</b>' + (RADAR.errs.length ? 'Impossible de joindre ' + esc(RADAR.errs.join(', ')) + '. Vérifie ta connexion, ou désactive un bloqueur de publicité qui filtrerait ces sites, puis réessaie.' : 'Aucun token tendance trouvé sur cette sélection.') + '<div style="margin-top:12px"><button class="btn sm" data-rload="1" type="button">Réessayer</button></div></div>';
+      return;
+    }
+    const rows = rFiltered();
+    el.innerHTML = (RADAR.errs.length ? '<div class="notice">Source partielle : ' + esc(RADAR.errs.join(', ')) + ' n\'a pas répondu. Les autres données sont affichées.</div>' : '') +
+      '<div class="tablebox"><table class="rtable"><thead><tr><th>Token</th><th>Élan</th><th>Thème</th><th class="num">1 h</th><th class="num">24 h</th><th class="num">Volume 24 h</th><th class="num">Liquidité</th><th class="num">Âge</th><th></th></tr></thead><tbody>' +
+      rows.map((r) => { const i = RADAR.rows.indexOf(r), t = rTheme(r.theme);
+        return '<tr class="' + (RADAR.sel === i ? 'selrow' : '') + '"><td><div class="tk"><div class="av">' + (r.image ? '<img src="' + esc(r.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : esc((r.symbol || '?').slice(0, 3))) + '</div><div class="nm"><b>' + esc(r.name || r.symbol) + '</b><small>$' + esc(r.symbol) + ' · ' + R_CHAINS[r.chain].n + '</small></div></div></td>' +
+          '<td><div class="rel"><div class="bar"><i style="width:' + r.el + '%;background:' + (r.el >= 70 ? 'var(--green)' : r.el >= 45 ? 'var(--amber)' : 'var(--dim)') + '"></i></div><span class="mono">' + r.el + '</span></div>' + (r.thin ? '<small class="warn">liquidité faible</small>' : '') + '</td>' +
+          '<td><span class="badge ' + (t.th ? 'v' : 'a') + '">' + esc(t.n) + '</span></td>' +
+          '<td class="num">' + fPctS(r.pc1) + '</td><td class="num">' + fPctS(r.pc24) + '</td><td class="num">' + fUsd(r.v24) + '</td><td class="num">' + fUsd(r.liq) + '</td><td class="num">' + fAge(r.ageH) + '</td>' +
+          '<td><div class="oa"><button class="btn sm' + (t.th ? ' primary' : '') + '" data-rins="' + i + '" type="button"' + (t.th ? '' : ' disabled title="Thème lié à des personnes réelles : pas de génération"') + '>S\'inspirer</button>' + (r.url ? '<a class="btn sm ghost" href="' + esc(r.url) + '" target="_blank" rel="noopener" title="Ouvrir sur ' + esc(r.src.split(' · ')[0]) + '">↗</a>' : '') + '</div></td></tr>';
+      }).join('') + '</tbody></table></div><p class="tp-note">Élan : volume, accélération sur 1 h, hausse du prix, part d\'achats, jeunesse et activité, pénalisé si la liquidité est faible. Un score élevé dit qu\'un thème attire l\'attention, pas qu\'un nouveau token se vendra.</p>';
+  }
+  // Similarité 0..1 entre deux noms (distance d'édition normalisée)
+  function simil(a, b) {
+    a = String(a || '').toLowerCase().replace(/[^a-z0-9]/g, ''); b = String(b || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!a || !b) return 0; if (a === b) return 1;
+    const m = a.length, n = b.length, d = Array.from({ length: n + 1 }, (_, j) => j);
+    for (let i = 1; i <= m; i++) { let p = d[0]; d[0] = i; for (let j = 1; j <= n; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, p + (a[i - 1] === b[j - 1] ? 0 : 1)); p = t; } }
+    return 1 - d[n] / Math.max(m, n);
+  }
+  function closest(name, ticker) {
+    let best = { s: 0, r: null };
+    RADAR.rows.forEach((r) => { const s = Math.max(simil(name, r.name), simil(ticker, r.symbol), simil(name, r.symbol)); if (s > best.s) best = { s, r }; });
+    return best;
+  }
+  function radarInspire(i) {
+    const r = RADAR.rows[i]; if (!r) return; const t = rTheme(r.theme); if (!t.th) return;
+    RADAR.sel = i; const th = THEMES[t.th] || THEMES.brand;
+    RADAR.ideas = makeIdeas(th, '', 6, (name, ticker) => { const c = closest(name, ticker); return c.s >= 0.72 || RADAR.rows.some((x) => (x.symbol || '').toUpperCase() === ticker); })
+      .map((x) => Object.assign(x, { near: closest(x.name, x.ticker), th: t.th }));
+    RADAR.ideas.forEach((x) => { checkTicker(x.ticker); });
+    renderRadar();
+    const p = $('rInspire'); if (p && p.scrollIntoView) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  // Ticker déjà utilisé ? Recherche DexScreener, toutes blockchains
+  async function checkTicker(tk) {
+    if (RADAR.checks[tk]) return; RADAR.checks[tk] = { st: 'run' };
+    try {
+      const j = await rget('https://api.dexscreener.com/latest/dex/search?q=' + encodeURIComponent(tk)), seen = new Set();
+      (j.pairs || []).forEach((p) => { if (p.baseToken && String(p.baseToken.symbol).toUpperCase() === tk) seen.add(p.chainId + ':' + p.baseToken.address); });
+      RADAR.checks[tk] = { st: 'ok', n: seen.size };
+    } catch (e) { RADAR.checks[tk] = { st: 'err' }; }
+    renderRadarInspire();
+  }
+  function renderRadarInspire() {
+    const el = $('rInspire'); if (!el) return;
+    const r = RADAR.rows[RADAR.sel]; if (!r || !RADAR.ideas.length) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false; const t = rTheme(r.theme);
+    el.innerHTML = '<div class="card-h"><h3>Concepts originaux · ' + esc(t.n) + '</h3><button class="btn sm ghost" data-rclose="1" type="button" style="margin-left:auto">Fermer</button><p>Inspirés du thème de <b>' + esc(r.name || r.symbol) + '</b> ($' + esc(r.symbol) + '), sans reprendre son nom, son ticker, son logo ni ses liens. Clique sur un concept pour l\'ouvrir dans le studio.</p></div>' +
+      '<div class="ideas">' + RADAR.ideas.map((x, i) => {
+        const ck = RADAR.checks[x.ticker] || {}, near = x.near, pc = Math.round(near.s * 100);
+        const tkb = ck.st === 'ok' ? (ck.n ? '<span class="badge a">$' + esc(x.ticker) + ' déjà utilisé ×' + ck.n + '</span>' : '<span class="badge g">Ticker libre</span>') : ck.st === 'err' ? '<span class="badge">Ticker non vérifié</span>' : '<span class="badge">Vérification…</span>';
+        return '<button class="idea" data-ridea="' + i + '" type="button"><div class="h"><img class="idea-logo" alt="" src="' + (x.logo || (x.logo = ideaLogo(x))) + '"><b>' + esc(x.name) + '</b><span class="sc ' + (x.score >= 80 ? 'pos' : x.score >= 60 ? 'warn' : 'neg') + '">' + x.score + '</span></div><span class="tk-l">$' + esc(x.ticker) + '</span><small>' + esc(x.tag) + '</small><div class="why-score">' + tkb + '<span class="' + (pc < 50 ? 'p' : '') + '">Originalité ' + (100 - pc) + ' %' + (near.r && pc >= 35 ? ' · proche de ' + esc(near.r.symbol || near.r.name) : '') + '</span></div></button>';
+      }).join('') + '</div><div class="toolbar" style="margin:12px 0 0"><button class="btn sm" data-rins="' + RADAR.sel + '" type="button">Autres concepts</button></div>';
+  }
+  function radarUse(i) {
+    const x = RADAR.ideas[i]; if (!x) return;
+    S.draft.theme = x.th; S.ideas = RADAR.ideas.slice(); pickIdea(i, true);
+    S.draft.logo.style = rnd(['mono', 'coin', 'orb', 'shield', 'hex', 'glass']); S.draft.logo.seed = Math.floor(Math.random() * 1e6); saveDraft();
+    setLaunchTab('studio'); S.step = 2; renderLaunch(); window.scrollTo(0, 0);
+    toast('Concept repris', x.name + ' · $' + x.ticker + '. Choisis le logo, puis vérifie la description.', 'g');
+  }
+  function setLaunchTab(tab) {
+    S.ltab = tab === 'radar' ? 'radar' : 'studio';
+    try { localStorage.setItem('pstudio_ltab', S.ltab); } catch (e) {}
+    $('lt-studio').hidden = S.ltab !== 'studio'; $('lt-radar').hidden = S.ltab !== 'radar';
+    document.querySelectorAll('#launchTabs [data-ltab]').forEach((b) => { b.classList.toggle('on', b.dataset.ltab === S.ltab); b.setAttribute('aria-selected', b.dataset.ltab === S.ltab); });
+    if (S.ltab === 'radar') radarLoad(false);
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return; const d = b.dataset;
+    if (d.ltab) return setLaunchTab(d.ltab);
+    if (d.rchain) { RADAR.chain = d.rchain; RADAR.theme = ''; RADAR.sel = null; RADAR.ideas = []; return radarLoad(true); }
+    if (d.rth) { RADAR.theme = RADAR.theme === d.rth ? '' : d.rth; return renderRadar(); }
+    if (d.rload) return radarLoad(true);
+    if (d.rins != null) return radarInspire(+d.rins);
+    if (d.ridea != null) return radarUse(+d.ridea);
+    if (d.rclose) { RADAR.sel = null; RADAR.ideas = []; return renderRadar(); }
+  });
+  $('rSort').addEventListener('change', (e) => { RADAR.sort = e.target.value; renderRadar(); });
+  try { S.ltab = localStorage.getItem('pstudio_ltab') === 'radar' ? 'radar' : 'studio'; } catch (e) { S.ltab = 'studio'; }
 
   /* ================================================================ palette de commandes (Ctrl K) */
   const PAL = { open: false, items: [], sel: 0 };
@@ -2577,7 +3098,8 @@ Message: ${r}.
     }
     Object.keys(PAGES).forEach((p) => out.push({ g: 'Aller à', ic: navIcon(p), label: PAGES[p][0], hint: PAGES[p][1], kw: p, run: () => setPage(p) }));
     out.push(
-      { g: 'Actions', ic: IC.spark, label: 'Tout générer automatiquement', hint: 'nom, ticker, logo, description', kw: 'auto concept idee', run: () => { setPage('launch'); clickWhenReady('autoGo'); } },
+      { g: 'Actions', ic: IC.pulse, label: 'Ouvrir le Radar des tendances', hint: 'tokens qui prennent de l\'élan', kw: 'radar tendance trend dexscreener', run: () => { setPage('launch'); setLaunchTab('radar'); } },
+      { g: 'Actions', ic: IC.spark, label: 'Tout générer automatiquement', hint: 'nom, ticker, logo, description', kw: 'auto concept idee', run: () => { setPage('launch'); setLaunchTab('studio'); clickWhenReady('autoGo'); } },
       { g: 'Actions', ic: IC.spark, label: 'Générer de nouvelles idées', hint: 'étape Concept', kw: 'idee nom ticker', run: () => { S.step = 1; setPage('launch'); clickWhenReady('genGo'); } },
       { g: 'Actions', ic: IC.wallet, label: S.wallet ? 'Gérer le wallet' : 'Connecter le wallet', hint: S.wallet ? short(S.wallet.pk) : 'Phantom, Solflare, Backpack, wallet rapide', kw: 'phantom compte', run: () => clickWhenReady('walletBtn') },
       { g: 'Actions', ic: IC.plus, label: 'Ajouter un token existant', hint: 'Mes tokens', kw: 'suivre mint', run: () => { setPage('mine'); clickWhenReady('mineAdd'); } },
