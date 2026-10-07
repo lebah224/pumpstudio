@@ -653,7 +653,7 @@ textarea{font:inherit;color:inherit}
   .app.nav-open .side{transform:none;box-shadow:24px 0 60px -20px rgba(0,0,0,.8)}
   .app.side-min .logo>span,.app.side-min .menu-label,.app.side-min .ml,.app.side-min .menu .count,.app.side-min .cmdk span,.app.side-min .side-foot{display:revert}
   .app.side-min .menu button{justify-content:flex-start;padding:9px 11px}
-  .side-col{display:none}
+  .side-col:not(.side-theme){display:none}
   .icon-btn.side-x{display:grid;position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:12px;width:38px;height:38px}
   .scrim{display:block;position:fixed;inset:0;z-index:74;background:color-mix(in oklab,#000 55%,transparent);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s}
   .app.nav-open~.scrim{opacity:1;pointer-events:auto}
@@ -905,6 +905,30 @@ textarea{font:inherit;color:inherit}
 /* ---------- finitions : filet doré sous l'en-tête, titres plus fins ---------- */
 .top{box-shadow:0 1px 0 color-mix(in oklab,var(--accent) 14%,transparent)}
 .page-head h1,.page-title{letter-spacing:-.4px}
+.side-theme{border-style:solid;color:var(--muted);margin-top:10px}
+.side-theme:hover{border-color:var(--accent-line);color:var(--text)}
+.sw-dots{display:inline-flex;flex:none}
+.sw-dots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--panel);margin-left:-4px;box-shadow:0 0 0 1px var(--line2)}
+.sw-dots i:first-child{margin-left:0}
+.uit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.uit-card{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;text-align:left;cursor:pointer;color:var(--text);border-radius:14px;background:var(--panel2);border:1px solid var(--line2);transition:border-color .15s,transform .12s,box-shadow .15s}
+.uit-card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
+.uit-card.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.uit-prev{display:flex;gap:6px;padding:8px;height:92px;border-bottom:1px solid var(--line2)}
+.uit-side{width:26px;border-radius:7px;border:1px solid;display:flex;flex-direction:column;align-items:center;gap:5px;padding-top:7px}
+.uit-side i{width:12px;height:4px;border-radius:2px}
+.uit-main{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.uit-card-in{flex:1;border-radius:8px;border:1px solid;display:flex;flex-direction:column;justify-content:center;padding:0 9px}
+.uit-card-in b{font-family:var(--display);font-size:15px;line-height:1.1}
+.uit-card-in em{font-style:normal;font-family:var(--mono);font-size:11px}
+.uit-btn{align-self:flex-start;font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px}
+.uit-t{display:flex;flex-direction:column;gap:2px;padding:9px 11px 10px}
+.uit-t b{font-size:14px;font-weight:600}
+.uit-t small{font-size:12px;color:var(--dim)}
+.uit-card.on .uit-t b{color:var(--accent-ink)}
+.app.side-min .side-theme{justify-content:center}
+.app.side-min .side-theme span:last-child{display:none}
+@media (max-width:520px){.uit-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.uit-prev{height:74px;padding:6px}.uit-side{width:18px}.uit-card-in{padding:0 6px}.uit-t{padding:7px 9px 8px}}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
 </style>
 </head>
@@ -928,6 +952,7 @@ textarea{font:inherit;color:inherit}
       <div class="menu-label">Outil</div>
       <button data-page="settings" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Réglages</button>
     </nav>
+    <button class="side-col side-theme" id="sideTheme" type="button" title="Personnaliser les couleurs"><span class="sw-dots" id="sideThemeDots"><i style="background:#d6b26e"></i><i style="background:#211f1b"></i><i style="background:#f3efe6"></i></span><span>Personnaliser</span></button>
     <button class="side-col" id="sideCol" type="button" title="Réduire le menu"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg><span>Réduire le menu</span></button>
     <div class="side-foot"><div class="mode" id="footMode">● Simulation</div><div class="sc-title">État du studio</div><div class="sc-list" id="sideCheck"></div><div class="sc-note">Ta clé privée ne quitte jamais ton wallet.</div></div>
   </aside>
@@ -1323,7 +1348,7 @@ Message: ${r}.
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
   const S = {
     page: 'launch', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
-    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'mono', pal: 0, emoji: '', text: '', seed: 7 }, tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
+    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'illus', pal: 0, emoji: '', text: '', seed: 7 }, tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
     tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []),
     ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, jf: 'real', busy: false, imgBlob: null,
   };
@@ -2388,7 +2413,7 @@ Message: ${r}.
       if (reject && reject(name, ticker)) continue;
       seen.add(name.toLowerCase()); tick.add(ticker);
       const sc = scoreIdea(name, ticker, word);
-      out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: (th.pal + out.length * 3) % PALS.length, style: th.premium ? rnd(['mono', 'coin', 'orb', 'word', 'mono', 'coin']) : rnd(['mono', 'coin', 'orb', 'geo', 'word']) });
+      out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: (th.pal + out.length * 3) % PALS.length, style: 'illus', theme: S.draft.theme });
     }
     out.sort((a, b) => b.score - a.score);
     return out;
@@ -2404,7 +2429,7 @@ Message: ${r}.
   function pickIdea(i, silent) {
     const x = S.ideas[i]; if (!x) return;
     Object.assign(S.draft, { name: x.name, symbol: x.ticker, desc: (() => { const lang = DESC[S.draft.lang] ? S.draft.lang : 'en', ex = (DESC2[lang] || {})[S.draft.tone]; return x.tag + (ex ? '\n\n' + ex : ''); })(), idea: i });
-    S.draft.logo = Object.assign({}, S.draft.logo, { emoji: x.emo, text: x.ticker, pal: x.pal, style: x.style, textCustom: false, seed: Math.floor(Math.random() * 1e6) });
+    S.draft.logo = Object.assign({}, S.draft.logo, { emoji: x.emo, text: x.ticker, pal: x.pal, style: x.style, theme: x.theme || S.draft.theme, textCustom: false, seed: Math.floor(Math.random() * 1e6) });
     S.imgBlob = null; S.draft.imgSrc = 'gen';
     saveDraft(); drawLogo(); fillFields(); renderIdeas(); renderLaunchSide();
     if (!silent) toast('Idée reprise', x.name + ' · $' + x.ticker + '. Ajuste le logo à l\'étape 2.', 'g');
@@ -2424,7 +2449,7 @@ Message: ${r}.
     { n: 'Pétrole et cuivre', bg: ['#03141a', '#0c363e'], m: ['#ffe3c8', '#e3925a', '#a65524', '#572a0f'], fg: '#e3925a', ac: '#ffe3c8' },
     { n: 'Champagne', bg: ['#e6d5b4', '#f9f2e4'], m: ['#fff3cf', '#b8892e', '#7d5a17', '#3f2c08'], fg: '#9c7322', ac: '#3f2c08', light: true },
   ];
-  const STYLES = { mono: 'Monogramme', coin: 'Pièce frappée', orb: 'Sphère', shield: 'Écusson', hex: 'Insigne', seal: 'Sceau de cire', glass: 'Cristal', geo: 'Emblème', word: 'Logotype', mascot: 'Médaillon' };
+  const STYLES = { illus: 'Illustration', mono: 'Monogramme', coin: 'Pièce frappée', orb: 'Sphère', shield: 'Écusson', hex: 'Insigne', seal: 'Sceau de cire', glass: 'Cristal', geo: 'Emblème', word: 'Logotype', mascot: 'Médaillon' };
   const LOGO_FONTS = { serif: '"Cormorant Garamond","DM Serif Display",Georgia,serif', caps: '"Cinzel","Cormorant Garamond",Georgia,serif', display: '"Syne","Inter Tight",system-ui,sans-serif', grotesk: '"Space Grotesk","Inter Tight",system-ui,sans-serif' };
   let fontsReady = false;
   function loadFonts() {
@@ -2499,6 +2524,66 @@ Message: ${r}.
     g.fillStyle = metal(g, cx - s * 0.45, cy - s * 0.5, cx + s * 0.45, cy + s * 0.5, P); paint();
     return s;
   }
+  // Style « Illustration » : l'illustration de l'univers, dessinée en grand dans la zone ronde visible sur pump.fun
+  function drawIllus(g, W, P, theme, letter, u) {
+    const k = W * 0.0074, ox = W / 2 - 60 * k, oy = W / 2 - 37 * k;
+    const dark = !P.light, tint = theme === 'meme' ? '#7fd18a' : P.fg, ink = dark ? '#14120f' : '#1b1407';
+    const glow = g.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W * 0.46);
+    glow.addColorStop(0, hexA(tint.length === 7 ? tint : '#d6b26e', dark ? 0.2 : 0.16)); glow.addColorStop(1, hexA(tint.length === 7 ? tint : '#d6b26e', 0));
+    g.fillStyle = glow; g.fillRect(0, 0, W, W);
+    g.save(); g.translate(ox, oy); g.scale(k, k);
+    g.shadowColor = dark ? 'rgba(0,0,0,.55)' : 'rgba(60,40,10,.3)'; g.shadowBlur = 40 * u / k; g.shadowOffsetY = 14 * u / k;
+    const P2 = (d) => new Path2D(d), lin = (x0, y0, x1, y1, stops) => { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach((s) => gr.addColorStop(s[0], s[1])); return gr; };
+    const metalG = lin(30, 10, 90, 64, [[0, P.m[0]], [0.45, P.m[1]], [0.8, P.m[2]], [1, P.m[3]]]);
+    const dot = (x, y, r, c) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = c; g.fill(); };
+    const stroke = (d, c, w) => { g.strokeStyle = c; g.lineWidth = w; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(P2(d)); };
+    const star = (x, y, s, c) => { g.fillStyle = c; g.fill(P2('M' + x + ' ' + (y - 2.5 * s) + 'l' + s + ' ' + 1.5 * s + ' ' + 1.5 * s + ' ' + s + '-' + 1.5 * s + ' ' + s + '-' + s + ' ' + 1.5 * s + '-' + s + '-' + 1.5 * s + '-' + 1.5 * s + '-' + s + ' ' + 1.5 * s + '-' + s + 'z')); };
+    if (theme === 'meme') {
+      g.fillStyle = lin(30, 20, 90, 66, [[0, '#a6e6a8'], [1, '#4fae67']]);
+      g.beginPath(); g.ellipse(60, 46, 30, 20, 0, 0, Math.PI * 2); g.fill();
+      dot(46, 28, 10, '#86d48f'); dot(74, 28, 10, '#86d48f'); g.shadowColor = 'transparent';
+      dot(46, 28, 6, '#fff'); dot(74, 28, 6, '#fff'); dot(47.5, 29, 3, ink); dot(75.5, 29, 3, ink); dot(48.6, 27.6, 1, '#fff'); dot(76.6, 27.6, 1, '#fff');
+      stroke('M48 50q12 9 24 0', ink, 2.4); dot(40, 47, 3.5, 'rgba(255,138,138,.55)'); dot(80, 47, 3.5, 'rgba(255,138,138,.55)');
+    } else if (theme === 'internet') {
+      g.fillStyle = hexA(P.bg[0], 0.85); g.fill(P2('M29 12h62a7 7 0 0 1 7 7v34a7 7 0 0 1-7 7H29a7 7 0 0 1-7-7V19a7 7 0 0 1 7-7z')); g.shadowColor = 'transparent';
+      stroke('M29 12h62a7 7 0 0 1 7 7v34a7 7 0 0 1-7 7H29a7 7 0 0 1-7-7V19a7 7 0 0 1 7-7zM22 22h76', tint, 2);
+      dot(29, 17, 1.6, tint); dot(35, 17, 1.6, tint);
+      g.fillStyle = tint; g.fill(P2('M34 29h28a3 3 0 0 1 0 6H34a3 3 0 0 1 0-6z')); g.globalAlpha = 0.45; g.fill(P2('M34 39h16a3 3 0 0 1 0 6H34a3 3 0 0 1 0-6z')); g.globalAlpha = 1;
+      g.fillStyle = dark ? '#fff' : ink; g.fill(P2('M74 36l14 6-6 2-2 6z')); g.fillStyle = '#ff8a8a'; g.fill(P2('M84 24c2-3 7-1 5 3l-5 4-5-4c-2-4 3-6 5-3z'));
+    } else if (theme === 'space') {
+      const pl = g.createRadialGradient(54, 32, 1, 60, 38, 18); pl.addColorStop(0, '#fff'); pl.addColorStop(0.4, tint); pl.addColorStop(1, shade(P.bg[1], -0.2));
+      g.fillStyle = pl; dot(60, 38, 17, pl); g.shadowColor = 'transparent';
+      g.save(); g.translate(60, 40); g.rotate(-14 * Math.PI / 180); g.strokeStyle = tint; g.lineWidth = 2.2; g.beginPath(); g.ellipse(0, 0, 32, 8, 0, 0, Math.PI * 2); g.stroke(); g.restore();
+      [[22, 16, 1.6], [98, 22, 1.2], [92, 58, 1.8], [30, 60, 1], [16, 40, 1.1], [106, 44, 0.9]].forEach((s) => dot(s[0], s[1], s[2], dark ? '#fff' : ink));
+      star(100, 13, 1.4, tint);
+    } else if (theme === 'tech') {
+      stroke('M14 24h22M14 48h22M84 24h22M84 48h22M48 8v14M72 8v14M48 50v14M72 50v14', tint, 2);
+      dot(14, 24, 3, tint); dot(106, 48, 3, tint); dot(48, 64, 3, tint); dot(72, 8, 3, tint);
+      g.fillStyle = shade(P.bg[0], 0.04); g.fill(P2('M44 20h32a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H44a6 6 0 0 1-6-6V26a6 6 0 0 1 6-6z')); g.shadowColor = 'transparent';
+      stroke('M44 20h32a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H44a6 6 0 0 1-6-6V26a6 6 0 0 1 6-6z', tint, 2);
+      g.fillStyle = metalG; g.fill(P2('M51 28h18a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H51a3 3 0 0 1-3-3V31a3 3 0 0 1 3-3z')); stroke('M53 36h14', shade(P.bg[0], 0.04), 2);
+    } else if (theme === 'prestige') {
+      g.fillStyle = metalG; g.fill(P2('M34 52l-6-30 18 14 14-22 14 22 18-14-6 30z')); g.fillRect(34, 54, 52, 7); g.shadowColor = 'transparent';
+      stroke('M34 52l-6-30 18 14 14-22 14 22 18-14-6 30z', hexA(P.m[3], 0.5), 0.8);
+      dot(60, 12, 3.5, P.m[1]); dot(28, 20, 3, P.m[1]); dot(92, 20, 3, P.m[1]); dot(60, 44, 4, '#c2404a'); dot(46, 46, 2.6, '#3e7bd6'); dot(74, 46, 2.6, '#2f9e6a'); dot(59, 43, 1.2, 'rgba(255,255,255,.7)');
+    } else if (theme === 'myth') {
+      stroke('M60 66V16M40 20c0 16 8 22 20 22s20-6 20-22', metalG, 3.2);
+      g.fillStyle = metalG; g.fill(P2('M60 10l-6 10h12zM40 14l-5 8h10zM80 14l-5 8h10z')); g.shadowColor = 'transparent';
+      stroke('M14 58c10-8 18-8 26-2M106 58c-10-8-18-8-26-2', hexA(P.m[1], 0.5), 2);
+      star(22, 18, 1, P.m[1]); star(99, 16, 1.2, P.m[1]);
+    } else if (theme === 'brand') {
+      g.fillStyle = hexA(P.m[1], 0.12); dot(60, 36, 22, hexA(P.m[1], 0.12)); g.shadowColor = 'transparent';
+      g.strokeStyle = metalG; g.lineWidth = 2; g.beginPath(); g.arc(60, 36, 25, 0, Math.PI * 2); g.stroke();
+      stroke('M30 38c-6-4-8-11-6-17M90 38c6-4 8-11 6-17M28 31l-5-2M92 31l5-2M27 24l-4-3M93 24l4-3', hexA(P.m[1], 0.7), 1.8);
+      g.fillStyle = metalG; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 30px ' + LOGO_FONTS.caps; g.fillText(letter, 60, 38);
+    } else {                                    // luxe (par défaut) : diamant taillé
+      g.fillStyle = lin(44, 22, 76, 62, [[0, P.m[0]], [0.5, P.m[1]], [1, P.m[3]]]); g.fill(P2('M44 22h32l10 12-26 28-26-28z')); g.shadowColor = 'transparent';
+      g.fillStyle = 'rgba(255,255,255,.18)'; g.fill(P2('M44 22l6 12h-16z')); g.fillStyle = 'rgba(0,0,0,.14)'; g.fill(P2('M76 22l10 12h-16z'));
+      stroke('M34 34h52M44 22l16 40 16-40M50 22l10 12 10-12', 'rgba(0,0,0,.3)', 1.1);
+      star(94, 16, 1.3, P.m[1]); star(24, 50, 0.8, P.m[1]); dot(98, 50, 1.3, hexA(P.m[1], 0.7));
+    }
+    g.restore();
+  }
   // Dessine un logo complet sur un canvas de taille W (256 à 1024)
   function paintLogo(cv, L, sym) {
     const W = cv.width, g = cv.getContext('2d'), P = PALS[(L.pal || 0) % PALS.length], R = seeded(L.seed || 7);
@@ -2506,7 +2591,9 @@ Message: ${r}.
     const u = W / 1024;
     g.save(); g.clearRect(0, 0, W, W); g.textAlign = 'center'; g.textBaseline = 'alphabetic';
     background(g, W, P);
-    if (L.style === 'coin') {
+    if (L.style === 'illus') {
+      drawIllus(g, W, P, L.theme || S.draft.theme || 'luxe', letter, u);
+    } else if (L.style === 'coin') {
       const cx = W / 2, cy = W / 2, r = W * 0.41, f = r * 0.9;
       g.save(); dropShadow(g, u, P.light ? 0.28 : 0.6); g.fillStyle = P.m[2]; circle(g, cx, cy, r); g.fill(); g.restore();
       g.fillStyle = metal(g, cx - r, cy - r, cx + r, cy + r, P); circle(g, cx, cy, r); g.fill();
@@ -2681,7 +2768,7 @@ Message: ${r}.
   }
   function ideaLogo(x) {
     const c = document.createElement('canvas'); c.width = c.height = 256;
-    paintLogo(c, { style: x.style, pal: x.pal, text: x.ticker, emoji: x.emo, seed: [...x.name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261) }, x.ticker);
+    paintLogo(c, { style: x.style, pal: x.pal, theme: x.theme, text: x.ticker, emoji: x.emo, seed: [...x.name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261) }, x.ticker);
     try { return c.toDataURL('image/png'); } catch (e) { return ''; }
   }
 
@@ -2699,10 +2786,10 @@ Message: ${r}.
     const d = S.draft, txt = logoTicker();
     if (!txt) { toast('Nom du token manquant', 'Choisis une idée à l\'étape 1, ou saisis un nom et un ticker à l\'étape 3.', 'a'); return; }
     const th = THEMES[d.theme] || THEMES.luxe;
-    const styles = shuffled(Object.keys(STYLES).filter((k) => k !== 'mascot')).slice(0, 5).concat('mascot');
+    const styles = ['illus', 'illus'].concat(shuffled(Object.keys(STYLES).filter((k) => k !== 'mascot' && k !== 'illus')).slice(0, 3), 'mascot');
     const pals = shuffled(PALS.map((_, i) => i).filter((i) => i !== th.pal)); pals.unshift(th.pal);
     const emoji = d.logo.emoji || rnd(th.mascot || ['✨']);
-    S.logoVars = shuffled(styles).map((st, i) => ({ style: st, pal: pals[i % pals.length], seed: Math.floor(Math.random() * 1e6), emoji, text: txt }));
+    S.logoVars = styles.map((st, i) => ({ style: st, pal: pals[i % pals.length], seed: Math.floor(Math.random() * 1e6), emoji, text: txt, theme: d.theme }));
     S.logoVars.forEach((v) => { v.img = logoThumb(v, txt); });
     renderLogoVars();
     if (!fontsReady) loadFonts().then(() => { if (S.logoVars) { S.logoVars.forEach((v) => { v.img = logoThumb(v, v.text); }); renderLogoVars(); } });
@@ -2718,7 +2805,7 @@ Message: ${r}.
   }
   function applyLogoVar(i) {
     const v = S.logoVars && S.logoVars[i]; if (!v) return;
-    S.draft.logo = Object.assign({}, S.draft.logo, { style: v.style, pal: v.pal, seed: v.seed, emoji: v.emoji, text: v.text, textCustom: false });
+    S.draft.logo = Object.assign({}, S.draft.logo, { style: v.style, pal: v.pal, seed: v.seed, emoji: v.emoji, text: v.text, theme: v.theme, textCustom: false });
     S.draft.imgSrc = 'gen'; S.imgBlob = null; S.uploadWarn = [];
     saveDraft(); renderLaunch();
   }
@@ -2898,6 +2985,38 @@ Message: ${r}.
     toast('Token généré', best.name + ' · $' + best.ticker + ' · note ' + best.score + '/100. Vérifie puis lance.', 'g');
   }
 
+  /* ================================================================ palettes de l'interface (bouton « Personnaliser » de la barre latérale) */
+  const NEUT = ['bg', 'bg2', 'panel', 'panel2', 'panel3', 'line', 'line2', 'text', 'muted', 'dim'];
+  const UI_THEMES = [
+    { id: 'or', n: 'Or champagne', d: 'Graphite chaud et or', a: ['#d6b26e', '#f0dfb6', '#1b1407'], amber: '#f2894b', x: ['#0b0a09', '#0f0e0c', '#141311', '#1a1916', '#211f1b', '#2a2722', '#37332c', '#f3efe6', '#b9b1a2', '#8b8375'] },
+    { id: 'platine', n: 'Platine', d: 'Anthracite et argent', a: ['#cfd6e3', '#eef2f8', '#12151b'], amber: '#f3b53f', x: ['#0b0c0e', '#0f1013', '#141518', '#1a1b1f', '#212227', '#2a2b31', '#36383f', '#f2f3f5', '#b3b6bd', '#868a93'] },
+    { id: 'saphir', n: 'Saphir', d: 'Nuit marine et bleu', a: ['#6aa8ff', '#d4e6ff', '#06142b'], amber: '#f3b53f', x: ['#090c12', '#0c1018', '#10151f', '#151b27', '#1b2230', '#222a39', '#2d3748', '#eef3fa', '#a9b6c8', '#7f8ca0'] },
+    { id: 'jade', n: 'Jade', d: 'Ardoise et vert d\'eau', a: ['#4fd1b5', '#c9f3e8', '#04201a'], amber: '#f3b53f', x: ['#090d0c', '#0c1110', '#111716', '#161d1c', '#1c2422', '#232c2a', '#2e3a37', '#eef5f3', '#a8bab5', '#7d8f8a'] },
+    { id: 'cuivre', n: 'Cuivre', d: 'Brun fumé et cuivre', a: ['#e0956a', '#f7d6c2', '#2a1206'], amber: '#f3c74b', x: ['#0d0a09', '#110e0c', '#171311', '#1d1816', '#241e1b', '#2d2522', '#3a302b', '#f5eee9', '#bcaea5', '#8e7f76'] },
+    { id: 'iris', n: 'Iris', d: 'Encre et violet (d\'origine)', a: ['#9483ff', '#d9d3ff', '#120d2b'], amber: '#f3b53f', x: ['#0a0b12', '#0d0f17', '#11131c', '#161925', '#1c202e', '#212536', '#2d3247', '#f1f2f8', '#acb2c6', '#848ba2'] },
+  ];
+  let uiTheme = 'or';
+  function applyUiTheme(id, quiet) {
+    const t = UI_THEMES.find((x) => x.id === id) || UI_THEMES[0], st = document.documentElement.style;
+    NEUT.forEach((k, i) => st.setProperty('--' + k, t.x[i]));
+    st.setProperty('--accent', t.a[0]); st.setProperty('--accent-ink', t.a[1]); st.setProperty('--on-accent', t.a[2]); st.setProperty('--amber', t.amber);
+    const mt = document.querySelector('meta[name="theme-color"]'); if (mt) mt.setAttribute('content', t.x[0]);
+    uiTheme = t.id;
+    try { localStorage.setItem('pstudio_ui_theme', t.id); } catch (e) {}
+    const sw = $('sideThemeDots'); if (sw) sw.innerHTML = '<i style="background:' + t.a[0] + '"></i><i style="background:' + t.x[4] + '"></i><i style="background:' + t.x[7] + '"></i>';
+    document.querySelectorAll('[data-uitheme]').forEach((b) => { b.classList.toggle('on', b.dataset.uitheme === t.id); b.setAttribute('aria-pressed', b.dataset.uitheme === t.id); });
+    try { window.dispatchEvent(new CustomEvent('pstudio-theme', { detail: t })); } catch (e) {}
+    if (!quiet) toast('Palette appliquée', t.n, 'g');
+  }
+  function themePicker() {
+    const card = (t) => '<button type="button" class="uit-card' + (t.id === uiTheme ? ' on' : '') + '" data-uitheme="' + t.id + '" aria-pressed="' + (t.id === uiTheme) + '">' +
+      '<span class="uit-prev" style="background:' + t.x[0] + ';border-color:' + t.x[5] + '"><span class="uit-side" style="background:' + t.x[1] + ';border-color:' + t.x[5] + '"><i style="background:' + t.a[0] + '"></i><i style="background:' + t.x[6] + '"></i><i style="background:' + t.x[6] + '"></i></span>' +
+      '<span class="uit-main"><span class="uit-card-in" style="background:' + t.x[2] + ';border-color:' + t.x[5] + '"><b style="color:' + t.x[7] + '">Aa</b><em style="color:' + t.x[8] + '">5,000 SOL</em></span>' +
+      '<span class="uit-btn" style="background:' + t.a[0] + ';color:' + t.a[2] + '">Lancer</span></span></span>' +
+      '<span class="uit-t"><b>' + esc(t.n) + '</b><small>' + esc(t.d) + '</small></span></button>';
+    modal('Personnaliser les couleurs', '<p class="muted" style="margin:0 0 14px">La palette s\'applique tout de suite à tout le studio et reste enregistrée dans ce navigateur. Les couleurs de gain, de perte et d\'alerte ne changent pas.</p><div class="uit-grid">' + UI_THEMES.map(card).join('') + '</div>', [{ label: 'Fermer', cls: 'primary' }], true);
+  }
+  try { const saved = localStorage.getItem('pstudio_ui_theme'); if (saved && saved !== 'or') applyUiTheme(saved, true); } catch (e) {}
   /* ================================================================ rendu : en-tête */
   const PAGES = { bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
@@ -3442,6 +3561,8 @@ Message: ${r}.
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('button, a[data-px]'); if (!b) return;
     const d = b.dataset;
+    if (d.uitheme) return applyUiTheme(d.uitheme);
+    if (b.id === 'sideTheme') { navOpen(false); return themePicker(); }
     if (d.page) return setPage(d.page);
     if (b.id === 'walletBtn' || b.id === 'fileHelp') return walletMenu();
     if (d.sw) return swAction(d.sw);
@@ -3453,7 +3574,7 @@ Message: ${r}.
     if (d.act === 'simon') { cfg.sim = true; save(LS.cfg, cfg); toast('Mode simulation', 'Plus rien n\'est envoyé.', 'g'); renderAll(); return; }
     if (d.act === 'testrpc') return testRpc(false);
     if (d.step) { S.step = +d.step; renderLaunch(); return; }
-    if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; saveDraft(); renderLaunch(); return; }
+    if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; S.draft.logo.theme = d.theme; saveDraft(); renderLaunch(); return; }
     if (d.tone) { S.draft.tone = d.tone; saveDraft(); renderLaunch(); return; }
     if (d.lang) { S.draft.lang = d.lang; saveDraft(); genIdeas(); renderLaunch(); return; }
     if (b.id === 'genGo') { genIdeas(); return; }
@@ -3906,6 +4027,7 @@ const BUNDLE_WINDOW = 2000;    // supply achetée dans les 2 premières secondes
 const FAST_SELL_SEC = 300;     // dev qui vend dans les 5 minutes = vente rapide
 const C = { violet: '#6aa8ff', gold: '#d6b26e', green: '#3ccf8e', red: '#ff6b6b', amber: '#f2894b', blue: '#6aa8ff', dim: '#8b8375', grid: '#211f1b', line: '#37332c', bg: '#0b0a09', panel: '#141311' };
 const MONO = '11px Geist Mono, ui-monospace, monospace';
+function syncThemeColors() { try { const cs = getComputedStyle(document.documentElement), v = (k) => cs.getPropertyValue(k).trim(); C.dim = v('--dim') || C.dim; C.grid = v('--panel3') || C.grid; C.line = v('--line2') || C.line; C.bg = v('--bg') || C.bg; C.panel = v('--panel') || C.panel; } catch (e) {} }
 
 /* --------------------------------------------------------------- réglages de collecte */
 const CFG_DEFAULTS = {
@@ -5387,6 +5509,8 @@ async function loadFromDb() {
   markAll();
 }
 // API pour le studio (page, palette de commandes)
+window.addEventListener('pstudio-theme', () => { syncThemeColors(); markAll(); render(true); });
+syncThemeColors();
 window.PumpBotUI = {
   show() { markAll(); render(true); if (S.page === 'data') renderData(); },
   running: () => S.wantConn || S.demo,
