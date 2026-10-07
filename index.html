@@ -808,7 +808,8 @@ textarea{font:inherit;color:inherit}
   .pb-kpis .kpi:last-child{grid-column:1/-1;border-right:none}
   .pb-selr,.pb-sel .seg{width:100%}
   #pb-stratTune{width:100%}
-  .pb-sel .seg button{flex:1;justify-content:center;padding:8px 6px}
+  .pb-sel .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pb-sel .seg button{justify-content:center;padding:8px 6px}
   .pb-kpis .kpi .v{font-size:16px}
   .pb-tabs{width:100%}
   #p-bot .toolbar .search{flex:1 1 100%;min-width:0}
@@ -816,6 +817,59 @@ textarea{font:inherit;color:inherit}
   #p-bot .forms{grid-template-columns:minmax(0,1fr)}
   #p-bot aside.detail{max-height:92vh}
 }
+/* ---------- boutons : couche de finition (relief, état clair au survol, focus visible) ---------- */
+:root{
+  --btn-face:linear-gradient(180deg,color-mix(in oklab,var(--panel3) 86%,#fff) 0%,var(--panel3) 55%,color-mix(in oklab,var(--panel3) 92%,#000) 100%);
+  --btn-edge:color-mix(in oklab,var(--line2) 65%,var(--muted));
+  --btn-lift:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.4);
+  --btn-glow:0 10px 26px -12px color-mix(in oklab,var(--accent) 80%,transparent);
+}
+.btn{background:var(--btn-face);border-color:var(--btn-edge);color:var(--text);font-weight:600;letter-spacing:-.1px;box-shadow:var(--btn-lift);
+  transition:background .15s,border-color .15s,box-shadow .18s,color .15s,transform .12s}
+.btn svg.i{color:color-mix(in oklab,var(--accent) 62%,var(--text));transition:color .15s,transform .15s}
+.btn:hover{border-color:var(--accent-line);background:linear-gradient(180deg,color-mix(in oklab,var(--panel3) 78%,#fff),color-mix(in oklab,var(--panel3) 92%,var(--accent)));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 8px 20px -12px rgba(0,0,0,.8),0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent);transform:translateY(-1px)}
+.btn:hover svg.i{color:var(--accent-ink)}
+.btn:active{transform:translateY(0);box-shadow:inset 0 2px 4px rgba(0,0,0,.45);background:var(--panel2)}
+.btn:focus-visible{box-shadow:var(--btn-lift),var(--focus)}
+.btn.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 78%,#fff) 0%,var(--accent) 60%,color-mix(in oklab,var(--accent) 88%,#000) 100%);
+  border-color:color-mix(in oklab,var(--accent) 65%,#fff);color:#120d2b;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--btn-glow)}
+.btn.primary svg.i,.btn.danger svg.i{color:currentColor}
+.btn.primary:hover{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 66%,#fff),color-mix(in oklab,var(--accent) 92%,#fff));border-color:color-mix(in oklab,var(--accent) 50%,#fff);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 14px 30px -12px color-mix(in oklab,var(--accent) 90%,transparent),0 0 0 3px color-mix(in oklab,var(--accent) 22%,transparent)}
+.btn.primary:active{background:var(--accent);box-shadow:inset 0 2px 5px rgba(18,13,43,.35)}
+.btn.danger{background:linear-gradient(180deg,color-mix(in oklab,var(--red) 80%,#fff) 0%,var(--red) 60%,color-mix(in oklab,var(--red) 88%,#000) 100%);
+  border-color:color-mix(in oklab,var(--red) 65%,#fff);color:#2b070c;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 10px 24px -12px color-mix(in oklab,var(--red) 80%,transparent)}
+.btn.danger:hover{background:linear-gradient(180deg,color-mix(in oklab,var(--red) 66%,#fff),color-mix(in oklab,var(--red) 92%,#fff));border-color:color-mix(in oklab,var(--red) 50%,#fff);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 12px 26px -12px color-mix(in oklab,var(--red) 90%,transparent),0 0 0 3px color-mix(in oklab,var(--red) 20%,transparent)}
+.btn.danger:active{background:var(--red);box-shadow:inset 0 2px 5px rgba(43,7,12,.35)}
+.btn.ghost{background:none;border-color:transparent;box-shadow:none;color:var(--muted);font-weight:500}
+.btn.ghost:hover{background:var(--panel2);border-color:var(--line2);color:var(--text);box-shadow:none}
+.btn.sm{min-height:32px;padding:5px 12px;font-size:13.5px;border-radius:9px}
+.btn:disabled,.btn:disabled:hover{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none;background:var(--panel2);border-color:var(--line2)}
+.btn:disabled svg.i{color:inherit}
+/* boutons ronds, puces, segments, onglets : même logique de survol et d'état actif */
+.icon-btn{background:var(--btn-face);border-color:var(--btn-edge);box-shadow:var(--btn-lift);transition:border-color .15s,transform .12s,box-shadow .18s}
+.icon-btn:hover{border-color:var(--accent-line);transform:translateY(-1px);box-shadow:var(--btn-lift),0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent)}
+.chip{transition:color .15s,border-color .15s,background .15s,box-shadow .15s}
+.chip:hover{border-color:var(--accent-line);color:var(--text);background:var(--panel2)}
+.chip.on{font-weight:600;box-shadow:inset 0 0 0 1px var(--accent-line),0 4px 14px -8px color-mix(in oklab,var(--accent) 70%,transparent)}
+.chip.on .n{color:var(--accent-ink)}
+.seg button{transition:color .15s,background .15s,box-shadow .15s}
+.seg button:hover{background:var(--panel2);color:var(--text)}
+.seg button.on{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 22%,var(--panel3)),color-mix(in oklab,var(--accent) 12%,var(--panel2)));color:var(--accent-ink);font-weight:600;
+  box-shadow:inset 0 0 0 1px var(--accent-line),inset 0 1px 0 rgba(255,255,255,.06)}
+.ltabs button{transition:color .15s,background .15s,box-shadow .15s}
+.ltabs button:hover{background:var(--panel2);color:var(--text)}
+.ltabs button.on{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 22%,var(--panel3)),color-mix(in oklab,var(--accent) 12%,var(--panel2)))}
+.menu button.active{box-shadow:inset 0 0 0 1px var(--line2),inset 3px 0 0 var(--accent)}
+.tp-pre,.rtheme,.lvar{transition:border-color .15s,transform .12s,background .15s,box-shadow .15s}
+.tp-pre:hover,.rtheme:hover,.lvar:hover{border-color:var(--accent-line);transform:translateY(-1px);box-shadow:0 8px 20px -14px rgba(0,0,0,.8)}
+.wact{transition:color .15s,border-color .15s,background .15s,transform .12s}
+.wact:hover{border-color:var(--accent-line);transform:translateY(-1px)}
+.wact.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 78%,#fff),var(--accent));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--btn-glow)}
+.cmdk{transition:border-color .15s,color .15s,background .15s}
+.cmdk:hover{border-color:var(--accent-line);color:var(--text);background:var(--panel2)}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
 </style>
 </head>
@@ -4825,7 +4879,7 @@ function renderFeed(now) {
   }
   $('feedEmpty').hidden = list.length > 0;
   if (!list.length && S.tokens.size) $('feedEmpty').innerHTML = '<b>Aucun token dans ce filtre</b>Change de filtre ou efface la recherche.';
-  else if (!list.length) $('feedEmpty').innerHTML = S.wantConn ? '<b>En attente de nouveaux tokens</b>Les lancements pump.fun apparaîtront ici dès leur création.' : '<b>Terminal à l\'arrêt</b>Clique sur <b>Connecter</b> pour suivre pump.fun en direct, ou lance la <b>Démo</b>.';
+  else if (!list.length) $('feedEmpty').innerHTML = S.wantConn ? '<b>En attente de nouveaux tokens</b>Les lancements pump.fun apparaîtront ici dès leur création.' : '<b>Terminal à l\'arrêt</b>Clique sur <strong>Connecter</strong> pour suivre pump.fun en direct, ou lance la <strong>Démo</strong>.';
   // PumpPortal peut refuser les trades sans clé : on le détecte au lieu de le supposer
   const nt = $('noTrades'), quiet = S.wantConn && !S.demo && S.connected && Date.now() - S.connAt > 30000 && S.totalTokens >= 3 && Date.now() - (S.lastTradeAt || 0) > 60000;
   nt.hidden = !quiet;
