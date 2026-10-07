@@ -572,6 +572,8 @@ textarea{font:inherit;color:inherit}
 .tp-stop{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
 .tp-stop>div{flex:1 1 280px;min-width:0}
 .tp-stop b{font-size:14px}
+.tp-seg{margin:6px 0 2px}
+.tp-seg button{min-height:32px;padding:5px 14px;font-size:13px}
 .tp-stop p{margin:2px 0 0;font-size:13px;color:var(--muted)}
 .tp-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
 .tp-sum .stat .v{font-size:16px}
@@ -1676,7 +1678,7 @@ Message: ${r}.
       '<span>Coût total estimé</span><span>' + fSol(dev + 0.02) + '</span>' +
       '<span>Métadonnées</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS)') + '</span>' +
       '<span>Mode</span><span>' + (cfg.sim ? '<span class="badge v">simulation</span>' : '<span class="badge r">réel</span>') + '</span></div></div>' +
-      (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? ' · stop −' + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente te sera présentée à signer.') + '</div>' : '') +
+      (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? (d.slMode === 'trail' ? ' · stop suiveur −' : ' · stop −') + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente te sera présentée à signer.') + '</div>' : '') +
       (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur pump.fun et visible par tous. Ton wallet va te présenter la transaction : vérifie avant de signer. Une création ne s\'annule pas.</p>');
     if (!(await confirmBox(cfg.sim ? 'Simuler le lancement ?' : 'Lancer ' + d.name + ' ?', recap, cfg.sim ? 'Simuler' : 'Préparer le lancement', !cfg.sim))) return;
     S.busy = true;
@@ -1714,7 +1716,7 @@ Message: ${r}.
       if (d.tpOn && devTok > 0 && tpValid().ok) {
         const ref = devSol / devTok;
         d.tp.forEach((l, i) => S.orders.push({ id: Date.now().toString(36) + i, mint, symbol: d.symbol, kind: 'tp', value: Math.round((l.x - 1) * 100), pct: l.pct, tokens: devTok * l.pct / 100, ref, active: true, createdAt: Date.now(), plan: true }));
-        if (d.sl > 0) S.orders.push({ id: Date.now().toString(36) + 's', mint, symbol: d.symbol, kind: 'sl', value: d.sl, pct: 100, ref, active: true, createdAt: Date.now(), plan: true });
+        if (d.sl > 0) S.orders.push(Object.assign({ id: Date.now().toString(36) + 's', mint, symbol: d.symbol, kind: d.slMode === 'trail' ? 'trail' : 'sl', value: d.sl, pct: 100, ref, active: true, createdAt: Date.now(), plan: true }, d.slMode === 'trail' ? { arm: 0, armed: true, peak: ref } : {}));
         save(LS.orders, S.orders);
         $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">Plan de prise de profit actif : ' + d.tp.length + ' palier(s)' + (d.sl > 0 ? ' et un stop' : '') + '. Le studio surveille le prix et te présentera chaque vente à signer.</div>');
       }
@@ -2280,9 +2282,9 @@ Message: ${r}.
     return { ok: !errs.length, errs, sum };
   }
   const TP_PRESETS = {
-    safe: { n: 'Prudent', d: 'Mise récupérée dès ×2', tp: [{ x: 1.5, pct: 30 }, { x: 2, pct: 30 }, { x: 3, pct: 20 }], sl: 35 },
-    balanced: { n: 'Équilibré', d: 'Mise récupérée à ×2, le reste court', tp: [{ x: 2, pct: 55 }, { x: 4, pct: 20 }, { x: 8, pct: 15 }], sl: 50 },
-    bold: { n: 'Ambitieux', d: 'Vise les gros multiplicateurs', tp: [{ x: 3, pct: 25 }, { x: 6, pct: 20 }, { x: 10, pct: 20 }, { x: 20, pct: 15 }], sl: 0 },
+    safe: { n: 'Prudent', d: 'Mise récupérée dès ×2', tp: [{ x: 1.5, pct: 30 }, { x: 2, pct: 30 }, { x: 3, pct: 20 }], sl: 35, slMode: 'fixed' },
+    balanced: { n: 'Équilibré', d: 'Mise récupérée à ×2, le reste court', tp: [{ x: 2, pct: 55 }, { x: 4, pct: 20 }, { x: 8, pct: 15 }], sl: 40, slMode: 'trail' },
+    bold: { n: 'Ambitieux', d: 'Vise les gros multiplicateurs', tp: [{ x: 3, pct: 25 }, { x: 6, pct: 20 }, { x: 10, pct: 20 }, { x: 20, pct: 15 }], sl: 50, slMode: 'trail' },
   };
   const fx = (x) => '×' + fr(x, x % 1 ? 1 : 0);
   // Ce que rapporte chaque palier, en part de la mise (1 = mise récupérée), frais déduits, hors impact sur le prix
@@ -2308,7 +2310,7 @@ Message: ${r}.
       '<div class="tp-table"><div class="tp-tr tp-th"><span>#</span><span>Quand le prix atteint</span><span>Vendre <small>de tes tokens</small></span><span>Tu récupères</span><span>Cumul</span><span></span></div>' + rows + '</div>' +
       '<div class="tp-foot">' + (d.tp.length < 6 ? '<button class="btn sm" data-tpadd="1" type="button">Ajouter un palier</button>' : '') + '</div>' +
       '<div class="tp-ladder" id="tpLadder"></div>' +
-      '<div class="tp-stop"><div><b>Stop de protection</b><p>Si le prix descend sous ton prix d\'achat de ce pourcentage, tout ce qui reste est vendu. Laisse vide pour ne pas en mettre.</p></div><span class="tp-in"><em>−</em><input type="number" min="0" max="99" step="1" id="tpSl" value="' + (d.sl || '') + '" placeholder="aucun" aria-label="Seuil du stop en pourcentage"><em>%</em></span></div>' +
+      '<div class="tp-stop"><div><b>Stop de protection</b><div class="seg tp-seg" role="group" aria-label="Type de stop"><button type="button" data-slmode="fixed" class="' + (d.slMode === 'trail' ? '' : 'on') + '">Fixe</button><button type="button" data-slmode="trail" class="' + (d.slMode === 'trail' ? 'on' : '') + '">Suiveur</button></div><p>' + (d.slMode === 'trail' ? 'Le stop suit le prix : il retient le plus haut atteint et vend tout ce qui reste si le prix recule de ce pourcentage depuis ce sommet. Il protège tes gains pendant la montée.' : 'Si le prix descend sous ton prix d\'achat de ce pourcentage, tout ce qui reste est vendu.') + ' Laisse vide pour ne pas en mettre.</p></div><span class="tp-in"><em>−</em><input type="number" min="0" max="99" step="1" id="tpSl" value="' + (d.sl || '') + '" placeholder="aucun" aria-label="Seuil du stop en pourcentage"><em>%</em></span></div>' +
       '<div class="tp-sum" id="tpSum"></div><div id="tpErr"></div>' +
       '<p class="tp-note">Estimations frais pump.fun déduits, hors impact de ta vente sur le prix : une grosse vente rapporte un peu moins. Le multiplicateur se compte depuis ton prix d\'achat.</p>';
     renderTpLive();
@@ -2330,14 +2332,15 @@ Message: ${r}.
     $('tpSum').innerHTML =
       st('Mise récupérée', C.back != null ? 'à ' + fx(C.rows[C.back].x) : 'jamais', C.back != null ? 'au palier ' + (C.back + 1) + ', le reste est du bonus' : 'augmente la part vendue aux premiers paliers', C.back != null ? 'pos' : 'warn') +
       st('Si tous les paliers sont atteints', tpAmt(C.cum, C.dev), C.keep > 0 ? '+ ' + C.keep + ' % gardés (≈ ' + tpAmt(C.keepVal, C.dev) + ' au dernier palier)' : 'tout est vendu', 'pos') +
-      st('Perte maximale', C.slLoss != null ? '−' + tpAmt(C.slLoss, C.dev).replace(/^-/, '') : 'non limitée', C.slLoss != null ? 'si le stop se déclenche avant le 1er palier' : 'pas de stop : le prix peut aller jusqu\'à 0', C.slLoss != null ? '' : 'neg');
+      st('Perte maximale', C.slLoss != null ? '−' + tpAmt(C.slLoss, C.dev).replace(/^-/, '') : 'non limitée', C.slLoss != null ? (d.slMode === 'trail' ? 'si le prix recule dès l\'achat ; ensuite le stop remonte avec le prix' : 'si le stop se déclenche avant le 1er palier') : 'pas de stop : le prix peut aller jusqu\'à 0', C.slLoss != null ? '' : 'neg');
     $('tpErr').innerHTML = V.ok ? '' : '<div class="danger-note">' + V.errs.map(esc).join(' · ') + '</div>';
-    const cur = JSON.stringify({ tp: d.tp.map((l) => ({ x: l.x, pct: l.pct })), sl: d.sl || 0 });
-    document.querySelectorAll('[data-tppre]').forEach((b) => { const p = TP_PRESETS[b.dataset.tppre]; b.classList.toggle('on', JSON.stringify({ tp: p.tp, sl: p.sl }) === cur); });
+    const cur = JSON.stringify({ tp: d.tp.map((l) => ({ x: l.x, pct: l.pct })), sl: d.sl || 0, m: d.slMode === 'trail' ? 'trail' : 'fixed' });
+    document.querySelectorAll('[data-tppre]').forEach((b) => { const p = TP_PRESETS[b.dataset.tppre]; b.classList.toggle('on', JSON.stringify({ tp: p.tp, sl: p.sl, m: p.slMode }) === cur); });
   }
   document.addEventListener('click', (e) => {
+    const sm = e.target.closest('[data-slmode]'); if (sm) { S.draft.slMode = sm.dataset.slmode; saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     const b = e.target.closest('[data-tppre]'); if (!b) return;
-    const p = TP_PRESETS[b.dataset.tppre]; S.draft.tp = p.tp.map((l) => Object.assign({}, l)); S.draft.sl = p.sl; S.draft.tpOn = true;
+    const p = TP_PRESETS[b.dataset.tppre]; S.draft.tp = p.tp.map((l) => Object.assign({}, l)); S.draft.sl = p.sl; S.draft.slMode = p.slMode; S.draft.tpOn = true;
     saveDraft(); renderTpPlan(); renderLaunchSide();
   });
 
@@ -2530,7 +2533,7 @@ Message: ${r}.
       '</div></div>';
   }
   function orderRow(o) {
-    const cond = o.kind === 'tp' ? (o.plan ? 'Prix ×' + fr(1 + o.value / 100, 1).replace(',0', '') : 'Prix ≥ +' + o.value + ' %') : o.kind === 'sl' ? 'Prix ≤ −' + o.value + ' %' : 'Capitalisation ≥ ' + fUsd(o.value);
+    const cond = o.kind === 'trail' ? 'Stop suiveur −' + o.value + ' % ' + (o.armed ? '· plus haut ' + fPrice(o.peak) + ' · vend sous ' + fPrice(o.peak * (1 - o.value / 100)) : '· s\'active à +' + (o.arm || 0) + ' %') : o.kind === 'tp' ? (o.plan ? 'Prix ×' + fr(1 + o.value / 100, 1).replace(',0', '') : 'Prix ≥ +' + o.value + ' %') : o.kind === 'sl' ? 'Prix ≤ −' + o.value + ' %' : 'Capitalisation ≥ ' + fUsd(o.value);
     return '<div class="orow"><span class="badge ' + (o.active ? 'v' : o.auto === 'ok' ? 'g' : o.auto === 'ko' ? 'r' : o.triggered ? 'a' : '') + '">' + (o.active ? 'actif' : o.triggered ? (o.done ? (o.auto === 'ok' ? 'vendu auto' + (o.ms ? ' · ' + (o.ms / 1000).toFixed(1).replace('.', ',') + ' s' : '') : 'traité') : o.auto === 'run' ? 'vente en cours' : o.auto === 'ko' ? 'échec' : 'déclenché') : 'arrêté') + '</span><span class="ot"><b>' + esc(o.symbol) + '</b> · ' + cond + ' → vendre ' + (o.tokens ? fTok(o.tokens) + ' (' + o.pct + ' % de l\'achat initial)' : o.pct + ' %') + '<br><span class="dim">Référence ' + fPrice(o.ref) + ' SOL · créé ' + fAgo(o.createdAt) + '</span></span><span class="oa">' +
       (o.failed && !o.done ? '<span class="dim" style="color:var(--red)">' + esc(o.failed) + '</span>' : '') +
       (o.triggered && !o.done && o.auto !== 'run' ? '<button class="btn sm danger" data-osell="' + o.id + '" type="button">' + (canAuto() ? 'Vendre maintenant' : 'Signer la vente') + '</button>' : '') +
@@ -2770,21 +2773,33 @@ Message: ${r}.
   async function newOrder(mint) {
     const C = S.cache[mint]; if (!C || !C.stats) return;
     const sym = (C.meta && C.meta.symbol) || short(mint), pos = myPosition(mint, C), ref = pos.avg || C.stats.price;
-    const html = '<div class="field"><label>Condition</label><select id="oKind"><option value="tp">Prise de profit : le prix monte de X %</option><option value="sl">Stop : le prix baisse de X %</option><option value="mcap">La capitalisation atteint X $</option></select></div>' +
+    const html = '<div class="field"><label>Condition</label><select id="oKind"><option value="tp">Prise de profit : le prix monte de X %</option><option value="sl">Stop fixe : le prix baisse de X % sous la référence</option><option value="trail">Stop suiveur : le prix recule de X % depuis son plus haut</option><option value="mcap">La capitalisation atteint X $</option></select></div>' +
       '<div class="row2"><div class="field"><label for="oVal">Valeur X</label><input id="oVal" type="number" min="0" step="any" value="100"></div><div class="field"><label for="oPct">Part à vendre</label><input id="oPct" type="number" min="1" max="100" step="1" value="50"></div></div>' +
+      '<div class="field" id="oArmF" hidden><label for="oArm">Commencer à suivre après une hausse de <small>en %, 0 = tout de suite</small></label><input id="oArm" type="number" min="0" step="any" value="0"><div class="dim" style="font-size:13px">Le stop suiveur retient le prix le plus haut atteint et vend si le prix recule de X % depuis ce sommet. Il protège tes gains pendant la montée.</div></div>' +
       '<p>Prix de référence : <b class="mono">' + fPrice(ref) + '</b> (' + (pos.avg ? 'ton prix moyen d\'achat' : 'prix actuel') + '). Quand la condition est atteinte, le studio te prévient et prépare la vente : tu signes ou tu refuses.</p>';
-    const i = await modal('Nouvel ordre · ' + sym, html, [{ label: 'Annuler' }, { label: 'Créer l\'ordre', cls: 'primary', keep: true }], true);
+    const pr = modal('Nouvel ordre · ' + sym, html, [{ label: 'Annuler' }, { label: 'Créer l\'ordre', cls: 'primary', keep: true }], true);
+    $('oKind').onchange = () => { const tr = $('oKind').value === 'trail'; $('oArmF').hidden = !tr; if (tr && num($('oVal').value) >= 100) $('oVal').value = 30; };
+    const i = await pr;
     if (i !== 1) return;
-    const kind = $('oKind').value, val = num($('oVal').value), pct = num($('oPct').value);
-    if (!(val > 0) || !(pct >= 1 && pct <= 100) || (kind === 'sl' && val >= 100)) { toast('Valeurs invalides', 'Vérifie la valeur et la part (1 à 100 %).', 'r'); return; }
+    const kind = $('oKind').value, val = num($('oVal').value), pct = num($('oPct').value), arm = Math.max(0, num($('oArm').value) || 0);
+    if (!(val > 0) || !(pct >= 1 && pct <= 100) || ((kind === 'sl' || kind === 'trail') && val >= 100)) { toast('Valeurs invalides', 'Vérifie la valeur et la part (1 à 100 %).', 'r'); return; }
     closeModal();
-    S.orders.push({ id: Date.now().toString(36), mint, symbol: sym, kind, value: val, pct, ref, active: true, createdAt: Date.now() });
+    const o = { id: Date.now().toString(36), mint, symbol: sym, kind, value: val, pct, ref, active: true, createdAt: Date.now() };
+    if (kind === 'trail') Object.assign(o, arm > 0 ? { arm, armed: false } : { arm: 0, armed: true, peak: C.stats.price });
+    S.orders.push(o);
     save(LS.orders, S.orders); toast('Ordre créé', sym + ' · surveillé en continu', 'g'); renderAll();
   }
+  let ordersSavedAt = 0;
+  function ordersSaveSoon() { if (Date.now() - ordersSavedAt > 3000) { ordersSavedAt = Date.now(); save(LS.orders, S.orders); } }
   function orderHit(o, C) {
     const st = C.stats; if (!st) return false;
     if (o.kind === 'tp') return st.price >= o.ref * (1 + o.value / 100);
     if (o.kind === 'sl') return st.price <= o.ref * (1 - o.value / 100);
+    if (o.kind === 'trail') {                              // stop suiveur : suit le plus haut, vend au recul de X %
+      if (!o.armed) { if (st.price < o.ref * (1 + (o.arm || 0) / 100)) return false; o.armed = true; o.peak = st.price; ordersSaveSoon(); }
+      if (!(o.peak >= st.price)) { o.peak = st.price; ordersSaveSoon(); }
+      return st.price <= o.peak * (1 - o.value / 100);
+    }
     if (o.kind === 'mcap') return S.solUsd && st.mcapSol * S.solUsd >= o.value;
     return false;
   }
@@ -2811,13 +2826,13 @@ Message: ${r}.
     }
     renderTop(); if (S.page === 'orders') renderOrders();
   }
-  function sellOrder(o) { trade(o.mint, 'sell', o.tokens ? String(Math.floor(o.tokens)) : o.pct + '%', { title: 'Ordre déclenché · vendre ' + o.pct + ' % de ' + o.symbol + ' ?', note: 'Condition atteinte : ' + (o.kind === 'tp' ? 'prix +' + o.value + ' %' : o.kind === 'sl' ? 'prix −' + o.value + ' %' : 'capitalisation ' + fUsd(o.value)) + '.' }).then((ok) => { if (ok) o.done = true; save(LS.orders, S.orders); renderAll(); }); } // vente refusée ou échouée : l'ordre reste « à signer »
+  function sellOrder(o) { trade(o.mint, 'sell', o.tokens ? String(Math.floor(o.tokens)) : o.pct + '%', { title: 'Ordre déclenché · vendre ' + o.pct + ' % de ' + o.symbol + ' ?', note: 'Condition atteinte : ' + (o.kind === 'trail' ? 'recul de ' + o.value + ' % depuis le plus haut' : o.kind === 'tp' ? 'prix +' + o.value + ' %' : o.kind === 'sl' ? 'prix −' + o.value + ' %' : 'capitalisation ' + fUsd(o.value)) + '.' }).then((ok) => { if (ok) o.done = true; save(LS.orders, S.orders); renderAll(); }); } // vente refusée ou échouée : l'ordre reste « à signer »
   /* ---------- exécution automatique par le wallet rapide */
   let AUTOQ = Promise.resolve();
   function canAuto() { return !!(cfg.autoExec && S.wallet && S.wallet.id === 'session' && SESSW.kp && cfg.engine !== 'portal'); }
   async function autoSell(o) {
     const t0 = performance.now(), sym = o.symbol, pk = S.wallet.pk;
-    const slip = o.kind === 'sl' ? Math.max(cfg.slippage, cfg.slSlippage) : cfg.slippage;
+    const slip = o.kind === 'sl' || o.kind === 'trail' ? Math.max(cfg.slippage, cfg.slSlippage) : cfg.slippage;
     let lastErr = null;
     for (let attempt = 0; attempt <= cfg.autoRetry; attempt++) {
       let sent = false;
@@ -2895,7 +2910,7 @@ Message: ${r}.
     if (b.id === 'autoGo') { autoGenerate(); return; }
     if (d.tpadd) { const last = S.draft.tp[S.draft.tp.length - 1]; S.draft.tp.push({ x: last ? Math.round((last.x * 2) * 10) / 10 : 2, pct: Math.max(1, Math.min(10, 100 - S.draft.tp.reduce((a, l) => a + (l.pct || 0), 0))) }); saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (d.tpdel != null) { S.draft.tp.splice(+d.tpdel, 1); saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
-    if (d.tpdef) { S.draft.tp = TP_PRESETS.balanced.tp.map((l) => Object.assign({}, l)); S.draft.sl = TP_PRESETS.balanced.sl; saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
+    if (d.tpdef) { S.draft.tp = TP_PRESETS.balanced.tp.map((l) => Object.assign({}, l)); S.draft.sl = TP_PRESETS.balanced.sl; S.draft.slMode = TP_PRESETS.balanced.slMode; saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (d.idea != null) { pickIdea(+d.idea); return; }
     if (d.lstyle) { S.draft.logo.style = d.lstyle; S.draft.logo.seed = Math.floor(Math.random() * 1e6); S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (d.pal != null) { S.draft.logo.pal = +d.pal; S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
