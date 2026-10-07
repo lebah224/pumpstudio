@@ -991,7 +991,7 @@ textarea{font:inherit;color:inherit}
           <div class="kpi"><div class="l">Solde</div><div class="v" id="pb-kBal">0</div><div class="s" id="pb-kBalS">—</div></div>
           <div class="kpi"><div class="l">P&amp;L</div><div class="v" id="pb-kPnl">0</div><div class="s" id="pb-kPnlS">—</div></div>
           <div class="kpi"><div class="l">Winrate</div><div class="v" id="pb-kWin">—</div><div class="s" id="pb-kWinS">—</div></div>
-          <div class="kpi"><div class="l">Coût données</div><div class="v" id="pb-kCost">—</div><div class="s" id="pb-kCostS">estimation</div></div>
+          <div class="kpi"><div class="l">Flux PumpPortal</div><div class="v" id="pb-kCost">—</div><div class="s" id="pb-kCostS">flux du studio</div></div>
         </div>
         <nav class="ltabs pb-tabs" id="pb-menu" aria-label="Sections du terminal">
           <button class="on" data-pb="live" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Flux live<span class="n" id="pb-cLive">0</span></button>
@@ -3122,7 +3122,7 @@ Message: ${r}.
   function formCancel(fs) { fieldsOf(fs).forEach(([k, , type]) => { const el = fs.querySelector('[data-k="' + k + '"]'); if (type === 'bool') el.checked = !!cfg[k]; else el.value = cfg[k]; el.classList.remove('err'); }); fs.querySelectorAll('.ferr').forEach((e) => e.remove()); fs.classList.remove('dirty'); }
   /* ================================================================ pont PumpPortal pour le terminal de trading (script PumpBot)
      Une seule connexion WebSocket pour tout l'outil : le terminal y ajoute ses abonnements. */
-  const PPX = { on: false, keys: new Set(), key: '', ls: [], sl: [] };
+  const PPX = { on: false, keys: new Set(), ls: [], sl: [] };
   function ppxEmit() { PPX.sl.forEach((fn) => { try { fn(PP.state); } catch (e) {} }); }
   /* ================================================================ temps réel : flux PumpPortal (gratuit, sans clé)
      Une seule connexion WebSocket pour tous les tokens suivis : PumpPortal bannit les clients qui en ouvrent plusieurs. */
@@ -3133,7 +3133,7 @@ Message: ${r}.
   function ppConnect() {
     if (PP.ws || (!cfg.ppLive && !PPX.on) || !window.WebSocket) return;
     clearTimeout(PP.timer); PP.state = 'connecting'; ppStatus();
-    let ws; try { ws = new WebSocket(PP_URL + (PPX.key ? '?api-key=' + encodeURIComponent(PPX.key) : '')); } catch (e) { PP.state = 'error'; ppStatus(); return ppRetry(); }
+    let ws; try { ws = new WebSocket(PP_URL); } catch (e) { PP.state = 'error'; ppStatus(); return ppRetry(); }
     PP.ws = ws;
     ws.onopen = () => { PP.state = 'on'; PP.retry = 0; PP.subs = new Set(); PP.newSub = false; ppStatus(); ppDiff(); };
     ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } if (m) PPX.ls.forEach((fn) => { try { fn(m); } catch (e) {} }); if (m && m.mint && m.txType && m.txType !== 'create') { try { ppApply(m); } catch (e) {} } };
@@ -3771,7 +3771,7 @@ Message: ${r}.
   }
   window.PumpStudio = { PP, S, cfg, setPage, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
-    pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, setKey(k) { k = k || ''; if (k === PPX.key) return; PPX.key = k; if (PP.ws) { ppClose(); ppSync(PP.ui || new Set()); } }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => PP.state },
+    pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => PP.state },
     SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
@@ -3789,7 +3789,6 @@ const PS = window.PumpStudio;
 if (!ROOT || !PS || !PS.pp) return;
 
 const SUPPLY = 1e9;
-const COST_PER_10K = 0.01;
 const SNIPE_WINDOW = 3000;     // acheteurs dans les 3 premières secondes = snipers
 const BUNDLE_WINDOW = 2000;    // supply achetée dans les 2 premières secondes = bundle probable
 const FAST_SELL_SEC = 300;     // dev qui vend dans les 5 minutes = vente rapide
@@ -3798,14 +3797,11 @@ const MONO = '11px Geist Mono, ui-monospace, monospace';
 
 /* --------------------------------------------------------------- réglages de collecte */
 const CFG_DEFAULTS = {
-  apiKey: '', recordTrades: true, fetchMeta: true,
+  recordTrades: true, fetchMeta: true,
   watchSec: 600, maxWatched: 300, gradVSol: 115,
   feedRows: 80, toastTrades: true, toastConn: true,
 };
 const CFG_SECTIONS = [
-  { id: 'conn', title: 'Connexion PumpPortal', fields: [
-    ['apiKey', 'Clé API PumpPortal (facultative)', 'password', 'Le studio essaie d\'abord sans clé. Si PumpPortal ne transmet pas les trades, ajoute une clé : jamais la clé privée d\'un wallet.'],
-  ]},
   { id: 'collect', title: 'Collecte', fields: [
     ['watchSec', 'Durée de suivi d\'un token', 'num', 'Après, on se désabonne de ses trades', 's'],
     ['maxWatched', 'Tokens suivis en même temps', 'num', 'Limite la charge et le coût éventuel', ''],
@@ -4028,18 +4024,12 @@ function setConn(state, txt) {
   $('connTxt').textContent = txt;
   $('btnConn').querySelector('span').textContent = S.wantConn ? 'Déconnecter' : 'Connecter';
   $('btnConn').classList.toggle('primary', !S.wantConn);
-  const ks = $('keyState');
-  if (ks) {
-    if (!cfg.apiKey) { ks.textContent = 'Aucune clé : le studio utilise le flux gratuit.'; ks.className = 'dim'; }
-    else { ks.textContent = 'Clé enregistrée — ' + txt; ks.className = state === 'on' ? 'pos' : state === 'wait' ? 'warn' : 'dim'; }
-  }
 }
 function watchedKeys() { const out = []; for (const t of S.tokens.values()) if (t.watching) out.push(t.mint); return out; }
 function syncKeys() { if (!S.demo && S.wantConn) PS.pp.setKeys(watchedKeys()); }
 function connect() {
   if (S.demo) stopDemo(true);
   S.wantConn = true; S.connAt = Date.now(); S.tradeEvents0 = S.tradeEvents;
-  PS.pp.setKey(cfg.apiKey);
   PS.pp.connect(true); syncKeys();
   onPPState(PS.pp.state());
   S.dirty.header = true;
@@ -4480,7 +4470,7 @@ function renderFeed(now) {
   // PumpPortal peut refuser les trades sans clé : on le détecte au lieu de le supposer
   const nt = $('noTrades'), quiet = S.wantConn && !S.demo && S.connected && Date.now() - S.connAt > 45000 && S.totalTokens >= 5 && S.tradeEvents === (S.tradeEvents0 || 0);
   nt.hidden = !quiet;
-  if (quiet) nt.innerHTML = '<b>Les lancements arrivent, mais aucun trade.</b> PumpPortal ne transmet pas les trades de ce flux sans clé API : sans eux, pas de score ni d\'entrée. Ajoute une clé PumpPortal dans <b>Réglages</b> (création gratuite sur pumpportal.fun, flux facturé environ 0,01 SOL pour 10 000 messages), ou essaie la <b>Démo</b>.';
+  if (quiet) nt.innerHTML = '<b>Les lancements arrivent, mais aucun trade pour l\'instant.</b> Sans trades, pas de score ni d\'entrée. Le terminal reste branché sur le flux PumpPortal gratuit du studio : vérifie <b>Flux direct</b> dans l\'état du studio, ou lance la <b>Démo</b> pour voir les stratégies tourner.';
 }
 
 /* ---------- en-tête ---------- */
@@ -4499,8 +4489,8 @@ function renderHeader() {
   $('kPnlS').textContent = 'latent ' + sol(u);
   $('kWin').textContent = st.winrate == null ? '—' : fx(st.winrate, 0) + ' %';
   $('kWinS').textContent = st.n + ' trades fermés';
-  $('kCost').textContent = S.demo ? '—' : cfg.apiKey ? f3(S.tradeEvents / 10000 * COST_PER_10K) + ' SOL' : 'gratuit';
-  $('kCostS').textContent = S.demo ? 'démo' : cfg.apiKey ? 'clé PumpPortal' : 'flux sans clé';
+  $('kCost').textContent = S.demo ? 'démo' : !S.wantConn ? 'arrêté' : S.connected ? 'en direct' : 'connexion…';
+  $('kCostS').textContent = S.demo ? 'données simulées' : (S.createTimes.length + S.tradeTimes.length) + ' messages / min · gratuit';
   $('cLive').textContent = S.tokens.size;
   $('cPos').textContent = allPositions().length;
   $('cJournal').textContent = allClosed().length;
@@ -4748,7 +4738,6 @@ function fieldHtml(prefix, f, value) {
   const [k, label, type, help, unit] = f, id = prefix + '_' + k;
   const lab = '<label for="' + id + '">' + esc(label) + (help ? '<small>' + esc(help) + '</small>' : '') + '</label>';
   if (type === 'bool') return '<div class="f">' + lab + '<span class="switch"><input type="checkbox" id="' + id + '" data-k="' + k + '"' + (value ? ' checked' : '') + '><i></i></span></div>';
-  if (type === 'password') return '<div class="f wide">' + lab + '<input type="password" id="' + id + '" data-k="' + k + '" value="' + esc(value) + '" autocomplete="off" spellcheck="false" placeholder="Laisse vide pour le flux gratuit"><small id="pb-keyState" class="dim"></small></div>';
   if (type === 'text') return '<div class="f">' + lab + '<input type="text" id="' + id + '" data-k="' + k + '" value="' + esc(value) + '"></div>';
   return '<div class="f">' + lab + '<span class="unit"><input type="number" step="any" min="0" inputmode="decimal" id="' + id + '" data-k="' + k + '" value="' + esc(value) + '"><em>' + esc(unit || '') + '</em></span></div>';
 }
@@ -4843,11 +4832,9 @@ function saveFieldset(fs) {
   if (!vals) { toast('Valeurs invalides', 'Corrige les champs en rouge.', 'r'); return; }
   const scope = fs.dataset.scope, secId = fs.dataset.sec;
   if (scope === 'cfg') {
-    const keyChanged = 'apiKey' in vals && vals.apiKey !== cfg.apiKey;
     Object.assign(cfg, vals); saveCfg();
     fs.classList.remove('dirty');
     toast('Réglages enregistrés', CFG_SECTIONS.find((x) => x.id === secId).title, 'g');
-    if (keyChanged && S.wantConn) { S.connAt = Date.now(); S.tradeEvents0 = S.tradeEvents; PS.pp.setKey(cfg.apiKey); syncKeys(); }
     setConn($('connDot').className.replace('dot', '').trim(), $('connTxt').textContent);
   } else {
     const s = stratById(scope.split(':')[1]);
@@ -5092,6 +5079,7 @@ window.PumpBotUI = {
 (async function init() {
   buildViewSelect(); buildSettings(); buildStratCards();
   setConn('', 'Déconnecté');
+  delete cfg.apiKey; saveCfg();
   try { const p = localStorage.getItem('pstudio_pb_page'); if (p && $('p-' + p)) goPage(p); } catch (e) {}
   await IDB.open();
   await loadFromDb();
