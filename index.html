@@ -2404,6 +2404,7 @@ Message: ${r}.
     S.ideas = makeIdeas(th, word, 8); renderIdeas();
   }
   function makeIdeas(th, word, count, reject) {
+    const thKey = Object.keys(THEMES).find((k) => THEMES[k] === th) || S.draft.theme;
     const out = [], seen = new Set(), tick = new Set();
     let guard = 0;
     while (out.length < count && guard++ < 400) {
@@ -2413,9 +2414,12 @@ Message: ${r}.
       if (reject && reject(name, ticker)) continue;
       seen.add(name.toLowerCase()); tick.add(ticker);
       const sc = scoreIdea(name, ticker, word);
-      out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: (th.pal + out.length * 3) % PALS.length, style: 'illus', theme: S.draft.theme });
+      out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: (th.pal + out.length * 3) % PALS.length, style: 'illus', theme: thKey, motif: pickMotif(thKey, name, out.length) });
     }
     out.sort((a, b) => b.score - a.score);
+    // une fois triées, les idées sans motif lié à leur nom reçoivent les motifs de l'univers à tour de rôle
+    const list = MOTIFS[thKey] || MOTIFS.luxe; let rot = 0;
+    out.forEach((x) => { if (!MOTIF_WORDS.some(([re, m]) => re.test(x.name) && list.includes(m))) x.motif = list[rot++ % list.length]; });
     return out;
   }
   function descFor(name, ticker, n1, short, idx) {
@@ -2429,7 +2433,7 @@ Message: ${r}.
   function pickIdea(i, silent) {
     const x = S.ideas[i]; if (!x) return;
     Object.assign(S.draft, { name: x.name, symbol: x.ticker, desc: (() => { const lang = DESC[S.draft.lang] ? S.draft.lang : 'en', ex = (DESC2[lang] || {})[S.draft.tone]; return x.tag + (ex ? '\n\n' + ex : ''); })(), idea: i });
-    S.draft.logo = Object.assign({}, S.draft.logo, { emoji: x.emo, text: x.ticker, pal: x.pal, style: x.style, theme: x.theme || S.draft.theme, textCustom: false, seed: Math.floor(Math.random() * 1e6) });
+    S.draft.logo = Object.assign({}, S.draft.logo, { emoji: x.emo, text: x.ticker, pal: x.pal, style: 'illus', theme: x.theme || S.draft.theme, motif: x.motif || '', textCustom: false, seed: Math.floor(Math.random() * 1e6) });
     S.imgBlob = null; S.draft.imgSrc = 'gen';
     saveDraft(); drawLogo(); fillFields(); renderIdeas(); renderLaunchSide();
     if (!silent) toast('Idée reprise', x.name + ' · $' + x.ticker + '. Ajuste le logo à l\'étape 2.', 'g');
@@ -2524,61 +2528,123 @@ Message: ${r}.
     g.fillStyle = metal(g, cx - s * 0.45, cy - s * 0.5, cx + s * 0.45, cy + s * 0.5, P); paint();
     return s;
   }
-  // Style « Illustration » : l'illustration de l'univers, dessinée en grand dans la zone ronde visible sur pump.fun
-  function drawIllus(g, W, P, theme, letter, u) {
-    const k = W * 0.0074, ox = W / 2 - 60 * k, oy = W / 2 - 37 * k;
-    const dark = !P.light, tint = theme === 'meme' ? '#7fd18a' : P.fg, ink = dark ? '#14120f' : '#1b1407';
+  // Style « Illustration » : un motif dessiné en grand dans la zone ronde visible sur pump.fun.
+  // Chaque univers a plusieurs motifs ; une idée reçoit le motif qui colle à son nom, sinon un motif différent de ses voisines.
+  const MOTIFS = { luxe: ['diamond', 'ring', 'diamond'], meme: ['frog', 'cat', 'panda'], internet: ['browser', 'chat'], space: ['planet', 'moon', 'rocket'], tech: ['chip', 'robot', 'bolt'], prestige: ['crown', 'key'], myth: ['trident', 'flame'], brand: ['mono'] };
+  const MOTIF_WORDS = [[/panda|koala|hippo|llama|walrus/i, 'panda'], [/lynx|corgi|raccoon|moose|cat|kit/i, 'cat'], [/otter|toad|gecko|axolotl|capy|quokka|goose|frog/i, 'frog'], [/nova|lumen|halo|eclipse|luna|lunar|moon/i, 'moon'],
+    [/rocket|zenith|vega|astra|apollo/i, 'rocket'], [/orbit|nebula|quasar|pulsar|comet|planet/i, 'planet'], [/neuron|cortex|synth|echo|signal|logic|proxy/i, 'robot'], [/glitch|volt|bolt|flash|zero/i, 'bolt'],
+    [/phoenix|icarus|ember|inferno|flame|fire/i, 'flame'], [/kraken|hydra|titan|atlas|poseidon|trident/i, 'trident'], [/key|regent|marquis|sterling/i, 'key'], [/ring|halo|opal|orra|lustre/i, 'ring'], [/vibe|rizz|lore|\bgm\b|\bser\b|\bfren\b|chat/i, 'chat']];
+  function pickMotif(theme, name, i) {
+    const list = MOTIFS[theme] || MOTIFS.luxe;
+    for (const [re, m] of MOTIF_WORDS) if (re.test(name || '') && list.includes(m)) return m;
+    return list[(i || 0) % list.length];
+  }
+  function drawIllus(g, W, P, motif, letter, u) {
+    if (MOTIFS[motif]) motif = MOTIFS[motif][0];
+    const k = W * 0.0074, dark = !P.light, ink = dark ? '#14120f' : '#1b1407', fg = P.fg && P.fg.length === 7 ? P.fg : '#d6b26e';
+    const tint = { frog: '#7fd18a', cat: '#f0a35e', panda: '#f3efe6', flame: '#f39a4b' }[motif] || fg;
     const glow = g.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W * 0.46);
-    glow.addColorStop(0, hexA(tint.length === 7 ? tint : '#d6b26e', dark ? 0.2 : 0.16)); glow.addColorStop(1, hexA(tint.length === 7 ? tint : '#d6b26e', 0));
+    glow.addColorStop(0, hexA(tint, dark ? 0.2 : 0.16)); glow.addColorStop(1, hexA(tint, 0));
     g.fillStyle = glow; g.fillRect(0, 0, W, W);
-    g.save(); g.translate(ox, oy); g.scale(k, k);
-    g.shadowColor = dark ? 'rgba(0,0,0,.55)' : 'rgba(60,40,10,.3)'; g.shadowBlur = 40 * u / k; g.shadowOffsetY = 14 * u / k;
+    g.save(); g.translate(W / 2 - 60 * k, W / 2 - 37 * k); g.scale(k, k);
+    const shadowOn = () => { g.shadowColor = dark ? 'rgba(0,0,0,.55)' : 'rgba(60,40,10,.3)'; g.shadowBlur = 40 * u / k; g.shadowOffsetY = 14 * u / k; };
+    const shadowOff = () => { g.shadowColor = 'transparent'; };
+    shadowOn();
     const P2 = (d) => new Path2D(d), lin = (x0, y0, x1, y1, stops) => { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach((s) => gr.addColorStop(s[0], s[1])); return gr; };
     const metalG = lin(30, 10, 90, 64, [[0, P.m[0]], [0.45, P.m[1]], [0.8, P.m[2]], [1, P.m[3]]]);
     const dot = (x, y, r, c) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = c; g.fill(); };
+    const ell = (x, y, rx, ry, rot, c) => { g.beginPath(); g.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2); g.fillStyle = c; g.fill(); };
     const stroke = (d, c, w) => { g.strokeStyle = c; g.lineWidth = w; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(P2(d)); };
-    const star = (x, y, s, c) => { g.fillStyle = c; g.fill(P2('M' + x + ' ' + (y - 2.5 * s) + 'l' + s + ' ' + 1.5 * s + ' ' + 1.5 * s + ' ' + s + '-' + 1.5 * s + ' ' + s + '-' + s + ' ' + 1.5 * s + '-' + s + '-' + 1.5 * s + '-' + 1.5 * s + '-' + s + ' ' + 1.5 * s + '-' + s + 'z')); };
-    if (theme === 'meme') {
-      g.fillStyle = lin(30, 20, 90, 66, [[0, '#a6e6a8'], [1, '#4fae67']]);
-      g.beginPath(); g.ellipse(60, 46, 30, 20, 0, 0, Math.PI * 2); g.fill();
-      dot(46, 28, 10, '#86d48f'); dot(74, 28, 10, '#86d48f'); g.shadowColor = 'transparent';
+    const fill = (d, c) => { g.fillStyle = c; g.fill(P2(d)); };
+    const star = (x, y, s, c) => fill('M' + x + ' ' + (y - 2.5 * s) + 'l' + s + ' ' + 1.5 * s + ' ' + 1.5 * s + ' ' + s + '-' + 1.5 * s + ' ' + s + '-' + s + ' ' + 1.5 * s + '-' + s + '-' + 1.5 * s + '-' + 1.5 * s + '-' + s + ' ' + 1.5 * s + '-' + s + 'z', c);
+    const sky = dark ? '#fff' : ink;
+    if (motif === 'frog') {
+      ell(60, 46, 30, 20, 0, lin(30, 20, 90, 66, [[0, '#a6e6a8'], [1, '#4fae67']]));
+      dot(46, 28, 10, '#86d48f'); dot(74, 28, 10, '#86d48f'); shadowOff();
       dot(46, 28, 6, '#fff'); dot(74, 28, 6, '#fff'); dot(47.5, 29, 3, ink); dot(75.5, 29, 3, ink); dot(48.6, 27.6, 1, '#fff'); dot(76.6, 27.6, 1, '#fff');
       stroke('M48 50q12 9 24 0', ink, 2.4); dot(40, 47, 3.5, 'rgba(255,138,138,.55)'); dot(80, 47, 3.5, 'rgba(255,138,138,.55)');
-    } else if (theme === 'internet') {
-      g.fillStyle = hexA(P.bg[0], 0.85); g.fill(P2('M29 12h62a7 7 0 0 1 7 7v34a7 7 0 0 1-7 7H29a7 7 0 0 1-7-7V19a7 7 0 0 1 7-7z')); g.shadowColor = 'transparent';
+    } else if (motif === 'cat') {
+      const fur = lin(36, 14, 84, 64, [[0, '#ffd2a1'], [1, '#e08a45']]);
+      fill('M38 30L34 8l18 12zM82 30l4-22-18 12z', fur); ell(60, 40, 25, 22, 0, fur); shadowOff();
+      fill('M39 26l-2-11 9 7zM81 26l2-11-9 7z', 'rgba(255,170,170,.7)');
+      ell(50, 38, 3.4, 4.6, 0, ink); ell(70, 38, 3.4, 4.6, 0, ink); dot(51, 36.5, 1.1, '#fff'); dot(71, 36.5, 1.1, '#fff');
+      fill('M57 46h6l-3 3z', '#e86f7a'); stroke('M60 49q-3 4-7 2M60 49q3 4 7 2', ink, 1.4);
+      stroke('M30 44h14M31 49l13-2M90 44H76M89 49l-13-2', hexA('#ffffff', 0.8), 1);
+    } else if (motif === 'panda') {
+      dot(40, 22, 8, '#1d1b19'); dot(80, 22, 8, '#1d1b19'); dot(60, 40, 24, lin(40, 18, 80, 64, [[0, '#ffffff'], [1, '#d9d4cb']])); shadowOff();
+      ell(50, 38, 6, 8, -0.5, '#1d1b19'); ell(70, 38, 6, 8, 0.5, '#1d1b19'); dot(51, 37, 2.6, '#fff'); dot(69, 37, 2.6, '#fff'); dot(51.5, 37.5, 1.3, ink); dot(69.5, 37.5, 1.3, ink);
+      ell(60, 48, 3.6, 2.6, 0, '#1d1b19'); stroke('M60 50.5v3M60 53.5q-3 3-6 1M60 53.5q3 3 6 1', '#1d1b19', 1.4); dot(44, 48, 3, 'rgba(255,138,138,.4)'); dot(76, 48, 3, 'rgba(255,138,138,.4)');
+    } else if (motif === 'browser') {
+      fill('M29 12h62a7 7 0 0 1 7 7v34a7 7 0 0 1-7 7H29a7 7 0 0 1-7-7V19a7 7 0 0 1 7-7z', hexA(P.bg[0], 0.85)); shadowOff();
       stroke('M29 12h62a7 7 0 0 1 7 7v34a7 7 0 0 1-7 7H29a7 7 0 0 1-7-7V19a7 7 0 0 1 7-7zM22 22h76', tint, 2);
       dot(29, 17, 1.6, tint); dot(35, 17, 1.6, tint);
-      g.fillStyle = tint; g.fill(P2('M34 29h28a3 3 0 0 1 0 6H34a3 3 0 0 1 0-6z')); g.globalAlpha = 0.45; g.fill(P2('M34 39h16a3 3 0 0 1 0 6H34a3 3 0 0 1 0-6z')); g.globalAlpha = 1;
-      g.fillStyle = dark ? '#fff' : ink; g.fill(P2('M74 36l14 6-6 2-2 6z')); g.fillStyle = '#ff8a8a'; g.fill(P2('M84 24c2-3 7-1 5 3l-5 4-5-4c-2-4 3-6 5-3z'));
-    } else if (theme === 'space') {
+      fill('M34 29h28a3 3 0 0 1 0 6H34a3 3 0 0 1 0-6z', tint); g.globalAlpha = 0.45; fill('M34 39h16a3 3 0 0 1 0 6H34a3 3 0 0 1 0-6z', tint); g.globalAlpha = 1;
+      fill('M74 36l14 6-6 2-2 6z', sky); fill('M84 24c2-3 7-1 5 3l-5 4-5-4c-2-4 3-6 5-3z', '#ff8a8a');
+    } else if (motif === 'chat') {
+      fill('M30 14h46a9 9 0 0 1 9 9v18a9 9 0 0 1-9 9H48l-12 10v-10h-6a9 9 0 0 1-9-9V23a9 9 0 0 1 9-9z', metalG); shadowOff();
+      dot(41, 32, 3.2, ink); dot(53, 32, 3.2, ink); dot(65, 32, 3.2, ink);
+      fill('M74 34h18a7 7 0 0 1 7 7v10a7 7 0 0 1-7 7h-2v7l-8-7h-8a7 7 0 0 1-7-7V41a7 7 0 0 1 7-7z', hexA(fg, 0.35)); fill('M86 42c2-3 7-1 5 3l-5 4-5-4c-2-4 3-6 5-3z', '#ff8a8a');
+    } else if (motif === 'moon') {
+      g.save(); const cut = new Path2D(); cut.rect(-200, -200, 600, 600); cut.arc(70, 28, 17, 0, Math.PI * 2); g.clip(cut, 'evenodd');
+      dot(58, 36, 22, lin(40, 14, 76, 58, [[0, '#ffffff'], [0.4, tint], [1, shade(tint, -0.35)]])); g.restore(); shadowOff();
+      dot(46, 42, 2.6, hexA(ink, 0.18)); dot(52, 52, 1.8, hexA(ink, 0.18)); dot(42, 30, 1.6, hexA(ink, 0.18));
+      [[88, 44, 1.6], [96, 20, 1.2], [24, 18, 1.4], [20, 52, 1], [100, 60, 1.2]].forEach((s) => dot(s[0], s[1], s[2], sky)); star(90, 32, 1.3, tint);
+    } else if (motif === 'rocket') {
+      fill('M60 6c11 9 15 24 12 40H48c-3-16 1-31 12-40z', metalG); fill('M48 34l-10 14 10-2zM72 34l10 14-10-2z', tint); shadowOff();
+      dot(60, 26, 6, hexA(P.bg[0], 0.95)); dot(60, 26, 4, hexA(tint, 0.9)); dot(58.5, 24.5, 1.3, '#fff');
+      fill('M52 47h16l-3 8q-5 9-10 0z', lin(52, 47, 60, 64, [[0, '#ffd27a'], [1, '#ff6b3d']]));
+      [[24, 18, 1.4], [94, 14, 1.2], [98, 46, 1.6], [22, 54, 1]].forEach((s) => dot(s[0], s[1], s[2], sky)); star(30, 34, 1.2, tint);
+    } else if (motif === 'planet') {
       const pl = g.createRadialGradient(54, 32, 1, 60, 38, 18); pl.addColorStop(0, '#fff'); pl.addColorStop(0.4, tint); pl.addColorStop(1, shade(P.bg[1], -0.2));
-      g.fillStyle = pl; dot(60, 38, 17, pl); g.shadowColor = 'transparent';
+      dot(60, 38, 17, pl); shadowOff();
       g.save(); g.translate(60, 40); g.rotate(-14 * Math.PI / 180); g.strokeStyle = tint; g.lineWidth = 2.2; g.beginPath(); g.ellipse(0, 0, 32, 8, 0, 0, Math.PI * 2); g.stroke(); g.restore();
-      [[22, 16, 1.6], [98, 22, 1.2], [92, 58, 1.8], [30, 60, 1], [16, 40, 1.1], [106, 44, 0.9]].forEach((s) => dot(s[0], s[1], s[2], dark ? '#fff' : ink));
-      star(100, 13, 1.4, tint);
-    } else if (theme === 'tech') {
+      [[22, 16, 1.6], [98, 22, 1.2], [92, 58, 1.8], [30, 60, 1], [16, 40, 1.1], [106, 44, 0.9]].forEach((s) => dot(s[0], s[1], s[2], sky)); star(100, 13, 1.4, tint);
+    } else if (motif === 'robot') {
+      stroke('M60 10v8', tint, 2.2); dot(60, 9, 3, tint);
+      fill('M42 18h36a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8H42a8 8 0 0 1-8-8V26a8 8 0 0 1 8-8z', metalG); shadowOff();
+      fill('M30 30h4v12h-4zM86 30h4v12h-4z', tint);
+      fill('M44 26h32a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H44a4 4 0 0 1-4-4v-8a4 4 0 0 1 4-4z', hexA(P.bg[0], 0.92));
+      dot(51, 34, 3.4, tint); dot(69, 34, 3.4, tint); dot(51, 34, 1.4, '#fff'); dot(69, 34, 1.4, '#fff');
+      stroke('M50 49h20M54 47v4M60 47v4M66 47v4', hexA(ink, 0.6), 1.4);
+    } else if (motif === 'bolt') {
+      fill('M68 6L38 40h18l-8 26 34-38H64z', lin(40, 6, 80, 66, [[0, P.m[0]], [0.5, tint], [1, P.m[2]]])); shadowOff();
+      stroke('M68 6L38 40h18l-8 26 34-38H64z', hexA(P.m[3], 0.5), 1);
+      [[28, 20, 1.3], [94, 50, 1.3]].forEach((s) => star(s[0], s[1], s[2], tint)); dot(30, 56, 1.5, hexA(tint, 0.7)); dot(92, 18, 1.5, hexA(tint, 0.7));
+    } else if (motif === 'chip') {
       stroke('M14 24h22M14 48h22M84 24h22M84 48h22M48 8v14M72 8v14M48 50v14M72 50v14', tint, 2);
       dot(14, 24, 3, tint); dot(106, 48, 3, tint); dot(48, 64, 3, tint); dot(72, 8, 3, tint);
-      g.fillStyle = shade(P.bg[0], 0.04); g.fill(P2('M44 20h32a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H44a6 6 0 0 1-6-6V26a6 6 0 0 1 6-6z')); g.shadowColor = 'transparent';
+      fill('M44 20h32a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H44a6 6 0 0 1-6-6V26a6 6 0 0 1 6-6z', shade(P.bg[0], 0.04)); shadowOff();
       stroke('M44 20h32a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H44a6 6 0 0 1-6-6V26a6 6 0 0 1 6-6z', tint, 2);
-      g.fillStyle = metalG; g.fill(P2('M51 28h18a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H51a3 3 0 0 1-3-3V31a3 3 0 0 1 3-3z')); stroke('M53 36h14', shade(P.bg[0], 0.04), 2);
-    } else if (theme === 'prestige') {
-      g.fillStyle = metalG; g.fill(P2('M34 52l-6-30 18 14 14-22 14 22 18-14-6 30z')); g.fillRect(34, 54, 52, 7); g.shadowColor = 'transparent';
+      fill('M51 28h18a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H51a3 3 0 0 1-3-3V31a3 3 0 0 1 3-3z', metalG); stroke('M53 36h14', shade(P.bg[0], 0.04), 2);
+    } else if (motif === 'crown') {
+      fill('M34 52l-6-30 18 14 14-22 14 22 18-14-6 30z', metalG); g.fillStyle = metalG; g.fillRect(34, 54, 52, 7); shadowOff();
       stroke('M34 52l-6-30 18 14 14-22 14 22 18-14-6 30z', hexA(P.m[3], 0.5), 0.8);
       dot(60, 12, 3.5, P.m[1]); dot(28, 20, 3, P.m[1]); dot(92, 20, 3, P.m[1]); dot(60, 44, 4, '#c2404a'); dot(46, 46, 2.6, '#3e7bd6'); dot(74, 46, 2.6, '#2f9e6a'); dot(59, 43, 1.2, 'rgba(255,255,255,.7)');
-    } else if (theme === 'myth') {
+    } else if (motif === 'key') {
+      g.strokeStyle = metalG; g.lineWidth = 7; g.beginPath(); g.arc(40, 36, 13, 0, Math.PI * 2); g.stroke();
+      fill('M52 32h40v8H52z', metalG); fill('M78 40h6v10h-6zM88 40h4v7h-4z', metalG); shadowOff();
+      dot(40, 36, 4, hexA(P.m[1], 0.5)); star(96, 18, 1.3, P.m[1]); star(22, 58, 1, P.m[1]);
+    } else if (motif === 'flame') {
+      fill('M60 66c-16 0-23-12-19-25 2 6 6 9 9 9-3-11 4-24 15-33-2 11 4 15 8 21 4-6 3-12 3-12 8 9 10 19 6 29-3 7-11 11-22 11z', lin(60, 8, 60, 66, [[0, '#fff1c4'], [0.35, '#ffc14d'], [0.7, '#ff7a3d'], [1, '#c2402a']])); shadowOff();
+      fill('M60 64c-7 0-11-5-9-11 2 3 4 4 6 4-1-6 3-11 7-14 0 5 3 8 5 11 2 4 0 10-9 10z', 'rgba(255,248,220,.75)');
+      star(26, 22, 1.2, '#ffc14d'); star(96, 26, 1, '#ffc14d'); dot(32, 52, 1.4, 'rgba(255,193,77,.6)');
+    } else if (motif === 'trident') {
       stroke('M60 66V16M40 20c0 16 8 22 20 22s20-6 20-22', metalG, 3.2);
-      g.fillStyle = metalG; g.fill(P2('M60 10l-6 10h12zM40 14l-5 8h10zM80 14l-5 8h10z')); g.shadowColor = 'transparent';
+      fill('M60 10l-6 10h12zM40 14l-5 8h10zM80 14l-5 8h10z', metalG); shadowOff();
       stroke('M14 58c10-8 18-8 26-2M106 58c-10-8-18-8-26-2', hexA(P.m[1], 0.5), 2);
       star(22, 18, 1, P.m[1]); star(99, 16, 1.2, P.m[1]);
-    } else if (theme === 'brand') {
-      g.fillStyle = hexA(P.m[1], 0.12); dot(60, 36, 22, hexA(P.m[1], 0.12)); g.shadowColor = 'transparent';
+    } else if (motif === 'mono') {
+      dot(60, 36, 22, hexA(P.m[1], 0.12)); shadowOff();
       g.strokeStyle = metalG; g.lineWidth = 2; g.beginPath(); g.arc(60, 36, 25, 0, Math.PI * 2); g.stroke();
       stroke('M30 38c-6-4-8-11-6-17M90 38c6-4 8-11 6-17M28 31l-5-2M92 31l5-2M27 24l-4-3M93 24l4-3', hexA(P.m[1], 0.7), 1.8);
       g.fillStyle = metalG; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 30px ' + LOGO_FONTS.caps; g.fillText(letter, 60, 38);
-    } else {                                    // luxe (par défaut) : diamant taillé
-      g.fillStyle = lin(44, 22, 76, 62, [[0, P.m[0]], [0.5, P.m[1]], [1, P.m[3]]]); g.fill(P2('M44 22h32l10 12-26 28-26-28z')); g.shadowColor = 'transparent';
-      g.fillStyle = 'rgba(255,255,255,.18)'; g.fill(P2('M44 22l6 12h-16z')); g.fillStyle = 'rgba(0,0,0,.14)'; g.fill(P2('M76 22l10 12h-16z'));
+    } else if (motif === 'ring') {
+      g.strokeStyle = metalG; g.lineWidth = 6; g.beginPath(); g.ellipse(60, 44, 20, 16, 0, 0, Math.PI * 2); g.stroke();
+      fill('M52 22h16l5 6-13 13-13-13z', lin(52, 22, 68, 40, [[0, '#ffffff'], [0.5, '#cfe8ff'], [1, '#7aa9d6']])); shadowOff();
+      stroke('M47 28h26M52 22l8 19 8-19', 'rgba(0,0,0,.25)', 0.8); star(86, 18, 1.3, P.m[1]); star(30, 26, 0.9, P.m[1]);
+    } else {                                    // diamant taillé
+      fill('M44 22h32l10 12-26 28-26-28z', lin(44, 22, 76, 62, [[0, P.m[0]], [0.5, P.m[1]], [1, P.m[3]]])); shadowOff();
+      fill('M44 22l6 12h-16z', 'rgba(255,255,255,.18)'); fill('M76 22l10 12h-16z', 'rgba(0,0,0,.14)');
       stroke('M34 34h52M44 22l16 40 16-40M50 22l10 12 10-12', 'rgba(0,0,0,.3)', 1.1);
       star(94, 16, 1.3, P.m[1]); star(24, 50, 0.8, P.m[1]); dot(98, 50, 1.3, hexA(P.m[1], 0.7));
     }
@@ -2592,7 +2658,7 @@ Message: ${r}.
     g.save(); g.clearRect(0, 0, W, W); g.textAlign = 'center'; g.textBaseline = 'alphabetic';
     background(g, W, P);
     if (L.style === 'illus') {
-      drawIllus(g, W, P, L.theme || S.draft.theme || 'luxe', letter, u);
+      drawIllus(g, W, P, L.motif || L.theme || S.draft.theme || 'luxe', letter, u);
     } else if (L.style === 'coin') {
       const cx = W / 2, cy = W / 2, r = W * 0.41, f = r * 0.9;
       g.save(); dropShadow(g, u, P.light ? 0.28 : 0.6); g.fillStyle = P.m[2]; circle(g, cx, cy, r); g.fill(); g.restore();
@@ -2768,7 +2834,7 @@ Message: ${r}.
   }
   function ideaLogo(x) {
     const c = document.createElement('canvas'); c.width = c.height = 256;
-    paintLogo(c, { style: x.style, pal: x.pal, theme: x.theme, text: x.ticker, emoji: x.emo, seed: [...x.name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261) }, x.ticker);
+    paintLogo(c, { style: 'illus', pal: x.pal, theme: x.theme, motif: x.motif, text: x.ticker, emoji: x.emo, seed: [...x.name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261) }, x.ticker);
     try { return c.toDataURL('image/png'); } catch (e) { return ''; }
   }
 
@@ -2789,7 +2855,8 @@ Message: ${r}.
     const styles = ['illus', 'illus'].concat(shuffled(Object.keys(STYLES).filter((k) => k !== 'mascot' && k !== 'illus')).slice(0, 3), 'mascot');
     const pals = shuffled(PALS.map((_, i) => i).filter((i) => i !== th.pal)); pals.unshift(th.pal);
     const emoji = d.logo.emoji || rnd(th.mascot || ['✨']);
-    S.logoVars = styles.map((st, i) => ({ style: st, pal: pals[i % pals.length], seed: Math.floor(Math.random() * 1e6), emoji, text: txt, theme: d.theme }));
+    const mot = MOTIFS[d.theme] || MOTIFS.luxe, m0 = d.logo.motif && mot.includes(d.logo.motif) ? d.logo.motif : pickMotif(d.theme, d.name, 0), m1 = mot.find((m) => m !== m0) || m0;
+    S.logoVars = styles.map((st, i) => ({ style: st, pal: pals[i % pals.length], seed: Math.floor(Math.random() * 1e6), emoji, text: txt, theme: d.theme, motif: i === 1 ? m1 : m0 }));
     S.logoVars.forEach((v) => { v.img = logoThumb(v, txt); });
     renderLogoVars();
     if (!fontsReady) loadFonts().then(() => { if (S.logoVars) { S.logoVars.forEach((v) => { v.img = logoThumb(v, v.text); }); renderLogoVars(); } });
@@ -2805,7 +2872,7 @@ Message: ${r}.
   }
   function applyLogoVar(i) {
     const v = S.logoVars && S.logoVars[i]; if (!v) return;
-    S.draft.logo = Object.assign({}, S.draft.logo, { style: v.style, pal: v.pal, seed: v.seed, emoji: v.emoji, text: v.text, theme: v.theme, textCustom: false });
+    S.draft.logo = Object.assign({}, S.draft.logo, { style: v.style, pal: v.pal, seed: v.seed, emoji: v.emoji, text: v.text, theme: v.theme, motif: v.motif, textCustom: false });
     S.draft.imgSrc = 'gen'; S.imgBlob = null; S.uploadWarn = [];
     saveDraft(); renderLaunch();
   }
@@ -3574,7 +3641,7 @@ Message: ${r}.
     if (d.act === 'simon') { cfg.sim = true; save(LS.cfg, cfg); toast('Mode simulation', 'Plus rien n\'est envoyé.', 'g'); renderAll(); return; }
     if (d.act === 'testrpc') return testRpc(false);
     if (d.step) { S.step = +d.step; renderLaunch(); return; }
-    if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; S.draft.logo.theme = d.theme; saveDraft(); renderLaunch(); return; }
+    if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; S.draft.logo.theme = d.theme; S.draft.logo.motif = ''; saveDraft(); renderLaunch(); return; }
     if (d.tone) { S.draft.tone = d.tone; saveDraft(); renderLaunch(); return; }
     if (d.lang) { S.draft.lang = d.lang; saveDraft(); genIdeas(); renderLaunch(); return; }
     if (b.id === 'genGo') { genIdeas(); return; }
