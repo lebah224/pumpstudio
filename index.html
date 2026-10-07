@@ -975,7 +975,7 @@ textarea{font:inherit;color:inherit}
         <div class="pb-head">
           <div class="pb-id">
             <div class="pb-mark"><svg class="i" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
-            <div><h1>Terminal de trading</h1><p>Trois stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille. Mode papier : aucun ordre réel.</p></div>
+            <div><h1>Terminal de trading</h1><p>Quatre stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : trois sur les lancements, une sur les migrations. Mode papier : aucun ordre réel.</p></div>
           </div>
           <div class="pb-ctl">
             <label class="pb-view"><span>Vue</span><select class="sel" id="pb-viewStrat" aria-label="Stratégie affichée"></select></label>
@@ -1073,7 +1073,7 @@ textarea{font:inherit;color:inherit}
             <!-- stratégies -->
             <div class="pb-pg" id="pb-p-strategies">
               <div class="card">
-                <div class="card-h"><h3>Comparaison</h3><p>Les trois stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille papier.</p></div>
+                <div class="card-h"><h3>Comparaison</h3><p>Les quatre stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille papier.</p></div>
                 <div class="tablebox" style="margin-bottom:14px">
                   <table><thead><tr>
                     <th>Stratégie</th><th>État</th><th class="num">Trades</th><th class="num">Winrate</th><th class="num">P&amp;L</th><th class="num">Gain moy.</th><th class="num">Perte moy.</th><th class="num">Drawdown</th><th class="num">Ouvertes</th><th class="num">Solde</th>
@@ -2787,7 +2787,7 @@ Message: ${r}.
   }
 
   /* ================================================================ rendu : en-tête */
-  const PAGES = { bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { bot: ['Bot de trading', 'Terminal : 4 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
@@ -3792,12 +3792,12 @@ const SUPPLY = 1e9;
 const SNIPE_WINDOW = 3000;     // acheteurs dans les 3 premières secondes = snipers
 const BUNDLE_WINDOW = 2000;    // supply achetée dans les 2 premières secondes = bundle probable
 const FAST_SELL_SEC = 300;     // dev qui vend dans les 5 minutes = vente rapide
-const C = { green: '#34d58c', red: '#ff5d6c', amber: '#f3b53f', blue: '#5e9dff', dim: '#848ba2', grid: '#1c2030', line: '#2d3247', bg: '#0a0b12', panel: '#11131c' };
+const C = { violet: '#9483ff', green: '#34d58c', red: '#ff5d6c', amber: '#f3b53f', blue: '#5e9dff', dim: '#848ba2', grid: '#1c2030', line: '#2d3247', bg: '#0a0b12', panel: '#11131c' };
 const MONO = '11px Geist Mono, ui-monospace, monospace';
 
 /* --------------------------------------------------------------- réglages de collecte */
 const CFG_DEFAULTS = {
-  recordTrades: true, fetchMeta: true,
+  recordTrades: true, fetchMeta: true, snapshots: true, snapSec: 4,
   watchSec: 600, maxWatched: 300, gradVSol: 115,
   feedRows: 80, toastTrades: true, toastConn: true,
 };
@@ -3808,6 +3808,8 @@ const CFG_SECTIONS = [
     ['recordTrades', 'Enregistrer les trades bruts', 'bool', 'Utile pour le backtest, prend de la place'],
     ['fetchMeta', 'Lire les métadonnées', 'bool', 'Image et réseaux sociaux du token'],
     ['gradVSol', 'SOL virtuel à la migration', 'num', 'Pour estimer la progression de la courbe', 'SOL'],
+    ['snapshots', 'Instantanés DexScreener', 'bool', 'Prix, achats, ventes et volume lus à intervalle régulier quand PumpPortal ne transmet pas les trades (gratuit)'],
+    ['snapSec', 'Intervalle des instantanés', 'num', 'Entre 2 et 30 secondes', 's'],
   ]},
   { id: 'ui', title: 'Affichage et alertes', fields: [
     ['feedRows', 'Lignes affichées dans le flux', 'num', 'Plus = plus lourd', ''],
@@ -3830,6 +3832,7 @@ const STRAT_SECTIONS = [
     ['maxEntryAgeSec', 'Âge maximum pour entrer', 'num', '', 's'],
     ['minEntryMc', 'Market cap minimum', 'num', '', 'SOL'],
     ['maxEntryMc', 'Market cap maximum', 'num', '', 'SOL'],
+    ['onlyMigrated', 'Seulement les tokens migrés', 'bool', 'Joue l\'après-migration : l\'âge compte depuis la migration'],
   ]},
   { id: 'filters', title: 'Filtres anti-rug', fields: [
     ['maxDevBuySol', 'Dev buy maximum', 'num', 'Achat du dev au lancement', 'SOL'],
@@ -3864,21 +3867,25 @@ const STRAT_SECTIONS = [
   ]},
 ];
 const PRESETS = {
-  prudente: { minAgeSec: 30, maxEntryAgeSec: 240, minEntryMc: 35, maxEntryMc: 150, maxDevBuySol: 1, maxDevPct: 5, maxTop10: 25, maxBundlePct: 10, maxSnipers: 8, serialMax: 2, rejectDevSell: true, requireSocials: true,
+  prudente: { onlyMigrated: false, minAgeSec: 30, maxEntryAgeSec: 240, minEntryMc: 35, maxEntryMc: 150, maxDevBuySol: 1, maxDevPct: 5, maxTop10: 25, maxBundlePct: 10, maxSnipers: 8, serialMax: 2, rejectDevSell: true, requireSocials: true,
     targetBuyers: 40, targetVolSol: 20, scoreMin: 75, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 3,
     slPct: 20, tp1Pct: 40, tp1Frac: 50, trailPct: 15, trailAlways: false, maxHoldSec: 480, exitOnDevSell: true },
-  equilibree: { minAgeSec: 20, maxEntryAgeSec: 180, minEntryMc: 30, maxEntryMc: 200, maxDevBuySol: 2, maxDevPct: 10, maxTop10: 35, maxBundlePct: 20, maxSnipers: 15, serialMax: 3, rejectDevSell: true, requireSocials: false,
+  equilibree: { onlyMigrated: false, minAgeSec: 20, maxEntryAgeSec: 180, minEntryMc: 30, maxEntryMc: 200, maxDevBuySol: 2, maxDevPct: 10, maxTop10: 35, maxBundlePct: 20, maxSnipers: 15, serialMax: 3, rejectDevSell: true, requireSocials: false,
     targetBuyers: 25, targetVolSol: 15, scoreMin: 65, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 3,
     slPct: 25, tp1Pct: 50, tp1Frac: 50, trailPct: 20, trailAlways: false, maxHoldSec: 600, exitOnDevSell: true },
-  agressive: { minAgeSec: 8, maxEntryAgeSec: 120, minEntryMc: 28, maxEntryMc: 250, maxDevBuySol: 3, maxDevPct: 15, maxTop10: 45, maxBundlePct: 30, maxSnipers: 25, serialMax: 4, rejectDevSell: true, requireSocials: false,
+  agressive: { onlyMigrated: false, minAgeSec: 8, maxEntryAgeSec: 120, minEntryMc: 28, maxEntryMc: 250, maxDevBuySol: 3, maxDevPct: 15, maxTop10: 45, maxBundlePct: 30, maxSnipers: 25, serialMax: 4, rejectDevSell: true, requireSocials: false,
     targetBuyers: 15, targetVolSol: 8, scoreMin: 55, startBal: 5, sizeSol: 0.1, maxPositions: 5, feePct: 1, slipPct: 4,
     slPct: 30, tp1Pct: 80, tp1Frac: 40, trailPct: 25, trailAlways: false, maxHoldSec: 900, exitOnDevSell: true },
+  migration: { onlyMigrated: true, minAgeSec: 45, maxEntryAgeSec: 900, minEntryMc: 300, maxEntryMc: 4000, maxDevBuySol: 5, maxDevPct: 20, maxTop10: 60, maxBundlePct: 40, maxSnipers: 40, serialMax: 5, rejectDevSell: true, requireSocials: true,
+    targetBuyers: 150, targetVolSol: 150, scoreMin: 60, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 2,
+    slPct: 15, tp1Pct: 30, tp1Frac: 50, trailPct: 12, trailAlways: true, maxHoldSec: 1800, exitOnDevSell: true },
 };
-const PRESET_NAMES = { prudente: 'Prudente', equilibree: 'Équilibrée', agressive: 'Agressive' };
+const PRESET_NAMES = { prudente: 'Prudente', equilibree: 'Équilibrée', agressive: 'Agressive', migration: 'Migration' };
 const STRAT_DEFAULTS = [
   { id: 'prudente', name: 'Prudente', color: C.blue, enabled: true, P: Object.assign({}, PRESETS.prudente) },
   { id: 'equilibree', name: 'Équilibrée', color: C.green, enabled: true, P: Object.assign({}, PRESETS.equilibree) },
   { id: 'agressive', name: 'Agressive', color: C.amber, enabled: true, P: Object.assign({}, PRESETS.agressive) },
+  { id: 'migration', name: 'Migration', color: C.violet, enabled: true, P: Object.assign({}, PRESETS.migration) },
 ];
 let STRATS = loadStrats();
 function loadStrats() {
@@ -4086,7 +4093,7 @@ function devStat(c) {
 const canTrack = () => S.demo || S.wantConn;
 let keysTimer = 0;
 function keysLater() { if (S.demo || keysTimer) return; keysTimer = setTimeout(() => { keysTimer = 0; syncKeys(); }, 150); }
-function onCreate(m, now) {
+function onCreate(m, now, fromMig) {
   if (S.tokens.has(m.mint)) return;
   const mc = num(m.marketCapSol) || 0;
   const t = {
@@ -4098,12 +4105,11 @@ function onCreate(m, now) {
     balances: new Map(), devSold: false, devSoldAt: 0, snipers: new Set(), bundleTok: 0,
     top10: 0, devPct: 0, bundlePct: 0, rec30: 0, prev30: 0,
     meta: { state: 'none' }, track: 'ok', watching: false, watchEnd: 0, migrated: false,
-    st: {}, ver: 1, rv: 0, lastMcShown: mc, isNew: true,
+    st: {}, ver: 1, rv: 0, lastMcShown: mc, isNew: true, src: 'none', hist: [], lastTrade: 0, fromMigration: !!fromMig, migratedAt: 0,
   };
-  if (t.creator) t.balances.set(t.creator, t.devTokens);
-  devStat(t.creator).n++;
+  if (t.creator) { t.balances.set(t.creator, t.devTokens); devStat(t.creator).n++; }
   S.tokens.set(t.mint, t);
-  S.totalTokens++; S.createTimes.push(now);
+  if (!fromMig) { S.totalTokens++; S.createTimes.push(now); }
 
   if (canTrack()) {
     if (countWatched() < cfg.maxWatched) { t.watching = true; t.watchEnd = now + cfg.watchSec * 1000; keysLater(); }
@@ -4120,6 +4126,8 @@ function onTrade(m, now) {
   S.tradeEvents++;
   const t = S.tokens.get(m.mint);
   if (!t) return;
+  if (t.src === 'snap') { t.buys = t.sells = 0; t.volBuy = t.volSell = 0; t.hist = []; }
+  t.src = 'trades'; t.lastTrade = now; S.lastTradeAt = now;
   const side = m.txType, amount = num(m.solAmount) || 0, tok = num(m.tokenAmount) || 0, who = m.traderPublicKey || '';
   const age = now - t.createdAt;
   if (side === 'buy') {
@@ -4149,8 +4157,84 @@ function onTrade(m, now) {
 }
 function onMigration(m) {
   S.migrations++;
+  const now = Date.now();
+  if (!S.tokens.has(m.mint)) onCreate({ mint: m.mint, txType: 'create' }, now, true);
   const t = S.tokens.get(m.mint);
-  if (t && !t.migrated) { t.migrated = true; devStat(t.creator).migrated++; t.ver++; IDB.put('tokens', tokenRecord(t)); S.dirty.feed = true; }
+  if (t) markMigrated(t, now);
+}
+// Token migré : on le (re)suit pour les stratégies d'après-migration
+function markMigrated(t, now) {
+  if (t.migrated) return;
+  t.migrated = true; t.migratedAt = now;
+  if (t.creator) devStat(t.creator).migrated++;
+  if (canTrack() && (t.watching || countWatched() < cfg.maxWatched)) { t.watching = true; t.track = 'ok'; t.watchEnd = Math.max(t.watchEnd, now + cfg.watchSec * 1000); keysLater(); }
+  for (const s of STRATS) if (s.P.onlyMigrated) { const st = stOf(t, s.id); if (st.status === 'expired' || st.status === 'late' || st.status === 'skipped') { st.status = 'watch'; st.reason = ''; } }
+  t.ver++; IDB.put('tokens', tokenRecord(t)); S.dirty.feed = true;
+}
+
+/* --------------------------------------------------------------- instantanés DexScreener : quand PumpPortal ne transmet pas les trades
+   Lecture groupée (30 tokens par requête) du prix, des achats, des ventes et du volume. Gratuit, sans clé. */
+const SNAP = { busy: false, last: 0, ok: 0, err: 0, at: 0, n: 0 };
+const isSnap = (t) => t.src === 'snap';
+const uniq = (t) => isSnap(t) ? t.buys : t.buyers.size;
+const pairRank = (p) => (p.dexId === 'pumpswap' ? 1e15 : 0) + ((p.liquidity && +p.liquidity.usd) || 0) + ((p.volume && +p.volume.h24) || 0) / 1e6;
+async function snapPoll() {
+  if (SNAP.busy || S.demo || !S.wantConn || !cfg.snapshots) return;
+  const now = Date.now();
+  if (now - SNAP.last < clamp(cfg.snapSec || 4, 2, 30) * 1000) return;
+  SNAP.last = now;
+  const held = new Set(allPositions().map((p) => p.mint)), list = [];
+  for (const t of S.tokens.values()) {
+    if (!t.watching && !held.has(t.mint)) continue;
+    if (t.lastTrade && now - t.lastTrade < 20000) continue;          // les trades en direct passent avant
+    if (!t.fromMigration && now - t.createdAt < 6000) continue;      // pas encore indexé
+    list.push(t);
+  }
+  if (!list.length) return;
+  list.sort((a, b) => (held.has(b.mint) - held.has(a.mint)) || ((a.snapAt || 0) - (b.snapAt || 0)));
+  const pick = list.slice(0, 180), batches = [];
+  for (let i = 0; i < pick.length; i += 30) batches.push(pick.slice(i, i + 30));
+  SNAP.busy = true;
+  try {
+    await Promise.all(batches.map(async (bt) => {
+      const ctl = window.AbortController ? new AbortController() : null, timer = setTimeout(() => ctl && ctl.abort(), 8000);
+      try {
+        const r = await fetch('https://api.dexscreener.com/tokens/v1/solana/' + bt.map((t) => t.mint).join(','), ctl ? { signal: ctl.signal } : {});
+        if (!r.ok) throw new Error(r.status);
+        const arr = await r.json(), by = new Map(), ts = Date.now();
+        SNAP.ok++; SNAP.at = ts;
+        (Array.isArray(arr) ? arr : []).forEach((p) => { const m = p && p.baseToken && p.baseToken.address; if (!m) return; const cur = by.get(m); if (!cur || pairRank(p) > pairRank(cur)) by.set(m, p); });
+        bt.forEach((t) => { t.snapAt = ts; const p = by.get(t.mint); if (p && S.tokens.get(t.mint) === t) applySnap(t, p, ts); });
+      } catch (e) { SNAP.err++; } finally { clearTimeout(timer); }
+    }));
+  } finally { SNAP.busy = false; S.dirty.header = true; }
+}
+function applySnap(t, p, now) {
+  const pn = num(p.priceNative), pu = num(p.priceUsd);
+  if (!pn || pn <= 0) return;
+  const mc = pn * SUPPLY, solUsd = pu ? pu / pn : 0;
+  const h1 = (p.txns && p.txns.h1) || {}, b = +h1.buys || 0, sl = +h1.sells || 0, tot = b + sl;
+  const volSol = solUsd ? ((p.volume && +p.volume.h1) || 0) / solUsd : 0;
+  if (t.src !== 'snap') { t.src = 'snap'; t.buys = 0; t.sells = 0; t.hist = []; if (t.fromMigration) t.mc0 = mc; }
+  SNAP.n++;
+  const db = Math.max(0, b - t.buys), ds = Math.max(0, sl - t.sells), prevMc = t.mc;
+  t.buys = Math.max(t.buys, b); t.sells = Math.max(t.sells, sl);
+  t.volBuy = tot ? volSol * b / tot : 0; t.volSell = tot ? volSol * sl / tot : 0;
+  t.mc = mc; if (mc > t.mcMax) t.mcMax = mc; if (!t.mc0) t.mc0 = mc;
+  if (!t.migrated) { t.vSol = Math.sqrt(mc * 32.19); if (p.dexId === 'pumpswap') markMigrated(t, now); }
+  t.hist.push([now, t.buys]); if (t.hist.length > 60) t.hist.shift();
+  if (db || ds || mc !== prevMc) { t.trades.push([now, mc, db >= ds ? 1 : -1, tot ? (db + ds) * volSol / tot : 0]); if (t.trades.length > 2500) t.trades.shift(); }
+  if (!t.symbol && p.baseToken) { t.symbol = String(p.baseToken.symbol || ''); t.name = String(p.baseToken.name || ''); }
+  const inf = p.info || {}, so = (k) => { const x = (inf.socials || []).find((y) => y && y.type === k); return x ? socialUrl(x.url, k) : ''; };
+  if (!hasSocials(t) && (inf.socials || inf.websites)) {
+    const w = (inf.websites || [])[0];
+    t.meta = Object.assign({}, t.meta, { state: 'ok', twitter: so('twitter'), telegram: so('telegram'), website: w ? socialUrl(w.url, 'web') : '' });
+  }
+  if (!(t.meta && t.meta.image) && inf.imageUrl) t.meta = Object.assign({}, t.meta, { state: t.meta.state === 'ok' ? 'ok' : t.meta.state, image: safeUrl(inf.imageUrl) });
+  updateMetrics(t, now);
+  STRATS.forEach((s) => { evaluate(t, s, now); onPrice(t, s, now); });
+  t.ver++; S.dirty.feed = true;
+  if (S.selected === t.mint) S.dirty.detail = true;
 }
 function countWatched() { let n = 0; for (const t of S.tokens.values()) if (t.watching) n++; return n; }
 
@@ -4195,6 +4279,12 @@ function updateMetrics(t, now) {
   let r = 0, p = 0;
   for (const ts of t.firstBuy.values()) { const a = now - ts; if (a <= 30000) r++; else if (a <= 60000) p++; }
   t.rec30 = r; t.prev30 = p;
+  if (isSnap(t)) {                    // activité tirée de l'historique des instantanés
+    let a30 = null, a60 = null;
+    for (const [ts, n] of t.hist) { if (now - ts >= 30000) a30 = n; if (now - ts >= 60000) a60 = n; }
+    t.rec30 = a30 != null ? t.buys - a30 : t.hist.length ? t.buys - t.hist[0][1] : 0;
+    t.prev30 = a30 != null && a60 != null ? a30 - a60 : 0;
+  }
 }
 function topHolders(t) {
   return [...t.balances.entries()].filter((e) => e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 10)
@@ -4211,13 +4301,13 @@ function scoreParts(t, P) {
   const tot = t.buys + t.sells, ratio = tot ? t.buys / tot : 0;
   const growth = t.mc0 ? t.mc / t.mc0 - 1 : 0;
   const parts = {
-    buyers: { l: 'Acheteurs uniques', max: 25, v: Math.min(t.buyers.size / Math.max(1, P.targetBuyers), 1) * 25 },
+    buyers: { l: isSnap(t) ? 'Achats (1 h)' : 'Acheteurs uniques', max: 25, v: Math.min(uniq(t) / Math.max(1, P.targetBuyers), 1) * 25 },
     activity: { l: 'Activité (30 s)', max: 15, v: Math.min(t.rec30 / Math.max(1, P.targetBuyers * 0.25), 1) * 15 },
     ratio: { l: 'Achats vs ventes', max: 15, v: clamp((ratio - 0.5) * 2, 0, 1) * 15 },
     growth: { l: 'Hausse du MC', max: 15, v: clamp(growth, 0, 1) * 15 },
     volume: { l: 'Volume d\'achat', max: 10, v: Math.min(t.volBuy / Math.max(0.01, P.targetVolSol), 1) * 10 },
-    spread: { l: 'Répartition', max: 10, v: clamp(1 - t.top10 / Math.max(1, P.maxTop10), 0, 1) * 10 },
-    quality: { l: 'Qualité', max: 10, v: (hasSocials(t) ? 5 : 0) + clamp(1 - t.snipers.size / Math.max(1, P.maxSnipers), 0, 1) * 5 },
+    spread: isSnap(t) ? { l: 'Répartition (non mesurée)', max: 10, v: 5 } : { l: 'Répartition', max: 10, v: clamp(1 - t.top10 / Math.max(1, P.maxTop10), 0, 1) * 10 },
+    quality: { l: 'Qualité', max: 10, v: (hasSocials(t) ? 5 : 0) + (isSnap(t) ? 2.5 : clamp(1 - t.snipers.size / Math.max(1, P.maxSnipers), 0, 1) * 5) },
   };
   let s = 0; for (const k in parts) s += parts[k].v;
   if (t.devSold) s *= 0.3;
@@ -4234,18 +4324,20 @@ function evaluate(t, s, now) {
   const sp = scoreParts(t, P); st.parts = sp.parts; st.score = sp.score; if (st.score > st.scoreMax) st.scoreMax = st.score;
   if (st.status !== 'watch' || !s.enabled) { if (!s.enabled && st.status === 'watch') st.blockers = ['Stratégie en pause']; return; }
 
-  const dev = S.devStats.get(t.creator);
+  if (P.onlyMigrated && !t.migrated) { st.blockers = ['Attend la migration']; return; }
+  if (!P.onlyMigrated && t.fromMigration) { st.status = 'late'; st.reason = 'Déjà migré à son arrivée'; st.blockers = []; return; }
+  const snap = isSnap(t), dev = S.devStats.get(t.creator);
   if (P.rejectDevSell && t.devSold) return reject(st, 'Le dev a vendu');
   if (dev && dev.n >= P.serialMax) return reject(st, 'Lanceur en série (' + dev.n + ' tokens)');
   if (t.devBuySol > P.maxDevBuySol) return reject(st, 'Dev buy trop gros (' + f2(t.devBuySol) + ' SOL)');
-  if (t.bundlePct > P.maxBundlePct) return reject(st, 'Bundle détecté (' + f1(t.bundlePct) + ' % en 2 s)');
+  if (!snap && t.bundlePct > P.maxBundlePct) return reject(st, 'Bundle détecté (' + f1(t.bundlePct) + ' % en 2 s)');
 
-  const age = (now - t.createdAt) / 1000, b = [];
+  const age = (now - (P.onlyMigrated ? t.migratedAt : t.createdAt)) / 1000, b = [];
   if (age > P.maxEntryAgeSec) { st.status = 'late'; st.reason = 'Fenêtre d\'entrée passée'; st.blockers = []; return; }
   if (age < P.minAgeSec) b.push('Trop jeune (' + Math.floor(age) + ' / ' + P.minAgeSec + ' s)');
-  if (t.snipers.size > P.maxSnipers) b.push(t.snipers.size + ' snipers (max ' + P.maxSnipers + ')');
+  if (!snap && t.snipers.size > P.maxSnipers) b.push(t.snipers.size + ' snipers (max ' + P.maxSnipers + ')');
   if (t.devPct > P.maxDevPct) b.push('Dev détient ' + f1(t.devPct) + ' %');
-  if (t.top10 > P.maxTop10) b.push('Top 10 à ' + f1(t.top10) + ' %');
+  if (!snap && t.top10 > P.maxTop10) b.push('Top 10 à ' + f1(t.top10) + ' %');
   if (t.mc < P.minEntryMc) b.push('MC sous ' + P.minEntryMc + ' SOL');
   if (t.mc > P.maxEntryMc) b.push('MC au-dessus de ' + P.maxEntryMc + ' SOL');
   if (P.requireSocials && !hasSocials(t)) b.push(t.meta.state === 'ok' ? 'Aucun réseau social' : 'Réseaux sociaux inconnus');
@@ -4346,6 +4438,7 @@ function tokenRecord(t) {
 }
 function tick() {
   const now = Date.now();
+  snapPoll();
   for (const s of STRATS) {
     for (const p of [...S.port[s.id].positions.values()]) {
       const t = S.tokens.get(p.mint);
@@ -4439,11 +4532,11 @@ function fillFeedRow(row, t, now, s) {
   const bp = bondingPct(t);
   c['c-bond'].innerHTML = bp == null ? '<span class="dim">—</span>' : '<div style="display:flex;align-items:center;gap:6px"><div class="bar" style="width:60px"><i style="width:' + bp.toFixed(0) + '%;background:' + (bp >= 100 ? C.green : 'var(--accent)') + '"></i></div><span class="mono dim" style="font-size:12px">' + bp.toFixed(0) + '%</span></div>';
   const accel = t.rec30 - t.prev30;
-  c['c-buyers'].innerHTML = tracked ? t.buyers.size + '<div class="trend ' + cls(accel) + '">' + (accel > 0 ? '▲ ' : accel < 0 ? '▼ ' : '') + t.rec30 + ' / 30 s</div>' : '<span class="dim">—</span>';
+  c['c-buyers'].innerHTML = tracked ? uniq(t) + (isSnap(t) ? ' <span class="dim" title="Achats sur 1 h, DexScreener">ach.</span>' : '') + '<div class="trend ' + cls(accel) + '">' + (accel > 0 ? '▲ ' : accel < 0 ? '▼ ' : '') + t.rec30 + ' / 30 s</div>' : '<span class="dim">—</span>';
   c['c-bs'].innerHTML = tracked ? '<span class="pos">' + t.buys + '</span> / <span class="neg">' + t.sells + '</span>' : '<span class="dim">—</span>';
-  c['c-top'].innerHTML = '<span class="' + (t.top10 > P.maxTop10 ? 'warn' : '') + '">' + f1(t.top10) + ' %</span>';
+  c['c-top'].innerHTML = isSnap(t) ? '<span class="dim" title="Non mesuré sans trades">—</span>' : '<span class="' + (t.top10 > P.maxTop10 ? 'warn' : '') + '">' + f1(t.top10) + ' %</span>';
   c['c-dev'].innerHTML = t.devSold ? '<span class="neg">vendu</span>' : '<span class="' + (t.devPct > P.maxDevPct ? 'warn' : '') + '">' + f1(t.devPct) + ' %</span>';
-  c['c-snp'].innerHTML = tracked ? '<span class="' + (t.snipers.size > P.maxSnipers ? 'warn' : '') + '">' + t.snipers.size + '</span> / <span class="' + (t.bundlePct > P.maxBundlePct ? 'neg' : '') + '">' + f1(t.bundlePct) + ' %</span>' : '<span class="dim">—</span>';
+  c['c-snp'].innerHTML = isSnap(t) ? '<span class="dim" title="Non mesuré sans trades">—</span>' : tracked ? '<span class="' + (t.snipers.size > P.maxSnipers ? 'warn' : '') + '">' + t.snipers.size + '</span> / <span class="' + (t.bundlePct > P.maxBundlePct ? 'neg' : '') + '">' + f1(t.bundlePct) + ' %</span>' : '<span class="dim">—</span>';
   c['c-score'].innerHTML = tracked ? ring(st.score, scoreColor(st.score, P)) : '<span class="dim">—</span>';
   const lab = STATUS[st.status] || ['', st.status];
   const others = STRATS.filter((x) => x.id !== s.id && (stOf(t, x.id).status === 'entered' || stOf(t, x.id).status === 'closed'))
@@ -4468,9 +4561,16 @@ function renderFeed(now) {
   if (!list.length && S.tokens.size) $('feedEmpty').innerHTML = '<b>Aucun token dans ce filtre</b>Change de filtre ou efface la recherche.';
   else if (!list.length) $('feedEmpty').innerHTML = S.wantConn ? '<b>En attente de nouveaux tokens</b>Les lancements pump.fun apparaîtront ici dès leur création.' : '<b>Terminal à l\'arrêt</b>Clique sur <b>Connecter</b> pour suivre pump.fun en direct, ou lance la <b>Démo</b>.';
   // PumpPortal peut refuser les trades sans clé : on le détecte au lieu de le supposer
-  const nt = $('noTrades'), quiet = S.wantConn && !S.demo && S.connected && Date.now() - S.connAt > 45000 && S.totalTokens >= 5 && S.tradeEvents === (S.tradeEvents0 || 0);
+  const nt = $('noTrades'), quiet = S.wantConn && !S.demo && S.connected && Date.now() - S.connAt > 30000 && S.totalTokens >= 3 && Date.now() - (S.lastTradeAt || 0) > 60000;
   nt.hidden = !quiet;
-  if (quiet) nt.innerHTML = '<b>Les lancements arrivent, mais aucun trade pour l\'instant.</b> Sans trades, pas de score ni d\'entrée. Le terminal reste branché sur le flux PumpPortal gratuit du studio : vérifie <b>Flux direct</b> dans l\'état du studio, ou lance la <b>Démo</b> pour voir les stratégies tourner.';
+  if (quiet) {
+    const snapOk = cfg.snapshots && SNAP.ok > 0 && Date.now() - SNAP.at < 60000;
+    nt.className = 'notice ' + (snapOk ? 'info' : cfg.snapshots && SNAP.err ? 'bad' : '');
+    nt.innerHTML = snapOk ? '<b>Mode sans trades actif.</b> PumpPortal transmet les lancements et les migrations, pas les trades : le terminal lit le prix, les achats, les ventes et le volume sur DexScreener toutes les ' + clamp(cfg.snapSec || 4, 2, 30) + ' s. Snipers, bundle et top 10 ne sont pas mesurés dans ce mode. La stratégie <b>Migration</b> est faite pour ces données.'
+      : !cfg.snapshots ? '<b>Aucun trade reçu.</b> PumpPortal ne transmet que les lancements et les migrations. Active les <b>Instantanés DexScreener</b> dans Réglages pour que les stratégies puissent travailler.'
+      : SNAP.err ? '<b>DexScreener ne répond pas.</b> Sans trades ni instantanés, les stratégies ne peuvent pas entrer. Nouvel essai automatique.'
+      : '<b>Aucun trade reçu.</b> Lecture des premiers instantanés DexScreener…';
+  }
 }
 
 /* ---------- en-tête ---------- */
@@ -4490,7 +4590,7 @@ function renderHeader() {
   $('kWin').textContent = st.winrate == null ? '—' : fx(st.winrate, 0) + ' %';
   $('kWinS').textContent = st.n + ' trades fermés';
   $('kCost').textContent = S.demo ? 'démo' : !S.wantConn ? 'arrêté' : S.connected ? 'en direct' : 'connexion…';
-  $('kCostS').textContent = S.demo ? 'données simulées' : (S.createTimes.length + S.tradeTimes.length) + ' messages / min · gratuit';
+  $('kCostS').textContent = S.demo ? 'données simulées' : S.migrations + ' migrations · ' + (SNAP.ok ? SNAP.n + ' instantanés' : (S.createTimes.length + S.tradeTimes.length) + ' msg / min');
   $('cLive').textContent = S.tokens.size;
   $('cPos').textContent = allPositions().length;
   $('cJournal').textContent = allClosed().length;
@@ -4632,13 +4732,15 @@ function renderDetail(now) {
     '<div class="d-sec"><h4>Marché</h4><div class="kv">' +
       '<span>MC départ · actuel · max</span><span>' + f1(t.mc0) + ' · ' + f1(t.mc) + ' · ' + f1(t.mcMax) + '</span>' +
       '<span>Progression de la courbe</span><span>' + (bp == null ? '—' : bp.toFixed(0) + ' % (estimation)') + '</span>' +
-      '<span>Acheteurs uniques</span><span>' + t.buyers.size + '</span>' +
+      (isSnap(t) ? '<span>Source</span><span>instantanés DexScreener</span><span>Achats sur 1 h</span><span>' + t.buys + '</span>' : '<span>Acheteurs uniques</span><span>' + t.buyers.size + '</span>') +
+      (t.migrated && t.migratedAt ? '<span>Migré depuis</span><span>' + ago(now - t.migratedAt) + '</span>' : '') +
       '<span>Nouveaux acheteurs 30 s · 30 s avant</span><span>' + t.rec30 + ' · ' + t.prev30 + '</span>' +
       '<span>Achats · ventes</span><span>' + t.buys + ' · ' + t.sells + '</span>' +
       '<span>Volume achat · vente</span><span>' + f2(t.volBuy) + ' · ' + f2(t.volSell) + ' SOL</span>' +
+      (isSnap(t) ? '<span>Snipers, bundle, top 10</span><span class="dim">non mesurés sans trades</span><span>Part du dev au lancement</span><span>' + f1(t.devPct) + ' %</span>' :
       '<span>Snipers (3 premières s)</span><span>' + t.snipers.size + '</span>' +
       '<span>Bundle (2 premières s)</span><span>' + f1(t.bundlePct) + ' %</span>' +
-      '<span>Top 10 · dev</span><span>' + f1(t.top10) + ' % · ' + (t.devSold ? 'vendu' : f1(t.devPct) + ' %') + '</span></div></div>' +
+      '<span>Top 10 · dev</span><span>' + f1(t.top10) + ' % · ' + (t.devSold ? 'vendu' : f1(t.devPct) + ' %') + '</span>') + '</div></div>' +
     '<div class="d-sec"><h4>Profil du dev <span class="badge ' + trust[0] + '">' + trust[1] + '</span></h4><div class="kv">' +
       '<span>Wallet</span><span><a href="https://solscan.io/account/' + encodeURIComponent(t.creator) + '" target="_blank" rel="noopener noreferrer">' + esc(short(t.creator)) + '</a></span>' +
       '<span>Tokens lancés (collecte)</span><span>' + dev.n + '</span><span>Tokens migrés</span><span>' + dev.migrated + '</span>' +
@@ -5035,7 +5137,7 @@ $('expTokens').addEventListener('click', async () => { const r = await IDB.all('
 $('expTrades').addEventListener('click', async () => { const r = await IDB.all('trades'); if (!r.length) return toast('Rien à exporter', 'Aucun trade en base.', 'a'); download('pumpstudio-trades-' + stamp() + '.json', JSON.stringify(r), 'application/json'); toast('Export prêt', r.length + ' trades', 'g'); });
 $('expJournal').addEventListener('click', () => { const r = allClosed().filter((c) => !c.demo); if (!r.length) return toast('Rien à exporter', 'Aucun trade papier fermé.', 'a'); download('pumpstudio-journal-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' trades', 'g'); });
 $('wipe').addEventListener('click', async () => {
-  if (!(await confirmBox('Effacer toutes les données ?', 'Tokens, trades bruts et journaux des trois stratégies seront supprimés de ce navigateur. Exporte-les avant si tu veux les garder.', 'Tout effacer', true))) return;
+  if (!(await confirmBox('Effacer toutes les données ?', 'Tokens, trades bruts et journaux des stratégies seront supprimés de ce navigateur. Exporte-les avant si tu veux les garder.', 'Tout effacer', true))) return;
   await IDB.clear();
   STRATS.forEach((s) => { S.port[s.id].closed = S.port[s.id].closed.filter((c) => c.demo); });
   S.devStats.clear(); for (const t of S.tokens.values()) devStat(t.creator).n++;
