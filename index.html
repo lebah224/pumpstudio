@@ -4219,7 +4219,9 @@ function markMigrated(t, now) {
 const SNAP = { busy: false, last: 0, ok: 0, err: 0, at: 0, n: 0 };
 const isSnap = (t) => t.src === 'snap';
 const uniq = (t) => isSnap(t) ? t.buys : t.buyers.size;
-const pairRank = (p) => (p.dexId === 'pumpswap' ? 1e15 : 0) + ((p.liquidity && +p.liquidity.usd) || 0) + ((p.volume && +p.volume.h24) || 0) / 1e6;
+const WSOL = 'So11111111111111111111111111111111111111112';
+const solQuoted = (p) => !!(p.quoteToken && p.quoteToken.address === WSOL);
+const pairRank = (p) => (solQuoted(p) ? 1e16 : 0) + (p.dexId === 'pumpswap' ? 1e15 : p.dexId === 'pumpfun' ? 1e14 : 0) + ((p.liquidity && +p.liquidity.usd) || 0) + ((p.volume && +p.volume.h24) || 0) / 1e6;
 async function snapPoll() {
   if (SNAP.busy || S.demo || !S.wantConn || !cfg.snapshots) return;
   const now = Date.now();
@@ -4252,9 +4254,17 @@ async function snapPoll() {
   } finally { SNAP.busy = false; S.dirty.header = true; }
 }
 function applySnap(t, p, now) {
-  const pn = num(p.priceNative), pu = num(p.priceUsd);
-  if (!pn || pn <= 0) return;
-  const mc = pn * SUPPLY, solUsd = pu ? pu / pn : 0;
+  // priceNative est exprimé dans le jeton de cotation de la paire : on ne l'utilise que si c'est du SOL
+  const pn = num(p.priceNative), pu = num(p.priceUsd), sq = solQuoted(p), su = (PS.S && PS.S.solUsd) || (sq && pu && pn ? pu / pn : 0);
+  const mc = sq && pn > 0 ? pn * SUPPLY : pu > 0 && su ? pu * SUPPLY / su : 0;
+  if (!(mc > 0)) { SNAP.bad = (SNAP.bad || 0) + 1; return; }
+  // garde-fous : sur la courbe pump.fun le MC reste entre ~28 et ~420 SOL ; un saut énorme doit être confirmé
+  if (p.dexId === 'pumpfun' && (mc < 20 || mc > 500)) { SNAP.bad = (SNAP.bad || 0) + 1; return; }
+  if (t.mc > 0 && (mc > t.mc * 15 || mc < t.mc / 15)) {
+    if (!t.jump || Math.abs(t.jump / mc - 1) > 0.3) { t.jump = mc; SNAP.bad = (SNAP.bad || 0) + 1; return; }
+  }
+  t.jump = 0;
+  const solUsd = su;
   const h1 = (p.txns && p.txns.h1) || {}, b = +h1.buys || 0, sl = +h1.sells || 0, tot = b + sl;
   const volSol = solUsd ? ((p.volume && +p.volume.h1) || 0) / solUsd : 0;
   if (t.src !== 'snap') { t.src = 'snap'; t.buys = 0; t.sells = 0; t.hist = []; if (t.fromMigration) t.mc0 = mc; }
