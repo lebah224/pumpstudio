@@ -901,7 +901,7 @@ Message: ${r}.
   const FAMOUS = ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF', 'FLOKI', 'POPCAT', 'MEW', 'BOME', 'SLERF', 'PNUT', 'GOAT', 'MOODENG', 'FARTCOIN', 'BRETT', 'MOG', 'TURBO', 'NEIRO', 'CHILLGUY', 'SOL', 'BTC', 'ETH', 'USDC', 'USDT', 'TRUMP', 'MELANIA'];
 
   /* ================================================================ réglages */
-  const DEF = { engine: 'direct', speed: 'fast', maxPriority: 0.003, rpc: '', metaMethod: 'pump', pinataJwt: '', slippage: 15, priorityFee: 0.0005, maxSol: 1, feePct: 1.25, portalFeePct: 0.5, devMaxPct: 10, sim: true, notify: true, sound: true, pollSec: 10, sender: 'swqos', useSess: false, autoExec: true, slSlippage: 30, autoRetry: 2 };
+  const DEF = { engine: 'direct', speed: 'fast', maxPriority: 0.003, rpc: '', metaMethod: 'pump', pinataJwt: '', slippage: 15, priorityFee: 0.0005, maxSol: 1, feePct: 1.25, portalFeePct: 0.5, devMaxPct: 10, sim: true, notify: true, sound: true, pollSec: 10, ppLive: true, sender: 'swqos', useSess: false, autoExec: true, slSlippage: 30, autoRetry: 2 };
   const LS = { cfg: 'pstudio_cfg_v1', draft: 'pstudio_draft_v1', tokens: 'pstudio_tokens_v1', journal: 'pstudio_journal_v1', orders: 'pstudio_orders_v1', wallet: 'pstudio_wallet_v1', sess: 'pstudio_sess_v1' };
   const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { if (k === LS.draft) { try { const c = Object.assign({}, v, { image: null }); localStorage.setItem(k, JSON.stringify(c)); } catch (e2) {} } } };
@@ -1631,6 +1631,7 @@ Message: ${r}.
       $('mBody').insertAdjacentHTML('beforeend', cfg.sim ? '<div class="notice info">Simulation réussie : la transaction réelle passerait. Désactive le mode simulation pour l\'envoyer.</div>' : '<div class="notice good">Transaction confirmée. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
       toast(cfg.sim ? 'Simulation réussie' : (side === 'buy' ? 'Achat confirmé' : 'Vente confirmée'), sym, 'g');
       refreshBal(); delete S.cache[mint]; refreshView();
+      return true;
     } catch (e) { toast('Opération impossible', e.message, 'r'); }
     finally { S.busy = false; renderTop(); }
   }
@@ -2381,8 +2382,10 @@ Message: ${r}.
     $('footMode').style.color = cfg.sim ? 'var(--violet)' : 'var(--red)';
     const sc = (attr, dot, label, val) => '<button class="sc-it" type="button" ' + attr + '><span class="dot ' + dot + '"></span>' + label + '<em>' + val + '</em></button>';
     $('sideCheck').innerHTML = sc('data-sc="wallet"', S.wallet ? 'on' : 'wait', 'Wallet', S.wallet ? esc(short(S.wallet.pk)) : 'à connecter') +
+      sc('data-sc="pp" data-page="settings"', 'wait', 'Flux direct', '…') +
       sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'RPC Solana', S.rpcOk ? (cfg.rpc ? 'privé' : 'public') : S.rpcOk === false ? 'en erreur' : 'non testé') +
       sc(cfg.sim ? 'data-act="simoff"' : 'data-act="simon"', cfg.sim ? 'demo' : 'bad', 'Mode', cfg.sim ? 'simulation' : 'réel');
+    ppStatus();
     $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; $('cJournal').textContent = S.journal.length;
   }
   function setPage(p) {
@@ -2392,7 +2395,7 @@ Message: ${r}.
     $('pageTitle').textContent = PAGES[p][0]; $('pageSub').textContent = PAGES[p][1];
     $('pageEyebrow').textContent = { launch: 'Créer', social: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
     try { localStorage.setItem('pstudio_page', p); } catch (e) {}
-    renderPage(); window.scrollTo(0, 0);
+    renderPage(); window.scrollTo(0, 0); ppSync(liveSet());
     if (p === 'launch') setLaunchTab(S.ltab);
   }
 
@@ -2500,7 +2503,7 @@ Message: ${r}.
     const orders = S.orders.filter((o) => o.mint === mint);
     return '<div class="card"><div class="tok-head"><div class="av lg">' + (m.image ? '<img src="' + esc(m.image) + '" alt="">' : esc(sym.slice(0, 3))) + '</div><div><h2>' + esc(name) + ' <span class="badge v">$' + esc(sym) + '</span>' + (c.complete ? ' <span class="badge b">migré</span>' : '') + '</h2><p>' + short(mint, 8) + ' <button class="copy" data-copy="' + mint + '" type="button" title="Copier">⧉</button></p></div><div class="spacer"></div>' +
       '<div class="links"><a href="https://pump.fun/coin/' + mint + '" target="_blank" rel="noopener">pump.fun</a><a href="https://solscan.io/token/' + mint + '" target="_blank" rel="noopener">Solscan</a><a href="https://dexscreener.com/solana/' + mint + '" target="_blank" rel="noopener">DEX Screener</a></div>' +
-      (C.live && Date.now() - C.live < 60000 ? '<span class="badge g" title="Prix reçu en direct de la blockchain">● temps réel</span>' : LIVE[mint] ? '<span class="badge b" title="Abonnement actif, en attente d\'une transaction">● à l\'écoute</span>' : '<span class="badge" title="Ajoute un RPC Helius pour le temps réel">actualisation ' + cfg.pollSec + ' s</span>') +
+      (C.live && Date.now() - C.live < 60000 ? '<span class="badge g" title="Prix reçu en direct (' + esc(C.liveSrc || 'blockchain') + ')">● temps réel</span>' : LIVE[mint] ? '<span class="badge b" title="Abonnement actif, en attente d\'une transaction">● à l\'écoute</span>' : '<span class="badge" title="Ajoute un RPC Helius pour le temps réel">actualisation ' + cfg.pollSec + ' s</span>') +
       '<button class="btn sm" data-refresh="' + ctx + '" type="button">Actualiser</button></div>' +
       '<div class="grid-stats" style="margin-top:14px">' +
       '<div class="stat"><div class="l">Capitalisation</div><div class="v">' + usd(st.mcapSol) + '</div><div class="s">' + fSol(st.mcapSol, 1) + '</div></div>' +
@@ -2551,7 +2554,7 @@ Message: ${r}.
     }
   }
   async function showToken(ctx, mint) {
-    S.view[ctx] = mint;
+    S.view[ctx] = mint; ppSync(liveSet());
     const box = ctx === 'mine' ? $('mineDetail') : $('tradeDetail');
     if (!S.cache[mint]) box.innerHTML = tokenHtml(mint, ctx);
     try { await loadToken(mint, true); } catch (e) { S.cache[mint] = Object.assign(S.cache[mint] || {}, { error: e.message }); }
@@ -2644,7 +2647,7 @@ Message: ${r}.
   /* ---------- réglages : formulaires avec Valider / Annuler */
   const FORMS = [
     { id: 'engine', title: 'Moteur de transaction', fields: [['engine', 'Construction des transactions', 'sel', 'Direct : programme pump.fun, sans intermédiaire ni frais en plus. PumpPortal : secours, nécessaire pour les tokens migrés.', [['direct', 'Direct (pump.fun)'], ['portal', 'PumpPortal (+0,5 %)']]]] },
-    { id: 'conn', title: 'Connexion à Solana', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's']] },
+    { id: 'conn', title: 'Connexion à Solana', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct PumpPortal', 'bool', 'Prix et transactions pump.fun en temps réel : les ordres se déclenchent en moins d\'une seconde. Gratuit, sans clé.']] },
     { id: 'meta', title: 'Métadonnées du token', fields: [['metaMethod', 'Envoi du logo', 'sel', 'pump.fun direct, ou Pinata si le navigateur bloque', [['pump', 'pump.fun (IPFS)'], ['pinata', 'Pinata (IPFS)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
     { id: 'speed', title: 'Vitesse d\'exécution', fields: [['speed', 'Priorité des transactions', 'sel', 'Calculée sur les frais réellement payés sur pump.fun ces dernières secondes', [['eco', 'Économique'], ['fast', 'Rapide (conseillé)'], ['turbo', 'Turbo'], ['manual', 'Manuelle']]], ['maxPriority', 'Plafond des frais de priorité', 'num', 'Jamais plus que ce montant par transaction', 'SOL'], ['priorityFee', 'Frais de priorité manuels', 'num', 'Utilisés seulement en mode Manuelle', 'SOL']] },
     { id: 'fast', title: 'Wallet rapide et envoi', fields: [['autoExec', 'Ventes automatiques', 'bool', 'Le wallet rapide exécute seul les paliers et le stop'], ['slSlippage', 'Slippage du stop', 'num', 'Plus large : mieux vaut vendre un peu moins cher que pas du tout', '%'], ['autoRetry', 'Nouveaux essais', 'num', 'Si le prix a trop bougé (0 à 3)', 'fois'], ['sender', 'Envoi direct aux validateurs', 'sel', 'Helius Sender, en plus de ton RPC. Pourboire inclus dans la transaction.', [['swqos', 'Rapide · 0,000005 SOL (conseillé)'], ['max', 'Maximum · 0,001 SOL'], ['off', 'Désactivé']]]] },
@@ -2683,10 +2686,81 @@ Message: ${r}.
     if (errs.length) { errs.forEach(([el, m]) => { el.classList.add('err'); const d = document.createElement('div'); d.className = 'ferr'; d.textContent = m; el.closest('.f').appendChild(d); }); toast('Valeurs invalides', 'Corrige les champs en rouge.', 'r'); return; }
     Object.assign(cfg, v); save(LS.cfg, cfg); fs.classList.remove('dirty');
     if ('notify' in v && v.notify && window.Notification && Notification.permission === 'default') Notification.requestPermission();
+    if ('ppLive' in v) { if (cfg.ppLive) ppSync(liveSet()); else ppClose(); }
     if ('rpc' in v) { S.rpcOk = null; PST = { url: null }; Object.keys(LIVE).forEach((k) => delete LIVE[k]); BH = { at: 0, hash: null }; testRpc(true); }
     toast('Réglages enregistrés', FORMS.find((F) => F.id === fs.dataset.form).title, 'g'); renderTop();
   }
   function formCancel(fs) { fieldsOf(fs).forEach(([k, , type]) => { const el = fs.querySelector('[data-k="' + k + '"]'); if (type === 'bool') el.checked = !!cfg[k]; else el.value = cfg[k]; el.classList.remove('err'); }); fs.querySelectorAll('.ferr').forEach((e) => e.remove()); fs.classList.remove('dirty'); }
+  /* ================================================================ temps réel : flux PumpPortal (gratuit, sans clé)
+     Une seule connexion WebSocket pour tous les tokens suivis : PumpPortal bannit les clients qui en ouvrent plusieurs. */
+  const PP = { ws: null, state: 'off', subs: new Set(), want: new Set(), retry: 0, timer: null, last: 0, msgs: 0, pending: new Set() };
+  const PP_URL = 'wss://pumpportal.fun/api/data';
+  const VIRT_TOK = INIT_CURVE.vTok - INIT_CURVE.realTok; // part virtuelle de la courbe (unités brutes)
+  function ppSend(o) { try { if (PP.ws && PP.ws.readyState === 1) { PP.ws.send(JSON.stringify(o)); return true; } } catch (e) {} return false; }
+  function ppConnect() {
+    if (PP.ws || !cfg.ppLive || !window.WebSocket) return;
+    clearTimeout(PP.timer); PP.state = 'connecting'; ppStatus();
+    let ws; try { ws = new WebSocket(PP_URL); } catch (e) { PP.state = 'error'; ppStatus(); return ppRetry(); }
+    PP.ws = ws;
+    ws.onopen = () => { PP.state = 'on'; PP.retry = 0; PP.subs = new Set(); ppStatus(); ppDiff(); };
+    ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } if (m && m.mint && m.txType) { try { ppApply(m); } catch (e) {} } };
+    ws.onerror = () => { PP.state = 'error'; ppStatus(); };
+    ws.onclose = () => { if (PP.ws === ws) { PP.ws = null; PP.subs = new Set(); if (PP.state !== 'off') { PP.state = 'error'; ppStatus(); ppRetry(); } } };
+  }
+  function ppRetry() {
+    if (!cfg.ppLive || !PP.want.size) return;
+    const wait = [1000, 2000, 5000, 10000, 30000][Math.min(PP.retry++, 4)];
+    clearTimeout(PP.timer); PP.timer = setTimeout(ppConnect, wait);
+  }
+  function ppClose() { clearTimeout(PP.timer); PP.state = 'off'; const ws = PP.ws; PP.ws = null; PP.subs = new Set(); try { if (ws) ws.close(); } catch (e) {} ppStatus(); }
+  // Aligne les abonnements sur la liste voulue (ajouts et retraits en un message chacun)
+  function ppDiff() {
+    if (!PP.ws || PP.ws.readyState !== 1) return;
+    const add = [...PP.want].filter((m) => !PP.subs.has(m)), del = [...PP.subs].filter((m) => !PP.want.has(m));
+    if (add.length && ppSend({ method: 'subscribeTokenTrade', keys: add })) add.forEach((m) => PP.subs.add(m));
+    if (del.length && ppSend({ method: 'unsubscribeTokenTrade', keys: del })) del.forEach((m) => PP.subs.delete(m));
+  }
+  function ppSync(set) {
+    PP.want = new Set(cfg.ppLive ? [...set].filter(Boolean) : []);
+    if (!PP.want.size) { if (PP.ws && PP.subs.size) ppDiff(); return; }
+    if (!PP.ws) ppConnect(); else ppDiff();
+  }
+  function ppApply(m) {
+    const mint = m.mint, C = S.cache[mint];
+    if (!C) { if (PP.want.has(mint) && !PP.pending.has(mint)) { PP.pending.add(mint); loadToken(mint, false).catch(() => {}).finally(() => PP.pending.delete(mint)); } return; }
+    const vs = +m.vSolInBondingCurve, vt = +m.vTokensInBondingCurve, sol = +m.solAmount, tok = +m.tokenAmount;
+    if (vs > 0 && vt > 0) {
+      const c = Object.assign({ supply: 1e15 }, C.curve || {}, { exists: true, vSol: vs * 1e9, vTok: vt * 1e6 });
+      if (!c.pda) { try { c.pda = curvePda(mint); } catch (e) {} }
+      c.realTok = Math.max(0, c.vTok - VIRT_TOK); c.realSol = Math.max(0, c.vSol - INIT_CURVE.vSol);
+      if (c.realTok <= 0) c.complete = true;
+      C.curve = c; C.stats = curveStats(c);
+    } else if (sol > 0 && tok > 0 && C.stats) {           // token migré : prix tiré de la transaction elle-même
+      const price = sol / tok; C.stats = Object.assign({}, C.stats, { price, mcapSol: price * C.stats.supplyTok, mcapUsd: S.solUsd ? price * C.stats.supplyTok * S.solUsd : null });
+    }
+    if (m.txType === 'migrate' && C.curve) { C.curve = Object.assign({}, C.curve, { complete: true }); if (C.stats) C.stats = Object.assign({}, C.stats, { progress: 100 }); }
+    if ((m.txType === 'buy' || m.txType === 'sell') && sol > 0 && tok > 0 && m.signature && !C.trades.some((x) => x.sig === m.signature)) {
+      C.trades.unshift({ sig: m.signature, t: Date.now(), wallet: m.traderPublicKey || '', side: m.txType, tokens: tok, sol, price: sol / tok, live: true });
+      if (C.trades.length > 300) C.trades.length = 300;
+    }
+    C.live = Date.now(); C.liveSrc = 'PumpPortal'; C.at = Date.now();
+    onLive(mint);
+  }
+  function ppLabel() {
+    if (!cfg.ppLive) return ['', 'coupé'];
+    if (PP.state === 'on') return ['on', PP.subs.size ? PP.subs.size + ' suivi' + (PP.subs.size > 1 ? 's' : '') : 'prêt'];
+    if (PP.state === 'connecting') return ['wait', 'connexion…'];
+    if (PP.state === 'error') return ['bad', 'reconnexion'];
+    return ['wait', 'en veille'];
+  }
+  function ppStatus() { const el = document.querySelector('[data-sc="pp"]'); if (!el) return; const l = ppLabel(); el.querySelector('.dot').className = 'dot ' + l[0]; el.querySelector('em').textContent = l[1]; }
+  function liveSet() {
+    const keep = new Set(S.orders.filter((o) => o.active).map((o) => o.mint));
+    if (S.page === 'mine') { if (S.view.mine) keep.add(S.view.mine); S.tokens.slice(0, 20).forEach((t) => keep.add(t.mint)); }
+    if (S.page === 'trade' && S.view.trade) keep.add(S.view.trade);
+    return keep;
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.ppLive && PP.want.size && !PP.ws) ppConnect(); });
   async function testRpc(quiet) {
     try { const v = await rpc('getVersion', []); const slot = await rpc('getSlot', []); if (!quiet) toast('RPC opérationnel', 'Solana ' + (v['solana-core'] || '') + ' · bloc ' + slot.toLocaleString('fr-FR'), 'g'); }
     catch (e) { if (!quiet) toast('RPC en erreur', e.message, 'r'); }
@@ -2737,7 +2811,7 @@ Message: ${r}.
     }
     renderTop(); if (S.page === 'orders') renderOrders();
   }
-  function sellOrder(o) { trade(o.mint, 'sell', o.tokens ? String(Math.floor(o.tokens)) : o.pct + '%', { title: 'Ordre déclenché · vendre ' + o.pct + ' % de ' + o.symbol + ' ?', note: 'Condition atteinte : ' + (o.kind === 'tp' ? 'prix +' + o.value + ' %' : o.kind === 'sl' ? 'prix −' + o.value + ' %' : 'capitalisation ' + fUsd(o.value)) + '.' }).then(() => { o.done = true; save(LS.orders, S.orders); renderAll(); }); }
+  function sellOrder(o) { trade(o.mint, 'sell', o.tokens ? String(Math.floor(o.tokens)) : o.pct + '%', { title: 'Ordre déclenché · vendre ' + o.pct + ' % de ' + o.symbol + ' ?', note: 'Condition atteinte : ' + (o.kind === 'tp' ? 'prix +' + o.value + ' %' : o.kind === 'sl' ? 'prix −' + o.value + ' %' : 'capitalisation ' + fUsd(o.value)) + '.' }).then((ok) => { if (ok) o.done = true; save(LS.orders, S.orders); renderAll(); }); } // vente refusée ou échouée : l'ordre reste « à signer »
   /* ---------- exécution automatique par le wallet rapide */
   let AUTOQ = Promise.resolve();
   function canAuto() { return !!(cfg.autoExec && S.wallet && S.wallet.id === 'session' && SESSW.kp && cfg.engine !== 'portal'); }
@@ -3163,7 +3237,8 @@ Message: ${r}.
     let tick = 0;
     setInterval(() => {
       tick++;
-      if (document.hidden || S.busy || $('modal').classList.contains('open')) return;
+      if (S.busy || $('modal').classList.contains('open')) return;
+      if (document.hidden) { if (tick % 4 === 0) watchOrders().catch(() => {}); return; } // onglet en arrière-plan : les ordres restent surveillés
       if (tick % Math.max(1, Math.round(cfg.pollSec / 5)) === 0) {
         const ctx = S.page === 'mine' ? 'mine' : S.page === 'trade' ? 'trade' : null;
         if (ctx && S.view[ctx]) loadToken(S.view[ctx], true).then(() => renderTokenView(ctx)).catch(() => {});
@@ -3172,12 +3247,12 @@ Message: ${r}.
       if (tick % 4 === 0) watchOrders().catch(() => {});
       const keep = new Set(S.orders.filter((o) => o.active).map((o) => o.mint)); if (S.page === 'mine' && S.view.mine) keep.add(S.view.mine); if (S.page === 'trade' && S.view.trade) keep.add(S.view.trade);
       keep.forEach((m) => { if (!S.cache[m]) loadToken(m, false).catch(() => {}); });
-      liveKeep(keep);
+      liveKeep(keep); ppSync(liveSet());
       if (tick % 4 === 1) prefetch();
     }, 5000);
     window.addEventListener('resize', () => { ['mine', 'trade'].forEach((c) => { document.querySelectorAll('#' + (c === 'mine' ? 'mineDetail' : 'tradeDetail') + ' canvas.pchart').forEach((cv) => drawPriceChart(cv, S.cache[cv.dataset.mint] || {})); }); });
   }
-  window.PumpStudio = { S, cfg, SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE };
+  window.PumpStudio = { PP, S, cfg, SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 </script>
