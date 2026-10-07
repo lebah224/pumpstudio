@@ -8,7 +8,7 @@
 <title>PumpStudio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@500;600&family=Syne:wght@700;800&family=Space+Grotesk:wght@600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@500;600&family=Cormorant+Garamond:wght@600;700&family=Cinzel:wght@600;700&family=Syne:wght@700;800&family=Space+Grotesk:wght@600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
 /* PumpStudio · console de lancement pump.fun
    Mise en page : rail de navigation fixe à gauche, bandeau d'instruments en haut, plan de travail fluide.
@@ -475,7 +475,7 @@ textarea{font:inherit;color:inherit}
 .tp-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13.5px}
 .tp-foot .sum{margin-left:auto;font-family:var(--mono)}
 
-.idea .h .idea-logo{width:40px;height:40px;border-radius:10px;flex:none;border:1px solid var(--line2);background:var(--bg)}
+.idea .h .idea-logo{width:60px;height:60px;border-radius:14px;box-shadow:0 8px 20px -10px rgba(0,0,0,.8);flex:none;border:1px solid var(--line2);background:var(--bg)}
 .th-ic{display:inline-grid;place-items:center;width:18px;font-size:12.5px;color:var(--accent)}
 .chip.on .th-ic{color:var(--accent-ink)}
 
@@ -778,7 +778,7 @@ Message: ${r}.
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
   const S = {
     page: 'launch', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
-    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'meme', tone: 'witty', lang: 'en', word: '', logo: { style: 'mono', pal: 0, emoji: '', text: '', seed: 7 }, tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
+    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'mono', pal: 0, emoji: '', text: '', seed: 7 }, tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
     tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []),
     ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, jf: 'real', busy: false, imgBlob: null,
   };
@@ -792,7 +792,7 @@ Message: ${r}.
     set(v) { S.ext = v; }, enumerable: true,
   });
   // brouillons des versions précédentes : univers, ton et style de logo d'avant
-  (function migrate() { const d = S.draft; if (!['meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'brand'].includes(d.theme)) d.theme = 'meme'; if (!['minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'witty'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
+  (function migrate() { const d = S.draft; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
 
   /* ================================================================ outils binaires */
   function b64ToBytes(b64) { const s = atob(b64), out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
@@ -1599,7 +1599,10 @@ Message: ${r}.
   /* ================================================================ générateur de concept (v3, international) */
   // Noms courts, prononçables dans toutes les langues, sans accent ni référence locale.
   const THEMES = {
-    meme: { label: 'Mèmes animaux', ic: '◐', pal: 0, mascot: ['🐸', '🦦', '🐧', '🦫', '🦥', '🐼', '🦊', '🐹'],
+    luxe: { label: 'Luxe et rareté', ic: '◈', pal: 0, mascot: ['💎', '👑', '🦢', '🐆'],
+      nouns: ['Aurelia', 'Velora', 'Opaline', 'Seraph', 'Elysia', 'Noctis', 'Aether', 'Sable', 'Vesper', 'Lustre', 'Regalia', 'Argent', 'Celeste', 'Solenne', 'Aurion', 'Valen', 'Orra', 'Maison'],
+      adj: ['Gilded', 'Rare', 'Noble', 'Silent', 'Velvet', 'Ivory'], pairs: false, premium: true },
+    meme: { label: 'Mèmes animaux', ic: '◐', pal: 8, mascot: ['🐸', '🦦', '🐧', '🦫', '🦥', '🐼', '🦊', '🐹'],
       nouns: ['Otter', 'Toad', 'Capy', 'Gecko', 'Quokka', 'Corgi', 'Panda', 'Lynx', 'Hippo', 'Moose', 'Goose', 'Walrus', 'Axolotl', 'Koala', 'Llama', 'Raccoon'],
       adj: ['Lil', 'Big', 'Chill', 'Rich', 'Sleepy', 'Tiny', 'Smug', 'Lucky', 'Sad', 'Based'] },
     internet: { label: 'Culture internet', ic: '◇', pal: 5, mascot: ['🗿', '😶', '🫠', '💎'],
@@ -1611,32 +1614,34 @@ Message: ${r}.
     tech: { label: 'IA et tech', ic: '⬡', pal: 7, mascot: ['🤖', '👾', '⚡'],
       nouns: ['Neuron', 'Cortex', 'Synth', 'Vector', 'Pixel', 'Kernel', 'Cipher', 'Echo', 'Glitch', 'Signal', 'Proxy', 'Logic'],
       adj: ['Hyper', 'Zero', 'Neo', 'Quantum', 'Open', 'Infinite'] },
-    prestige: { label: 'Prestige', ic: '♛', pal: 0, mascot: ['👑', '💎'],
+    prestige: { label: 'Prestige', ic: '♛', pal: 6, premium: true, mascot: ['👑', '💎'],
       nouns: ['Crown', 'Onyx', 'Ivory', 'Velvet', 'Monarch', 'Opal', 'Regent', 'Sterling', 'Aurum', 'Marquis', 'Laurel', 'Ermine'],
       adj: ['Royal', 'Black', 'Silver', 'Grand', 'Old'] },
-    myth: { label: 'Mythologie', ic: 'Ω', pal: 4, mascot: ['🐉', '🦅', '🔱'],
+    myth: { label: 'Mythologie', ic: 'Ω', pal: 3, mascot: ['🐉', '🦅', '🔱'],
       nouns: ['Atlas', 'Kraken', 'Phoenix', 'Hydra', 'Titan', 'Midas', 'Icarus', 'Golem', 'Oracle', 'Cerberus', 'Minotaur', 'Valkyrie'],
       adj: ['Last', 'Iron', 'Young', 'Lost', 'Wild', 'Elder'] },
-    brand: { label: 'Nom de marque', ic: '◆', pal: 1, mascot: ['✨'], nouns: [], adj: [] },
+    brand: { label: 'Nom de marque', ic: '◆', pal: 1, premium: true, mascot: ['✨'], nouns: [], adj: [] },
   };
-  const TONES = { minimal: 'Sobre', witty: 'Décalé', community: 'Communauté' };
+  const TONES = { luxe: 'Premium', minimal: 'Sobre', witty: 'Décalé', community: 'Communauté' };
   const LANGS = { en: 'Anglais', fr: 'Français' };
   // Descriptions : courtes, sans superlatifs creux ni formules « Bienvenue dans… », ni promesse de gains.
   const DESC = {
     en: {
+      luxe: ['{n}. Rare by design.', 'Quiet confidence, on-chain. {n}.', 'Fewer promises. Better taste. {n}.', 'Made for holders with patience.', '{n} is not for everyone. That is the point.', 'A fair launch, finished with care.', 'A {k} with standards.', 'Understated. Uncompromising. {n}.'],
       minimal: ['{n}. Nothing more, nothing less.', 'One coin. One idea. {n}.', '{n}. Simple by design.', 'No roadmap. No presale. Just {n}.', 'Less noise. More {n}.', '{n}, quietly on-chain.', 'A clean ticker for a clean idea.', 'Fair launch. Nothing hidden.'],
       witty: ['{n} doesn\'t do roadmaps. It does vibes.', 'The only {k} that checks the chart before breakfast.', '{n} has no utility and fully accepts it.', 'Somebody had to launch {n}. It was us.', 'Powered by conviction and very little sleep.', '{n}: zero utility, maximum character.', 'Your portfolio called. It asked for {n}.', 'The {k} your timeline didn\'t see coming.'],
       community: ['{n} belongs to whoever holds it.', 'Built by holders, for holders. That\'s {n}.', 'Fair launch. No team allocation. {n} is yours.', 'A {k} for the people who stay.', 'No insiders, no allocations. Only holders.', 'Every holder is part of the story.', 'Started small. Built together.', 'The community is the roadmap.'],
     },
     fr: {
+      luxe: ['{n}. Rare par nature.', 'L\'assurance tranquille, sur la blockchain. {n}.', 'Moins de promesses. Plus de goût. {n}.', 'Pensé pour les holders patients.', '{n} n\'est pas fait pour tout le monde. C\'est voulu.', 'Un lancement équitable, soigné jusqu\'au détail.', 'Un {k} qui a des exigences.', 'Discret. Sans compromis. {n}.'],
       minimal: ['{n}. Rien de plus, rien de moins.', 'Un coin, une idée : {n}.', 'Pas de roadmap. Pas de prévente. Juste {n}.', '{n}, simple par principe.', 'Moins de bruit. Plus de {n}.', '{n}, discrètement sur la blockchain.', 'Un ticker net pour une idée nette.', 'Lancement équitable. Rien de caché.'],
       witty: ['{n} n\'a pas de roadmap. {n} a des vibes.', 'Le seul {k} qui regarde le graphique avant le café.', '{n} n\'a aucune utilité et l\'assume.', 'Il fallait bien que quelqu\'un lance {n}.', 'Alimenté par la conviction et peu de sommeil.', '{n} : zéro utilité, beaucoup de caractère.', 'Ton portefeuille a appelé. Il voulait {n}.', 'Le {k} que personne n\'avait vu venir.'],
       community: ['{n} appartient à ceux qui le gardent.', 'Fait par les holders, pour les holders.', 'Lancement équitable, aucune part réservée. {n} est à vous.', 'Un {k} pour ceux qui restent.', 'Pas d\'initiés, pas de réserve. Que des holders.', 'Chaque holder fait partie de l\'histoire.', 'Parti de rien, construit ensemble.', 'La communauté, c\'est la roadmap.'],
     },
   };
   const DESC2 = {
-    en: { minimal: '', witty: 'Not financial advice. Barely advice at all.', community: 'Fair launch on pump.fun.' },
-    fr: { minimal: '', witty: 'Pas un conseil financier. À peine un conseil.', community: 'Lancement équitable sur pump.fun.' },
+    en: { luxe: 'Fair launch on pump.fun. No presale, no team allocation.', minimal: '', witty: 'Not financial advice. Barely advice at all.', community: 'Fair launch on pump.fun.' },
+    fr: { luxe: 'Lancement équitable sur pump.fun. Sans prévente ni réserve d\'équipe.', minimal: '', witty: 'Pas un conseil financier. À peine un conseil.', community: 'Lancement équitable sur pump.fun.' },
   };
   const rnd = (a) => a[Math.floor(Math.random() * a.length)];
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
@@ -1644,6 +1649,12 @@ Message: ${r}.
   const SYL_C = ['b', 'd', 'f', 'g', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z', 'br', 'kr', 'tr', 'pl', 'st', 'fl'];
   const SYL_V = ['a', 'e', 'i', 'o', 'u', 'a', 'o'];
   const SYL_END = ['', '', '', 'x', 'n', 's', 'ra', 'na', 'lo', 'ix', 'on', 'ex', 'el', 'ia'];
+  // Variante premium : finales douces et sonorités de maison (Velora, Aurion, Solenne…)
+  const LUX_C = ['v', 'l', 'm', 'n', 's', 'r', 'th', 'c', 'el', 'au', 'or'], LUX_V = ['a', 'e', 'i', 'o', 'au', 'e'], LUX_END = ['ra', 'ria', 'lia', 'nne', 'on', 'ion', 'is', 'ys', 'elle', 'ora', 'ine', 'ium'];
+  function brandableLux() {
+    const w = cap(rnd(LUX_C) + rnd(LUX_V) + rnd(['l', 'r', 'v', 'n', 's', 'th']) + rnd(LUX_END));
+    return w.length < 5 || w.length > 8 || /(.)\1\1|[aeiou]{3}|([^aeiou])\2|[^aeiouy]{3}/i.test(w) ? brandableLux() : w;
+  }
   function brandable() {
     let w = rnd(SYL_C) + rnd(SYL_V);
     if (Math.random() < 0.7) w += rnd(SYL_C.filter((c) => c.length === 1)) + rnd(SYL_V);
@@ -1683,7 +1694,8 @@ Message: ${r}.
     return { score: parts.reduce((s2, p) => s2 + p.v, 0), parts };
   }
   function nameFor(th, word) {
-    if (th === THEMES.brand || (!th.nouns.length)) return Math.random() < 0.8 ? brandable() : brandable() + ' ' + rnd(['Labs', 'One']);
+    if (th === THEMES.brand || (!th.nouns.length)) return Math.random() < 0.6 ? brandableLux() : Math.random() < 0.6 ? brandable() : brandableLux() + ' ' + rnd(['Maison', 'Reserve', 'One']);
+    if (th === THEMES.luxe && Math.random() < 0.35) return brandableLux();
     const n = word && Math.random() < 0.6 ? cap(word) : rnd(th.nouns), p = Math.random();
     if (p < 0.38) return n;                                   // un mot
     if (p < 0.68) return rnd(th.adj) + ' ' + n;               // adjectif + nom
@@ -1700,7 +1712,7 @@ Message: ${r}.
       const ticker = tickerFor(name); if (tick.has(ticker)) continue;
       seen.add(name.toLowerCase()); tick.add(ticker);
       const sc = scoreIdea(name, ticker, word);
-      out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: (th.pal + out.length) % PALS.length, style: rnd(['mono', 'coin', 'geo', 'word']) });
+      out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: (th.pal + out.length * 3) % PALS.length, style: th.premium ? rnd(['mono', 'coin', 'orb', 'word', 'mono', 'coin']) : rnd(['mono', 'coin', 'orb', 'geo', 'word']) });
     }
     out.sort((a, b) => b.score - a.score);
     S.ideas = out; renderIdeas();
@@ -1722,26 +1734,28 @@ Message: ${r}.
     if (!silent) toast('Idée reprise', x.name + ' · $' + x.ticker + '. Ajuste le logo à l\'étape 2.', 'g');
   }
 
-  /* ================================================================ logo (v2) */
-  // Palettes : fond (2 tons), couleur principale, accent
+  /* ================================================================ logo (v3, premium) */
+  // Palettes : fond (sombre, clair), métal (reflet, principal, mi-ton, profond), accent. light : fond clair.
   const PALS = [
-    { n: 'Minuit et or', bg: ['#0B0F1A', '#1C2643'], fg: '#F2C96B', ac: '#FFE7A3' },
-    { n: 'Encre et corail', bg: ['#121212', '#2A2A2A'], fg: '#FF6B57', ac: '#FFD3CB' },
-    { n: 'Océan', bg: ['#041B2D', '#0B3F66'], fg: '#7FD8FF', ac: '#E3F8FF' },
-    { n: 'Forêt et crème', bg: ['#0D2A1E', '#1D4C39'], fg: '#F1E8CF', ac: '#C8B98D' },
-    { n: 'Royal', bg: ['#170A36', '#3A1C78'], fg: '#E7D6FF', ac: '#B48DF5' },
-    { n: 'Monochrome', bg: ['#0A0A0A', '#1F1F1F'], fg: '#FFFFFF', ac: '#A3A3A3' },
-    { n: 'Crépuscule', bg: ['#2A0E1C', '#6A1C39'], fg: '#FFB487', ac: '#FF7A59' },
-    { n: 'Électrique', bg: ['#0A0F0B', '#172219'], fg: '#C5FF3B', ac: '#EEFFD0' },
+    { n: 'Obsidienne et or', bg: ['#060709', '#1b1d26'], m: ['#fff6d8', '#e8c26a', '#a8741f', '#5a3a0e'], fg: '#e8c26a', ac: '#fff1c9' },
+    { n: 'Ivoire et encre', bg: ['#e6ddca', '#fbf8f1'], m: ['#7a7a88', '#22222b', '#111117', '#000000'], fg: '#22222b', ac: '#8a6a2e', light: true },
+    { n: 'Minuit et glace', bg: ['#020617', '#13264d'], m: ['#f2fcff', '#a5e6ff', '#3ea7d8', '#13507a'], fg: '#a5e6ff', ac: '#f2fcff' },
+    { n: 'Émeraude et laiton', bg: ['#02140f', '#0d3d2f'], m: ['#fbf0c8', '#d9b45a', '#9a7425', '#4f3a0c'], fg: '#d9b45a', ac: '#fbf0c8' },
+    { n: 'Améthyste et argent', bg: ['#0e0619', '#311856'], m: ['#ffffff', '#ddd6f3', '#9a8fbf', '#4f466e'], fg: '#ddd6f3', ac: '#ffffff' },
+    { n: 'Graphite et chrome', bg: ['#08080a', '#28282e'], m: ['#ffffff', '#d4d7de', '#7d828d', '#363a42'], fg: '#d4d7de', ac: '#ffffff' },
+    { n: 'Bordeaux et or rose', bg: ['#16050c', '#4c1128'], m: ['#ffe8dc', '#f0ab8c', '#b4674c', '#6a3122'], fg: '#f0ab8c', ac: '#ffe8dc' },
+    { n: 'Saphir et platine', bg: ['#040a1c', '#142a5e'], m: ['#ffffff', '#e1e6f0', '#97a2b8', '#4b5568'], fg: '#e1e6f0', ac: '#ffffff' },
+    { n: 'Pétrole et cuivre', bg: ['#03141a', '#0c363e'], m: ['#ffe3c8', '#e3925a', '#a65524', '#572a0f'], fg: '#e3925a', ac: '#ffe3c8' },
+    { n: 'Champagne', bg: ['#e6d5b4', '#f9f2e4'], m: ['#fff3cf', '#b8892e', '#7d5a17', '#3f2c08'], fg: '#9c7322', ac: '#3f2c08', light: true },
   ];
-  const STYLES = { mono: 'Monogramme', coin: 'Pièce gravée', geo: 'Géométrique', word: 'Logotype', mascot: 'Mascotte' };
-  const LOGO_FONTS = { display: '"Syne","Inter Tight",system-ui,sans-serif', serif: '"DM Serif Display",Georgia,serif', grotesk: '"Space Grotesk","Inter Tight",system-ui,sans-serif' };
+  const STYLES = { mono: 'Monogramme', coin: 'Pièce frappée', orb: 'Sphère', geo: 'Emblème', word: 'Logotype', mascot: 'Médaillon' };
+  const LOGO_FONTS = { serif: '"Cormorant Garamond","DM Serif Display",Georgia,serif', caps: '"Cinzel","Cormorant Garamond",Georgia,serif', display: '"Syne","Inter Tight",system-ui,sans-serif', grotesk: '"Space Grotesk","Inter Tight",system-ui,sans-serif' };
   let fontsReady = false;
   function loadFonts() {
     if (!document.fonts || !document.fonts.load) { fontsReady = true; return Promise.resolve(); }
-    return Promise.all(['800 200px "Syne"', '400 200px "DM Serif Display"', '700 200px "Space Grotesk"'].map((f) => document.fonts.load(f).catch(() => {}))).then(() => { fontsReady = true; });
+    return Promise.all(['700 200px "Cormorant Garamond"', '600 200px "Cinzel"', '700 200px "Cinzel"', '800 200px "Syne"', '400 200px "DM Serif Display"', '700 200px "Space Grotesk"'].map((f) => document.fonts.load(f).catch(() => {}))).then(() => { fontsReady = true; });
   }
-  function seeded(seed) { let s = (seed >>> 0) || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  function seeded(seed) { let s = Math.imul(seed >>> 0, 2654435761) >>> 0 || 1; const next = () => { s = (s * 1664525 + 1013904223) >>> 0; s ^= s >>> 15; return (s >>> 0) / 4294967296; }; next(); next(); return next; }
   let GRAIN = null;
   function grain(W) {
     if (GRAIN && GRAIN.width === W) return GRAIN;
@@ -1749,77 +1763,181 @@ Message: ${r}.
     for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
     g.putImageData(im, 0, 0); GRAIN = c; return c;
   }
-  function background(g, W, P, r) {
-    const lg = g.createLinearGradient(0, 0, W, W); lg.addColorStop(0, P.bg[1]); lg.addColorStop(1, P.bg[0]); g.fillStyle = lg; g.fillRect(0, 0, W, W);
-    const rg = g.createRadialGradient(W * 0.28, W * 0.22, W * 0.02, W * 0.28, W * 0.22, W * 0.9); rg.addColorStop(0, 'rgba(255,255,255,.10)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = rg; g.fillRect(0, 0, W, W);
+  function hexA(hex, a) { const m = /^#([0-9a-f]{6})$/i.exec(hex); if (!m) return hex; const n = parseInt(m[1], 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+  // Métal brossé : bandes de reflets le long de l'axe donné
+  function metal(g, x0, y0, x1, y1, P) {
+    const m = P.light ? [P.m[2], P.m[1], P.m[2], P.m[3]] : P.m, lg = g.createLinearGradient(x0, y0, x1, y1); // fond clair : métal plus dense pour rester lisible
+    [[0, m[1]], [0.18, m[0]], [0.4, m[1]], [0.6, m[2]], [0.78, m[1]], [0.92, m[0]], [1, m[2]]].forEach((s) => lg.addColorStop(s[0], s[1]));
+    return lg;
   }
-  function finish(g, W) {
-    try { g.save(); g.globalAlpha = 0.05; g.globalCompositeOperation = 'overlay'; g.drawImage(grain(W), 0, 0); g.restore(); } catch (e) {}
-    const v = g.createRadialGradient(W / 2, W / 2, W * 0.45, W / 2, W / 2, W * 0.75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.28)'); g.fillStyle = v; g.fillRect(0, 0, W, W);
+  function background(g, W, P) {
+    const lg = g.createLinearGradient(0, 0, 0, W); lg.addColorStop(0, P.bg[1]); lg.addColorStop(1, P.bg[0]); g.fillStyle = lg; g.fillRect(0, 0, W, W);
+    const rg = g.createRadialGradient(W * 0.5, W * 0.4, W * 0.02, W * 0.5, W * 0.4, W * 0.72);
+    rg.addColorStop(0, P.light ? 'rgba(255,255,255,.6)' : hexA(P.m[1], 0.17)); rg.addColorStop(1, P.light ? 'rgba(255,255,255,0)' : hexA(P.m[1], 0)); g.fillStyle = rg; g.fillRect(0, 0, W, W);
+  }
+  function finish(g, W, P) {
+    try { g.save(); g.globalAlpha = 0.045; g.globalCompositeOperation = 'overlay'; g.drawImage(grain(W), 0, 0); g.restore(); } catch (e) {}
+    const v = g.createRadialGradient(W / 2, W / 2, W * 0.42, W / 2, W / 2, W * 0.76); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, P.light ? 'rgba(60,40,10,.14)' : 'rgba(0,0,0,.38)'); g.fillStyle = v; g.fillRect(0, 0, W, W);
   }
   function fitText(g, txt, font, maxW, size) { let s = size; do { g.font = font.replace('{s}', s); s -= 4; } while (g.measureText(txt).width > maxW && s > 20); return s + 4; }
-  function arcText(g, txt, cx, cy, R, startDeg) {
-    const chars = txt.split(''); const total = chars.reduce((a, ch) => a + g.measureText(ch).width, 0), angSpan = total / R;
-    let a = (startDeg * Math.PI / 180) - angSpan / 2;
-    chars.forEach((ch) => { const w = g.measureText(ch).width; a += w / 2 / R; g.save(); g.translate(cx + R * Math.cos(a), cy + R * Math.sin(a)); g.rotate(a + Math.PI / 2); g.fillText(ch, 0, 0); g.restore(); a += w / 2 / R; });
+  // Ordonnée de la ligne de base pour centrer visuellement un texte (ligne de base « alphabetic »)
+  function midY(g, txt, cy) { const m = g.measureText(txt); return m.actualBoundingBoxAscent != null ? cy + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2 : cy + m.width * 0.25; }
+  // Texte espacé, centré sur x ; renvoie sa largeur
+  function spaced(g, txt, x, y, sp, draw) {
+    const ch = [...txt], ws = ch.map((c) => g.measureText(c).width), tot = ws.reduce((a, b) => a + b, 0) + sp * (ch.length - 1);
+    if (draw !== false) { let cx = x - tot / 2; const al = g.textAlign; g.textAlign = 'left'; ch.forEach((c, i) => { g.fillText(c, cx, y); cx += ws[i] + sp; }); g.textAlign = al; }
+    return tot;
   }
-  // Texte réparti régulièrement sur tout le tour de la pièce : « $TICKER ✦ $TICKER ✦ … »
-  function ringText(g, word, cx, cy, R) {
-    const unit = word + '  •  ', circ = 2 * Math.PI * R, uw = g.measureText(unit).width;
-    const n = Math.max(1, Math.floor(circ / (uw * 1.15))), chars = unit.repeat(n).split('');
+  // Relief : ombre portée sombre, liseré clair, puis la matière
+  function emboss(g, P, paint, d) {
+    g.save(); g.translate(d * 0.9, d * 1.1); g.fillStyle = hexA(P.m[3], P.light ? 0.35 : 0.8); paint(); g.restore();
+    g.save(); g.translate(-d * 0.45, -d * 0.55); g.fillStyle = P.light ? 'rgba(255,255,255,.9)' : hexA(P.m[0], 0.55); paint(); g.restore();
+  }
+  function gem(g, x, y, r) { g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r * 0.62, y); g.lineTo(x, y + r); g.lineTo(x - r * 0.62, y); g.closePath(); g.fill(); }
+  // Légende sous le symbole : TICKER en capitales gravées, filets et losanges de part et d'autre
+  function caption(g, W, P, txt, y, u) {
+    g.font = '600 ' + Math.round(50 * u) + 'px ' + LOGO_FONTS.caps; g.textBaseline = 'alphabetic';
+    const sp = 15 * u, tw = spaced(g, txt, 0, 0, sp, false), by = midY(g, txt, y);
+    g.fillStyle = metal(g, W / 2 - tw / 2, y - 30 * u, W / 2 + tw / 2, y + 30 * u, P); spaced(g, txt, W / 2, by, sp);
+    const x0 = W / 2 - tw / 2 - 34 * u, x1 = W / 2 + tw / 2 + 34 * u, len = 70 * u;
+    g.fillStyle = hexA(P.m[1], 0.75); g.fillRect(x0 - len, y - 1.5 * u, len, 3 * u); g.fillRect(x1, y - 1.5 * u, len, 3 * u);
+    gem(g, x0 - len - 14 * u, y, 9 * u); gem(g, x1 + len + 14 * u, y, 9 * u);
+  }
+  // Texte réparti sur tout le tour de la pièce : « TICKER · TICKER · … »
+  function ringText(g, word, cx, cy, R, sep) {
+    const unit = word + (sep || '  •  '), circ = 2 * Math.PI * R, uw = g.measureText(unit).width;
+    const n = Math.max(1, Math.floor(circ / (uw * 1.1))), chars = unit.repeat(n).split('');
     const ws = chars.map((ch) => g.measureText(ch).width), tot = ws.reduce((a, b) => a + b, 0), gap = (circ - tot) / chars.length;
     let a = -Math.PI / 2;
     chars.forEach((ch, i) => { const w = ws[i]; a += (w / 2) / R; g.save(); g.translate(cx + R * Math.cos(a), cy + R * Math.sin(a)); g.rotate(a + Math.PI / 2); g.fillText(ch, 0, 0); g.restore(); a += (w / 2 + gap) / R; });
   }
-  // Dessine un logo complet sur un canvas de taille W (512 à 1024)
+  function circle(g, x, y, r) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); }
+  function dropShadow(g, u, a) { g.shadowColor = 'rgba(0,0,0,' + (a == null ? 0.5 : a) + ')'; g.shadowBlur = 70 * u; g.shadowOffsetY = 28 * u; }
+  function noShadow(g) { g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0; }
+  // Lettre à empattements, en relief, remplie de métal
+  function serifLetter(g, P, letter, cx, cy, maxW, maxS, u) {
+    const s = fitText(g, letter, '700 {s}px ' + LOGO_FONTS.serif, maxW, maxS);
+    g.font = '700 ' + s + 'px ' + LOGO_FONTS.serif; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const y = midY(g, letter, cy), paint = () => g.fillText(letter, cx, y);
+    emboss(g, P, paint, 7 * u);
+    g.fillStyle = metal(g, cx - s * 0.45, cy - s * 0.5, cx + s * 0.45, cy + s * 0.5, P); paint();
+    return s;
+  }
+  // Dessine un logo complet sur un canvas de taille W (256 à 1024)
   function paintLogo(cv, L, sym) {
     const W = cv.width, g = cv.getContext('2d'), P = PALS[(L.pal || 0) % PALS.length], R = seeded(L.seed || 7);
     const txt = (L.text || sym || 'COIN').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7) || 'COIN', letter = txt[0];
-    g.save(); g.clearRect(0, 0, W, W); g.textAlign = 'center'; g.textBaseline = 'middle';
-    background(g, W, P);
     const u = W / 1024;
+    g.save(); g.clearRect(0, 0, W, W); g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    background(g, W, P);
     if (L.style === 'coin') {
-      const cx = W / 2, cy = W / 2, r = W * 0.40;
-      g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 60 * u; g.shadowOffsetY = 24 * u;
-      const mg = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r); mg.addColorStop(0, P.ac); mg.addColorStop(0.45, P.fg); mg.addColorStop(1, shade(P.fg, -0.45));
-      g.fillStyle = mg; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.shadowColor = 'transparent';
-      g.strokeStyle = shade(P.fg, -0.35); g.lineWidth = 6 * u; g.beginPath(); g.arc(cx, cy, r * 0.80, 0, Math.PI * 2); g.stroke();
-      g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 2 * u; g.beginPath(); g.arc(cx, cy, r * 0.97, 0, Math.PI * 2); g.stroke();
-      for (let i = 0; i < 120; i++) { const a = i / 120 * Math.PI * 2; g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 2 * u; g.beginPath(); g.moveTo(cx + Math.cos(a) * r * 0.97, cy + Math.sin(a) * r * 0.97); g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); g.stroke(); }
-      g.fillStyle = shade(P.fg, -0.55); g.font = '700 ' + Math.round(40 * u) + 'px ' + LOGO_FONTS.grotesk;
-      ringText(g, '$' + txt, cx, cy, r * 0.885);
-      const s = fitText(g, letter, '400 {s}px ' + LOGO_FONTS.serif, r * 0.95, Math.round(r * 1.05));
-      g.font = '400 ' + s + 'px ' + LOGO_FONTS.serif; g.fillStyle = shade(P.fg, -0.6); g.fillText(letter, cx + 3 * u, cy + 10 * u);
-      g.fillStyle = 'rgba(255,255,255,.55)'; g.fillText(letter, cx - 2 * u, cy + 4 * u);
-      g.fillStyle = shade(P.fg, -0.25); g.fillText(letter, cx, cy + 6 * u);
+      const cx = W / 2, cy = W / 2, r = W * 0.41, f = r * 0.9;
+      g.save(); dropShadow(g, u, P.light ? 0.28 : 0.6); g.fillStyle = P.m[2]; circle(g, cx, cy, r); g.fill(); g.restore();
+      g.fillStyle = metal(g, cx - r, cy - r, cx + r, cy + r, P); circle(g, cx, cy, r); g.fill();
+      g.strokeStyle = hexA(P.m[3], 0.45); g.lineWidth = 2.2 * u;
+      for (let i = 0; i < 200; i++) { const a = i / 200 * Math.PI * 2; g.beginPath(); g.moveTo(cx + Math.cos(a) * r * 0.955, cy + Math.sin(a) * r * 0.955); g.lineTo(cx + Math.cos(a) * r * 0.995, cy + Math.sin(a) * r * 0.995); g.stroke(); }
+      const fg = g.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.05, cx, cy, f); fg.addColorStop(0, P.m[0]); fg.addColorStop(0.45, P.m[1]); fg.addColorStop(1, P.m[2]);
+      g.fillStyle = fg; circle(g, cx, cy, f); g.fill();
+      const bv = g.createLinearGradient(cx - f, cy - f, cx + f, cy + f); bv.addColorStop(0, hexA(P.m[3], 0.85)); bv.addColorStop(0.5, hexA(P.m[2], 0.3)); bv.addColorStop(1, hexA(P.m[0], 0.9));
+      g.strokeStyle = bv; g.lineWidth = 7 * u; circle(g, cx, cy, f); g.stroke();
+      g.fillStyle = hexA(P.m[3], 0.6); for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2; circle(g, cx + Math.cos(a) * r * 0.66, cy + Math.sin(a) * r * 0.66, 3.4 * u); g.fill(); }
+      g.font = '700 ' + Math.round(42 * u) + 'px ' + LOGO_FONTS.caps; g.textBaseline = 'middle'; g.fillStyle = hexA(P.m[3], 0.9);
+      ringText(g, txt, cx, cy, r * 0.775, '   ·   ');
+      g.textBaseline = 'alphabetic';
+      serifLetter(g, P, letter, cx, cy, r * 0.9, Math.round(r * 1.05), u);
+      g.save(); circle(g, cx, cy, r); g.clip(); g.globalCompositeOperation = 'screen';
+      const sh = g.createRadialGradient(cx - r * 0.45, cy - r * 0.55, 0, cx - r * 0.45, cy - r * 0.55, r * 1.1); sh.addColorStop(0, 'rgba(255,255,255,.32)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = sh; g.fillRect(0, 0, W, W); g.restore();
+    } else if (L.style === 'orb') {
+      const cx = W / 2, cy = W * 0.47, r = W * 0.33;
+      const fl = g.createRadialGradient(cx, cy + r * 1.08, 0, cx, cy + r * 1.08, r * 0.95); fl.addColorStop(0, P.light ? 'rgba(60,40,10,.35)' : 'rgba(0,0,0,.65)'); fl.addColorStop(1, 'rgba(0,0,0,0)');
+      g.save(); g.translate(cx, cy + r * 1.08); g.scale(1, 0.16); g.translate(-cx, -(cy + r * 1.08)); g.fillStyle = fl; circle(g, cx, cy + r * 1.08, r * 0.95); g.fill(); g.restore();
+      const sp = g.createRadialGradient(cx - r * 0.38, cy - r * 0.42, r * 0.04, cx - r * 0.1, cy - r * 0.1, r * 1.3);
+      sp.addColorStop(0, P.m[0]); sp.addColorStop(0.28, P.m[1]); sp.addColorStop(0.72, P.m[2]); sp.addColorStop(1, P.m[3]);
+      g.fillStyle = sp; circle(g, cx, cy, r); g.fill();
+      const rim = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r); rim.addColorStop(0, 'rgba(255,255,255,0)'); rim.addColorStop(0.7, 'rgba(255,255,255,0)'); rim.addColorStop(1, hexA(P.m[0], 0.75));
+      g.strokeStyle = rim; g.lineWidth = 5 * u; circle(g, cx, cy, r - 3 * u); g.stroke();
+      const s = fitText(g, letter, '700 {s}px ' + LOGO_FONTS.serif, r * 1.05, Math.round(r * 1.25));
+      g.font = '700 ' + s + 'px ' + LOGO_FONTS.serif; const y = midY(g, letter, cy);
+      g.fillStyle = hexA(P.m[0], 0.55); g.fillText(letter, cx + 3 * u, y + 4 * u);
+      g.fillStyle = hexA(P.m[3], 0.92); g.fillText(letter, cx, y);
+      g.save(); g.translate(cx - r * 0.3, cy - r * 0.56); g.rotate(-0.45); g.scale(1, 0.5);
+      const hl = g.createLinearGradient(0, -r * 0.4, 0, r * 0.4); hl.addColorStop(0, 'rgba(255,255,255,.8)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = hl; circle(g, 0, 0, r * 0.4); g.fill(); g.restore();
     } else if (L.style === 'geo') {
-      const cx = W / 2, cy = W * 0.46, kind = Math.floor(R() * 4);
-      g.fillStyle = P.fg; g.strokeStyle = P.fg;
-      if (kind === 0) { for (let i = 0; i < 4; i++) { g.lineWidth = (34 - i * 6) * u; g.globalAlpha = 1 - i * 0.2; g.beginPath(); g.arc(cx, cy, (110 + i * 62) * u, Math.PI * (0.15 + i * 0.1), Math.PI * (1.15 + i * 0.1)); g.stroke(); } g.globalAlpha = 1; g.beginPath(); g.arc(cx, cy, 46 * u, 0, Math.PI * 2); g.fillStyle = P.ac; g.fill(); }
-      else if (kind === 1) { g.beginPath(); g.arc(cx, cy, 250 * u, Math.PI / 2, Math.PI * 1.5); g.fill(); g.fillStyle = P.ac; g.beginPath(); g.arc(cx, cy, 250 * u, -Math.PI / 2, Math.PI / 2); g.fill(); g.fillStyle = P.bg[0]; g.beginPath(); g.arc(cx, cy, 90 * u, 0, Math.PI * 2); g.fill(); }
-      else if (kind === 2) { for (let i = 0; i < 3; i++) { const y = cy - 150 * u + i * 120 * u; g.globalAlpha = 1 - i * 0.25; g.beginPath(); g.moveTo(cx - 230 * u, y + 110 * u); g.lineTo(cx, y - 20 * u); g.lineTo(cx + 230 * u, y + 110 * u); g.lineTo(cx + 230 * u, y + 170 * u); g.lineTo(cx, y + 40 * u); g.lineTo(cx - 230 * u, y + 170 * u); g.closePath(); g.fill(); } g.globalAlpha = 1; }
-      else { g.save(); g.translate(cx, cy); for (let i = 0; i < 12; i++) { g.rotate(Math.PI / 6); g.globalAlpha = i % 2 ? 0.55 : 1; g.beginPath(); g.moveTo(0, -60 * u); g.lineTo(26 * u, -250 * u); g.lineTo(-26 * u, -250 * u); g.closePath(); g.fill(); } g.restore(); g.globalAlpha = 1; g.fillStyle = P.ac; g.beginPath(); g.arc(cx, cy, 56 * u, 0, Math.PI * 2); g.fill(); }
-      g.fillStyle = P.fg; g.font = '700 ' + Math.round(64 * u) + 'px ' + LOGO_FONTS.grotesk; if (g.letterSpacing !== undefined) g.letterSpacing = Math.round(14 * u) + 'px'; g.fillText(txt, W / 2, W * 0.86); if (g.letterSpacing !== undefined) g.letterSpacing = '0px';
+      const cx = W / 2, cy = W * 0.44, kind = Math.floor(R() * 5), s = W * 0.27;
+      const glow = g.createRadialGradient(cx, cy, 0, cx, cy, s * 1.6); glow.addColorStop(0, hexA(P.m[1], P.light ? 0.12 : 0.22)); glow.addColorStop(1, hexA(P.m[1], 0)); g.fillStyle = glow; g.fillRect(0, 0, W, W);
+      g.save(); dropShadow(g, u, P.light ? 0.2 : 0.45);
+      if (kind === 0) { // diamant taillé
+        const ty = cy - s * 0.42, gy = cy - s * 0.05, by = cy + s * 0.95;
+        const T = [-0.56, -0.19, 0.19, 0.56].map((k) => [cx + k * s, ty]), Gd = [-1, -0.5, 0, 0.5, 1].map((k) => [cx + k * s, gy]);
+        const facets = [[Gd[0], T[0], Gd[1]], [T[0], Gd[1], T[1]], [Gd[1], T[1], Gd[2]], [T[1], Gd[2], T[2]], [Gd[2], T[2], Gd[3]], [T[2], Gd[3], T[3]], [Gd[3], T[3], Gd[4]]];
+        for (let i = 0; i < 4; i++) facets.push([Gd[i], Gd[i + 1], [cx, by]]);
+        const tones = [P.m[1], P.m[0], P.m[2], P.m[1], P.m[0], P.m[2], P.m[1], P.m[2], P.m[1], P.m[3], P.m[2]];
+        facets.forEach((pts, i) => { g.fillStyle = tones[i % tones.length]; g.beginPath(); pts.forEach((p, j) => (j ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.fill(); if (i === 0) noShadow(g); });
+        g.strokeStyle = hexA(P.m[0], 0.55); g.lineWidth = 2 * u;
+        facets.forEach((pts) => { g.beginPath(); pts.forEach((p, j) => (j ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.stroke(); });
+      } else if (kind === 1) { // orbites
+        g.strokeStyle = metal(g, cx - s, cy - s, cx + s, cy + s, P); g.lineWidth = 9 * u;
+        for (let i = 0; i < 3; i++) { g.save(); g.translate(cx, cy); g.rotate(i * Math.PI / 3); g.scale(1, 0.36); circle(g, 0, 0, s); g.restore(); g.stroke(); if (i === 0) noShadow(g); }
+        const c = g.createRadialGradient(cx - s * 0.08, cy - s * 0.08, 0, cx, cy, s * 0.24); c.addColorStop(0, P.m[0]); c.addColorStop(0.5, P.m[1]); c.addColorStop(1, P.m[3]); g.fillStyle = c; circle(g, cx, cy, s * 0.22); g.fill();
+      } else if (kind === 2) { // soleil rayonnant
+        g.strokeStyle = metal(g, cx - s, cy - s, cx + s, cy + s, P); g.lineCap = 'round';
+        for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2, l = i % 2 ? 0.72 : 1; g.lineWidth = (i % 2 ? 4 : 7) * u; g.beginPath(); g.moveTo(cx + Math.cos(a) * s * 0.42, cy + Math.sin(a) * s * 0.42); g.lineTo(cx + Math.cos(a) * s * l, cy + Math.sin(a) * s * l); g.stroke(); if (i === 0) noShadow(g); }
+        g.fillStyle = metal(g, cx - s * 0.34, cy - s * 0.34, cx + s * 0.34, cy + s * 0.34, P); circle(g, cx, cy, s * 0.33); g.fill();
+        g.fillStyle = hexA(P.m[3], 0.85); gem(g, cx, cy, s * 0.17);
+      } else if (kind === 3) { // anneaux entrelacés
+        const d = s * 0.42, rr = s * 0.55; g.lineWidth = 26 * u;
+        g.strokeStyle = metal(g, cx - d - rr, cy - rr, cx - d + rr, cy + rr, P); circle(g, cx - d, cy, rr); g.stroke(); noShadow(g);
+        g.strokeStyle = metal(g, cx + d - rr, cy - rr, cx + d + rr, cy + rr, P); circle(g, cx + d, cy, rr); g.stroke();
+        g.save(); g.beginPath(); g.rect(cx - d, cy - rr - 20 * u, rr * 2, rr + 20 * u); g.clip();
+        g.strokeStyle = metal(g, cx - d - rr, cy - rr, cx - d + rr, cy + rr, P); circle(g, cx - d, cy, rr); g.stroke(); g.restore();
+      } else { // couronne
+        const bw = s * 1.6, bh = s * 0.24, by = cy + s * 0.45, x0 = cx - bw / 2;
+        g.fillStyle = metal(g, x0, cy - s, x0 + bw, by + bh, P);
+        g.beginPath(); g.moveTo(x0, by);
+        const peaks = [[0, -0.55], [0.25, -0.85], [0.5, -1.05], [0.75, -0.85], [1, -0.55]], vals = [[0.125, -0.15], [0.375, -0.25], [0.625, -0.25], [0.875, -0.15]];
+        g.lineTo(x0 + peaks[0][0] * bw, cy + peaks[0][1] * s);
+        for (let i = 0; i < 4; i++) { g.lineTo(x0 + vals[i][0] * bw, cy + vals[i][1] * s); g.lineTo(x0 + peaks[i + 1][0] * bw, cy + peaks[i + 1][1] * s); }
+        g.lineTo(x0 + bw, by); g.closePath(); g.fill(); noShadow(g);
+        g.fillRect(x0, by + 10 * u, bw, bh);
+        peaks.forEach((p) => { const c = g.createRadialGradient(x0 + p[0] * bw - 6 * u, cy + p[1] * s - 6 * u, 0, x0 + p[0] * bw, cy + p[1] * s, 26 * u); c.addColorStop(0, P.m[0]); c.addColorStop(1, P.m[2]); g.fillStyle = c; circle(g, x0 + p[0] * bw, cy + p[1] * s - 14 * u, 22 * u); g.fill(); });
+        g.fillStyle = hexA(P.m[3], 0.8); [0.25, 0.5, 0.75].forEach((k) => gem(g, x0 + k * bw, by + 10 * u + bh / 2, bh * 0.32));
+      }
+      g.restore();
+      caption(g, W, P, txt, W * 0.86, u);
     } else if (L.style === 'word') {
-      const s = fitText(g, txt.toLowerCase(), '800 {s}px ' + LOGO_FONTS.display, W * 0.78, Math.round(330 * u));
-      g.fillStyle = P.fg; g.font = '800 ' + s + 'px ' + LOGO_FONTS.display; g.fillText(txt.toLowerCase(), W / 2, W * 0.5);
-      const tw = g.measureText(txt.toLowerCase()).width; g.fillStyle = P.ac; g.beginPath(); g.arc(W / 2 + tw / 2 + 26 * u, W * 0.5 + s * 0.28, 22 * u, 0, Math.PI * 2); g.fill();
-      g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(W / 2 - tw / 2, W * 0.5 + s * 0.48, tw, 6 * u);
+      const sp0 = 0.09; let s = Math.round(220 * u), tw;
+      do { g.font = '700 ' + s + 'px ' + LOGO_FONTS.caps; tw = spaced(g, txt, 0, 0, s * sp0, false); s -= 4; } while (tw > W * 0.76 && s > 30);
+      s += 4; g.font = '700 ' + s + 'px ' + LOGO_FONTS.caps; tw = spaced(g, txt, 0, 0, s * sp0, false);
+      const cy = W * 0.5, y = midY(g, txt, cy), paint = () => spaced(g, txt, W / 2, y, s * sp0);
+      emboss(g, P, paint, 5 * u);
+      g.fillStyle = metal(g, W / 2 - tw / 2, cy - s / 2, W / 2 + tw / 2, cy + s / 2, P); paint();
+      const top = cy - s * 0.62, bot = cy + s * 0.62, half = Math.min(tw / 2, W * 0.32);
+      g.fillStyle = hexA(P.m[1], 0.8);
+      g.fillRect(W / 2 - half, top - 1.5 * u, half - 30 * u, 3 * u); g.fillRect(W / 2 + 30 * u, top - 1.5 * u, half - 30 * u, 3 * u); gem(g, W / 2, top, 14 * u);
+      g.fillRect(W / 2 - half, bot - 1.5 * u, half * 2, 3 * u);
+      g.fillStyle = hexA(P.m[1], 0.9); [-1, 0, 1].forEach((k) => gem(g, W / 2 + k * 36 * u, bot + 40 * u, 8 * u));
     } else if (L.style === 'mascot') {
-      const cx = W / 2, cy = W * 0.46, r = W * 0.33;
-      g.fillStyle = 'rgba(255,255,255,.07)'; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = P.fg; g.globalAlpha = 0.65; g.lineWidth = 6 * u; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1;
-      g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 40 * u; g.shadowOffsetY = 16 * u;
-      g.font = Math.round(r * 1.15) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.fillText(L.emoji || '✨', cx, cy + 14 * u); g.shadowColor = 'transparent';
-      g.fillStyle = P.fg; g.font = '700 ' + Math.round(72 * u) + 'px ' + LOGO_FONTS.grotesk; if (g.letterSpacing !== undefined) g.letterSpacing = Math.round(10 * u) + 'px'; g.fillText(txt, W / 2, W * 0.88); if (g.letterSpacing !== undefined) g.letterSpacing = '0px';
+      const cx = W / 2, cy = W * 0.45, r = W * 0.335, f = r * 0.84;
+      g.save(); dropShadow(g, u, P.light ? 0.25 : 0.55); g.fillStyle = metal(g, cx - r, cy - r, cx + r, cy + r, P); circle(g, cx, cy, r); g.fill(); g.restore();
+      g.strokeStyle = hexA(P.m[3], 0.5); g.lineWidth = 2 * u; circle(g, cx, cy, r * 0.93); g.stroke();
+      const fd = g.createRadialGradient(cx, cy - f * 0.3, 0, cx, cy, f); fd.addColorStop(0, P.bg[1]); fd.addColorStop(1, P.bg[0]); g.fillStyle = fd; circle(g, cx, cy, f); g.fill();
+      const bv = g.createLinearGradient(cx - f, cy - f, cx + f, cy + f); bv.addColorStop(0, hexA(P.m[3], 0.9)); bv.addColorStop(1, hexA(P.m[0], 0.9)); g.strokeStyle = bv; g.lineWidth = 6 * u; circle(g, cx, cy, f); g.stroke();
+      g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 36 * u; g.shadowOffsetY = 14 * u; g.textBaseline = 'middle';
+      g.font = Math.round(f * 1.05) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.fillText(L.emoji || '✨', cx, cy + 10 * u); g.restore();
+      g.save(); circle(g, cx, cy, f); g.clip(); g.translate(cx, cy - f * 0.62); g.scale(1, 0.42);
+      const gl = g.createLinearGradient(0, -f * 0.7, 0, f * 0.7); gl.addColorStop(0, 'rgba(255,255,255,.2)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gl; circle(g, 0, 0, f * 0.8); g.fill(); g.restore();
+      caption(g, W, P, txt, W * 0.885, u);
     } else { // monogramme
-      const s = fitText(g, letter, '800 {s}px ' + LOGO_FONTS.display, W * 0.56, Math.round(W * 0.6));
-      g.font = '800 ' + s + 'px ' + LOGO_FONTS.display;
-      g.fillStyle = 'rgba(0,0,0,.22)'; for (let i = 1; i <= 18; i++) g.fillText(letter, W / 2 + i * 2 * u, W * 0.47 + i * 2 * u);
-      const fg = g.createLinearGradient(0, W * 0.2, 0, W * 0.75); fg.addColorStop(0, P.ac); fg.addColorStop(1, P.fg); g.fillStyle = fg; g.fillText(letter, W / 2, W * 0.47);
-      g.fillStyle = P.fg; g.globalAlpha = 0.9; g.font = '700 ' + Math.round(54 * u) + 'px ' + LOGO_FONTS.grotesk; if (g.letterSpacing !== undefined) g.letterSpacing = Math.round(18 * u) + 'px'; g.fillText(txt, W / 2, W * 0.87); if (g.letterSpacing !== undefined) g.letterSpacing = '0px'; g.globalAlpha = 1;
+      const cx = W / 2, cy = W * 0.45, r = W * 0.335;
+      g.strokeStyle = metal(g, cx - r, cy - r, cx + r, cy + r, P);
+      [[r, 7], [r - 20 * u, 2.5]].forEach((k) => { const gap = 34 * u / k[0]; g.lineWidth = k[1] * u; [-Math.PI / 2, Math.PI / 2].forEach((a) => { g.beginPath(); g.arc(cx, cy, k[0], a + gap, a + Math.PI - gap); g.stroke(); }); });
+      g.fillStyle = metal(g, cx - 20 * u, cy - r - 20 * u, cx + 20 * u, cy - r + 20 * u, P); gem(g, cx, cy - r, 16 * u); gem(g, cx, cy + r, 16 * u);
+      serifLetter(g, P, letter, cx, cy + 4 * u, r * 1.15, Math.round(r * 1.5), u);
+      caption(g, W, P, txt, W * 0.885, u);
     }
-    finish(g, W);
+    finish(g, W, P);
     g.restore();
   }
   function shade(hex, f) {
@@ -1840,7 +1958,7 @@ Message: ${r}.
   }
   function ideaLogo(x) {
     const c = document.createElement('canvas'); c.width = c.height = 256;
-    paintLogo(c, { style: x.style, pal: x.pal, text: x.ticker, emoji: x.emo, seed: x.name.length * 97 }, x.ticker);
+    paintLogo(c, { style: x.style, pal: x.pal, text: x.ticker, emoji: x.emo, seed: [...x.name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261) }, x.ticker);
     try { return c.toDataURL('image/png'); } catch (e) { return ''; }
   }
 
