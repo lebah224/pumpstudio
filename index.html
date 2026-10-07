@@ -834,7 +834,7 @@ textarea{font:inherit;color:inherit}
         <div class="forms" id="setForms"></div>
         <div class="card" style="margin-top:16px"><div class="card-h"><h3>Sécurité</h3></div>
           <ul class="steps">
-            <li>Le studio ne demande jamais la phrase secrète ni la clé privée de ton wallet principal. Si une page te la demande, c'est une arnaque.</li><li>Le wallet rapide a sa propre clé, créée ici et chiffrée par ton mot de passe. N'y garde que le nécessaire et retire régulièrement vers Phantom.</li>
+            <li>Le studio ne demande jamais la phrase secrète ni la clé privée de ton wallet principal. Si une page te la demande, c'est une arnaque.</li><li>Le wallet rapide a sa propre clé, créée ici ou importée, et chiffrée par ton mot de passe. N'y garde que le nécessaire et retire régulièrement vers Phantom.</li>
             <li>Utilise un wallet dédié, avec seulement le SOL nécessaire. L'ancien wallet dont la clé a été affichée doit être abandonné.</li>
             <li>Ta clé RPC et ton jeton Pinata restent dans ce navigateur uniquement.</li>
           </ul></div>
@@ -1236,6 +1236,60 @@ Message: ${r}.
     await sessBackup(kp.secretKey, true);
     walletPanel();
   }
+  function b58dec(s) {
+    let n = 0n; for (const ch of s) { const v = B58.indexOf(ch); if (v < 0) throw new Error('Caractère « ' + ch + ' » impossible dans une clé Solana.'); n = n * 58n + BigInt(v); }
+    const out = []; while (n > 0n) { out.unshift(Number(n % 256n)); n /= 256n; }
+    for (const ch of s) { if (ch === '1') out.unshift(0); else break; }
+    return new Uint8Array(out);
+  }
+  // Clé privée base58 (export Phantom, Solflare) ou tableau JSON de 64 nombres (fichier id.json de Solana)
+  function parseSecret(raw) {
+    const t = String(raw || '').trim(); if (!t) throw new Error('Colle la clé privée du wallet.');
+    let bytes;
+    if (t[0] === '[') {
+      let arr; try { arr = JSON.parse(t); } catch (e) { throw new Error('Tableau illisible : il doit ressembler à [12,34,…] avec 64 nombres.'); }
+      if (!Array.isArray(arr) || arr.some((x) => !Number.isInteger(x) || x < 0 || x > 255)) throw new Error('Le tableau doit contenir des nombres de 0 à 255.');
+      bytes = Uint8Array.from(arr);
+    } else if (t.split(/\s+/).length >= 12) {
+      throw new Error('C\'est une phrase secrète : elle n\'est pas acceptée ici. Exporte plutôt la clé privée du compte (Phantom : Paramètres → Gérer les comptes → Afficher la clé privée).');
+    } else bytes = b58dec(t.replace(/\s+/g, ''));
+    try {
+      if (bytes.length === 64) return W3().Keypair.fromSecretKey(bytes);
+      if (bytes.length === 32) return W3().Keypair.fromSeed(bytes);
+    } catch (e) { throw new Error('Clé invalide : elle ne correspond à aucun wallet Solana.'); }
+    throw new Error('Clé invalide : 64 octets attendus, ' + bytes.length + ' trouvés.');
+  }
+  async function sessImport() {
+    if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
+    let curBal = null; if (SESSREC) { try { curBal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {} }
+    const html = '<p>Utilise un wallet que tu possèdes déjà comme wallet rapide. Sa clé est <b>chiffrée avec ton mot de passe</b> et rangée dans ce navigateur, comme pour un wallet créé ici.</p>' +
+      '<div class="notice bad">N\'importe jamais la clé de ton wallet principal. Utilise un wallet dédié au trading, avec seulement le SOL nécessaire.</div>' +
+      (SESSREC ? '<div class="notice">Le wallet rapide actuel (<span class="mono">' + short(SESSREC.pk, 6) + '</span>' + (curBal == null ? ', solde inconnu' : ', ' + fSol(curBal, 4)) + ') sera remplacé. Sauvegarde sa clé ou retire ses fonds avant.</div>' : '') +
+      '<div class="field"><label for="impKey">Clé privée <small>base58 ou tableau [ … ] de 64 nombres</small></label><input id="impKey" class="mono" type="password" autocomplete="off" spellcheck="false"><label class="check sm-check" style="margin-top:4px"><input type="checkbox" id="impShow">Afficher</label><div class="dim" id="impPk" style="font-size:13px">L\'adresse du wallet s\'affichera ici.</div></div>' +
+      PASS_FIELD('pw1', 'Mot de passe de chiffrement (10 caractères minimum)', 'new-password') + PASS_FIELD('pw2', 'Confirme le mot de passe', 'new-password') +
+      '<label class="check"><input type="checkbox" id="pwAck"><span>J\'ai compris : ce wallet servira à signer automatiquement, et sans ce mot de passe la clé chiffrée est inutilisable.' + (SESSREC ? ' Le wallet rapide actuel sera remplacé.' : '') + '</span></label>';
+    const pr = modal(SESSREC ? 'Remplacer le wallet rapide' : 'Importer un wallet existant', html, [{ label: 'Annuler' }, { label: 'Importer', cls: 'primary', keep: true }], true);
+    const showPk = () => { const el = $('impPk'); if (!el) return; try { const kp = parseSecret($('impKey').value); const own = S.ext && kp.publicKey.toBase58() === S.ext.pk; el.innerHTML = 'Adresse : <b class="mono">' + esc(kp.publicKey.toBase58()) + '</b>' + (own ? ' <span class="neg">· c\'est ton wallet principal connecté</span>' : ''); } catch (e) { el.textContent = $('impKey').value.trim() ? e.message : 'L\'adresse du wallet s\'affichera ici.'; } };
+    $('impKey').addEventListener('input', showPk);
+    $('impShow').addEventListener('change', (e) => { $('impKey').type = e.target.checked ? 'text' : 'password'; });
+    const i = await pr;
+    if (i !== 1) { const k = $('impKey'); if (k) k.value = ''; return; }
+    const raw = $('impKey').value, p1 = $('pw1').value, p2 = $('pw2').value, ack = $('pwAck').checked;
+    let kp; try { kp = parseSecret(raw); } catch (e) { return toast('Clé refusée', e.message, 'r'); }
+    const pk = kp.publicKey.toBase58();
+    if (S.ext && pk === S.ext.pk) return toast('Wallet principal refusé', 'Le studio ne doit jamais détenir la clé de ton wallet principal. Utilise un wallet dédié.', 'r');
+    if (SESSREC && pk === SESSREC.pk) return toast('Déjà en place', 'C\'est déjà ton wallet rapide.', 'a');
+    if (p1.length < 10) return toast('Mot de passe trop court', '10 caractères minimum.', 'r');
+    if (p1 !== p2) return toast('Mots de passe différents', 'Retape-les à l\'identique.', 'r');
+    if (!ack) return toast('Confirmation manquante', 'Coche la case pour continuer.', 'a');
+    $('impKey').value = ''; closeModal();
+    const rec = Object.assign({ pk, at: Date.now(), imported: true }, await sealSecret(kp.secretKey, p1));
+    save(LS.sess, rec); SESSREC = rec; SESSW.kp = kp;
+    cfg.useSess = true; save(LS.cfg, cfg);
+    S.bal = null; await refreshBal().catch(() => {}); renderAll();
+    toast('Wallet importé', short(pk, 6) + ' est ton wallet rapide, déverrouillé.', 'g');
+    walletPanel();
+  }
   async function sessBackup(sk, first) {
     const key = b58(sk);
     await modal(first ? 'Sauvegarde la clé maintenant' : 'Clé du wallet rapide',
@@ -1311,10 +1365,10 @@ Message: ${r}.
     const card = (title, badge, body, btns) => '<div class="wcard' + (badge && badge.on ? ' on' : '') + '"><div class="wh"><b>' + title + '</b>' + (badge ? '<span class="badge ' + badge.c + '">' + badge.t + '</span>' : '') + '</div>' + body + '<div class="row-btns">' + btns + '</div></div>';
     const B = (sw, label, c) => '<button class="btn sm ' + (c || '') + '" data-sw="' + sw + '" type="button">' + label + '</button>';
     const sesHtml = !ses
-      ? card('Wallet rapide', null, '<p>Signe seul, sans fenêtre Phantom : les ventes de tes paliers partent dès que le prix les atteint (moins d\'une seconde au lieu de 3 à 6).</p>', B('create', 'Créer le wallet rapide', 'primary'))
+      ? card('Wallet rapide', null, '<p>Signe seul, sans fenêtre Phantom : les ventes de tes paliers partent dès que le prix les atteint (moins d\'une seconde au lieu de 3 à 6).</p>', B('create', 'Créer le wallet rapide', 'primary') + B('import', 'Importer un wallet existant'))
       : card('Wallet rapide', act ? { t: SESSW.kp ? 'actif · déverrouillé' : 'actif · verrouillé', c: SESSW.kp ? 'g' : 'a', on: true } : { t: 'en veille', c: '' },
         '<div class="kv"><span>Adresse</span><span>' + short(SESSREC.pk, 6) + '</span><span>Solde</span><span>' + fSol(sesBal, 4) + '</span><span>Ventes automatiques</span><span>' + (cfg.autoExec ? 'activées' : 'désactivées') + '</span></div>',
-        (act ? '' : B('use', 'Utiliser pour signer', 'primary')) + (SESSW.kp ? B('lock', 'Verrouiller') : B('unlock', 'Déverrouiller', act ? 'primary' : '')) + B('fund', 'Alimenter') + B('withdraw', 'Retirer') + B('copyses', 'Copier l\'adresse') + B('export', 'Clé privée', 'ghost') + B('delete', 'Supprimer', 'ghost'));
+        (act ? '' : B('use', 'Utiliser pour signer', 'primary')) + (SESSW.kp ? B('lock', 'Verrouiller') : B('unlock', 'Déverrouiller', act ? 'primary' : '')) + B('fund', 'Alimenter') + B('withdraw', 'Retirer') + B('copyses', 'Copier l\'adresse') + B('export', 'Clé privée', 'ghost') + B('import', 'Remplacer par un autre wallet', 'ghost') + B('delete', 'Supprimer', 'ghost'));
     const extHtml = S.ext
       ? card(esc(S.ext.name), act ? { t: 'connecté', c: 'b' } : { t: 'actif', c: 'g', on: true }, '<div class="kv"><span>Adresse</span><span>' + short(S.ext.pk, 6) + '</span><span>Solde</span><span>' + fSol(extBal, 4) + '</span></div>',
         (act ? B('useext', 'Utiliser pour signer') : '') + B('disc', 'Déconnecter', 'ghost'))
@@ -1325,6 +1379,7 @@ Message: ${r}.
     closeModal();
     if (a === 'panel') return walletPanel();
     if (a === 'create') return sessCreate();
+    if (a === 'import') return sessImport();
     if (a === 'unlock') { await sessUnlock(); return; }
     if (a === 'lock') { SESSW.kp = null; toast('Wallet rapide verrouillé', 'Ventes automatiques en pause.', ''); renderAll(); return walletPanel(); }
     if (a === 'use') { cfg.useSess = true; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); toast('Wallet rapide sélectionné', SESSW.kp ? 'Il signe tes transactions.' : 'Déverrouille-le pour signer.', 'g'); return walletPanel(); }
