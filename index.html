@@ -819,30 +819,30 @@ textarea{font:inherit;color:inherit}
 }
 /* ---------- boutons : couche de finition (relief, état clair au survol, focus visible) ---------- */
 :root{
-  --btn-face:linear-gradient(180deg,color-mix(in oklab,var(--panel3) 86%,#fff) 0%,var(--panel3) 55%,color-mix(in oklab,var(--panel3) 92%,#000) 100%);
+  --btn-face:linear-gradient(180deg,color-mix(in oklab,var(--panel3) 94%,#fff) 0%,var(--panel3) 60%,color-mix(in oklab,var(--panel3) 96%,#000) 100%);
   --btn-edge:color-mix(in oklab,var(--line2) 65%,var(--muted));
   --btn-lift:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.4);
-  --btn-glow:0 10px 26px -12px color-mix(in oklab,var(--accent) 80%,transparent);
+  --btn-glow:0 6px 16px -10px color-mix(in oklab,var(--accent) 45%,transparent);
 }
 .btn{background:var(--btn-face);border-color:var(--btn-edge);color:var(--text);font-weight:600;letter-spacing:-.1px;box-shadow:var(--btn-lift);
   transition:background .15s,border-color .15s,box-shadow .18s,color .15s,transform .12s}
 .btn svg.i{color:color-mix(in oklab,var(--accent) 62%,var(--text));transition:color .15s,transform .15s}
-.btn:hover{border-color:var(--accent-line);background:linear-gradient(180deg,color-mix(in oklab,var(--panel3) 78%,#fff),color-mix(in oklab,var(--panel3) 92%,var(--accent)));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 8px 20px -12px rgba(0,0,0,.8),0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent);transform:translateY(-1px)}
+.btn:hover{border-color:var(--accent-line);background:linear-gradient(180deg,color-mix(in oklab,var(--panel3) 88%,#fff),color-mix(in oklab,var(--panel3) 96%,var(--accent)));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 6px 16px -12px rgba(0,0,0,.7);transform:translateY(-1px)}
 .btn:hover svg.i{color:var(--accent-ink)}
 .btn:active{transform:translateY(0);box-shadow:inset 0 2px 4px rgba(0,0,0,.45);background:var(--panel2)}
 .btn:focus-visible{box-shadow:var(--btn-lift),var(--focus)}
-.btn.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 78%,#fff) 0%,var(--accent) 60%,color-mix(in oklab,var(--accent) 88%,#000) 100%);
-  border-color:color-mix(in oklab,var(--accent) 65%,#fff);color:#120d2b;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--btn-glow)}
+.btn.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 86%,var(--panel3)) 0%,color-mix(in oklab,var(--accent) 76%,var(--panel3)) 100%);
+  border-color:color-mix(in oklab,var(--accent) 70%,var(--panel3));color:#120d2b;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),var(--btn-glow)}
 .btn.primary svg.i,.btn.danger svg.i{color:currentColor}
-.btn.primary:hover{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 66%,#fff),color-mix(in oklab,var(--accent) 92%,#fff));border-color:color-mix(in oklab,var(--accent) 50%,#fff);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 14px 30px -12px color-mix(in oklab,var(--accent) 90%,transparent),0 0 0 3px color-mix(in oklab,var(--accent) 22%,transparent)}
-.btn.primary:active{background:var(--accent);box-shadow:inset 0 2px 5px rgba(18,13,43,.35)}
-.btn.danger{background:linear-gradient(180deg,color-mix(in oklab,var(--red) 80%,#fff) 0%,var(--red) 60%,color-mix(in oklab,var(--red) 88%,#000) 100%);
-  border-color:color-mix(in oklab,var(--red) 65%,#fff);color:#2b070c;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 10px 24px -12px color-mix(in oklab,var(--red) 80%,transparent)}
-.btn.danger:hover{background:linear-gradient(180deg,color-mix(in oklab,var(--red) 66%,#fff),color-mix(in oklab,var(--red) 92%,#fff));border-color:color-mix(in oklab,var(--red) 50%,#fff);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 12px 26px -12px color-mix(in oklab,var(--red) 90%,transparent),0 0 0 3px color-mix(in oklab,var(--red) 20%,transparent)}
-.btn.danger:active{background:var(--red);box-shadow:inset 0 2px 5px rgba(43,7,12,.35)}
+.btn.primary:hover{background:linear-gradient(180deg,var(--accent),color-mix(in oklab,var(--accent) 86%,var(--panel3)));border-color:var(--accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 8px 20px -12px color-mix(in oklab,var(--accent) 60%,transparent)}
+.btn.primary:active{background:color-mix(in oklab,var(--accent) 80%,var(--panel3));box-shadow:inset 0 2px 5px rgba(18,13,43,.3)}
+.btn.danger{background:linear-gradient(180deg,color-mix(in oklab,var(--red) 84%,var(--panel3)) 0%,color-mix(in oklab,var(--red) 74%,var(--panel3)) 100%);
+  border-color:color-mix(in oklab,var(--red) 70%,var(--panel3));color:#2b070c;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 6px 16px -10px color-mix(in oklab,var(--red) 45%,transparent)}
+.btn.danger:hover{background:linear-gradient(180deg,var(--red),color-mix(in oklab,var(--red) 84%,var(--panel3)));border-color:var(--red);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 20px -12px color-mix(in oklab,var(--red) 60%,transparent)}
+.btn.danger:active{background:color-mix(in oklab,var(--red) 78%,var(--panel3));box-shadow:inset 0 2px 5px rgba(43,7,12,.3)}
 .btn.ghost{background:none;border-color:transparent;box-shadow:none;color:var(--muted);font-weight:500}
 .btn.ghost:hover{background:var(--panel2);border-color:var(--line2);color:var(--text);box-shadow:none}
 .btn.sm{min-height:32px;padding:5px 12px;font-size:13.5px;border-radius:9px}
@@ -850,7 +850,7 @@ textarea{font:inherit;color:inherit}
 .btn:disabled svg.i{color:inherit}
 /* boutons ronds, puces, segments, onglets : même logique de survol et d'état actif */
 .icon-btn{background:var(--btn-face);border-color:var(--btn-edge);box-shadow:var(--btn-lift);transition:border-color .15s,transform .12s,box-shadow .18s}
-.icon-btn:hover{border-color:var(--accent-line);transform:translateY(-1px);box-shadow:var(--btn-lift),0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent)}
+.icon-btn:hover{border-color:var(--accent-line);transform:translateY(-1px);box-shadow:var(--btn-lift),0 0 0 2px color-mix(in oklab,var(--accent) 6%,transparent)}
 .chip{transition:color .15s,border-color .15s,background .15s,box-shadow .15s}
 .chip:hover{border-color:var(--accent-line);color:var(--text);background:var(--panel2)}
 .chip.on{font-weight:600;box-shadow:inset 0 0 0 1px var(--accent-line),0 4px 14px -8px color-mix(in oklab,var(--accent) 70%,transparent)}
@@ -867,7 +867,7 @@ textarea{font:inherit;color:inherit}
 .tp-pre:hover,.rtheme:hover,.lvar:hover{border-color:var(--accent-line);transform:translateY(-1px);box-shadow:0 8px 20px -14px rgba(0,0,0,.8)}
 .wact{transition:color .15s,border-color .15s,background .15s,transform .12s}
 .wact:hover{border-color:var(--accent-line);transform:translateY(-1px)}
-.wact.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 78%,#fff),var(--accent));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--btn-glow)}
+.wact.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 86%,var(--panel3)),color-mix(in oklab,var(--accent) 76%,var(--panel3)));box-shadow:inset 0 1px 0 rgba(255,255,255,.18),var(--btn-glow)}
 .cmdk{transition:border-color .15s,color .15s,background .15s}
 .cmdk:hover{border-color:var(--accent-line);color:var(--text);background:var(--panel2)}
 /* ---------- options non sélectionnées : elles gardent l'allure d'un bouton (fond, contour, texte lisible) ---------- */
@@ -877,11 +877,11 @@ textarea{font:inherit;color:inherit}
 .seg button:not(.on) svg.i,.ltabs button:not(.on) svg.i{color:color-mix(in oklab,var(--accent) 62%,var(--text))}
 .seg button:not(.on):hover,.ltabs button:not(.on):hover,.stepper button:not(.on):hover{color:var(--text);
   background:linear-gradient(180deg,color-mix(in oklab,var(--panel3) 78%,#fff),color-mix(in oklab,var(--panel3) 92%,var(--accent)));
-  box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent)}
+  box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in oklab,var(--accent) 6%,transparent)}
 .seg button:not(.on):active,.ltabs button:not(.on):active,.stepper button:not(.on):active{box-shadow:inset 0 0 0 1px var(--accent-line),inset 0 2px 4px rgba(0,0,0,.45)}
 .stepper button.done:not(.on){color:var(--text)}
 .chip:not(.on){background:var(--btn-face);border-color:var(--btn-edge);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.3)}
-.chip:not(.on):hover{border-color:var(--accent-line);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent)}
+.chip:not(.on):hover{border-color:var(--accent-line);box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 6%,transparent)}
 .tp-pre:not(.on),.rtheme:not(.on){background:var(--btn-face);border-color:var(--btn-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
 .seg button.on,.ltabs button.on,.stepper button.on{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 34%,var(--panel3)),color-mix(in oklab,var(--accent) 20%,var(--panel2)));color:#fff;
   box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 70%,var(--panel)),inset 0 1px 0 rgba(255,255,255,.1),0 6px 18px -10px color-mix(in oklab,var(--accent) 80%,transparent)}
