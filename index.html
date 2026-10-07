@@ -3091,14 +3091,16 @@ Message: ${r}.
     { id: 'iris', n: 'Iris', d: 'Encre et violet (d\'origine)', a: ['#9483ff', '#d9d3ff', '#120d2b'], amber: '#f3b53f', x: ['#0a0b12', '#0d0f17', '#11131c', '#161925', '#1c202e', '#212536', '#2d3247', '#f1f2f8', '#acb2c6', '#848ba2'] },
   ];
   // Intensité du fond : on éclaircit les neutres vers un gris doux et on baisse un peu l'éclat du texte
-  const UI_DEPTH = { nuit: { n: 'Nuit', bg: -0.4, ln: -0.18, tx: 0.03, glow: '2%' }, profond: { n: 'Profond', bg: 0, ln: 0, tx: 0.03, glow: '3%' }, doux: { n: 'Doux', bg: 0.05, ln: 0.05, tx: 0.06, glow: '3%' } };
+  const UI_DEPTH = { nuit: { n: 'Nuit', bg: -0.4, ln: -0.18, tx: 0.02, glow: '2%' }, profond: { n: 'Profond', bg: 0, ln: 0, tx: 0.02, glow: '3%' }, doux: { n: 'Doux', bg: 0.05, ln: 0.05, tx: 0.06, glow: '3%' } };
   let uiTheme = 'or', uiDepth = 'profond';
   function tone(h, v) { return v < 0 ? mixHex(h, '#000000', -v) : mixHex(h, '#ffffff', v); }
   function mixHex(a, b, t) { const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)), x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
   function applyUiTheme(id, quiet, depth) {
     if (depth) uiDepth = depth;
     const t = UI_THEMES.find((x) => x.id === id) || UI_THEMES[0], st = document.documentElement.style, D = UI_DEPTH[uiDepth] || UI_DEPTH.profond;
-    NEUT.forEach((k, i) => st.setProperty('--' + k, i < 5 ? tone(t.x[i], i ? D.bg * (1 - i * 0.12) : D.bg) : i < 7 ? tone(t.x[i], D.ln) : mixHex(t.x[i], t.x[0], D.tx)));
+    // panneaux un peu plus sombres que la palette d'origine ; textes secondaires éclaircis pour la lisibilité, texte principal sans blanc pur
+    const PANEL_DARK = [0, 0, 0.24, 0.2, 0.16], TEXT_LIFT = [0, 0, 0, 0, 0, 0, 0, 0, 0.16, 0.2];
+    NEUT.forEach((k, i) => st.setProperty('--' + k, i < 5 ? tone(tone(t.x[i], -PANEL_DARK[i]), i ? D.bg * (1 - i * 0.12) : D.bg) : i < 7 ? tone(t.x[i], D.ln) : i === 7 ? mixHex(t.x[i], t.x[0], D.tx) : mixHex(t.x[i], '#ffffff', TEXT_LIFT[i])));
     st.setProperty('--glow', D.glow);
     try { localStorage.setItem('pstudio_ui_depth2', uiDepth); } catch (e) {}
     st.setProperty('--accent', t.a[0]); st.setProperty('--accent-ink', t.a[1]); st.setProperty('--on-accent', t.a[2]); st.setProperty('--amber', t.amber);
