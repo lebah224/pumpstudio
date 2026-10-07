@@ -945,6 +945,142 @@ textarea{font:inherit;color:inherit}
 #modal .strat-card .strat-head{padding-bottom:12px;border-bottom:1px solid var(--line)}
 #pb-stratCards[data-only="equilibree"] .strat-card:not([data-sid="equilibree"]),#pb-stratCards[data-only="migration"] .strat-card:not([data-sid="migration"]),#pb-stratCards[data-only="flash"] .strat-card:not([data-sid="flash"]){display:none}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
+/* ---------- tableau de bord ---------- */
+.dash{display:flex;flex-direction:column;gap:16px}
+.d-bar{display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px}
+.d-hello{font-family:var(--display);font-size:24px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.d-date{color:var(--dim);font-size:13.5px;margin-top:3px;text-transform:capitalize}
+.d-live{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 14px}
+.d-live i{width:1px;height:14px;background:var(--line2);margin:0 5px}
+.d-seg button{padding:6px 13px;min-height:34px;font-size:13.5px}
+.d-seg.sm button{padding:4px 11px;min-height:30px;font-size:13px}
+.dgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.dgrid>.s4{grid-column:span 4}.dgrid>.s5{grid-column:span 5}.dgrid>.s6{grid-column:span 6}.dgrid>.s7{grid-column:span 7}.dgrid>.s8{grid-column:span 8}.dgrid>.s12{grid-column:1/-1}
+.dcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);min-width:0;display:flex;flex-direction:column}
+.d-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.d-eye{display:flex;align-items:center;gap:8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);font-weight:600}
+.d-src{font-size:11px;letter-spacing:.4px;text-transform:none;font-weight:500;color:var(--dim);border:1px solid var(--line2);border-radius:999px;padding:0 7px}
+.d-note{font-size:13px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:6px}
+.d-price{display:flex;align-items:baseline;gap:12px;margin-top:6px}
+.d-price>span:first-child{font-family:var(--mono);font-size:28px;font-weight:500;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+.d-chg{font-family:var(--mono);font-size:13.5px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--panel2)}
+.d-chg:empty{display:none}
+.d-chg.pos{background:var(--green-bg);color:var(--green-ink)}.d-chg.neg{background:var(--red-bg);color:var(--red-ink)}
+.dcv{width:100%;display:block;cursor:crosshair;touch-action:pan-y}
+.d-foot{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:10px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--dim)}
+.d-foot b{font-family:var(--mono);color:var(--text);font-weight:500;margin-left:5px}
+/* carte portefeuille */
+.d-hero{position:relative;overflow:hidden;background:radial-gradient(520px 260px at 100% 0%,color-mix(in oklab,var(--accent) 12%,transparent),transparent 65%),linear-gradient(180deg,var(--panel2),var(--panel));border-color:color-mix(in oklab,var(--accent) 22%,var(--line))}
+.d-hero::after{content:"";position:absolute;right:-60px;bottom:-70px;width:220px;height:220px;border-radius:50%;border:1px solid color-mix(in oklab,var(--accent) 16%,transparent);box-shadow:0 0 0 28px color-mix(in oklab,var(--accent) 3%,transparent),0 0 0 56px color-mix(in oklab,var(--accent) 2%,transparent);pointer-events:none}
+.d-hero .d-eye{justify-content:space-between}
+.d-big{font-family:var(--mono);font-size:40px;font-weight:500;letter-spacing:-1.4px;margin-top:14px;line-height:1.05;font-variant-numeric:tabular-nums}
+.d-big small{font-size:17px;color:var(--muted);letter-spacing:0;margin-left:4px}
+.d-sub{color:var(--muted);font-size:13.5px;margin-top:6px}
+.d-hstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin:auto 0 14px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;position:relative;z-index:1}
+.d-hstats>div{background:color-mix(in oklab,var(--panel) 92%,transparent);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.d-hstats span{font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
+.d-hstats b{font-family:var(--mono);font-weight:500;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;position:relative;z-index:1}
+.d-actions .btn{padding:8px 10px;font-size:13.5px}
+.d-actions .btn.primary{grid-column:1/-1}
+.d-sub{margin-bottom:18px}
+/* tuiles */
+.d-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.d-tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px 10px;box-shadow:var(--shadow);min-width:0;display:flex;flex-direction:column}
+.d-tl{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted);font-weight:500}
+.d-ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent)}
+.d-ic svg.i{width:15px;height:15px}
+.d-tv{font-family:var(--mono);font-size:25px;font-weight:500;letter-spacing:-.7px;margin-top:10px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.d-tv small{font-size:13px;color:var(--muted);letter-spacing:0;margin-left:3px}
+.d-ts{font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.d-tile canvas{width:100%;display:block;margin-top:8px}
+/* répartition */
+.d-mix{display:flex;align-items:center;gap:20px;flex:1}
+.d-mix canvas{flex:none}
+.d-legend{display:flex;flex-direction:column;gap:9px;flex:1;min-width:0}
+.d-legend>div{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted)}
+.d-legend i{width:9px;height:9px;border-radius:3px;flex:none}
+.d-legend b{margin-left:auto;font-family:var(--mono);font-weight:500;color:var(--text)}
+.d-legend em{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--dim);min-width:42px;text-align:right;white-space:nowrap}
+.d-legend>div{white-space:nowrap}
+.d-split{display:flex;gap:3px;height:6px;margin:auto 0 8px;padding-top:14px;box-sizing:content-box}
+.d-split i{display:block;border-radius:3px;min-width:0}
+.d-legend.row{flex-direction:row;flex-wrap:wrap;gap:6px 18px;margin-top:10px}
+.d-legend.row b{margin-left:4px}
+/* bot */
+.d-strats{display:flex;flex-direction:column;gap:8px}
+.d-strat{display:grid;grid-template-columns:minmax(110px,1fr) minmax(80px,1.1fr) auto;align-items:center;gap:14px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--sc);border-radius:var(--r-sm);padding:10px 14px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.d-strat:hover{background:var(--panel3);border-color:var(--line2);border-left-color:var(--sc)}
+.d-sn{display:flex;align-items:center;gap:8px;min-width:0}
+.d-sn i{width:8px;height:8px;border-radius:50%;background:var(--sc);box-shadow:0 0 0 3px color-mix(in oklab,var(--sc) 18%,transparent);flex:none}
+.d-sn em{font-style:normal;font-size:11.5px;color:var(--dim);border:1px solid var(--line2);border-radius:999px;padding:0 7px}
+.d-strat canvas{width:100%;display:block}
+.d-sv{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.d-sv b{font-family:var(--mono);font-weight:500;font-size:14.5px}
+.d-sv small{font-size:12px;color:var(--dim);white-space:nowrap}
+.d-sub-h{font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600;margin:16px 0 6px}
+.d-recent{display:flex;flex-direction:column}
+.d-recent>div{display:flex;align-items:center;gap:10px;padding:7px 2px;border-top:1px solid var(--line);font-size:13.5px}
+.d-recent i{width:7px;height:7px;border-radius:50%;flex:none}
+.d-recent span{color:var(--dim);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-recent em{font-style:normal;font-family:var(--mono)}
+/* listes */
+.d-list{display:flex;flex-direction:column}
+.d-row{display:flex;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line)}
+.d-row:first-child{border-top:none;padding-top:2px}
+.d-tag{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:600;flex:none;background:var(--panel2);border:1px solid var(--line2);color:var(--muted)}
+.d-tag.g{background:var(--green-bg);border-color:var(--green-line);color:var(--green-ink)}
+.d-tag.r{background:var(--red-bg);border-color:var(--red-line);color:var(--red-ink)}
+.d-tag.b{background:var(--blue-bg);border-color:var(--blue-line);color:var(--blue-ink)}
+.d-tag.v{background:var(--accent-bg);border-color:var(--accent-line);color:var(--accent-ink)}
+.d-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.d-main b{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-main small{font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-val{font-family:var(--mono);font-size:13.5px;white-space:nowrap}
+.d-prog{display:block;height:4px;border-radius:4px;background:var(--panel3);overflow:hidden;margin-top:5px}
+.d-prog i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,color-mix(in oklab,var(--green) 55%,var(--panel3)),var(--green))}
+.d-prog.r i{background:linear-gradient(90deg,color-mix(in oklab,var(--red) 55%,var(--panel3)),var(--red))}
+.d-more{font-size:12.5px;color:var(--dim);padding-top:8px}
+.d-empty{padding:18px 4px;color:var(--dim);font-size:13.5px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.d-empty b{color:var(--muted);font-weight:600}
+.d-empty .btn{margin-top:8px}
+/* tokens */
+.d-toks{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.d-tok{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:6px 11px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.d-tok:hover{border-color:var(--accent-line);background:var(--panel3)}
+.d-timg{width:38px;height:38px;border-radius:10px;overflow:hidden;background:var(--panel3);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--accent);border:1px solid var(--line2)}
+.d-timg img{width:100%;height:100%;object-fit:cover}
+.d-tm{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.d-tm b{font-family:var(--mono);font-weight:500;font-size:13.5px}
+.d-tm small{font-size:12px;color:var(--dim)}
+.d-tok .d-prog{grid-column:1/-1;margin-top:2px}
+@media (max-width:1180px){
+  .dgrid>.s4,.dgrid>.s5,.dgrid>.s6,.dgrid>.s7,.dgrid>.s8{grid-column:span 6}
+  .dgrid>.d-hero,.dgrid>.d-hero+.dcard{grid-column:1/-1}
+  .d-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .dash{gap:12px}.dgrid{gap:12px}
+  .dgrid>.s4,.dgrid>.s5,.dgrid>.s6,.dgrid>.s7,.dgrid>.s8{grid-column:1/-1}
+  .d-bar .spacer{display:none}
+  .d-live{order:3;width:100%;justify-content:center;font-size:12.5px}
+  .d-hello{font-size:21px}
+  .dcard{padding:15px 14px}
+  .d-big{font-size:32px}
+  .d-hstats b{font-size:13px}
+  .d-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .d-actions .btn.primary{grid-column:1/-1}
+  .d-tiles{gap:10px}
+  .d-tile{padding:12px 12px 8px}
+  .d-tv{font-size:20px}
+  .d-head{flex-wrap:wrap}
+  .d-price>span:first-child{font-size:24px}
+  .d-mix{flex-direction:column;align-items:stretch}
+  .d-mix canvas{align-self:center}
+  .d-strat{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}
+  .d-strat canvas{grid-column:1/-1;grid-row:2}
+  .d-toks{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -955,8 +1091,10 @@ textarea{font:inherit;color:inherit}
     <button class="cmdk" id="cmdkBtn" type="button" aria-label="Ouvrir la palette de commandes"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Rechercher</span><kbd>Ctrl K</kbd></button>
     <div id="sideWallet"></div>
     <nav class="menu" id="menu">
+      <div class="menu-label">Vue d'ensemble</div>
+      <button data-page="dash" type="button" class="active"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/></svg>Tableau de bord</button>
       <div class="menu-label">Créer</div>
-      <button data-page="launch" type="button" class="active"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg>Lancer un token</button>
+      <button data-page="launch" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg>Lancer un token</button>
       <button data-page="social" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-11.8 7L4 20l1.1-4.6A8 8 0 1121 12z"/></svg>Communication</button>
       <div class="menu-label">Suivre</div>
       <button data-page="mine" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Mes tokens<span class="count" id="cMine">0</span></button>
@@ -981,7 +1119,6 @@ textarea{font:inherit;color:inherit}
         <div class="status" id="rpcStatus"><span class="dot"></span><span>RPC non testé</span></div>
         <button class="btn wallet-btn" id="walletBtn" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2"/><path d="M22 11h-6a2 2 0 000 4h6v-4z"/></svg><span id="walletTxt">Connecter le wallet</span></button>
       </div>
-      <div class="kpis" id="kpis"></div>
       <div class="simbar" id="simbar"></div>
       <div class="simbar live" id="filebar" hidden></div>
       <div class="simbar live" id="rpcbar" hidden></div>
@@ -989,8 +1126,64 @@ textarea{font:inherit;color:inherit}
 
     <div class="body"><main class="main">
 
+      <!-- TABLEAU DE BORD -->
+      <section class="page active" id="p-dash">
+        <div class="dash">
+          <div class="d-bar"><div><div class="d-hello" id="dHello">Bonjour</div><div class="d-date" id="dDate"></div></div><div class="spacer"></div><div class="d-live" id="dLive"></div><div class="seg d-seg" id="dMode" role="group" aria-label="Opérations affichées"><button type="button" data-dmode="real">Réelles</button><button type="button" data-dmode="sim">Simulées</button><button type="button" data-dmode="all">Toutes</button></div></div>
+          <div class="dgrid">
+            <article class="dcard d-hero s5">
+              <div class="d-eye"><span>Portefeuille</span><span class="badge" id="dModeBadge">Simulation</span></div>
+              <div class="d-big" id="dBal">—</div>
+              <div class="d-sub" id="dBalS">wallet non connecté</div>
+              <div class="d-hstats" id="dHero"></div>
+              <div class="d-actions">
+                <button class="btn primary" data-page="launch" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg>Lancer un token</button>
+                <button class="btn" data-page="trade" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Trader</button>
+                <button class="btn" data-page="bot" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg>Bot</button>
+                <button class="btn" data-dact="radar" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Radar</button>
+              </div>
+            </article>
+            <article class="dcard s7">
+              <div class="d-head"><div><div class="d-eye"><span>Prix du SOL</span><span class="d-src" id="dSolSrc">Binance</span></div><div class="d-price"><span id="dSol">—</span><span class="d-chg" id="dSolChg"></span></div></div><div class="spacer"></div><div class="seg d-seg sm" id="dRange" role="group" aria-label="Période"><button type="button" data-drange="1d" class="on">24 h</button><button type="button" data-drange="7d">7 j</button><button type="button" data-drange="30d">30 j</button></div></div>
+              <canvas class="dcv" id="dSolCv" height="196"></canvas>
+              <div class="d-foot" id="dSolFoot"></div>
+            </article>
+            <div class="d-tiles s12" id="dTiles"></div>
+            <article class="dcard s8">
+              <div class="d-head"><div><div class="d-eye"><span>Flux net cumulé</span></div><div class="d-note" id="dFlowNote">SOL reçu moins SOL dépensé, opération par opération</div></div></div>
+              <canvas class="dcv" id="dFlowCv" height="230"></canvas>
+            </article>
+            <article class="dcard s4">
+              <div class="d-head"><div><div class="d-eye"><span>Répartition</span></div><div class="d-note">Opérations par type</div></div></div>
+              <div class="d-mix"><canvas id="dMixCv" height="168" width="168"></canvas><div class="d-legend" id="dMixLeg"></div></div>
+            </article>
+            <article class="dcard s7">
+              <div class="d-head"><div><div class="d-eye"><span>Bot de trading</span><span class="d-src">papier</span></div><div class="d-note" id="dBotNote">Portefeuilles simulés des stratégies</div></div><div class="spacer"></div><button class="btn sm" data-page="bot" type="button">Ouvrir le terminal</button></div>
+              <div id="dBot"></div>
+            </article>
+            <article class="dcard s5">
+              <div class="d-head"><div><div class="d-eye"><span>Activité · 14 jours</span></div><div class="d-note">Opérations par jour</div></div></div>
+              <canvas class="dcv" id="dActCv" height="200"></canvas>
+              <div class="d-legend row" id="dActLeg"></div>
+            </article>
+            <article class="dcard s6">
+              <div class="d-head"><div><div class="d-eye"><span>Ordres actifs</span></div><div class="d-note">Distance au déclenchement</div></div><div class="spacer"></div><button class="btn sm" data-page="orders" type="button">Tout voir</button></div>
+              <div class="d-list" id="dOrders"></div>
+            </article>
+            <article class="dcard s6">
+              <div class="d-head"><div><div class="d-eye"><span>Dernières opérations</span></div></div><div class="spacer"></div><button class="btn sm" data-page="journal" type="button">Journal</button></div>
+              <div class="d-list" id="dOps"></div>
+            </article>
+            <article class="dcard s12">
+              <div class="d-head"><div><div class="d-eye"><span>Tokens lancés</span></div><div class="d-note">Depuis le studio · capitalisation lue sur la courbe de liaison</div></div><div class="spacer"></div><button class="btn sm" data-page="mine" type="button">Mes tokens</button></div>
+              <div class="d-toks" id="dToks"></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <!-- LANCER -->
-      <section class="page active" id="p-launch">
+      <section class="page" id="p-launch">
         <div class="ltabs" id="launchTabs" role="tablist"><button class="on" data-ltab="studio" type="button" role="tab" aria-selected="true">Studio de création</button><button data-ltab="radar" type="button" role="tab" aria-selected="false">Radar des tendances<span class="new">nouveau</span></button></div>
         <div id="lt-studio">
         <div class="autogen" id="autogen">
@@ -1295,7 +1488,7 @@ textarea{font:inherit;color:inherit}
   </div>
 </div>
 <div class="scrim" id="scrim"></div>
-<nav class="bnav" id="bnav" aria-label="Navigation principale"><button type="button" data-page="launch"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg><span>Lancer</span></button><button type="button" data-page="mine"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Mes tokens</span></button><button type="button" data-page="trade"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span>Trader</span></button><button type="button" data-page="orders"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Ordres</span><i class="bct" id="bOrders" hidden></i></button><button type="button" id="bnavMore"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span>Menu</span></button></nav>
+<nav class="bnav" id="bnav" aria-label="Navigation principale"><button type="button" data-page="dash"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/></svg><span>Accueil</span></button><button type="button" data-page="launch"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg><span>Lancer</span></button><button type="button" data-page="trade"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span>Trader</span></button><button type="button" data-page="orders"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Ordres</span><i class="bct" id="bOrders" hidden></i></button><button type="button" id="bnavMore"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span>Menu</span></button></nav>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="pal" id="pal" hidden role="dialog" aria-modal="true" aria-label="Palette de commandes"><div class="pal-box"><div class="pal-in"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="palQ" placeholder="Aller à une page, lancer une action, coller une adresse de token…" autocomplete="off" spellcheck="false" aria-controls="palList"><kbd>Échap</kbd></div><div class="pal-list" id="palList" role="listbox"></div><div class="pal-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> choisir</span><span><kbd>Entrée</kbd> exécuter</span><span><kbd>Ctrl</kbd> <kbd>K</kbd> ou <kbd>/</kbd> ouvrir</span></div></div></div>
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="box" id="mBox"><h3 id="mTitle"></h3><div id="mBody"></div><div class="row" id="mRow"></div></div></div>
@@ -1362,7 +1555,7 @@ Message: ${r}.
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { if (k === LS.draft) { try { const c = Object.assign({}, v, { image: null }); localStorage.setItem(k, JSON.stringify(c)); } catch (e2) {} } } };
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
   const S = {
-    page: 'launch', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
+    page: 'dash', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
     draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'illus', pal: 0, emoji: '', text: '', seed: 7 }, tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
     tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []),
     ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, jf: 'real', busy: false, imgBlob: null,
@@ -3299,20 +3492,13 @@ Message: ${r}.
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { dash: ['Tableau de bord', 'Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
     $('walletBtn').classList.toggle('primary', !S.wallet);
     const rs = $('rpcStatus');
     rs.innerHTML = '<span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? '' : 'wait') + '"></span><span>' + (S.rpcOk ? (cfg.rpc ? 'RPC privé connecté' : 'RPC public connecté') : S.rpcOk === false ? 'RPC en erreur' : 'RPC non testé') + '</span>';
-    const real = S.journal.filter((j) => !j.sim && j.status === 'ok'), net = real.reduce((s, j) => s + (j.sol || 0), 0);
-    const kp = (l, v, s, c) => '<div class="kpi"><div class="l">' + l + '</div><div class="v ' + (c || '') + '">' + v + '</div><div class="s">' + (s || '') + '</div></div>';
-    $('kpis').innerHTML = kp('Solde', S.wallet ? fSol(S.bal) : '—', S.wallet ? (S.wallet.id === 'session' ? 'wallet rapide' : esc(S.wallet.name)) + (S.solUsd && S.bal != null ? ' · ' + fUsd(S.bal * S.solUsd) : '') : 'wallet non connecté') +
-      kp('Prix du SOL', S.solUsd ? fr(S.solUsd, 2) + ' $' : '—', 'Binance') +
-      kp('Tokens lancés', String(S.tokens.length), 'depuis le studio') +
-      kp('Ordres actifs', String(S.orders.filter((o) => o.active).length), 'surveillés') +
-      kp('Flux net', real.length ? fSol(net, 3) : '—', real.length + ' opérations réelles', cls(net));
     const sb = $('simbar');
     sb.className = 'simbar' + (cfg.sim ? '' : ' live');
     sb.innerHTML = cfg.sim ? '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span><b>Mode simulation.</b> Tout est préparé et vérifié sur la blockchain, rien n\'est envoyé.</span><button class="btn sm" data-act="simoff" type="button">Passer en réel</button>'
@@ -3342,12 +3528,186 @@ Message: ${r}.
     navOpen(false);
     document.querySelectorAll('.page').forEach((s) => s.classList.toggle('active', s.id === 'p-' + p));
     $('pageTitle').textContent = PAGES[p][0]; $('pageSub').textContent = PAGES[p][1];
-    $('pageEyebrow').textContent = { bot: 'Trader', launch: 'Créer', social: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
+    $('pageEyebrow').textContent = { dash: 'Vue d\'ensemble', bot: 'Trader', launch: 'Créer', social: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
     try { localStorage.setItem('pstudio_page', p); } catch (e) {}
     renderPage(); window.scrollTo(0, 0); ppSync(liveSet());
     if (p === 'launch') setLaunchTab(S.ltab);
   }
 
+  /* ================================================================ tableau de bord */
+  const DASH = { mode: null, range: '1d', hist: {}, histAt: {}, src: 'Binance', tokAt: 0 };
+  try { const m = localStorage.getItem('pstudio_dash_mode'); if (['real', 'sim', 'all'].includes(m)) DASH.mode = m; } catch (e) {}
+  const RANGES = { '1d': { bi: '15m', n: 96, cb: 900, ms: 864e5 }, '7d': { bi: '1h', n: 168, cb: 3600, ms: 6048e5 }, '30d': { bi: '4h', n: 180, cb: 21600, ms: 2592e6 } };
+  async function solHist(force) {
+    const k = DASH.range, R = RANGES[k];
+    if (!force && DASH.hist[k] && Date.now() - DASH.histAt[k] < 60000) return;
+    DASH.histAt[k] = Date.now();
+    let pts = null;
+    try { const r = await fetch('https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=' + R.bi + '&limit=' + R.n); const j = await r.json(); if (Array.isArray(j) && j.length > 1) { pts = j.map((x) => ({ t: +x[0], v: +x[4], hi: +x[2], lo: +x[3] })); DASH.src = 'Binance'; } } catch (e) {}
+    if (!pts) try { const r = await fetch('https://api.exchange.coinbase.com/products/SOL-USD/candles?granularity=' + R.cb); const j = await r.json(); if (Array.isArray(j) && j.length > 1) { const from = Date.now() - R.ms; pts = j.map((x) => ({ t: x[0] * 1000, v: +x[4], hi: +x[2], lo: +x[1] })).filter((x) => x.t >= from).sort((a, b) => a.t - b.t); DASH.src = 'Coinbase'; } } catch (e) {}
+    if (pts && pts.length > 1) { DASH.hist[k] = pts; if (S.page === 'dash') renderDash(); }
+  }
+  // couleurs lues sur le thème en cours : les graphiques suivent la palette choisie
+  function dcol() {
+    const cs = getComputedStyle(document.documentElement), v = (n, d) => (cs.getPropertyValue(n) || '').trim() || d;
+    return { accent: v('--accent', '#d6b26e'), green: v('--green', '#3ccf8e'), red: v('--red', '#ff6b6b'), amber: v('--amber', '#f2894b'), blue: v('--blue', '#6aa8ff'), text: v('--text', '#f3efe6'), muted: v('--muted', '#b9b1a2'), dim: v('--dim', '#8b8375'), line: v('--line', '#2a2722'), panel: v('--panel', '#141311'), panel3: v('--panel3', '#211f1b') };
+  }
+  function rgba(c, a) {
+    let h = String(c).trim(); if (h[0] !== '#') return c;
+    h = h.slice(1); if (h.length === 3) h = h.split('').map((x) => x + x).join('');
+    const n = parseInt(h.slice(0, 6), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  const fDay = (t) => new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+  const fHm = (t) => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  // courbe avec aire dégradée, grille discrète et lecture au survol
+  function lineChart(cv, pts, o) {
+    cv._lc = { pts, o }; if (!cv._bound) { cv._bound = 1; const mv = (e) => { const r = cv.getBoundingClientRect(), x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left; cv._hx = x; lineDraw(cv); }; cv.addEventListener('mousemove', mv); cv.addEventListener('touchmove', mv, { passive: true }); cv.addEventListener('mouseleave', () => { cv._hx = null; lineDraw(cv); }); }
+    lineDraw(cv);
+  }
+  function lineDraw(cv) {
+    const { pts, o } = cv._lc, K = dcol(), { g, w, h } = setupCanvas(cv);
+    g.font = '11.5px "Geist Mono",monospace';
+    if (!pts || pts.length < 2) { g.fillStyle = K.dim; g.textAlign = 'center'; g.font = '13px Geist,system-ui,sans-serif'; g.fillText(o.empty || 'Pas encore de données', w / 2, h / 2); return; }
+    const pl = 4, pr = o.yw || 64, pt = 14, pb = 22;
+    let y0 = Infinity, y1 = -Infinity; pts.forEach((p) => { y0 = Math.min(y0, p.v); y1 = Math.max(y1, p.v); });
+    if (o.zero) { y0 = Math.min(y0, 0); y1 = Math.max(y1, 0); }
+    if (y1 - y0 < 1e-9) { y1 += Math.abs(y1) * 0.05 || 1; y0 -= Math.abs(y0) * 0.05 || 1; }
+    const pad = (y1 - y0) * 0.12; y0 -= pad; y1 += pad;
+    const n = pts.length, X = (i) => pl + i / (n - 1) * (w - pl - pr), Y = (v) => pt + (1 - (v - y0) / (y1 - y0)) * (h - pt - pb);
+    for (let i = 0; i <= 3; i++) { const v = y0 + (y1 - y0) * i / 3, y = Math.round(Y(v)) + 0.5; g.strokeStyle = rgba(K.line, 0.9); g.lineWidth = 1; g.setLineDash([2, 4]); g.beginPath(); g.moveTo(pl, y); g.lineTo(w - pr, y); g.stroke(); g.setLineDash([]); g.fillStyle = K.dim; g.textAlign = 'left'; g.fillText(o.fy(v), w - pr + 8, y + 4); }
+    if (o.zero && y0 < 0 && y1 > 0) { const y = Math.round(Y(0)) + 0.5; g.strokeStyle = rgba(K.muted, 0.35); g.beginPath(); g.moveTo(pl, y); g.lineTo(w - pr, y); g.stroke(); }
+    const col = o.col || (pts[n - 1].v >= (o.zero ? 0 : pts[0].v) ? K.green : K.red);
+    const base = o.zero ? Y(Math.max(y0, Math.min(0, y1))) : h - pb;
+    const grd = g.createLinearGradient(0, pt, 0, h - pb); grd.addColorStop(0, rgba(col, 0.26)); grd.addColorStop(1, rgba(col, 0));
+    g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(X(i), Y(p.v)) : g.moveTo(X(i), Y(p.v)))); g.lineTo(X(n - 1), base); g.lineTo(X(0), base); g.closePath(); g.fillStyle = grd; g.fill();
+    g.strokeStyle = col; g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(X(i), Y(p.v)) : g.moveTo(X(i), Y(p.v)))); g.stroke();
+    const lx = X(n - 1), ly = Y(pts[n - 1].v); g.fillStyle = rgba(col, 0.22); g.beginPath(); g.arc(lx, ly, 6, 0, Math.PI * 2); g.fill(); g.fillStyle = col; g.beginPath(); g.arc(lx, ly, 3, 0, Math.PI * 2); g.fill();
+    g.fillStyle = K.dim; g.textAlign = 'left'; g.fillText(o.fx(pts[0]), pl, h - 5); g.textAlign = 'right'; g.fillText(o.fx(pts[n - 1]), w - pr, h - 5);
+    if (cv._hx != null && cv._hx >= pl && cv._hx <= w - pr) {
+      const i = Math.max(0, Math.min(n - 1, Math.round((cv._hx - pl) / (w - pl - pr) * (n - 1)))), x = X(i), y = Y(pts[i].v);
+      g.strokeStyle = rgba(K.muted, 0.45); g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x, pt); g.lineTo(x, h - pb); g.stroke(); g.setLineDash([]);
+      g.fillStyle = K.panel; g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 4.5, 0, Math.PI * 2); g.fill(); g.stroke();
+      const t1 = o.fy(pts[i].v, true), t2 = o.ft ? o.ft(pts[i]) : o.fx(pts[i]); g.font = '600 12px "Geist Mono",monospace'; const tw = Math.max(g.measureText(t1).width, g.measureText(t2).width) + 18;
+      let bx = x + 10; if (bx + tw > w - pr) bx = x - 10 - tw; const by = Math.max(pt, Math.min(y - 22, h - pb - 44));
+      g.fillStyle = rgba(K.panel3, 0.96); g.strokeStyle = K.line; g.lineWidth = 1; g.beginPath(); g.roundRect ? g.roundRect(bx, by, tw, 40, 8) : g.rect(bx, by, tw, 40); g.fill(); g.stroke();
+      g.textAlign = 'left'; g.fillStyle = K.text; g.fillText(t1, bx + 9, by + 17); g.font = '11px "Geist Mono",monospace'; g.fillStyle = K.dim; g.fillText(t2, bx + 9, by + 32);
+    }
+  }
+  function sparkline(cv, vals, col) {
+    const { g, w, h } = setupCanvas(cv); if (!vals || vals.length < 2) { const K = dcol(); g.strokeStyle = rgba(K.dim, 0.4); g.setLineDash([3, 4]); g.beginPath(); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke(); return; }
+    let a = Math.min(...vals), b = Math.max(...vals); if (b - a < 1e-12) { a -= 1; b += 1; }
+    const X = (i) => 1 + i / (vals.length - 1) * (w - 2), Y = (v) => 3 + (1 - (v - a) / (b - a)) * (h - 6);
+    const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, rgba(col, 0.22)); grd.addColorStop(1, rgba(col, 0));
+    g.beginPath(); vals.forEach((v, i) => (i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)))); g.lineTo(X(vals.length - 1), h); g.lineTo(X(0), h); g.closePath(); g.fillStyle = grd; g.fill();
+    g.strokeStyle = col; g.lineWidth = 1.6; g.lineJoin = 'round'; g.beginPath(); vals.forEach((v, i) => (i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)))); g.stroke();
+  }
+  function donut(cv, parts, center) {
+    const K = dcol(), dpr = window.devicePixelRatio || 1, sz = 168; cv.width = sz * dpr; cv.height = sz * dpr; cv.style.width = sz + 'px'; cv.style.height = sz + 'px';
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, sz, sz);
+    const tot = parts.reduce((a, p) => a + p.n, 0), c = sz / 2, r = 72, lw = 15;
+    g.lineWidth = lw; g.strokeStyle = rgba(K.line, 1); g.beginPath(); g.arc(c, c, r - lw / 2, 0, Math.PI * 2); g.stroke();
+    if (tot) { let a = -Math.PI / 2; const gap = parts.filter((p) => p.n).length > 1 ? 0.05 : 0; parts.forEach((p) => { if (!p.n) return; const da = p.n / tot * Math.PI * 2; g.strokeStyle = p.c; g.lineCap = 'round'; g.beginPath(); g.arc(c, c, r - lw / 2, a + gap, a + da - gap); g.stroke(); a += da; }); }
+    g.textAlign = 'center'; g.fillStyle = K.text; g.font = '600 26px "Geist Mono",monospace'; g.fillText(center[0], c, c + 6); g.fillStyle = K.dim; g.font = '12px Geist,system-ui,sans-serif'; g.fillText(center[1], c, c + 25);
+  }
+  function bars(cv, days, keys) {
+    const K = dcol(), { g, w, h } = setupCanvas(cv), pl = 2, pr = 28, pt = 10, pb = 22;
+    const max = Math.max(1, ...days.map((d) => keys.reduce((a, k) => a + d[k.k], 0))), top = Math.max(2, Math.ceil(max * 1.15));
+    const Y = (v) => pt + (1 - v / top) * (h - pt - pb), bw = (w - pl - pr) / days.length;
+    g.font = '11px "Geist Mono",monospace';
+    [0, Math.round(top / 2), top].forEach((v) => { const y = Math.round(Y(v)) + 0.5; g.strokeStyle = rgba(K.line, 0.9); g.setLineDash([2, 4]); g.beginPath(); g.moveTo(pl, y); g.lineTo(w - pr, y); g.stroke(); g.setLineDash([]); g.fillStyle = K.dim; g.textAlign = 'left'; g.fillText(String(v), w - pr + 7, y + 4); });
+    days.forEach((d, i) => {
+      let acc = 0; const x = pl + i * bw + bw * 0.2, ww = Math.max(3, bw * 0.6);
+      keys.forEach((k) => { const v = d[k.k]; if (!v) return; const y1 = Y(acc), y2 = Y(acc + v); g.fillStyle = k.c; g.beginPath(); g.roundRect ? g.roundRect(x, y2, ww, y1 - y2 - 1, 3) : g.rect(x, y2, ww, y1 - y2 - 1); g.fill(); acc += v; });
+      if (!acc) { g.fillStyle = rgba(K.dim, 0.25); g.fillRect(x, Y(0) - 2, ww, 2); }
+      if (i === 0 || i === days.length - 1 || i === Math.floor(days.length / 2)) { g.fillStyle = K.dim; g.textAlign = 'center'; g.fillText(fDay(d.t), x + ww / 2, h - 5); }
+    });
+  }
+  const DTYPE = { buy: 'Achat', sell: 'Vente', create: 'Lancement' };
+  function dashOps() {
+    const m = DASH.mode || (S.journal.some((j) => !j.sim) ? 'real' : 'sim');
+    return { m, L: S.journal.filter((j) => m === 'all' || (m === 'sim' ? j.sim : !j.sim)) };
+  }
+  function dashTokens() {
+    if (Date.now() - DASH.tokAt < 60000) return; DASH.tokAt = Date.now();
+    S.tokens.slice(0, 8).forEach((t) => { if (!S.cache[t.mint] || Date.now() - S.cache[t.mint].at > 60000) loadToken(t.mint, false).then(() => { if (S.page === 'dash') renderDash(); }).catch(() => {}); });
+  }
+  function renderDash() {
+    if (!$('p-dash')) return;
+    const K = dcol(), now = new Date(), hr = now.getHours();
+    $('dHello').textContent = hr < 5 || hr >= 18 ? 'Bonsoir' : 'Bonjour';
+    $('dDate').textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const { m, L } = dashOps();
+    document.querySelectorAll('#dMode [data-dmode]').forEach((b) => { b.classList.toggle('on', b.dataset.dmode === m); b.setAttribute('aria-pressed', b.dataset.dmode === m); });
+    document.querySelectorAll('#dRange [data-drange]').forEach((b) => b.classList.toggle('on', b.dataset.drange === DASH.range));
+    const ppl = ppLabel(); $('dLive').innerHTML = '<span class="dot ' + ppl[0] + '"></span>Flux direct · ' + esc(ppl[1]) + '<i></i><span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait') + '"></span>RPC ' + (S.rpcOk ? (cfg.rpc ? 'privé' : 'public') : S.rpcOk === false ? 'en erreur' : 'non testé');
+    // portefeuille
+    const w = S.wallet;
+    $('dModeBadge').className = 'badge ' + (cfg.sim ? 'v' : 'r'); $('dModeBadge').textContent = cfg.sim ? 'Simulation' : 'Réel';
+    $('dBal').innerHTML = w && S.bal != null ? fr(S.bal, S.bal >= 100 ? 2 : 4) + '<small> SOL</small>' : '—';
+    $('dBalS').textContent = w ? (S.solUsd && S.bal != null ? '≈ ' + fUsd(S.bal * S.solUsd) + ' · ' : '') + (w.id === 'session' ? 'Wallet rapide' : w.name) + ' · ' + short(w.pk) : 'Connecte un wallet pour voir ton solde';
+    const ok = L.filter((j) => j.status === 'ok'), spent = Math.abs(ok.filter((j) => j.sol < 0).reduce((a, j) => a + j.sol, 0)), recv = ok.filter((j) => j.sol > 0).reduce((a, j) => a + j.sol, 0), net = recv - spent;
+    const hs = (l, v, c) => '<div><span>' + l + '</span><b class="' + (c || '') + '">' + v + '</b></div>';
+    $('dHero').innerHTML = hs('Dépensé', fSol(spent, 3)) + hs('Reçu', fSol(recv, 3)) + hs('Flux net', (net > 0 ? '+' : '') + fSol(net, 3), cls(net));
+    // prix du SOL
+    const H = DASH.hist[DASH.range], last = S.solUsd || (H && H[H.length - 1].v);
+    $('dSol').textContent = last ? fr(last, 2) + ' $' : '—'; $('dSolSrc').textContent = DASH.src;
+    if (H && H.length > 1) {
+      const chg = (last / H[0].v - 1) * 100, hi = Math.max(...H.map((p) => p.hi || p.v)), lo = Math.min(...H.map((p) => p.lo || p.v));
+      $('dSolChg').className = 'd-chg ' + cls(chg); $('dSolChg').textContent = (chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : '') + fr(chg, 2) + ' %';
+      const pts = H.slice(); if (S.solUsd) pts[pts.length - 1] = Object.assign({}, pts[pts.length - 1], { v: S.solUsd });
+      lineChart($('dSolCv'), pts, { fy: (v, hv) => fr(v, hv ? 2 : (v >= 100 ? 0 : 1)) + ' $', fx: (p) => DASH.range === '1d' ? fHm(p.t) : fDay(p.t), ft: (p) => fDay(p.t) + ' · ' + fHm(p.t) });
+      $('dSolFoot').innerHTML = '<span>Plus haut <b>' + fr(hi, 2) + ' $</b></span><span>Plus bas <b>' + fr(lo, 2) + ' $</b></span><span>Amplitude <b>' + fr((hi / lo - 1) * 100, 1) + ' %</b></span>' + (S.bal != null && w ? '<span>Ton solde <b>' + fUsd(S.bal * last) + '</b></span>' : '');
+    } else { $('dSolChg').textContent = ''; lineChart($('dSolCv'), null, { empty: 'Chargement de l\'historique du SOL…', fy: (v) => v, fx: () => '' }); $('dSolFoot').innerHTML = ''; }
+    // tuiles
+    const act = S.orders.filter((o) => o.active), kinds = { tp: 0, sl: 0, trail: 0 }; act.forEach((o) => { kinds[o.kind === 'trail' ? 'trail' : o.kind === 'sl' ? 'sl' : 'tp']++; });
+    const bot = window.PumpBotUI && window.PumpBotUI.summary ? window.PumpBotUI.summary() : null;
+    const botPnl = bot ? bot.strats.reduce((a, s) => a + s.bal - s.start + s.unreal, 0) : 0, botN = bot ? bot.strats.reduce((a, s) => a + s.n, 0) : 0, botOpen = bot ? bot.strats.reduce((a, s) => a + s.open, 0) : 0;
+    const weeks = []; for (let i = 7; i >= 0; i--) { const a = Date.now() - (i + 1) * 6048e5, b = Date.now() - i * 6048e5; weeks.push(S.tokens.filter((t) => t.createdAt >= a && t.createdAt < b).length); }
+    const okAsc = ok.slice().sort((a, b) => a.t - b.t); let cum = 0; const flowVals = [0].concat(okAsc.map((j) => (cum += j.sol || 0)));
+    const botEq = []; if (bot) { const all = []; bot.strats.forEach((s) => s.eq.forEach((v, i) => { all[i] = (all[i] || 0) + v - s.start; })); botEq.push(...all); }
+    const tile = (id, ic, l, v, sub, c) => '<div class="d-tile"><div class="d-tl"><span class="d-ic">' + ic + '</span>' + l + '</div><div class="d-tv ' + (c || '') + '">' + v + '</div><div class="d-ts">' + sub + '</div><canvas id="' + id + '" height="38"></canvas></div>';
+    $('dTiles').innerHTML =
+      tile('dSpTok', IC.spark, 'Tokens lancés', String(S.tokens.length), S.tokens.filter((t) => Date.now() - t.createdAt < 6048e5).length + ' cette semaine') +
+      tile('dSpOrd', IC.shield, 'Ordres actifs', String(act.length), act.length ? kinds.tp + ' objectifs · ' + kinds.sl + ' stops' + (kinds.trail ? ' · ' + kinds.trail + ' suiveurs' : '') : 'aucun ordre surveillé') +
+      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : '') + (m === 'all' ? '' : (m === 'real' ? ' réelle' : ' simulée') + (ok.length > 1 ? 's' : '')), cls(net)) +
+      tile('dSpBot', IC.wallet, 'Bot papier', botN || botOpen ? (botPnl > 0 ? '+' : '') + fr(botPnl, 3) + '<small> SOL</small>' : '—', bot ? botN + ' trades fermés · ' + botOpen + ' ouvertes' : 'terminal non chargé', cls(botPnl));
+    sparkline($('dSpTok'), weeks, K.accent);
+    { const el = $('dSpOrd'), parts = [[kinds.tp, K.green], [kinds.sl, K.red], [kinds.trail, K.blue]]; const bar = document.createElement('div'); bar.className = 'd-split'; bar.innerHTML = act.length ? parts.filter((x) => x[0]).map((x) => '<i style="flex:' + x[0] + ';background:' + x[1] + '"></i>').join('') : '<i style="flex:1;background:var(--panel3)"></i>'; el.replaceWith(bar); }
+    sparkline($('dSpFlow'), flowVals.length > 1 ? flowVals : null, net >= 0 ? K.green : K.red);
+    sparkline($('dSpBot'), botEq.length > 1 ? botEq : null, botPnl >= 0 ? K.green : K.red);
+    // flux net cumulé
+    let c2 = 0; const fpts = okAsc.length ? [{ t: okAsc[0].t - 1, v: 0 }].concat(okAsc.map((j) => ({ t: j.t, v: (c2 += j.sol || 0), j }))) : null;
+    $('dFlowNote').textContent = 'SOL reçu moins SOL dépensé · opérations ' + (m === 'real' ? 'réelles' : m === 'sim' ? 'simulées' : 'réelles et simulées');
+    lineChart($('dFlowCv'), fpts, { zero: true, yw: 76, empty: 'La courbe apparaîtra après ta première opération.', fy: (v, hv) => (v > 0 ? '+' : '') + fr(v, hv ? 4 : Math.abs(v) >= 10 ? 1 : 3), fx: (p) => fDay(p.t), ft: (p) => (p.j ? (DTYPE[p.j.type] || p.j.type) + ' ' + (p.j.symbol || '') + ' · ' : '') + fDay(p.t) + ' ' + fHm(p.t) });
+    // répartition
+    const mix = [{ k: 'buy', l: 'Achats', c: K.green }, { k: 'sell', l: 'Ventes', c: K.red }, { k: 'create', l: 'Lancements', c: K.accent }, { k: 'err', l: 'Échecs', c: K.dim }].map((x) => Object.assign(x, { n: L.filter((j) => x.k === 'err' ? j.status === 'err' : j.status === 'ok' && j.type === x.k).length }));
+    donut($('dMixCv'), mix, [String(L.length), 'opérations']);
+    $('dMixLeg').innerHTML = mix.map((x) => '<div><i style="background:' + x.c + '"></i>' + x.l + '<b>' + x.n + '</b><em>' + (L.length ? Math.round(x.n / L.length * 100) : 0) + ' %</em></div>').join('');
+    // activité 14 jours
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0); const days = [];
+    for (let i = 13; i >= 0; i--) { const t = d0.getTime() - i * 864e5, e = t + 864e5, J = L.filter((j) => j.t >= t && j.t < e); days.push({ t, buy: J.filter((j) => j.type === 'buy').length, sell: J.filter((j) => j.type === 'sell').length, create: J.filter((j) => j.type === 'create').length }); }
+    const bk = [{ k: 'buy', l: 'Achats', c: K.green }, { k: 'sell', l: 'Ventes', c: K.red }, { k: 'create', l: 'Lancements', c: K.accent }];
+    bars($('dActCv'), days, bk);
+    $('dActLeg').innerHTML = bk.map((x) => '<div><i style="background:' + x.c + '"></i>' + x.l + '<b>' + days.reduce((a, d) => a + d[x.k], 0) + '</b></div>').join('');
+    // bot
+    $('dBotNote').innerHTML = bot ? (bot.demo ? 'Mode démo · données simulées' : bot.running ? '<span class="dot on"></span>En marche · ' + bot.rate + ' tokens / min · ' + bot.watched + ' suivis' : '<span class="dot"></span>À l\'arrêt · lance le terminal pour suivre le flux') : 'Le terminal se charge…';
+    $('dBot').innerHTML = bot ? '<div class="d-strats">' + bot.strats.map((s) => { const p = s.bal - s.start + s.unreal; return '<button class="d-strat" type="button" data-page="bot" style="--sc:' + s.color + '"><span class="d-sn"><i></i><b>' + esc(s.name) + '</b>' + (s.enabled ? '' : '<em>en pause</em>') + '</span><canvas data-eq="' + s.id + '" height="34"></canvas><span class="d-sv"><b class="' + cls(p) + '">' + (p > 0 ? '+' : '') + fr(p, 3) + ' SOL</b><small>' + fr(s.bal, 2) + ' / ' + fr(s.start, 2) + ' · ' + (s.winrate == null ? '—' : fr(s.winrate, 0) + ' % gagnants') + ' · ' + s.open + ' ouv.</small></span></button>'; }).join('') + '</div>' +
+      (bot.recent.length ? '<div class="d-sub-h">Dernières sorties</div><div class="d-recent">' + bot.recent.slice(0, 4).map((r) => { const st = bot.strats.find((x) => x.id === r.sid); return '<div><i style="background:' + (st ? st.color : K.dim) + '"></i><b>' + esc(r.sym || '?') + '</b><span>' + esc(r.why || '') + '</span><em class="' + cls(r.pnl) + '">' + (r.pnlPct > 0 ? '+' : '') + fr(r.pnlPct, 1) + ' %</em></div>'; }).join('') + '</div>' : '') : '<div class="d-empty">Chargement du terminal…</div>';
+    if (bot) document.querySelectorAll('#dBot canvas[data-eq]').forEach((cv) => { const s = bot.strats.find((x) => x.id === cv.dataset.eq); sparkline(cv, s.eq.length > 1 ? s.eq : null, s.eq[s.eq.length - 1] >= s.start ? K.green : K.red); });
+    // ordres actifs
+    $('dOrders').innerHTML = act.length ? act.slice(0, 6).map((o) => {
+      const C = S.cache[o.mint], cur = C && C.stats ? C.stats.price : null, r = cur && o.ref ? (cur / o.ref - 1) * 100 : null;
+      const lab = o.kind === 'trail' ? 'Stop suiveur −' + o.value + ' %' : o.kind === 'sl' ? 'Stop −' + o.value + ' %' : o.kind === 'tp' ? (o.plan ? 'Objectif ×' + fr(1 + o.value / 100, 1).replace(',0', '') : 'Objectif +' + o.value + ' %') : 'Objectif ' + o.value;
+      let prog = null; if (r != null) { if (o.kind === 'tp') prog = Math.max(0, Math.min(1, r / o.value)); else if (o.kind === 'sl') prog = Math.max(0, Math.min(1, -r / o.value)); }
+      return '<div class="d-row"><span class="d-tag ' + (o.kind === 'tp' ? 'g' : o.kind === 'sl' ? 'r' : 'b') + '">' + (o.kind === 'tp' ? 'TP' : o.kind === 'sl' ? 'SL' : 'TS') + '</span><span class="d-main"><b>' + esc(o.symbol || short(o.mint)) + '</b><small>' + lab + ' · ' + (o.pct || 100) + ' % des tokens</small>' + (prog != null ? '<span class="d-prog ' + (o.kind === 'sl' ? 'r' : '') + '"><i style="width:' + (prog * 100).toFixed(1) + '%"></i></span>' : '') + '</span><span class="d-val ' + cls(r) + '">' + (r != null ? (r > 0 ? '+' : '') + fr(r, 1) + ' %' : '<span class="dim">prix…</span>') + '</span></div>';
+    }).join('') + (act.length > 6 ? '<div class="d-more">+ ' + (act.length - 6) + ' autres ordres</div>' : '') : '<div class="d-empty"><b>Aucun ordre actif</b>Ajoute un objectif ou un stop depuis un token.</div>';
+    // dernières opérations
+    const last6 = L.slice(0, 6);
+    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + ' · ' + esc(j.symbol || short(j.mint)) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Tes achats, ventes et lancements apparaîtront ici.</div>';
+    // tokens lancés
+    $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Crée ton premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
+    solHist(false);
+  }
   /* ================================================================ rendu : lancer */
   function renderLaunch() {
     document.querySelectorAll('#stepper button').forEach((b) => { const n = +b.dataset.step; b.classList.toggle('on', n === S.step); b.classList.toggle('done', n < S.step); });
@@ -3835,7 +4195,8 @@ Message: ${r}.
   /* ================================================================ rendu global */
   function renderPage() {
     renderTop();
-    if (S.page === 'launch') renderLaunch();
+    if (S.page === 'dash') renderDash();
+    else if (S.page === 'launch') renderLaunch();
     else if (S.page === 'mine') renderMine();
     else if (S.page === 'trade') { if (S.view.trade) { if (!S.cache[S.view.trade] || !S.cache[S.view.trade].curve) showToken('trade', S.view.trade); else renderTokenView('trade'); } }
     else if (S.page === 'orders') renderOrders();
@@ -3854,6 +4215,10 @@ Message: ${r}.
     if (d.uidepth) return applyUiTheme(uiTheme, true, d.uidepth);
     if (b.id === 'sideTheme') { navOpen(false); return themePicker(); }
     if (d.page) return setPage(d.page);
+    if (d.dtok) { setPage('mine'); return typeof showToken === 'function' ? showToken('mine', d.dtok) : null; }
+    if (d.dact === 'radar') { setPage('launch'); return setLaunchTab('radar'); }
+    if (d.dmode) { DASH.mode = d.dmode; try { localStorage.setItem('pstudio_dash_mode', d.dmode); } catch (x) {} return renderDash(); }
+    if (d.drange) { DASH.range = d.drange; renderDash(); return solHist(true); }
     if (b.id === 'walletBtn' || b.id === 'fileHelp') return walletMenu();
     if (d.sw) return swAction(d.sw);
     if (d.sk) { const el = $('skTxt'); if (!el) return; if (d.sk === 'show') { el.dataset.blur = el.dataset.blur === '1' ? '0' : '1'; b.textContent = el.dataset.blur === '1' ? 'Afficher' : 'Masquer'; } else { try { await navigator.clipboard.writeText(el.textContent); toast('Clé copiée', 'Colle-la dans un endroit sûr, puis efface le presse-papiers.', 'a'); } catch (e2) {} } return; }
@@ -4285,11 +4650,13 @@ Message: ${r}.
         if (S.page === 'mine') S.tokens.forEach((t) => { if (t.mint !== S.view.mine && (!S.cache[t.mint] || Date.now() - S.cache[t.mint].at > 60000)) loadToken(t.mint, false).then(() => { if (S.page === 'mine') renderMineList(); }).catch(() => {}); });
       }
       if (tick % 4 === 0) watchOrders().catch(() => {});
+      if (S.page === 'dash') { dashTokens(); renderDash(); }
       const keep = new Set(S.orders.filter((o) => o.active).map((o) => o.mint)); if (S.page === 'mine' && S.view.mine) keep.add(S.view.mine); if (S.page === 'trade' && S.view.trade) keep.add(S.view.trade);
       keep.forEach((m) => { if (!S.cache[m]) loadToken(m, false).catch(() => {}); });
       liveKeep(keep); ppSync(liveSet());
       if (tick % 4 === 1) prefetch();
     }, 5000);
+    window.addEventListener('resize', () => { if (S.page === 'dash') renderDash(); }); window.addEventListener('pstudio-theme', () => { if (S.page === 'dash') renderDash(); });
     window.addEventListener('resize', () => { ['mine', 'trade'].forEach((c) => { document.querySelectorAll('#' + (c === 'mine' ? 'mineDetail' : 'tradeDetail') + ' canvas.pchart').forEach((cv) => drawPriceChart(cv, S.cache[cv.dataset.mint] || {})); }); });
   }
   window.PumpStudio = { PP, S, cfg, setPage, openPanel, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
@@ -5814,6 +6181,15 @@ window.PumpBotUI = {
   running: () => S.wantConn || S.demo,
   toggle() { if (S.wantConn) disconnect(); else connect(); },
   stats: () => ({ tokens: S.tokens.size, positions: allPositions().length, closed: allClosed().length }),
+  summary: () => ({
+    running: S.wantConn || S.demo, connected: S.connected, demo: S.demo, rate: S.createTimes.length, migrations: S.migrations, watched: countWatched(),
+    strats: STRATS.map((s) => {
+      const cl = S.port[s.id].closed, st = statsOf(cl, s.P.startBal); let u = 0, b = s.P.startBal; S.port[s.id].positions.forEach((p) => { u += unrealized(p); });
+      const eq = [b]; cl.forEach((c) => { b += c.pnl; eq.push(b); });
+      return { id: s.id, name: s.name, color: s.color, enabled: s.enabled, start: s.P.startBal, bal: balance(s), realized: realized(s), unreal: u, open: S.port[s.id].positions.size, n: cl.length, winrate: st.winrate, eq: eq.slice(-80) };
+    }),
+    recent: allClosed().slice(-6).reverse().map((c) => ({ sym: c.symbol, sid: c.sid, pnl: c.pnl, pnlPct: c.pnlPct, why: c.why, t: c.closedAt })),
+  }),
 };
 (async function init() {
   buildViewSelect(); buildSettings(); buildStratCards(); buildStratSel();
