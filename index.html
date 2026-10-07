@@ -1377,7 +1377,7 @@ Message: ${r}.
     set(v) { S.ext = v; }, enumerable: true,
   });
   // brouillons des versions précédentes : univers, ton et style de logo d'avant
-  (function migrate() { const d = S.draft; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
+  (function migrate() { const d = S.draft; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'ocean', 'food', 'gaming', 'nature', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
 
   /* ================================================================ outils binaires */
   function b64ToBytes(b64) { const s = atob(b64), out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
@@ -2332,8 +2332,31 @@ Message: ${r}.
     myth: { label: 'Mythologie', ic: 'Ω', pal: 3, mascot: ['🐉', '🦅', '🔱'],
       nouns: ['Atlas', 'Kraken', 'Phoenix', 'Hydra', 'Titan', 'Midas', 'Icarus', 'Golem', 'Oracle', 'Cerberus', 'Minotaur', 'Valkyrie'],
       adj: ['Last', 'Iron', 'Young', 'Lost', 'Wild', 'Elder'] },
+    ocean: { label: 'Océan', ic: '≈', pal: 2, mascot: ['🐬', '🐙', '🐚', '🦈'],
+      nouns: ['Tide', 'Coral', 'Marlin', 'Reef', 'Wave', 'Nautilus', 'Lagoon', 'Orca', 'Squid', 'Anchor', 'Drift', 'Abyss', 'Manta', 'Shoal', 'Koi', 'Harbor', 'Siren', 'Surf'],
+      adj: ['Deep', 'Blue', 'Salty', 'Tidal', 'Lost', 'Wild', 'Calm'] },
+    food: { label: 'Gourmandise', ic: '◔', pal: 6, mascot: ['🍩', '🍒', '🧁', '☕'],
+      nouns: ['Donut', 'Mochi', 'Cherry', 'Waffle', 'Bagel', 'Taco', 'Latte', 'Honey', 'Muffin', 'Pudding', 'Nacho', 'Sushi', 'Biscuit', 'Toffee', 'Gelato', 'Bao', 'Mocha', 'Berry'],
+      adj: ['Sweet', 'Crispy', 'Hot', 'Glazed', 'Sticky', 'Fresh', 'Tiny'] },
+    gaming: { label: 'Jeux vidéo', ic: '◩', pal: 4, mascot: ['🎮', '👾', '🕹️'],
+      nouns: ['Pixel', 'Combo', 'Respawn', 'Loot', 'Quest', 'Boss', 'Arcade', 'Joystick', 'Speedrun', 'Critical', 'Level', 'Raid', 'Glitch', 'Ghost', 'Coin', 'Save', 'Lobby', 'Noob'],
+      adj: ['Final', 'Retro', 'Mega', 'Super', 'Hard', 'Ultra', 'Pro'] },
+    nature: { label: 'Nature', ic: '❦', pal: 3, mascot: ['🌿', '🍄', '🌸', '🌳'],
+      nouns: ['Fern', 'Moss', 'Willow', 'Cedar', 'Maple', 'Clover', 'Lotus', 'Sprout', 'Acorn', 'Birch', 'Sage', 'Ivy', 'Bloom', 'Pine', 'Meadow', 'Mushroom', 'Spore', 'Oak'],
+      adj: ['Wild', 'Green', 'Little', 'Ancient', 'Quiet', 'Golden', 'Forest'] },
     brand: { label: 'Nom de marque', ic: '◆', pal: 1, premium: true, mascot: ['✨'], nouns: [], adj: [] },
   };
+  // Noms supplémentaires pour varier les idées
+  const MORE_NOUNS = {
+    luxe: ['Perle', 'Emerald', 'Satin', 'Riviera', 'Cartier', 'Ivoire', 'Jewel', 'Essence', 'Couture', 'Ambre', 'Opaline', 'Velvet', 'Pearl', 'Gem'],
+    meme: ['Doge', 'Shiba', 'Penguin', 'Duck', 'Kitty', 'Bunny', 'Pug', 'Hamster', 'Sloth', 'Frog', 'Cat', 'Puppy', 'Seal', 'Owl'],
+    internet: ['Smile', 'Heart', 'Crush', 'Lol', 'Based', 'Chad', 'Wagmi', 'Hodl', 'Kek', 'Mood', 'Touch Grass', 'Meme'],
+    space: ['Sol', 'Helios', 'Meteor', 'Ufo', 'Alien', 'Cosmos', 'Galaxy', 'Starlight', 'Apollo', 'Mars', 'Titan', 'Solar'],
+    tech: ['Quantum', 'Atom', 'Node', 'Mesh', 'Byte', 'Nexus', 'Circuit', 'Bolt', 'Volt', 'Matrix', 'Agent', 'Core'],
+    prestige: ['Aegis', 'Shield', 'Victor', 'Laurel', 'Baron', 'Duke', 'Empire', 'Legacy', 'Noble', 'Sovereign'],
+    myth: ['Blade', 'Valhalla', 'Seer', 'Angel', 'Aether', 'Odin', 'Thor', 'Anubis', 'Zeus', 'Ember', 'Inferno', 'Saber'],
+  };
+  Object.keys(MORE_NOUNS).forEach((k) => { if (THEMES[k]) MORE_NOUNS[k].forEach((n) => { if (!THEMES[k].nouns.includes(n)) THEMES[k].nouns.push(n); }); });
   // Illustrations des univers (SVG compacts, teinte propre à chaque univers via --th)
   const UNIV_ART = {
     luxe: '<svg viewBox="0 0 120 72" aria-hidden="true"><defs><linearGradient id="ua-l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6dc"/><stop offset=".55" stop-color="var(--th)"/><stop offset="1" stop-color="#6b4f1d"/></linearGradient></defs><path d="M44 22h32l10 12-26 28-26-28z" fill="url(#ua-l)"/><path d="M34 34h52M44 22l16 40 16-40M50 22l10 12 10-12" fill="none" stroke="#1b1407" stroke-opacity=".35" stroke-width="1.2"/><path d="M92 14l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="var(--th)"/><circle cx="26" cy="52" r="2" fill="var(--th)" opacity=".7"/></svg>',
@@ -2345,8 +2368,14 @@ Message: ${r}.
     myth: '<svg viewBox="0 0 120 72" aria-hidden="true"><path d="M60 66V14M60 14l-5 8h10z" stroke="var(--th)" stroke-width="3" fill="var(--th)" stroke-linejoin="round"/><path d="M40 20c0 16 8 22 20 22s20-6 20-22" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"/><path d="M40 20l-4 6h8zM80 20l-4 6h8z" fill="var(--th)"/><path d="M14 56c10-8 18-8 26-2M106 56c-10-8-18-8-26-2" fill="none" stroke="var(--th)" stroke-width="2" opacity=".5" stroke-linecap="round"/></svg>',
     brand: '<svg viewBox="0 0 120 72" aria-hidden="true"><circle cx="60" cy="36" r="24" fill="none" stroke="var(--th)" stroke-width="2"/><circle cx="60" cy="36" r="19" fill="var(--th)" opacity=".14"/><path d="M50 46l10-22 10 22M53.5 39h13" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 36c-6-4-8-10-6-16M92 36c6-4 8-10 6-16M26 30l-5-2M94 30l5-2" fill="none" stroke="var(--th)" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></svg>',
   };
-  const UNIV_TINT = { luxe: '#d6b26e', meme: '#7fd18a', internet: '#7cc4ff', space: '#8fb4ff', tech: '#5fd4c4', prestige: '#e2c27a', myth: '#e8925a', brand: '#cfc6b4' };
-  const UNIV_HINT = { luxe: 'Aurelia · Velora', meme: 'Lil Otter · Capy', internet: 'Aura · Rizz', space: 'Nova · Orbit', tech: 'Neuron · Synth', prestige: 'Crown · Onyx', myth: 'Phoenix · Atlas', brand: 'Ton propre nom' };
+  Object.assign(UNIV_ART, {
+    ocean: '<svg viewBox="0 0 120 72" aria-hidden="true"><path d="M16 58C24 30 50 12 78 16C92 18 100 30 98 42C90 30 76 30 72 40C70 48 80 52 88 50C72 62 40 62 16 58Z" fill="var(--th)"/><path d="M30 52C40 40 52 32 66 30" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.6"/><circle cx="86" cy="22" r="2" fill="#fff" opacity=".8"/><circle cx="94" cy="28" r="1.4" fill="#fff" opacity=".8"/></svg>',
+    food: '<svg viewBox="0 0 120 72" aria-hidden="true"><circle cx="60" cy="38" r="23" fill="#e2a86a"/><circle cx="60" cy="38" r="19.5" fill="var(--th)"/><circle cx="60" cy="38" r="9" fill="#16140f"/><circle cx="60" cy="38" r="8" fill="#e2a86a"/><circle cx="60" cy="38" r="7" fill="#16140f"/><rect x="44" y="27" width="6" height="2" fill="#fff" transform="rotate(25 47 28)"/><rect x="68" y="29" width="6" height="2" fill="#7cc4ff" transform="rotate(-35 71 30)"/><rect x="50" y="49" width="6" height="2" fill="#ffe27a" transform="rotate(60 53 50)"/><rect x="70" y="45" width="6" height="2" fill="#7fd18a"/></svg>',
+    gaming: '<svg viewBox="0 0 120 72" aria-hidden="true"><path d="M38 22h44a16 16 0 0 1 16 16v6a14 14 0 0 1-24 10l-6-6H52l-6 6a14 14 0 0 1-24-10v-6a16 16 0 0 1 16-16z" fill="var(--th)"/><path d="M34 36h4v-4h4v4h4v4h-4v4h-4v-4h-4z" fill="#16140f"/><circle cx="80" cy="32" r="3" fill="#ff6b81"/><circle cx="86" cy="38" r="3" fill="#5fb6ff"/><circle cx="74" cy="38" r="3" fill="#ffd257"/><circle cx="80" cy="44" r="3" fill="#6fcf7f"/></svg>',
+    nature: '<svg viewBox="0 0 120 72" aria-hidden="true"><path d="M50 40h20v18a6 6 0 0 1-6 6h-8a6 6 0 0 1-6-6z" fill="#f5ecdc"/><path d="M26 42C26 16 94 16 94 42Z" fill="var(--th)"/><circle cx="42" cy="30" r="4.4" fill="#fff5ee"/><circle cx="60" cy="24" r="5" fill="#fff5ee"/><circle cx="78" cy="32" r="3.8" fill="#fff5ee"/><ellipse cx="36" cy="64" rx="10" ry="2.4" fill="#6fcf7f"/><ellipse cx="86" cy="64" rx="8" ry="2" fill="#6fcf7f"/></svg>',
+  });
+  const UNIV_TINT = { luxe: '#d6b26e', meme: '#7fd18a', internet: '#7cc4ff', space: '#8fb4ff', tech: '#5fd4c4', prestige: '#e2c27a', myth: '#e8925a', brand: '#cfc6b4', ocean: '#5fb6ff', food: '#f59ac0', gaming: '#b59cff', nature: '#e0524f' };
+  const UNIV_HINT = { luxe: 'Aurelia · Velora', meme: 'Lil Otter · Capy', internet: 'Aura · Rizz', space: 'Nova · Orbit', tech: 'Neuron · Synth', prestige: 'Crown · Onyx', myth: 'Phoenix · Atlas', brand: 'Ton propre nom', ocean: 'Coral · Orca', food: 'Mochi · Latte', gaming: 'Loot · Respawn', nature: 'Fern · Lotus' };
   const TONES = { luxe: 'Premium', minimal: 'Sobre', witty: 'Décalé', community: 'Communauté' };
   const LANGS = { en: 'Anglais', fr: 'Français' };
   // Descriptions : courtes, sans superlatifs creux ni formules « Bienvenue dans… », ni promesse de gains.
@@ -2446,7 +2475,7 @@ Message: ${r}.
     }
     out.sort((a, b) => b.score - a.score);
     // une fois triées, les idées sans motif lié à leur nom reçoivent les motifs de l'univers à tour de rôle
-    const list = MOTIFS[thKey] || MOTIFS.luxe; let rot = 0;
+    const list = MOTIFS[thKey] || MOTIFS.luxe; let rot = Math.floor(Math.random() * list.length);
     out.forEach((x) => { if (!MOTIF_WORDS.some(([re, m]) => re.test(x.name) && list.includes(m))) x.motif = list[rot++ % list.length]; });
     return out;
   }
@@ -2558,10 +2587,19 @@ Message: ${r}.
   }
   // Style « Illustration » : un motif dessiné en grand dans la zone ronde visible sur pump.fun.
   // Chaque univers a plusieurs motifs ; une idée reçoit le motif qui colle à son nom, sinon un motif différent de ses voisines.
-  const MOTIFS = { luxe: ['diamond', 'ring', 'diamond'], meme: ['frog', 'cat', 'panda'], internet: ['browser', 'chat'], space: ['planet', 'moon', 'rocket'], tech: ['chip', 'robot', 'bolt'], prestige: ['crown', 'key'], myth: ['trident', 'flame'], brand: ['mono'] };
-  const MOTIF_WORDS = [[/panda|koala|hippo|llama|walrus/i, 'panda'], [/lynx|corgi|raccoon|moose|cat|kit/i, 'cat'], [/otter|toad|gecko|axolotl|capy|quokka|goose|frog/i, 'frog'], [/nova|lumen|halo|eclipse|luna|lunar|moon/i, 'moon'],
-    [/rocket|zenith|vega|astra|apollo/i, 'rocket'], [/orbit|nebula|quasar|pulsar|comet|planet/i, 'planet'], [/neuron|cortex|synth|echo|signal|logic|proxy/i, 'robot'], [/glitch|volt|bolt|flash|zero/i, 'bolt'],
-    [/phoenix|icarus|ember|inferno|flame|fire/i, 'flame'], [/kraken|hydra|titan|atlas|poseidon|trident/i, 'trident'], [/key|regent|marquis|sterling/i, 'key'], [/ring|halo|opal|orra|lustre/i, 'ring'], [/vibe|rizz|lore|\bgm\b|\bser\b|\bfren\b|chat/i, 'chat']];
+  const MOTIFS = { luxe: ['diamond', 'ring', 'pearl', 'gem', 'perfume'], meme: ['frog', 'cat', 'panda', 'dog', 'penguin', 'duck'], internet: ['browser', 'chat', 'smiley', 'heart'],
+    space: ['planet', 'moon', 'rocket', 'comet', 'sun', 'ufo'], tech: ['chip', 'robot', 'bolt', 'atom', 'nodes'], prestige: ['crown', 'key', 'shield', 'laurel'], myth: ['trident', 'flame', 'sword', 'eye', 'wing'],
+    brand: ['mono', 'squaremono', 'hexmono'], ocean: ['wave', 'fish', 'shell', 'anchor'], food: ['donut', 'cherry', 'cup', 'icecream'], gaming: ['gamepad', 'pcoin', 'ghost', 'heart'], nature: ['leaf', 'mushroom', 'flower', 'tree'] };
+  const MOTIF_WORDS = [[/panda|koala|hippo|llama|walrus/i, 'panda'], [/lynx|raccoon|moose|cat|kit/i, 'cat'], [/doge|shib|dog|corgi|inu|pup|pug/i, 'dog'], [/penguin|pingu|frost/i, 'penguin'], [/duck|goose|quack/i, 'duck'],
+    [/otter|toad|gecko|axolotl|capy|quokka|frog/i, 'frog'], [/comet|meteor/i, 'comet'], [/sun|solar|helio/i, 'sun'], [/ufo|alien/i, 'ufo'], [/nova|lumen|halo|eclipse|luna|lunar|moon/i, 'moon'],
+    [/rocket|zenith|vega|astra|apollo/i, 'rocket'], [/orbit|nebula|quasar|pulsar|planet/i, 'planet'], [/quantum|atom|proton/i, 'atom'], [/net|mesh|node|proxy|chain/i, 'nodes'],
+    [/neuron|cortex|synth|echo|signal|logic/i, 'robot'], [/glitch|volt|bolt|flash|zero/i, 'bolt'], [/phoenix|ember|inferno|flame|fire/i, 'flame'], [/blade|sword|valkyrie|saber/i, 'sword'],
+    [/oracle|eye|seer/i, 'eye'], [/wing|icarus|angel|aether/i, 'wing'], [/kraken|hydra|titan|atlas|poseidon|trident/i, 'trident'], [/shield|aegis|guard|regent/i, 'shield'], [/laurel|victor|caesar/i, 'laurel'],
+    [/key|marquis|sterling/i, 'key'], [/perfume|scent|velvet|essence/i, 'perfume'], [/emerald|gem|jewel|onyx/i, 'gem'], [/pearl|ivory|opaline/i, 'pearl'], [/ring|opal|orra|lustre/i, 'ring'],
+    [/smile|happy|lol/i, 'smiley'], [/love|heart|fren|crush/i, 'heart'], [/vibe|rizz|lore|\bgm\b|\bser\b|chat/i, 'chat'], [/tide|wave|surf|lagoon|drift/i, 'wave'], [/fish|marlin|tuna|koi|orca|shoal|manta/i, 'fish'],
+    [/shell|nautilus|conch|coral/i, 'shell'], [/anchor|harbor|abyss/i, 'anchor'], [/donut|glaz/i, 'donut'], [/cherry|berry/i, 'cherry'], [/latte|coffee|mocha|brew|honey/i, 'cup'], [/ice|gelato|sundae|cream|pudding/i, 'icecream'],
+    [/pad|joystick|arcade|combo|controller/i, 'gamepad'], [/loot|coin|gold|cash|save/i, 'pcoin'], [/ghost|boss|respawn|spook/i, 'ghost'], [/fern|leaf|ivy|sage|clover|moss/i, 'leaf'], [/mushroom|shroom|spore/i, 'mushroom'],
+    [/lotus|bloom|rose|lily|blossom|meadow/i, 'flower'], [/cedar|pine|willow|maple|birch|oak|acorn|tree/i, 'tree']];
   function pickMotif(theme, name, i) {
     const list = MOTIFS[theme] || MOTIFS.luxe;
     for (const [re, m] of MOTIF_WORDS) if (re.test(name || '') && list.includes(m)) return m;
@@ -2570,7 +2608,7 @@ Message: ${r}.
   function drawIllus(g, W, P, motif, letter, u) {
     if (MOTIFS[motif]) motif = MOTIFS[motif][0];
     const k = W * 0.0074, dark = !P.light, ink = dark ? '#14120f' : '#1b1407', fg = P.fg && P.fg.length === 7 ? P.fg : '#d6b26e';
-    const tint = { frog: '#7fd18a', cat: '#f0a35e', panda: '#f3efe6', flame: '#f39a4b' }[motif] || fg;
+    const tint = { frog: '#7fd18a', cat: '#f0a35e', panda: '#f3efe6', flame: '#f39a4b', dog: '#f0a35e', penguin: '#cfd6e3', duck: '#ffd257', smiley: '#ffd257', heart: '#ff6b81', sun: '#ffc24a', fish: '#5fb6ff', wave: '#5fb6ff', shell: '#f2a77f', donut: '#f59ac0', cherry: '#e0414f', cup: '#c58b5c', icecream: '#f6c1d0', pcoin: '#ffd257', ghost: '#ff6b81', leaf: '#6fcf7f', mushroom: '#e0524f', flower: '#f59ac0', tree: '#5fbf72', gem: '#3cc98a' }[motif] || fg;
     // fond plat, comme les cartes d'univers : aplat sombre + lueur douce qui monte du bas
     g.fillStyle = dark ? shade(P.bg[0], 0.02) : P.bg[1]; g.fillRect(0, 0, W, W);
     const glow = g.createRadialGradient(W / 2, W * 1.02, 0, W / 2, W * 1.02, W * 0.95);
@@ -2672,6 +2710,139 @@ Message: ${r}.
       g.strokeStyle = metalG; g.lineWidth = 6; g.beginPath(); g.ellipse(60, 44, 20, 16, 0, 0, Math.PI * 2); g.stroke();
       fill('M52 22h16l5 6-13 13-13-13z', lin(52, 22, 68, 40, [[0, '#ffffff'], [0.5, '#cfe8ff'], [1, '#7aa9d6']])); shadowOff();
       stroke('M47 28h26M52 22l8 19 8-19', 'rgba(0,0,0,.25)', 0.8); star(86, 18, 1.3, P.m[1]); star(30, 26, 0.9, P.m[1]);
+    } else if (motif === 'pearl') {
+      const pr = g.createRadialGradient(53, 27, 1, 60, 34, 19); pr.addColorStop(0, '#ffffff'); pr.addColorStop(0.55, '#efe6d8'); pr.addColorStop(1, '#a89a86');
+      dot(60, 32, 18, pr); shadowOff(); dot(53, 25, 4.5, 'rgba(255,255,255,.85)');
+      [[30, 55], [39, 59], [49, 62], [60, 63], [71, 62], [81, 59], [90, 55]].forEach((q) => { const sp = g.createRadialGradient(q[0] - 1, q[1] - 1, 0.3, q[0], q[1], 3.4); sp.addColorStop(0, '#fff'); sp.addColorStop(1, '#b9ab98'); dot(q[0], q[1], 3.2, sp); });
+      star(92, 16, 1.2, P.m[1]);
+    } else if (motif === 'gem') {
+      fill('M46 16h28l10 10v20l-10 10H46l-10-10V26z', lin(36, 16, 84, 56, [[0, '#d6ffe9'], [0.45, '#3cc98a'], [1, '#0b5a3a']])); shadowOff();
+      fill('M51 24h18l6 6v12l-6 6H51l-6-6V30z', 'rgba(255,255,255,.16)');
+      stroke('M46 16l5 8M74 16l-5 8M84 26l-9 4M84 46l-9-4M74 56l-5-8M46 56l5-8M36 46l9-4M36 26l9 4', 'rgba(0,0,0,.25)', 1);
+      star(94, 14, 1.3, P.m[1]); dot(26, 52, 1.4, hexA(P.m[1], 0.7));
+    } else if (motif === 'perfume') {
+      fill('M42 30h36a6 6 0 0 1 6 6v20a8 8 0 0 1-8 8H44a8 8 0 0 1-8-8V36a6 6 0 0 1 6-6z', lin(36, 30, 84, 64, [[0, hexA(fg, 0.75)], [1, hexA(fg, 0.35)]])); shadowOff();
+      g.fillStyle = metalG; g.fillRect(54, 22, 12, 9); fill('M50 8h20a3 3 0 0 1 3 3v10H47V11a3 3 0 0 1 3-3z', metalG);
+      fill('M50 40h20v12H50z', 'rgba(255,255,255,.75)'); fill('M41 36h4v20h-4z', 'rgba(255,255,255,.25)'); star(92, 22, 1.2, P.m[1]);
+    } else if (motif === 'dog') {
+      const fur = lin(36, 10, 84, 64, [[0, '#ffc98a'], [1, '#d9823c']]);
+      fill('M40 28L37 8l15 12zM80 28l3-20-15 12z', fur); ell(60, 40, 24, 21, 0, fur); shadowOff();
+      ell(60, 48, 13, 10, 0, '#fff3e0'); ell(48, 40, 5, 4, 0, '#fff3e0'); ell(72, 40, 5, 4, 0, '#fff3e0');
+      ell(50, 35, 3, 3.6, 0, ink); ell(70, 35, 3, 3.6, 0, ink); dot(51, 34, 1, '#fff'); dot(71, 34, 1, '#fff');
+      ell(60, 44, 3.6, 2.6, 0, ink); stroke('M60 46.5q-3 4-6 2M60 46.5q3 4 6 2', ink, 1.4);
+    } else if (motif === 'penguin') {
+      ell(60, 40, 21, 26, 0, '#2b2f3a'); ell(40, 44, 5, 12, 0.35, '#2b2f3a'); ell(80, 44, 5, 12, -0.35, '#2b2f3a'); shadowOff();
+      ell(60, 46, 14, 18, 0, '#f5f5f5'); dot(53, 30, 3, '#fff'); dot(67, 30, 3, '#fff'); dot(53.5, 30.5, 1.5, ink); dot(67.5, 30.5, 1.5, ink);
+      fill('M55 35h10l-5 6z', '#ffb03a'); ell(52, 66, 6, 2.2, 0, '#ffb03a'); ell(68, 66, 6, 2.2, 0, '#ffb03a');
+    } else if (motif === 'duck') {
+      ell(64, 48, 27, 16, 0, '#ffd257'); dot(46, 30, 13, '#ffd257'); shadowOff();
+      ell(32, 33, 9, 4.2, 0, '#ff9a3c'); dot(48, 27, 2.6, ink); dot(48.8, 26.2, 0.9, '#fff');
+      fill('M58 44q14-8 24 4q-12 6-24-4z', '#f2b93a'); dot(42, 36, 3, 'rgba(255,138,138,.45)');
+    } else if (motif === 'smiley') {
+      dot(60, 36, 22, lin(44, 14, 76, 58, [[0, '#ffe98a'], [1, '#f2b02a']])); shadowOff();
+      ell(52, 31, 2.8, 4.2, 0, ink); ell(68, 31, 2.8, 4.2, 0, ink); stroke('M47 41q13 13 26 0', ink, 2.8);
+      dot(44, 40, 3.5, 'rgba(255,120,120,.45)'); dot(76, 40, 3.5, 'rgba(255,120,120,.45)'); star(92, 14, 1.3, tint);
+    } else if (motif === 'heart') {
+      const rows = ['.XX...XX.', 'XXXX.XXXX', 'XXXXXXXXX', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '...XXX...', '....X....'], c = 6;
+      rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === 'X') { g.fillStyle = '#ff5c7a'; g.fillRect(33 + x * c, 12 + y * c, c, c); } }));
+      shadowOff(); g.fillStyle = 'rgba(255,255,255,.65)'; g.fillRect(39, 18, c, c); g.fillRect(45, 18, c, c); g.fillRect(39, 24, c, c);
+      g.fillStyle = 'rgba(0,0,0,.18)'; [[7, 3], [7, 4], [6, 5], [5, 6]].forEach((q) => g.fillRect(33 + q[0] * c, 12 + q[1] * c, c, c));
+    } else if (motif === 'comet') {
+      fill('M84 18L26 50l5 9 57-31z', lin(84, 22, 28, 54, [[0, hexA(tint, 0.85)], [1, hexA(tint, 0)]])); shadowOff();
+      const ch = g.createRadialGradient(83, 22, 1, 84, 23, 10); ch.addColorStop(0, '#fff'); ch.addColorStop(0.5, tint); ch.addColorStop(1, shade(tint, -0.3)); dot(84, 23, 9, ch);
+      [[24, 16, 1.4], [100, 50, 1.2], [44, 64, 1], [16, 34, 1]].forEach((q) => dot(q[0], q[1], q[2], sky)); star(98, 10, 1.2, tint);
+    } else if (motif === 'sun') {
+      for (let a = 0; a < 12; a++) { const r = a * Math.PI / 6; stroke('M' + (60 + Math.cos(r) * 21) + ' ' + (36 + Math.sin(r) * 21) + 'L' + (60 + Math.cos(r) * 30) + ' ' + (36 + Math.sin(r) * 30), '#ffc24a', 3); }
+      const sc = g.createRadialGradient(56, 32, 1, 60, 36, 17); sc.addColorStop(0, '#fff6d0'); sc.addColorStop(0.5, '#ffc24a'); sc.addColorStop(1, '#f08a24'); dot(60, 36, 16, sc); shadowOff();
+    } else if (motif === 'ufo') {
+      fill('M48 44h24l12 22H36z', hexA(tint, 0.18)); ell(60, 40, 30, 8, 0, metalG); shadowOff();
+      fill('M46 38a14 13 0 0 1 28 0z', hexA(tint, 0.75)); dot(54, 30, 2.4, 'rgba(255,255,255,.7)');
+      [40, 52, 64, 76].forEach((x) => dot(x + 2, 41, 1.8, '#ffe27a')); [[20, 14, 1.4], [98, 18, 1.2], [104, 56, 1.4]].forEach((q) => dot(q[0], q[1], q[2], sky));
+    } else if (motif === 'atom') {
+      [0, 60, 120].forEach((d) => { g.save(); g.translate(60, 36); g.rotate(d * Math.PI / 180); g.strokeStyle = tint; g.lineWidth = 2.2; g.beginPath(); g.ellipse(0, 0, 30, 10, 0, 0, Math.PI * 2); g.stroke(); g.restore(); });
+      dot(60, 36, 6, metalG); shadowOff(); dot(90, 36, 2.6, tint); dot(45, 10, 2.6, tint); dot(45, 62, 2.6, tint);
+    } else if (motif === 'nodes') {
+      const N = [[28, 22], [58, 12], [90, 24], [40, 48], [72, 42], [56, 64], [94, 58]], E = [[0, 1], [1, 2], [0, 3], [1, 4], [2, 4], [3, 4], [3, 5], [4, 5], [4, 6], [2, 6]];
+      E.forEach((e) => stroke('M' + N[e[0]].join(' ') + 'L' + N[e[1]].join(' '), hexA(tint, 0.55), 1.6)); shadowOff();
+      N.forEach((n, i) => dot(n[0], n[1], i === 4 ? 6 : 3.6, i === 4 ? metalG : tint)); dot(72, 42, 2.4, hexA(P.bg[0], 0.9));
+    } else if (motif === 'shield') {
+      fill('M60 6l26 8v18c0 17-11 27-26 34-15-7-26-17-26-34V14z', metalG); shadowOff();
+      fill('M60 13l20 6v13c0 13-8 21-20 27-12-6-20-14-20-27V19z', hexA(P.bg[0], 0.85));
+      star(60, 36, 3.4, P.m[1]); stroke('M48 50h24', hexA(P.m[1], 0.5), 1.4);
+    } else if (motif === 'laurel') {
+      // deux branches de laurier qui montent de part et d'autre, feuilles posées le long de la tige
+      g.strokeStyle = hexA(P.m[2], 0.9); g.lineWidth = 1.6; g.beginPath(); g.arc(60, 36, 25, Math.PI * 0.62, Math.PI * 1.32); g.stroke(); g.beginPath(); g.arc(60, 36, 25, Math.PI * 1.68, Math.PI * 2.38); g.stroke();
+      for (let i = 0; i < 6; i++) { [0, 1].forEach((side) => { const a = side ? Math.PI * (2.34 - i * 0.12) : Math.PI * (0.66 + i * 0.12), x = 60 + Math.cos(a) * 25, y = 36 + Math.sin(a) * 25; [-1, 1].forEach((o) => { g.save(); g.translate(x, y); g.rotate(a + Math.PI / 2 + (side ? -1 : 1) * (0.55 * o)); g.beginPath(); g.ellipse(0, -4.5, 2.4, 5.2, 0, 0, Math.PI * 2); g.fillStyle = metalG; g.fill(); g.restore(); }); }); }
+      shadowOff(); star(60, 34, 3.4, P.m[1]); dot(60, 63, 2.6, P.m[1]);
+    } else if (motif === 'sword') {
+      fill('M60 4l5 8v34h-10V12z', lin(55, 4, 65, 46, [[0, '#ffffff'], [0.5, '#cfd6e3'], [1, '#7d828d']])); shadowOff();
+      stroke('M60 12v32', 'rgba(0,0,0,.2)', 1); fill('M42 46h36a2 2 0 0 1 0 5H42a2 2 0 0 1 0-5z', metalG); fill('M57 51h6v11h-6z', shade(P.m[3], -0.2)); dot(60, 65, 3.6, P.m[1]);
+      star(30, 20, 1.2, P.m[1]); star(90, 28, 1, P.m[1]);
+    } else if (motif === 'eye') {
+      fill('M24 38q36-32 72 0q-36 32-72 0z', hexA(P.bg[0], 0.9)); shadowOff(); stroke('M24 38q36-32 72 0q-36 32-72 0z', metalG, 2.4);
+      const ir = g.createRadialGradient(58, 35, 1, 60, 38, 12); ir.addColorStop(0, '#fff'); ir.addColorStop(0.4, tint); ir.addColorStop(1, shade(tint, -0.4)); dot(60, 38, 11, ir); dot(60, 38, 4.5, ink); dot(57, 35, 1.8, '#fff');
+      stroke('M60 4v8M40 8l4 7M80 8l-4 7M26 18l7 5M94 18l-7 5', metalG, 2);
+    } else if (motif === 'wing') {
+      fill('M28 58C28 30 52 12 94 10C86 18 82 22 72 26C82 26 88 26 92 29C82 35 74 37 64 39C72 41 76 43 78 47C64 52 50 55 28 58Z', metalG); shadowOff();
+      stroke('M34 54C46 40 60 30 86 16M40 54C54 46 66 38 86 30M46 55C58 50 66 46 74 45', 'rgba(0,0,0,.22)', 1.2); star(98, 40, 1.2, P.m[1]);
+    } else if (motif === 'squaremono' || motif === 'hexmono') {
+      const d = motif === 'hexmono' ? 'M60 6l26 15v30L60 66 34 51V21z' : 'M44 12h32a8 8 0 0 1 8 8v32a8 8 0 0 1-8 8H44a8 8 0 0 1-8-8V20a8 8 0 0 1 8-8z';
+      fill(d, hexA(P.m[1], 0.12)); shadowOff(); stroke(d, metalG, 2.4);
+      g.fillStyle = metalG; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 30px ' + LOGO_FONTS.caps; g.fillText(letter, 60, 38);
+      star(98, 14, 1.2, P.m[1]); star(22, 58, 1, P.m[1]);
+    } else if (motif === 'wave') {
+      fill('M16 58C24 30 50 12 78 16C92 18 100 30 98 42C90 30 76 30 72 40C70 48 80 52 88 50C72 62 40 62 16 58Z', lin(20, 12, 90, 62, [[0, '#d6f2ff'], [0.4, tint], [1, shade(tint, -0.45)]])); shadowOff();
+      stroke('M30 52C40 40 52 32 66 30', 'rgba(255,255,255,.45)', 1.6); [[86, 22, 2], [94, 28, 1.4], [82, 14, 1.2]].forEach((q) => dot(q[0], q[1], q[2], 'rgba(255,255,255,.8)'));
+    } else if (motif === 'fish') {
+      fill('M82 36l14-11v22z', shade(tint, -0.2)); fill('M28 36C40 18 70 18 84 36C70 54 40 54 28 36Z', lin(28, 20, 84, 52, [[0, shade(tint, 0.35)], [1, tint]])); shadowOff();
+      fill('M54 22l8-9 4 12z', shade(tint, -0.1)); dot(40, 33, 3.6, '#fff'); dot(41, 33.5, 1.8, ink); stroke('M52 28q4 8 0 16', 'rgba(0,0,0,.18)', 1.4);
+      g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 1.2; [[20, 22, 3], [14, 12, 2], [24, 10, 1.5]].forEach((q) => { g.beginPath(); g.arc(q[0], q[1], q[2], 0, Math.PI * 2); g.stroke(); });
+    } else if (motif === 'shell') {
+      fill('M60 62L28 34C32 14 88 14 92 34Z', lin(30, 14, 90, 62, [[0, '#fff0e4'], [1, '#f0a07a']])); shadowOff();
+      stroke('M60 62L35 28M60 62L45 20M60 62V18M60 62L75 20M60 62L85 28', 'rgba(120,60,30,.25)', 1.3); fill('M52 60h16l-3 7h-10z', '#e89a74'); dot(28, 60, 2, 'rgba(255,255,255,.6)');
+    } else if (motif === 'anchor') {
+      g.strokeStyle = metalG; g.lineWidth = 3; g.beginPath(); g.arc(60, 12, 5, 0, Math.PI * 2); g.stroke();
+      stroke('M60 17v44M47 26h26', metalG, 4); stroke('M33 44q4 18 27 18q23 0 27-18', metalG, 4); fill('M28 44l9-3-2 9zM92 44l-9-3 2 9z', metalG); shadowOff();
+      stroke('M16 66q8-4 16 0t16 0M72 66q8-4 16 0t16 0', hexA(tint, 0.5), 1.6);
+    } else if (motif === 'donut') {
+      const ring = (ro, ri) => { const p = new Path2D(); p.arc(60, 38, ro, 0, Math.PI * 2); p.arc(60, 38, ri, 0, Math.PI * 2, true); return p; };
+      g.fillStyle = '#e2a86a'; g.fill(ring(23, 8)); shadowOff(); g.fillStyle = '#f59ac0'; g.fill(ring(19.5, 9.5));
+      [['#ffffff', 46, 28, 0.4], ['#7cc4ff', 70, 30, -0.6], ['#ffe27a', 52, 50, 1], ['#7fd18a', 72, 46, 0.2], ['#ffffff', 64, 22, 1.3], ['#ff6b6b', 44, 42, -1]].forEach((q) => { g.save(); g.translate(q[1], q[2]); g.rotate(q[3]); g.fillStyle = q[0]; g.fillRect(-3, -1, 6, 2); g.restore(); });
+    } else if (motif === 'cherry') {
+      stroke('M50 40q6-20 22-28M72 42q0-18 0-30', '#6b8e3a', 2.4); ell(80, 14, 9, 4, -0.4, '#6fcf7f');
+      [[48, 48], [72, 50]].forEach((q) => { const c2 = g.createRadialGradient(q[0] - 4, q[1] - 4, 1, q[0], q[1], 13); c2.addColorStop(0, '#ff8a94'); c2.addColorStop(1, '#b81a2e'); dot(q[0], q[1], 12, c2); });
+      shadowOff(); dot(44, 44, 2.6, 'rgba(255,255,255,.6)'); dot(68, 46, 2.6, 'rgba(255,255,255,.6)');
+    } else if (motif === 'cup') {
+      ell(58, 64, 28, 4, 0, '#d9d0c0'); fill('M38 30h40v18a14 14 0 0 1-14 14H52a14 14 0 0 1-14-14z', lin(38, 30, 78, 62, [[0, '#fbf7ef'], [1, '#cfc6b4']])); shadowOff();
+      g.strokeStyle = '#cfc6b4'; g.lineWidth = 3.4; g.beginPath(); g.arc(80, 41, 7, -Math.PI / 2, Math.PI / 2); g.stroke();
+      ell(58, 30, 20, 4, 0, '#6b3f22'); stroke('M50 22q-4-6 0-12M58 20q-4-6 0-12M66 22q-4-6 0-12', 'rgba(255,255,255,.55)', 1.8);
+    } else if (motif === 'icecream') {
+      fill('M47 38h26L60 68z', '#e2a86a'); shadowOff(); stroke('M51 44l13 14M57 40l10 11M69 44L56 58M63 40L53 51', 'rgba(120,70,30,.35)', 1);
+      dot(51, 32, 11, '#f6c1d0'); dot(69, 32, 11, '#bfe3c8'); dot(60, 22, 11, '#fff1c4'); dot(60, 10, 3.6, '#e0414f'); dot(56, 18, 2.4, 'rgba(255,255,255,.7)');
+    } else if (motif === 'gamepad') {
+      fill('M38 22h44a16 16 0 0 1 16 16v6a14 14 0 0 1-24 10l-6-6H52l-6 6a14 14 0 0 1-24-10v-6a16 16 0 0 1 16-16z', metalG); shadowOff();
+      fill('M34 36h4v-4h4v4h4v4h-4v4h-4v-4h-4z', hexA(P.bg[0], 0.9)); dot(80, 32, 3, '#ff6b81'); dot(86, 38, 3, '#5fb6ff'); dot(74, 38, 3, '#ffd257'); dot(80, 44, 3, '#6fcf7f');
+      fill('M54 30h12v4H54z', hexA(P.bg[0], 0.6));
+    } else if (motif === 'pcoin') {
+      dot(60, 36, 22, lin(42, 14, 78, 58, [[0, '#fff0a0'], [0.5, '#ffcc3a'], [1, '#d98b14']])); shadowOff();
+      g.strokeStyle = 'rgba(150,90,10,.5)'; g.lineWidth = 2; g.beginPath(); g.arc(60, 36, 16, 0, Math.PI * 2); g.stroke(); star(60, 36, 3.4, '#fff7d6');
+      [[26, 18, 1.4], [94, 54, 1.2]].forEach((q) => star(q[0], q[1], q[2], '#ffd257'));
+    } else if (motif === 'ghost') {
+      fill('M40 62V36a20 20 0 0 1 40 0v26l-6-5-7 5-7-5-7 5-7-5z', lin(40, 16, 80, 62, [[0, '#ff9aae'], [1, '#e8455f']])); shadowOff();
+      ell(52, 36, 5, 6, 0, '#fff'); ell(68, 36, 5, 6, 0, '#fff'); dot(54, 37, 2.6, '#2b4aa0'); dot(70, 37, 2.6, '#2b4aa0'); [[24, 20], [96, 24], [98, 52]].forEach((q) => dot(q[0], q[1], 1.6, '#ffd257'));
+    } else if (motif === 'leaf') {
+      fill('M30 60C30 30 54 12 92 12C92 44 70 64 40 62Z', lin(30, 12, 92, 62, [[0, '#b8efb6'], [1, '#2f9e5a']])); shadowOff();
+      stroke('M36 58C50 44 64 32 86 16M50 46L48 32M60 38L60 24M70 30L74 20M58 44L70 46M68 36L80 36', 'rgba(0,40,10,.28)', 1.4);
+    } else if (motif === 'mushroom') {
+      fill('M50 40h20v18a6 6 0 0 1-6 6h-8a6 6 0 0 1-6-6z', '#f5ecdc'); fill('M26 42C26 16 94 16 94 42Z', lin(26, 16, 94, 42, [[0, '#ff8a7a'], [1, '#c8322a']])); shadowOff();
+      [[42, 30, 4.4], [60, 24, 5], [78, 32, 3.8], [55, 37, 2.6], [70, 38, 2.2]].forEach((q) => dot(q[0], q[1], q[2], '#fff5ee')); ell(36, 64, 10, 2.4, 0, '#6fcf7f'); ell(86, 64, 8, 2, 0, '#6fcf7f');
+    } else if (motif === 'flower') {
+      stroke('M60 46v20', '#5fbf72', 2.6); ell(67, 58, 7, 3, -0.5, '#6fcf7f');
+      for (let i = 0; i < 6; i++) { const r = i * Math.PI / 3; ell(60 + Math.cos(r) * 11, 32 + Math.sin(r) * 11, 8, 5, r, i % 2 ? '#f7b2cf' : '#f59ac0'); }
+      shadowOff(); dot(60, 32, 7, '#ffd257'); dot(58, 30, 2, 'rgba(255,255,255,.6)');
+    } else if (motif === 'tree') {
+      fill('M56 42h8v22h-8z', '#8a5a3a'); [[60, 22, 15], [45, 32, 12], [75, 32, 12], [60, 38, 13]].forEach((q) => dot(q[0], q[1], q[2], lin(40, 6, 80, 52, [[0, '#9be59b'], [1, '#3a9a56']]))); shadowOff();
+      dot(54, 20, 3, 'rgba(255,255,255,.3)'); ell(60, 65, 20, 2.6, 0, 'rgba(111,207,127,.5)');
     } else {                                    // diamant taillé
       fill('M44 22h32l10 12-26 28-26-28z', lin(44, 22, 76, 62, [[0, P.m[0]], [0.5, P.m[1]], [1, P.m[3]]])); shadowOff();
       fill('M44 22l6 12h-16z', 'rgba(255,255,255,.18)'); fill('M76 22l10 12h-16z', 'rgba(0,0,0,.14)');
@@ -3780,7 +3951,7 @@ Message: ${r}.
     { k: 'meme', n: 'Mèmes internet', th: 'internet', re: /\b(chad|wojak|sigma|based|npc|rizz|aura|cope|gm|wagmi|degen|lol|kek|meme|troll|giga|brain|vibe|cooked|delulu|retard|fart|coin)\b/i },
     { k: 'luxe', n: 'Luxe et argent', th: 'luxe', re: /\b(gold|golden|rich|money|cash|diamond|king|queen|royal|crown|lux|luxury|billion|million|bank|vault)\b/i },
     { k: 'myth', n: 'Mythes et héros', th: 'myth', re: /\b(god|zeus|thor|odin|titan|hero|legend|myth|phoenix|kraken|samurai|ninja|knight|wizard|magic)\b/i },
-    { k: 'food', n: 'Nourriture', th: 'brand', re: /\b(pizza|burger|taco|sushi|banana|apple|cookie|donut|coffee|tea|milk|cheese|bread|fries|noodle|ramen|candy|cake)\b/i },
+    { k: 'food', n: 'Nourriture', th: 'food', re: /\b(pizza|burger|taco|sushi|banana|apple|cookie|donut|coffee|tea|milk|cheese|bread|fries|noodle|ramen|candy|cake)\b/i },
   ];
   const R_OTHER = { k: 'other', n: 'Autres', th: 'brand' };
   const rTheme = (k) => R_THEMES.find((t) => t.k === k) || R_OTHER;
