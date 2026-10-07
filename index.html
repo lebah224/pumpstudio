@@ -870,6 +870,21 @@ textarea{font:inherit;color:inherit}
 .wact.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 78%,#fff),var(--accent));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--btn-glow)}
 .cmdk{transition:border-color .15s,color .15s,background .15s}
 .cmdk:hover{border-color:var(--accent-line);color:var(--text);background:var(--panel2)}
+/* ---------- options non sélectionnées : elles gardent l'allure d'un bouton (fond, contour, texte lisible) ---------- */
+.seg,.ltabs,.stepper{gap:5px}
+.seg button:not(.on),.ltabs button:not(.on),.stepper button:not(.on){background:var(--btn-face);color:var(--text);
+  box-shadow:inset 0 0 0 1px var(--btn-edge),inset 0 1px 0 rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.35)}
+.seg button:not(.on) svg.i,.ltabs button:not(.on) svg.i{color:color-mix(in oklab,var(--accent) 62%,var(--text))}
+.seg button:not(.on):hover,.ltabs button:not(.on):hover,.stepper button:not(.on):hover{color:var(--text);
+  background:linear-gradient(180deg,color-mix(in oklab,var(--panel3) 78%,#fff),color-mix(in oklab,var(--panel3) 92%,var(--accent)));
+  box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent)}
+.seg button:not(.on):active,.ltabs button:not(.on):active,.stepper button:not(.on):active{box-shadow:inset 0 0 0 1px var(--accent-line),inset 0 2px 4px rgba(0,0,0,.45)}
+.stepper button.done:not(.on){color:var(--text)}
+.chip:not(.on){background:var(--btn-face);border-color:var(--btn-edge);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.3)}
+.chip:not(.on):hover{border-color:var(--accent-line);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent)}
+.tp-pre:not(.on),.rtheme:not(.on){background:var(--btn-face);border-color:var(--btn-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.seg button.on,.ltabs button.on,.stepper button.on{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 34%,var(--panel3)),color-mix(in oklab,var(--accent) 20%,var(--panel2)));color:#fff;
+  box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 70%,var(--panel)),inset 0 1px 0 rgba(255,255,255,.1),0 6px 18px -10px color-mix(in oklab,var(--accent) 80%,transparent)}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
 </style>
 </head>
