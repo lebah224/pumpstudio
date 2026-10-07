@@ -3858,6 +3858,7 @@ const FLASH_SECTIONS = [
     ['maxDevBuySol', 'Dev buy maximum', 'num', 'Achat du créateur au lancement', 'SOL'],
     ['serialMax', 'Rejet si le dev a lancé au moins', 'num', 'Tokens vus pendant la session', 'tok.'],
     ['requireName', 'Exiger un nom et un symbole', 'bool', ''],
+    ['requireSocials', 'Réseaux sociaux obligatoires', 'bool', 'X, Telegram ou site web dans les métadonnées du token'],
     ['maxPerMin', 'Entrées maximum par minute', 'num', 'Évite d\'acheter tout le flux', ''],
   ]},
   { id: 'f_money', title: 'Capital', fields: [
@@ -3913,7 +3914,7 @@ const PRESETS = {
     targetBuyers: 25, targetVolSol: 15, scoreMin: 65, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 3,
     slPct: 25, tp1Pct: 50, tp1Frac: 50, trailPct: 20, trailAlways: false, maxHoldSec: 600, exitOnDevSell: true },
   flash: { mode: 'flash', flashLaunch: true, flashMig: true, phaseSec: 60, lTp1: 100, lTp2: 50, mTp1: 50, mTp2: 25, exitFlat: true,
-    lSl: 30, mSl: 20, maxHoldSec: 180, launchWindowSec: 20, migWindowSec: 60, maxDevBuySol: 2, serialMax: 2, requireName: true, maxPerMin: 6,
+    lSl: 30, mSl: 20, maxHoldSec: 180, launchWindowSec: 20, migWindowSec: 60, maxDevBuySol: 2, serialMax: 2, requireName: true, requireSocials: true, maxPerMin: 6,
     startBal: 5, sizeSol: 0.1, maxPositions: 5, feePct: 1, slipPct: 5,
     targetBuyers: 25, targetVolSol: 15, scoreMin: 50, maxTop10: 100, maxDevPct: 100, maxSnipers: 1000, maxBundlePct: 100, slPct: 30, tp1Pct: 100 },
   migration: { onlyMigrated: true, minAgeSec: 45, maxEntryAgeSec: 900, minEntryMc: 300, maxEntryMc: 4000, maxDevBuySol: 5, maxDevPct: 20, maxTop10: 60, maxBundlePct: 40, maxSnipers: 40, serialMax: 5, rejectDevSell: true, requireSocials: true,
@@ -4401,6 +4402,12 @@ function evaluateFlash(t, s, st, now) {
   if (launch && dev && dev.n >= P.serialMax) return reject(st, 'Lanceur en série (' + dev.n + ' tokens)');
   if (launch && P.requireName && (!t.symbol.trim() || !t.name.trim())) return reject(st, 'Nom ou symbole manquant');
   const b = [];
+  if (P.requireSocials && !hasSocials(t)) {
+    const ms = t.meta && t.meta.state;
+    if (ms === 'ok') return reject(st, 'Aucun réseau social');
+    if (ms === 'queued' || ms === 'loading') { st.blockers = ['Lecture des réseaux sociaux…']; return; }
+    b.push(cfg.fetchMeta ? 'Réseaux sociaux inconnus' : 'Réseaux inconnus : lecture des métadonnées coupée');
+  }
   if (!(t.mc > 0) || (mig && !(t.lastPx > t.migratedAt))) b.push('Attend le premier prix');
   const port = S.port[s.id];
   port.ent = (port.ent || []).filter((x) => now - x < 60000);
