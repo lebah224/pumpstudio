@@ -933,9 +933,14 @@ textarea{font:inherit;color:inherit}
 .app.side-min .side-theme span:last-child{display:none}
 @media (max-width:520px){.uit-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.uit-prev{height:74px;padding:6px}.uit-side{width:18px}.uit-card-in{padding:0 6px}.uit-t{padding:7px 9px 8px}}
 /* ---------- panneaux (Réglages, Paramètres) : même fenêtre que « Personnaliser » ---------- */
-.modal .box.wide.panel{max-width:760px}
+.modal .box.wide.panel{max-width:880px}
 #modal .pb-pg{display:block;animation:none}
-#modal .forms{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+#modal .forms{display:block;columns:2 300px;column-gap:14px}
+#modal .forms>fieldset{display:block;width:100%;break-inside:avoid;page-break-inside:avoid;margin:0 0 14px}
+#modal .forms>fieldset .actions{display:none}
+#modal .forms>fieldset.dirty .actions{display:flex}
+#modal #setBody>.card{margin-top:0 !important}
+#modal .pb-pg>.notice{margin-bottom:14px}
 #modal .strat-card{margin-bottom:12px;border:none;background:none;padding:0;border-top:none !important}
 #modal .strat-card .strat-head{padding-bottom:12px;border-bottom:1px solid var(--line)}
 #pb-stratCards[data-only="equilibree"] .strat-card:not([data-sid="equilibree"]),#pb-stratCards[data-only="migration"] .strat-card:not([data-sid="migration"]),#pb-stratCards[data-only="flash"] .strat-card:not([data-sid="flash"]){display:none}
@@ -3086,17 +3091,18 @@ Message: ${r}.
     { id: 'iris', n: 'Iris', d: 'Encre et violet (d\'origine)', a: ['#9483ff', '#d9d3ff', '#120d2b'], amber: '#f3b53f', x: ['#0a0b12', '#0d0f17', '#11131c', '#161925', '#1c202e', '#212536', '#2d3247', '#f1f2f8', '#acb2c6', '#848ba2'] },
   ];
   // Intensité du fond : on éclaircit les neutres vers un gris doux et on baisse un peu l'éclat du texte
-  const UI_DEPTH = { profond: { n: 'Profond', bg: 0, ln: 0, tx: 0, glow: '5%' }, doux: { n: 'Doux', bg: 0.05, ln: 0.05, tx: 0.06, glow: '3%' }, adouci: { n: 'Adouci', bg: 0.1, ln: 0.09, tx: 0.1, glow: '2%' } };
-  let uiTheme = 'or', uiDepth = 'doux';
+  const UI_DEPTH = { nuit: { n: 'Nuit', bg: -0.4, ln: -0.18, tx: 0.03, glow: '2%' }, profond: { n: 'Profond', bg: 0, ln: 0, tx: 0.03, glow: '3%' }, doux: { n: 'Doux', bg: 0.05, ln: 0.05, tx: 0.06, glow: '3%' } };
+  let uiTheme = 'or', uiDepth = 'profond';
+  function tone(h, v) { return v < 0 ? mixHex(h, '#000000', -v) : mixHex(h, '#ffffff', v); }
   function mixHex(a, b, t) { const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)), x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
   function applyUiTheme(id, quiet, depth) {
     if (depth) uiDepth = depth;
-    const t = UI_THEMES.find((x) => x.id === id) || UI_THEMES[0], st = document.documentElement.style, D = UI_DEPTH[uiDepth] || UI_DEPTH.doux;
-    NEUT.forEach((k, i) => st.setProperty('--' + k, i < 5 ? mixHex(t.x[i], '#ffffff', D.bg) : i < 7 ? mixHex(t.x[i], '#ffffff', D.ln) : mixHex(t.x[i], t.x[0], D.tx)));
+    const t = UI_THEMES.find((x) => x.id === id) || UI_THEMES[0], st = document.documentElement.style, D = UI_DEPTH[uiDepth] || UI_DEPTH.profond;
+    NEUT.forEach((k, i) => st.setProperty('--' + k, i < 5 ? tone(t.x[i], i ? D.bg * (1 - i * 0.12) : D.bg) : i < 7 ? tone(t.x[i], D.ln) : mixHex(t.x[i], t.x[0], D.tx)));
     st.setProperty('--glow', D.glow);
-    try { localStorage.setItem('pstudio_ui_depth', uiDepth); } catch (e) {}
+    try { localStorage.setItem('pstudio_ui_depth2', uiDepth); } catch (e) {}
     st.setProperty('--accent', t.a[0]); st.setProperty('--accent-ink', t.a[1]); st.setProperty('--on-accent', t.a[2]); st.setProperty('--amber', t.amber);
-    const mt = document.querySelector('meta[name="theme-color"]'); if (mt) mt.setAttribute('content', mixHex(t.x[0], '#ffffff', D.bg));
+    const mt = document.querySelector('meta[name="theme-color"]'); if (mt) mt.setAttribute('content', tone(t.x[0], D.bg));
     uiTheme = t.id;
     try { localStorage.setItem('pstudio_ui_theme', t.id); } catch (e) {}
     const sw = $('sideThemeDots'); if (sw) sw.innerHTML = '<i style="background:' + t.a[0] + '"></i><i style="background:' + t.x[4] + '"></i><i style="background:' + t.x[7] + '"></i>';
@@ -3112,9 +3118,9 @@ Message: ${r}.
       '<span class="uit-btn" style="background:' + t.a[0] + ';color:' + t.a[2] + '">Lancer</span></span></span>' +
       '<span class="uit-t"><b>' + esc(t.n) + '</b><small>' + esc(t.d) + '</small></span></button>';
     modal('Personnaliser les couleurs', '<p class="muted" style="margin:0 0 14px">La palette s\'applique tout de suite à tout le studio et reste enregistrée dans ce navigateur. Les couleurs de gain, de perte et d\'alerte ne changent pas.</p>' +
-      '<div class="uit-depth"><span><b>Intensité du fond</b><small>Plus doux = fond moins noir et contraste moins fort</small></span><div class="seg">' + Object.keys(UI_DEPTH).map((k) => '<button type="button" data-uidepth="' + k + '" class="' + (k === uiDepth ? 'on' : '') + '" aria-pressed="' + (k === uiDepth) + '">' + UI_DEPTH[k].n + '</button>').join('') + '</div></div><div class="uit-grid">' + UI_THEMES.map(card).join('') + '</div>', [{ label: 'Fermer', cls: 'primary' }], true);
+      '<div class="uit-depth"><span><b>Intensité du fond</b><small>Nuit = le plus sombre · Doux = gris charbon</small></span><div class="seg">' + Object.keys(UI_DEPTH).map((k) => '<button type="button" data-uidepth="' + k + '" class="' + (k === uiDepth ? 'on' : '') + '" aria-pressed="' + (k === uiDepth) + '">' + UI_DEPTH[k].n + '</button>').join('') + '</div></div><div class="uit-grid">' + UI_THEMES.map(card).join('') + '</div>', [{ label: 'Fermer', cls: 'primary' }], true);
   }
-  try { const dp = localStorage.getItem('pstudio_ui_depth'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
+  try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
   const PAGES = { bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
