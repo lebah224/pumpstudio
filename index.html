@@ -1055,7 +1055,7 @@ textarea{font:inherit;color:inherit}
           <div class="kpi"><div class="l">Solde</div><div class="v" id="pb-kBal">0</div><div class="s" id="pb-kBalS">—</div></div>
           <div class="kpi"><div class="l">P&amp;L</div><div class="v" id="pb-kPnl">0</div><div class="s" id="pb-kPnlS">—</div></div>
           <div class="kpi"><div class="l">Winrate</div><div class="v" id="pb-kWin">—</div><div class="s" id="pb-kWinS">—</div></div>
-          <div class="kpi"><div class="l">Flux en direct</div><div class="v" id="pb-kCost">—</div><div class="s" id="pb-kCostS">source du studio</div></div>
+          <div class="kpi"><div class="l">Flux PumpPortal</div><div class="v" id="pb-kCost">—</div><div class="s" id="pb-kCostS">flux du studio</div></div>
         </div>
         <nav class="ltabs pb-tabs" id="pb-menu" aria-label="Sections du terminal">
           <button class="on" data-pb="live" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Flux live<span class="n" id="pb-cLive">0</span></button>
@@ -1090,7 +1090,7 @@ textarea{font:inherit;color:inherit}
                   </tr></thead>
                   <tbody id="pb-feedBody"></tbody>
                 </table>
-                <div class="empty" id="pb-feedEmpty"><b>En attente de nouveaux tokens</b>Connecte le terminal au flux en direct ou lance la démo.</div>
+                <div class="empty" id="pb-feedEmpty"><b>En attente de nouveaux tokens</b>Connecte le terminal au flux PumpPortal ou lance la démo.</div>
               </div>
             </div>
 
@@ -1281,7 +1281,7 @@ Message: ${r}.
   const FAMOUS = ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF', 'FLOKI', 'POPCAT', 'MEW', 'BOME', 'SLERF', 'PNUT', 'GOAT', 'MOODENG', 'FARTCOIN', 'BRETT', 'MOG', 'TURBO', 'NEIRO', 'CHILLGUY', 'SOL', 'BTC', 'ETH', 'USDC', 'USDT', 'TRUMP', 'MELANIA'];
 
   /* ================================================================ réglages */
-  const DEF = { liveSrc: 'helius', engine: 'direct', speed: 'fast', maxPriority: 0.003, rpc: '', metaMethod: 'pump', pinataJwt: '', slippage: 15, priorityFee: 0.0005, maxSol: 1, feePct: 1.25, portalFeePct: 0.5, devMaxPct: 10, sim: true, notify: true, sound: true, pollSec: 10, ppLive: true, sender: 'swqos', useSess: false, autoExec: true, slSlippage: 30, autoRetry: 2 };
+  const DEF = { engine: 'direct', speed: 'fast', maxPriority: 0.003, rpc: '', metaMethod: 'pump', pinataJwt: '', slippage: 15, priorityFee: 0.0005, maxSol: 1, feePct: 1.25, portalFeePct: 0.5, devMaxPct: 10, sim: true, notify: true, sound: true, pollSec: 10, ppLive: true, sender: 'swqos', useSess: false, autoExec: true, slSlippage: 30, autoRetry: 2 };
   const LS = { cfg: 'pstudio_cfg_v1', draft: 'pstudio_draft_v1', tokens: 'pstudio_tokens_v1', journal: 'pstudio_journal_v1', orders: 'pstudio_orders_v1', wallet: 'pstudio_wallet_v1', sess: 'pstudio_sess_v1' };
   const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { if (k === LS.draft) { try { const c = Object.assign({}, v, { image: null }); localStorage.setItem(k, JSON.stringify(c)); } catch (e2) {} } } };
@@ -3140,7 +3140,7 @@ Message: ${r}.
   /* ---------- réglages : formulaires avec Valider / Annuler */
   const FORMS = [
     { id: 'engine', title: 'Moteur de transaction', fields: [['engine', 'Construction des transactions', 'sel', 'Direct : programme pump.fun, sans intermédiaire ni frais en plus. PumpPortal : secours. Les tokens migrés passent automatiquement par PumpPortal, quel que soit ce choix.', [['direct', 'Direct (pump.fun)'], ['portal', 'PumpPortal (+0,5 %)']]]] },
-    { id: 'conn', title: 'Connexion à Solana', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé (gratuit) : https://mainnet.helius-rpc.com/?api-key=… — sert aussi de source des données en direct', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct', 'bool', 'Prix et transactions pump.fun en temps réel : lus sur la blockchain via Helius quand une adresse RPC est renseignée, sinon via PumpPortal. Les ordres se déclenchent en moins d\'une seconde.']] },
+    { id: 'conn', title: 'Connexion à Solana', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct PumpPortal', 'bool', 'Prix et transactions pump.fun en temps réel : les ordres se déclenchent en moins d\'une seconde. Gratuit, sans clé.']] },
     { id: 'meta', title: 'Métadonnées du token', fields: [['metaMethod', 'Envoi du logo', 'sel', 'pump.fun direct, ou Pinata si le navigateur bloque', [['pump', 'pump.fun (IPFS)'], ['pinata', 'Pinata (IPFS)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
     { id: 'speed', title: 'Vitesse d\'exécution', fields: [['speed', 'Priorité des transactions', 'sel', 'Calculée sur les frais réellement payés sur pump.fun ces dernières secondes', [['eco', 'Économique'], ['fast', 'Rapide (conseillé)'], ['turbo', 'Turbo'], ['manual', 'Manuelle']]], ['maxPriority', 'Plafond des frais de priorité', 'num', 'Jamais plus que ce montant par transaction', 'SOL'], ['priorityFee', 'Frais de priorité manuels', 'num', 'Utilisés seulement en mode Manuelle', 'SOL']] },
     { id: 'fast', title: 'Wallet rapide et envoi', fields: [['autoExec', 'Ventes automatiques', 'bool', 'Le wallet rapide exécute seul les paliers et le stop'], ['slSlippage', 'Slippage du stop', 'num', 'Plus large : mieux vaut vendre un peu moins cher que pas du tout', '%'], ['autoRetry', 'Nouveaux essais', 'num', 'Si le prix a trop bougé (0 à 3)', 'fois'], ['sender', 'Envoi direct aux validateurs', 'sel', 'Helius Sender, en plus de ton RPC. Pourboire inclus dans la transaction.', [['swqos', 'Rapide · 0,000005 SOL (conseillé)'], ['max', 'Maximum · 0,001 SOL'], ['off', 'Désactivé']]]] },
@@ -3179,7 +3179,6 @@ Message: ${r}.
     if (errs.length) { errs.forEach(([el, m]) => { el.classList.add('err'); const d = document.createElement('div'); d.className = 'ferr'; d.textContent = m; el.closest('.f').appendChild(d); }); toast('Valeurs invalides', 'Corrige les champs en rouge.', 'r'); return; }
     Object.assign(cfg, v); save(LS.cfg, cfg); fs.classList.remove('dirty');
     if ('notify' in v && v.notify && window.Notification && Notification.permission === 'default') Notification.requestPermission();
-    if ('rpc' in v || 'liveSrc' in v) { hlClose(); ppSync(liveSet()); ppxEmit(); }
     if ('ppLive' in v) { if (cfg.ppLive || PPX.on) ppSync(liveSet()); else ppClose(); }
     if ('rpc' in v) { S.rpcOk = null; PST = { url: null }; Object.keys(LIVE).forEach((k) => delete LIVE[k]); BH = { at: 0, hash: null }; testRpc(true); }
     toast('Réglages enregistrés', FORMS.find((F) => F.id === fs.dataset.form).title, 'g'); renderTop();
@@ -3188,8 +3187,7 @@ Message: ${r}.
   /* ================================================================ pont PumpPortal pour le terminal de trading (script PumpBot)
      Une seule connexion WebSocket pour tout l'outil : le terminal y ajoute ses abonnements. */
   const PPX = { on: false, keys: new Set(), ls: [], sl: [] };
-  function ppxEmit() { const st = liveState(); PPX.sl.forEach((fn) => { try { fn(st); } catch (e) {} }); }
-  function liveState() { return useHelius() ? HL.state : PP.state; }
+  function ppxEmit() { PPX.sl.forEach((fn) => { try { fn(PP.state); } catch (e) {} }); }
   /* ================================================================ temps réel : flux PumpPortal (gratuit, sans clé)
      Une seule connexion WebSocket pour tous les tokens suivis : PumpPortal bannit les clients qui en ouvrent plusieurs. */
   const PP = { ws: null, state: 'off', subs: new Set(), want: new Set(), retry: 0, timer: null, last: 0, msgs: 0, pending: new Set() };
@@ -3201,8 +3199,8 @@ Message: ${r}.
     clearTimeout(PP.timer); PP.state = 'connecting'; ppStatus();
     let ws; try { ws = new WebSocket(PP_URL); } catch (e) { PP.state = 'error'; ppStatus(); return ppRetry(); }
     PP.ws = ws;
-    ws.onopen = () => { PP.state = 'on'; PP.retry = 0; PP.subs = new Set(); PP.newTok = false; PP.migSub = false; ppStatus(); ppDiff(); };
-    ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } liveEmit(m, 'PumpPortal'); };
+    ws.onopen = () => { PP.state = 'on'; PP.retry = 0; PP.subs = new Set(); PP.newSub = false; ppStatus(); ppDiff(); };
+    ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } if (m) PPX.ls.forEach((fn) => { try { fn(m); } catch (e) {} }); if (m && m.mint && m.txType && m.txType !== 'create') { try { ppApply(m); } catch (e) {} } };
     ws.onerror = () => { PP.state = 'error'; ppStatus(); };
     ws.onclose = () => { if (PP.ws === ws) { PP.ws = null; PP.subs = new Set(); if (PP.state !== 'off') { PP.state = 'error'; ppStatus(); ppRetry(); } } };
   }
@@ -3218,22 +3216,17 @@ Message: ${r}.
     const add = [...PP.want].filter((m) => !PP.subs.has(m)), del = [...PP.subs].filter((m) => !PP.want.has(m));
     if (add.length && ppSend({ method: 'subscribeTokenTrade', keys: add })) add.forEach((m) => PP.subs.add(m));
     if (del.length && ppSend({ method: 'unsubscribeTokenTrade', keys: del })) del.forEach((m) => PP.subs.delete(m));
-    // Avec Helius, PumpPortal ne sert plus qu'à annoncer les migrations de tous les tokens (Helius ne voit que les tokens suivis)
-    const wantNew = PPX.on && !useHelius(), wantMig = PPX.on;
-    if (wantNew !== !!PP.newTok && ppSend({ method: wantNew ? 'subscribeNewToken' : 'unsubscribeNewToken' })) PP.newTok = wantNew;
-    if (wantMig !== !!PP.migSub && ppSend({ method: wantMig ? 'subscribeMigration' : 'unsubscribeMigration' })) PP.migSub = wantMig;
+    if (PPX.on && !PP.newSub && ppSend({ method: 'subscribeNewToken' }) && ppSend({ method: 'subscribeMigration' })) PP.newSub = true;
+    if (!PPX.on && PP.newSub && ppSend({ method: 'unsubscribeNewToken' }) && ppSend({ method: 'unsubscribeMigration' })) PP.newSub = false;
     ppStatus();
   }
   function ppSync(set) {
     PP.ui = new Set([...set].filter(Boolean));               // tokens suivis par l'interface (fiches, ordres)
-    const helius = useHelius(), live = [...(cfg.ppLive ? PP.ui : []), ...PPX.keys];
-    HL.want = helius ? [...new Set([...(cfg.ppLive ? PP.ui : []), ...PPX.keys])] : [];
-    if (hlNeeded()) { if (!HL.ws) hlConnect(); else hlDiff(); } else if (HL.ws) hlClose();
-    PP.want = new Set(helius ? [] : live);
-    if (!PP.want.size && !PPX.on) { if (PP.ws && (PP.subs.size || PP.newTok || PP.migSub)) ppDiff(); return; }
+    PP.want = new Set([...(cfg.ppLive ? PP.ui : []), ...PPX.keys]);
+    if (!PP.want.size && !PPX.on) { if (PP.ws && (PP.subs.size || PP.newSub)) ppDiff(); return; }
     if (!PP.ws) ppConnect(); else ppDiff();
   }
-  function ppApply(m, src) {
+  function ppApply(m) {
     const mint = m.mint, C = S.cache[mint];
     if (!C) { if (PP.ui && PP.ui.has(mint) && !PP.pending.has(mint)) { PP.pending.add(mint); loadToken(mint, false).catch(() => {}).finally(() => PP.pending.delete(mint)); } return; }
     const vs = +m.vSolInBondingCurve, vt = +m.vTokensInBondingCurve, sol = +m.solAmount, tok = +m.tokenAmount;
@@ -3251,166 +3244,10 @@ Message: ${r}.
       C.trades.unshift({ sig: m.signature, t: Date.now(), wallet: m.traderPublicKey || '', side: m.txType, tokens: tok, sol, price: sol / tok, live: true });
       if (C.trades.length > 300) C.trades.length = 300;
     }
-    C.live = Date.now(); C.liveSrc = src || 'PumpPortal'; C.at = Date.now();
+    C.live = Date.now(); C.liveSrc = 'PumpPortal'; C.at = Date.now();
     onLive(mint);
   }
-  /* ================================================================ temps réel : Helius (WebSocket du RPC Solana) — source principale
-     Avec une clé RPC (Helius conseillé), le studio lit la blockchain directement :
-     · lancements : transactions qui mentionnent l'autorité de mint de pump.fun (une par création) ;
-     · trades : transactions qui mentionnent le mint de chaque token suivi (courbe pump.fun et PumpSwap).
-     Les événements émis par les programmes ("Program data:") sont décodés et convertis au même format
-     que l'ancien flux, pour que le studio et le terminal n'aient qu'une seule forme de message. */
-  const HL = { ws: null, state: 'off', want: [], limit: 60, subs: new Map(), bySub: new Map(), acc: new Map(), byAcc: new Map(), pend: new Map(), createSub: null, createPend: false, id: 0, retry: 0, timer: null, last: 0, msgs: 0, events: 0, seen: new Map(),
-    logSeen: new Set(), failAt: new Map(), st: { create: 0, logs: 0, acc: 0, err: 0, lastErr: '' } };
-  const PUMP_MINT_AUTH = 'TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM';
-  const EV = { create: [27, 114, 169, 77, 222, 235, 99, 118], trade: [189, 219, 127, 211, 78, 230, 97, 238], complete: [95, 114, 97, 156, 212, 46, 152, 8], ammBuy: [103, 244, 82, 31, 44, 245, 119, 119], ammSell: [62, 47, 55, 10, 165, 3, 220, 42], ammMig: [189, 233, 93, 185, 92, 148, 234, 148] };
-  const useHelius = () => !!cfg.rpc && cfg.liveSrc !== 'pumpportal';
-  const hlUrl = () => String(cfg.rpc || '').trim().replace(/^http(s?):/i, 'ws$1:');
-  function hlSend(o) { try { if (HL.ws && HL.ws.readyState === 1) { HL.ws.send(JSON.stringify(o)); return true; } } catch (e) {} return false; }
-  function hlReq(method, params) { const id = ++HL.id; return hlSend({ jsonrpc: '2.0', id, method, params }) ? id : 0; }
-  function hlNeeded() { return useHelius() && (PPX.on || HL.want.length > 0); }
-  function hlConnect() {
-    if (HL.ws || !hlNeeded() || !window.WebSocket) return;
-    clearTimeout(HL.timer); HL.state = 'connecting'; ppStatus();
-    let ws; try { ws = new WebSocket(hlUrl()); } catch (e) { HL.state = 'error'; ppStatus(); return hlRetry(); }
-    HL.ws = ws;
-    ws.onopen = () => { HL.state = 'on'; HL.retry = 0; HL.subs = new Map(); HL.bySub = new Map(); HL.acc = new Map(); HL.byAcc = new Map(); HL.pend = new Map(); HL.createSub = null; HL.createPend = false; ppStatus(); hlDiff(); };
-    ws.onmessage = (ev) => { HL.last = Date.now(); HL.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } try { hlOnMsg(m); } catch (e) {} };
-    ws.onerror = () => { HL.state = 'error'; ppStatus(); };
-    ws.onclose = () => { if (HL.ws === ws) { HL.ws = null; HL.subs = new Map(); HL.bySub = new Map(); HL.acc = new Map(); HL.byAcc = new Map(); HL.createSub = null; if (HL.state !== 'off') { HL.state = 'error'; ppStatus(); hlRetry(); } } };
-  }
-  function hlRetry() { if (!hlNeeded()) return; const wait = [1000, 2000, 5000, 10000, 30000][Math.min(HL.retry++, 4)]; clearTimeout(HL.timer); HL.timer = setTimeout(hlConnect, wait); }
-  function hlClose() { clearTimeout(HL.timer); HL.state = 'off'; const ws = HL.ws; HL.ws = null; HL.subs = new Map(); HL.bySub = new Map(); HL.acc = new Map(); HL.byAcc = new Map(); HL.createSub = null; try { if (ws) ws.close(); } catch (e) {} ppStatus(); }
-  // Aligne les abonnements : un par mint suivi (dans la limite fixée) + le flux des lancements si le terminal tourne
-  function hlDiff() {
-    if (!HL.ws || HL.ws.readyState !== 1) return;
-    const want = new Set(HL.want.slice(0, Math.max(1, HL.limit)));
-    for (const [mint, sub] of HL.subs) if (!want.has(mint)) { if (sub != null) hlReq('logsUnsubscribe', [sub]); HL.subs.delete(mint); HL.bySub.delete(sub); }
-    for (const [mint, a] of HL.acc) if (!want.has(mint)) { if (a.sub != null) hlReq('accountUnsubscribe', [a.sub]); HL.acc.delete(mint); HL.byAcc.delete(a.sub); }
-    const now = Date.now();
-    for (const mint of want) {
-      if (now - (HL.failAt.get(mint) || 0) < 60000) continue;      // refusé il y a moins d'une minute : on attend
-      if (!HL.subs.has(mint)) { const id = hlReq('logsSubscribe', [{ mentions: [mint] }, { commitment: 'confirmed' }]); if (id) { HL.subs.set(mint, null); HL.pend.set(id, mint); } }
-      // second canal : le compte de la courbe change à chaque trade (prix exact, même si les logs n'arrivent pas)
-      if (!HL.acc.has(mint)) { let pda = null; try { pda = curvePda(mint); } catch (e) {} if (pda) { const id = hlReq('accountSubscribe', [pda, { encoding: 'base64', commitment: 'confirmed' }]); if (id) { HL.acc.set(mint, { sub: null, pda, last: null, n: 0 }); HL.pend.set(id, '@acc:' + mint); } } }
-    }
-    if (PPX.on && HL.createSub == null && !HL.createPend) { const id = hlReq('logsSubscribe', [{ mentions: [PUMP_MINT_AUTH] }, { commitment: 'confirmed' }]); if (id) { HL.createPend = true; HL.pend.set(id, '@create'); } }
-    if (!PPX.on && HL.createSub != null) { hlReq('logsUnsubscribe', [HL.createSub]); HL.bySub.delete(HL.createSub); HL.createSub = null; }
-    ppStatus();
-  }
-  function hlOnMsg(m) {
-    if (m.id && HL.pend.has(m.id)) {                       // réponse à un abonnement
-      const key = HL.pend.get(m.id); HL.pend.delete(m.id);
-      if (m.result == null) {
-        HL.st.err++; HL.st.lastErr = (m.error && (m.error.message || JSON.stringify(m.error))) || 'abonnement refusé';
-        if (key === '@create') HL.createPend = false;
-        else if (key.indexOf('@acc:') === 0) { HL.acc.delete(key.slice(5)); HL.failAt.set(key.slice(5), Date.now()); }
-        else { HL.subs.delete(key); HL.failAt.set(key, Date.now()); }
-        ppStatus(); return;
-      }
-      if (key.indexOf('@acc:') === 0) { const mint = key.slice(5), a = HL.acc.get(mint); if (!a) { hlReq('accountUnsubscribe', [m.result]); return; } a.sub = m.result; HL.byAcc.set(m.result, mint); return; }
-      if (key === '@create') { HL.createPend = false; if (!PPX.on) { hlReq('logsUnsubscribe', [m.result]); return; } HL.createSub = m.result; }
-      else if (HL.subs.has(key)) HL.subs.set(key, m.result); else { hlReq('logsUnsubscribe', [m.result]); return; }
-      HL.bySub.set(m.result, key); ppStatus(); return;
-    }
-    if (m.method === 'accountNotification' && m.params) return hlOnAccount(HL.byAcc.get(m.params.subscription), m.params.result);
-    if (m.method !== 'logsNotification' || !m.params) return;
-    const key = HL.bySub.get(m.params.subscription), v = m.params.result && m.params.result.value;
-    if (!key || !v || v.err || !Array.isArray(v.logs)) return;
-    if (key === '@create') HL.st.create++; else HL.st.logs++;
-    hlDecodeTx(v.signature, v.logs, key === '@create' ? null : key);
-  }
-  // Variation du compte de la courbe : prix exact ; on en déduit un achat ou une vente (sans le wallet) tant que les logs de ce token n'arrivent pas
-  function hlOnAccount(mint, res) {
-    const a = mint && HL.acc.get(mint), d = res && res.value && res.value.data;
-    if (!a || !d) return;
-    HL.st.acc++;
-    let c; try { c = parseCurve(a.pda, b64u8(Array.isArray(d) ? d[0] : d)); } catch (e) { return; }
-    if (!c.exists || !(c.vTok > 0)) return;
-    const prev = a.last; a.last = { vSol: c.vSol, vTok: c.vTok };
-    const price = (c.vSol / 1e9) / (c.vTok / 1e6), base = { mint, vSolInBondingCurve: c.vSol / 1e9, vTokensInBondingCurve: c.vTok / 1e6, marketCapSol: price * 1e9, src: 'curve' };
-    if (prev && c.vSol !== prev.vSol && !HL.logSeen.has(mint)) {
-      const dSol = c.vSol - prev.vSol, dTok = Math.abs(c.vTok - prev.vTok);
-      liveEmit(Object.assign({ txType: dSol > 0 ? 'buy' : 'sell', signature: 'curve:' + mint + ':' + (res.context ? res.context.slot : '') + ':' + (++a.n), traderPublicKey: '', solAmount: Math.abs(dSol) / 1e9, tokenAmount: dTok / 1e6 }, base), 'Helius');
-    }
-    if (c.complete && !a.done) { a.done = true; liveEmit({ txType: 'migrate', mint, signature: 'curve-complete:' + mint, src: 'curve' }, 'Helius'); }
-  }
-  const b64u8 = (s) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
-  function hlReader(u) {
-    const dv = new DataView(u.buffer, u.byteOffset, u.byteLength); let o = 8;
-    return {
-      get left() { return u.length - o; },
-      u64() { const lo = dv.getUint32(o, true), hi = dv.getUint32(o + 4, true); o += 8; return hi * 4294967296 + lo; },
-      i64() { const lo = dv.getUint32(o, true), hi = dv.getInt32(o + 4, true); o += 8; return hi * 4294967296 + lo; },
-      u8() { return u[o++]; },
-      pk() { const k = new (W3().PublicKey)(u.slice(o, o + 32)).toBase58(); o += 32; return k; },
-      str() { const n = dv.getUint32(o, true); o += 4; const s = new TextDecoder().decode(u.slice(o, o + n)); o += n; return s; },
-    };
-  }
-  const isEv = (u, d) => u.length >= 8 && d.every((x, i) => u[i] === x);
-  function hlDecodeTx(sig, logs, mintHint) {
-    if (!sig) return;
-    if (HL.seen.has(sig)) return; HL.seen.set(sig, 1); if (HL.seen.size > 6000) HL.seen.delete(HL.seen.keys().next().value);
-    const evs = [];
-    for (const line of logs) {
-      if (typeof line !== 'string' || line.indexOf('Program data: ') !== 0) continue;
-      let u; try { u = b64u8(line.slice(14)); } catch (e) { continue; }
-      try {
-        const r = hlReader(u);
-        if (isEv(u, EV.create)) {
-          const e = { k: 'create', name: r.str(), symbol: r.str(), uri: r.str(), mint: r.pk(), curve: r.pk(), user: r.pk() };
-          if (r.left >= 32 + 8 + 16) { e.creator = r.pk(); r.i64(); e.vTok = r.u64(); e.vSol = r.u64(); }
-          evs.push(e);
-        } else if (isEv(u, EV.trade)) {
-          evs.push({ k: 'trade', mint: r.pk(), sol: r.u64(), tok: r.u64(), buy: r.u8() === 1, user: r.pk(), ts: r.i64(), vSol: r.u64(), vTok: r.u64() });
-        } else if (isEv(u, EV.complete)) {
-          evs.push({ k: 'complete', user: r.pk(), mint: r.pk() });
-        } else if (isEv(u, EV.ammMig)) {
-          evs.push({ k: 'complete', user: r.pk(), mint: r.pk() });
-        } else if ((isEv(u, EV.ammBuy) || isEv(u, EV.ammSell)) && mintHint) {
-          const buy = isEv(u, EV.ammBuy); r.i64();
-          const base = r.u64(); r.u64(); r.u64(); r.u64(); const pb = r.u64(), pq = r.u64(), quote = r.u64();
-          r.u64(); r.u64(); r.u64(); r.u64(); r.u64(); r.u64(); r.pk(); const user = r.pk();
-          const qb = buy ? pq + quote : pq - quote, bb = buy ? pb - base : pb + base;
-          evs.push({ k: 'amm', mint: mintHint, buy, sol: quote, tok: base, user, price: bb > 0 ? (qb / 1e9) / (bb / 1e6) : 0 });
-        }
-      } catch (e) {}
-    }
-    if (!evs.length) return;
-    HL.events += evs.length;
-    const cr = evs.find((e) => e.k === 'create');
-    if (cr) {                                              // lancement : l'achat du créateur dans la même transaction devient l'« initial buy »
-      const dev = evs.find((e) => e.k === 'trade' && e.mint === cr.mint && e.buy);
-      const vSol = dev ? dev.vSol : cr.vSol || INIT_CURVE.vSol, vTok = dev ? dev.vTok : cr.vTok || INIT_CURVE.vTok;
-      liveEmit({ txType: 'create', mint: cr.mint, name: cr.name, symbol: cr.symbol, uri: cr.uri, traderPublicKey: cr.creator || cr.user, signature: sig,
-        initialBuy: dev ? dev.tok / 1e6 : 0, solAmount: dev ? dev.sol / 1e9 : 0, vSolInBondingCurve: vSol / 1e9, vTokensInBondingCurve: vTok / 1e6,
-        marketCapSol: (vSol / 1e9) / (vTok / 1e6) * 1e9, bondingCurveKey: cr.curve, src: 'helius' }, 'Helius');
-    }
-    evs.forEach((e, i) => {
-      if (e.k === 'trade' && !(cr && e.mint === cr.mint)) {
-        HL.logSeen.add(e.mint); if (HL.logSeen.size > 3000) HL.logSeen.delete(HL.logSeen.values().next().value);
-        const price = (e.vSol / 1e9) / (e.vTok / 1e6);
-        liveEmit({ txType: e.buy ? 'buy' : 'sell', mint: e.mint, signature: sig + (i ? ':' + i : ''), traderPublicKey: e.user, solAmount: e.sol / 1e9, tokenAmount: e.tok / 1e6,
-          vSolInBondingCurve: e.vSol / 1e9, vTokensInBondingCurve: e.vTok / 1e6, marketCapSol: price * 1e9, src: 'helius' }, 'Helius');
-      } else if (e.k === 'amm' && e.price * 1e9 > 5 && e.price * 1e9 < 1e7) {
-        HL.logSeen.add(e.mint);
-        liveEmit({ txType: e.buy ? 'buy' : 'sell', mint: e.mint, signature: sig + (i ? ':' + i : ''), traderPublicKey: e.user, solAmount: e.sol / 1e9, tokenAmount: e.tok / 1e6,
-          marketCapSol: e.price * 1e9, pool: 'pump-amm', src: 'helius' }, 'Helius');
-      } else if (e.k === 'complete') liveEmit({ txType: 'migrate', mint: e.mint, signature: sig, src: 'helius' }, 'Helius');
-    });
-  }
-  // Un seul point de sortie pour tous les messages en direct, quelle que soit la source
-  function liveEmit(m, src) {
-    if (!m) return;
-    PPX.ls.forEach((fn) => { try { fn(m); } catch (e) {} });
-    if (m.mint && m.txType && m.txType !== 'create') { try { ppApply(m, src); } catch (e) {} }
-  }
   function ppLabel() {
-    if (useHelius() && (HL.ws || PPX.on || HL.state !== 'off')) {
-      if (HL.state === 'on') return ['on', 'Helius · ' + HL.subs.size + ' suivi' + (HL.subs.size > 1 ? 's' : '')];
-      if (HL.state === 'connecting') return ['wait', 'Helius · connexion…'];
-      if (HL.state === 'error') return ['bad', 'Helius · reconnexion'];
-    }
     if (!cfg.ppLive && !PPX.on) return ['', 'coupé'];
     if (PP.state === 'on' && PPX.on) return ['on', 'terminal · ' + PP.subs.size + ' suivis'];
     if (PP.state === 'on') return ['on', PP.subs.size ? PP.subs.size + ' suivi' + (PP.subs.size > 1 ? 's' : '') : 'prêt'];
@@ -3425,7 +3262,7 @@ Message: ${r}.
     if (S.page === 'trade' && S.view.trade) keep.add(S.view.trade);
     return keep;
   }
-  document.addEventListener('visibilitychange', () => { if (document.hidden) return; if (cfg.ppLive && PP.want.size && !PP.ws) ppConnect(); if (hlNeeded() && !HL.ws) hlConnect(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.ppLive && PP.want.size && !PP.ws) ppConnect(); });
   async function testRpc(quiet) {
     try { const v = await rpc('getVersion', []); const slot = await rpc('getSlot', []); if (!quiet) toast('RPC opérationnel', 'Solana ' + (v['solana-core'] || '') + ' · bloc ' + slot.toLocaleString('fr-FR'), 'g'); }
     catch (e) { if (!quiet) toast('RPC en erreur', e.message, 'r'); }
@@ -3998,8 +3835,7 @@ Message: ${r}.
   }
   window.PumpStudio = { PP, S, cfg, setPage, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
-    pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => liveState(), source: () => useHelius() ? 'Helius' : 'PumpPortal',
-      setLimit(n) { HL.limit = Math.max(1, Math.round(+n || 60)); hlDiff(); }, stats: () => ({ msgs: HL.msgs, events: HL.events, subs: HL.subs.size, accs: HL.acc.size, limit: HL.limit, pp: PP.msgs, create: HL.st.create, logs: HL.st.logs, acc: HL.st.acc, err: HL.st.err, lastErr: HL.st.lastErr, logTokens: HL.logSeen.size }) },
+    pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => PP.state },
     SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
@@ -4007,7 +3843,7 @@ Message: ${r}.
 <script>
 /* =========================================================================
    Terminal de trading — moteur PumpBot v2 intégré au studio
-   Flux en direct du studio (Helius, sinon PumpPortal) → métriques partagées → 3 stratégies en parallèle
+   Flux PumpPortal (connexion unique du studio) → métriques partagées → 3 stratégies en parallèle
    → portefeuilles papier. Aucun ordre réel n'est envoyé.
    ========================================================================= */
 (function () {
@@ -4025,7 +3861,7 @@ const MONO = '11px Geist Mono, ui-monospace, monospace';
 
 /* --------------------------------------------------------------- réglages de collecte */
 const CFG_DEFAULTS = {
-  recordTrades: true, fetchMeta: true, snapshots: true, snapSec: 4, liveMax: 60,
+  recordTrades: true, fetchMeta: true, snapshots: true, snapSec: 4,
   watchSec: 600, maxWatched: 300, gradVSol: 115,
   feedRows: 80, toastTrades: true, toastConn: true,
 };
@@ -4036,8 +3872,7 @@ const CFG_SECTIONS = [
     ['recordTrades', 'Enregistrer les trades bruts', 'bool', 'Utile pour le backtest, prend de la place'],
     ['fetchMeta', 'Lire les métadonnées', 'bool', 'Image et réseaux sociaux du token'],
     ['gradVSol', 'SOL virtuel à la migration', 'num', 'Pour estimer la progression de la courbe', 'SOL'],
-    ['snapshots', 'Instantanés DexScreener', 'bool', 'Secours : prix, achats, ventes et volume lus à intervalle régulier pour les tokens qui ne reçoivent pas de trades en direct (gratuit)'],
-    ['liveMax', 'Tokens suivis en direct (Helius)', 'num', 'Les positions passent en premier, puis les plus récents. Au-delà : instantanés DexScreener. Limite la consommation du quota gratuit', ''],
+    ['snapshots', 'Instantanés DexScreener', 'bool', 'Prix, achats, ventes et volume lus à intervalle régulier quand PumpPortal ne transmet pas les trades (gratuit)'],
     ['snapSec', 'Intervalle des instantanés', 'num', 'Entre 2 et 30 secondes', 's'],
   ]},
   { id: 'ui', title: 'Affichage et alertes', fields: [
@@ -4286,7 +4121,7 @@ const IDB = {
   },
 };
 
-/* --------------------------------------------------------------- connexion : passe par le flux en direct unique du studio */
+/* --------------------------------------------------------------- connexion : passe par le flux PumpPortal unique du studio */
 function setConn(state, txt) {
   $('connDot').className = 'dot ' + state;
   $('connTxt').textContent = txt;
@@ -4294,13 +4129,7 @@ function setConn(state, txt) {
   $('btnConn').classList.toggle('primary', !S.wantConn);
 }
 function watchedKeys() { const out = []; for (const t of S.tokens.values()) if (t.watching) out.push(t.mint); return out; }
-// Ordre de priorité pour le direct (la limite Helius garde les premiers) : positions, puis tokens les plus récents
-function syncKeys() {
-  if (S.demo || !S.wantConn) return;
-  const held = new Set(allPositions().map((p) => p.mint));
-  const rest = [...S.tokens.values()].filter((t) => t.watching && !held.has(t.mint)).sort((a, b) => (b.migratedAt || b.createdAt) - (a.migratedAt || a.createdAt)).map((t) => t.mint);
-  PS.pp.setKeys([...held, ...rest]);
-}
+function syncKeys() { if (!S.demo && S.wantConn) PS.pp.setKeys(watchedKeys()); }
 function connect() {
   if (S.demo) stopDemo(true);
   S.wantConn = true; S.connAt = Date.now(); S.tradeEvents0 = S.tradeEvents;
@@ -4320,7 +4149,7 @@ function onPPState(st) {
   if (!S.wantConn || S.demo) return;
   S.connected = st === 'on';
   if (st === 'on') {
-    setConn('on', 'Connecté — ' + (PS.pp.source ? PS.pp.source() : 'flux en direct'));
+    setConn('on', 'Connecté — flux en direct');
     if (!was) { S.connAt = Date.now(); syncKeys(); if (cfg.toastConn) toast('Terminal connecté', 'Lancements, trades et migrations pump.fun en direct.', 'g'); }
   } else if (st === 'connecting') setConn('wait', 'Connexion…');
   else if (st === 'error') { setConn('wait', 'Coupé — reconnexion automatique'); if (was && cfg.toastConn) toast('Connexion interrompue', 'Reconnexion automatique en cours.', 'a'); }
@@ -4393,23 +4222,21 @@ function onTrade(m, now) {
   S.tradeEvents++;
   const t = S.tokens.get(m.mint);
   if (!t) return;
-  const anon = m.src === 'curve' || !m.traderPublicKey;
-  if (t.src === 'snap' || (t.src === 'curve' && !anon)) { t.buys = t.sells = 0; t.volBuy = t.volSell = 0; t.hist = []; }
-  t.src = anon && t.src !== 'trades' ? 'curve' : 'trades'; t.lastTrade = now; S.lastTradeAt = now; t.lastPx = now;
+  if (t.src === 'snap') { t.buys = t.sells = 0; t.volBuy = t.volSell = 0; t.hist = []; }
+  t.src = 'trades'; t.lastTrade = now; S.lastTradeAt = now; t.lastPx = now;
   const side = m.txType, amount = num(m.solAmount) || 0, tok = num(m.tokenAmount) || 0, who = m.traderPublicKey || '';
   const age = now - t.createdAt;
   if (side === 'buy') {
     t.buys++; t.volBuy += amount;
-    if (who && !t.buyers.has(who)) { t.buyers.add(who); t.firstBuy.set(who, now); if (age <= SNIPE_WINDOW && who !== t.creator) t.snipers.add(who); }
-    if (who && age <= BUNDLE_WINDOW && who !== t.creator) t.bundleTok += tok;
+    if (!t.buyers.has(who)) { t.buyers.add(who); t.firstBuy.set(who, now); if (age <= SNIPE_WINDOW && who !== t.creator) t.snipers.add(who); }
+    if (age <= BUNDLE_WINDOW && who !== t.creator) t.bundleTok += tok;
   } else { t.sells++; t.volSell += amount; }
   if (who && who === t.creator && side === 'sell' && !t.devSold) {
     t.devSold = true; t.devSoldAt = now;
     if (age <= FAST_SELL_SEC * 1000) { devStat(t.creator).fastSell++; t.devSoldFast = true; }
   }
   const nb = num(m.newTokenBalance);
-  if (!who) { t.hist.push([now, t.buys]); if (t.hist.length > 60) t.hist.shift(); }
-  else if (nb != null) t.balances.set(who, nb);
+  if (nb != null) t.balances.set(who, nb);
   else t.balances.set(who, Math.max(0, (t.balances.get(who) || 0) + (side === 'buy' ? tok : -tok)));
   const mc = num(m.marketCapSol);
   if (mc) { t.mc = mc; if (mc > t.mcMax) t.mcMax = mc; }
@@ -4444,7 +4271,7 @@ function markMigrated(t, now) {
 /* --------------------------------------------------------------- instantanés DexScreener : quand PumpPortal ne transmet pas les trades
    Lecture groupée (30 tokens par requête) du prix, des achats, des ventes et du volume. Gratuit, sans clé. */
 const SNAP = { busy: false, last: 0, ok: 0, err: 0, at: 0, n: 0 };
-const isSnap = (t) => t.src === 'snap' || t.src === 'curve';     // données sans wallet : snipers, top 10, bundle non mesurés
+const isSnap = (t) => t.src === 'snap';
 const uniq = (t) => isSnap(t) ? t.buys : t.buyers.size;
 const WSOL = 'So11111111111111111111111111111111111111112';
 const solQuoted = (p) => !!(p.quoteToken && p.quoteToken.address === WSOL);
@@ -4886,13 +4713,10 @@ function renderFeed(now) {
   if (quiet) {
     const snapOk = cfg.snapshots && SNAP.ok > 0 && Date.now() - SNAP.at < 60000;
     nt.className = 'notice ' + (snapOk ? 'info' : cfg.snapshots && SNAP.err ? 'bad' : '');
-    const src = PS.pp.source ? PS.pp.source() : 'PumpPortal', hs0 = PS.pp.stats ? PS.pp.stats() : {}, why = src === 'Helius'
-      ? (hs0.err ? 'Helius refuse des abonnements (' + esc(hs0.lastErr) + ')' : 'Helius ne remonte aucun trade pour les tokens suivis (' + (hs0.logs || 0) + ' notifications de transactions, ' + (hs0.acc || 0) + ' de courbe)')
-      : 'Sans clé Helius, le flux PumpPortal gratuit ne transmet que les lancements et les migrations. Ajoute ta clé Helius gratuite dans <b>Réglages du studio</b> (Adresse RPC) pour recevoir chaque trade en direct depuis la blockchain';
-    nt.innerHTML = snapOk ? '<b>Mode de secours : instantanés DexScreener.</b> ' + why + ' : le terminal lit le prix, les achats et les ventes toutes les ' + clamp(cfg.snapSec || 4, 2, 30) + ' s. Snipers, bundle et top 10 ne sont pas mesurés dans ce mode.'
-      : !cfg.snapshots ? '<b>Aucun trade reçu.</b> ' + why + '. Active les <b>Instantanés DexScreener</b> dans Réglages pour que les stratégies puissent travailler en attendant.'
-      : SNAP.err ? '<b>Aucun trade reçu et DexScreener ne répond pas.</b> ' + why + '. Nouvel essai automatique.'
-      : '<b>Aucun trade reçu.</b> ' + why + '. Lecture des premiers instantanés DexScreener…';
+    nt.innerHTML = snapOk ? '<b>Mode sans trades actif.</b> PumpPortal transmet les lancements et les migrations, pas les trades : le terminal lit le prix, les achats, les ventes et le volume sur DexScreener toutes les ' + clamp(cfg.snapSec || 4, 2, 30) + ' s. Snipers, bundle et top 10 ne sont pas mesurés dans ce mode. La stratégie <b>Migration</b> est faite pour ces données.'
+      : !cfg.snapshots ? '<b>Aucun trade reçu.</b> PumpPortal ne transmet que les lancements et les migrations. Active les <b>Instantanés DexScreener</b> dans Réglages pour que les stratégies puissent travailler.'
+      : SNAP.err ? '<b>DexScreener ne répond pas.</b> Sans trades ni instantanés, les stratégies ne peuvent pas entrer. Nouvel essai automatique.'
+      : '<b>Aucun trade reçu.</b> Lecture des premiers instantanés DexScreener…';
   }
 }
 
@@ -4912,9 +4736,8 @@ function renderHeader() {
   $('kPnlS').textContent = 'latent ' + sol(u);
   $('kWin').textContent = st.winrate == null ? '—' : fx(st.winrate, 0) + ' %';
   $('kWinS').textContent = st.n + ' trades fermés';
-  const src = PS.pp.source ? PS.pp.source() : 'PumpPortal', hs = PS.pp.stats ? PS.pp.stats() : null;
-  $('kCost').textContent = S.demo ? 'démo' : !S.wantConn ? 'arrêté' : S.connected ? src : 'connexion…';
-  $('kCostS').textContent = S.demo ? 'données simulées' : (src === 'Helius' && hs ? hs.subs + ' / ' + hs.limit + ' en direct · ' : '') + S.tradeTimes.length + ' trades / min' + (SNAP.ok ? ' · ' + SNAP.n + ' instantanés' : '');
+  $('kCost').textContent = S.demo ? 'démo' : !S.wantConn ? 'arrêté' : S.connected ? 'en direct' : 'connexion…';
+  $('kCostS').textContent = S.demo ? 'données simulées' : S.migrations + ' migrations · ' + (SNAP.ok ? SNAP.n + ' instantanés' : (S.createTimes.length + S.tradeTimes.length) + ' msg / min');
   $('cLive').textContent = S.tokens.size;
   $('cPos').textContent = allPositions().length;
   $('cJournal').textContent = allClosed().length;
@@ -5260,7 +5083,6 @@ function saveFieldset(fs) {
   const scope = fs.dataset.scope, secId = fs.dataset.sec;
   if (scope === 'cfg') {
     Object.assign(cfg, vals); saveCfg();
-    if ('liveMax' in vals && PS.pp.setLimit) PS.pp.setLimit(cfg.liveMax);
     fs.classList.remove('dirty');
     toast('Réglages enregistrés', CFG_SECTIONS.find((x) => x.id === secId).title, 'g');
     setConn($('connDot').className.replace('dot', '').trim(), $('connTxt').textContent);
@@ -5310,8 +5132,7 @@ async function renderData() {
   let migr = 0; S.devStats.forEach((d) => { migr += d.migrated; });
   $('dataStats').innerHTML = st('Tokens en base', nt, est) + st('Trades en base', ntr, cfg.recordTrades ? 'enregistrement actif' : 'enregistrement coupé') +
     st('Trades papier en base', nc) + st('Tokens reçus (session)', S.totalTokens) + st('Trades reçus (session)', S.totalTrades) +
-    st('Migrations vues', S.migrations) + st('Devs distincts', S.devStats.size, migr + ' tokens migrés au total') +
-    (() => { const h = PS.pp.stats ? PS.pp.stats() : null; return h ? st('Source en direct', PS.pp.source(), h.subs + ' / ' + h.limit + ' tokens abonnés') + st('Messages Helius', h.msgs, h.events + ' événements décodés') + st('Lancements · trades', (h.create || 0) + ' · ' + (h.logs || 0), 'notifications Helius reçues') + st('Courbes suivies', (h.accs || 0) + ' comptes', (h.acc || 0) + ' mises à jour reçues') + st('Abonnements refusés', h.err || 0, h.lastErr ? esc(String(h.lastErr).slice(0, 80)) : 'aucun') + st('Instantanés DexScreener', SNAP.n, SNAP.err + ' erreurs · ' + (SNAP.bad || 0) + ' prix écartés') : ''; })();
+    st('Migrations vues', S.migrations) + st('Devs distincts', S.devStats.size, migr + ' tokens migrés au total');
   const p = S.perf;
   $('engineStats').innerHTML = st('Temps moyen par message', (p.n ? p.ms / p.n : 0).toFixed(3) + ' ms', 'depuis le démarrage') +
     st('Sur les 10 dernières s', (p.lastWinMs || 0).toFixed(3) + ' ms', (p.lastWinN || 0) + ' messages') +
@@ -5418,7 +5239,7 @@ $('btnConn').addEventListener('click', async () => {
 });
 $('btnDemo').addEventListener('click', async () => {
   if (S.demo) { stopDemo(); return; }
-  if (S.wantConn && !(await confirmBox('Lancer la démo ?', 'Le terminal se déconnecte du flux en direct pendant la démo.', 'Lancer la démo'))) return;
+  if (S.wantConn && !(await confirmBox('Lancer la démo ?', 'Le terminal se déconnecte du flux PumpPortal pendant la démo.', 'Lancer la démo'))) return;
   startDemo();
 });
 $('viewStrat').addEventListener('change', (e) => { S.view = e.target.value; try { localStorage.setItem('pstudio_pb_view', S.view); } catch (x) {} for (const t of S.tokens.values()) t.ver++; markAll(); render(true); });
@@ -5526,7 +5347,6 @@ window.PumpBotUI = {
 };
 (async function init() {
   buildViewSelect(); buildSettings(); buildStratCards(); buildStratSel();
-  if (PS.pp.setLimit) PS.pp.setLimit(cfg.liveMax);
   setConn('', 'Déconnecté');
   delete cfg.apiKey; saveCfg();
   try { const p = localStorage.getItem('pstudio_pb_page'); if (p && $('p-' + p)) goPage(p); } catch (e) {}
