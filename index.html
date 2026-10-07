@@ -975,7 +975,7 @@ textarea{font:inherit;color:inherit}
         <div class="pb-head">
           <div class="pb-id">
             <div class="pb-mark"><svg class="i" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
-            <div><h1>Terminal de trading</h1><p>Quatre stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : trois sur les lancements, une sur les migrations. Mode papier : aucun ordre réel.</p></div>
+            <div><h1>Terminal de trading</h1><p>Deux stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : Équilibrée sur les lancements, Migration sur les migrations. Mode papier : aucun ordre réel.</p></div>
           </div>
           <div class="pb-ctl">
             <label class="pb-view"><span>Vue</span><select class="sel" id="pb-viewStrat" aria-label="Stratégie affichée"></select></label>
@@ -1073,7 +1073,7 @@ textarea{font:inherit;color:inherit}
             <!-- stratégies -->
             <div class="pb-pg" id="pb-p-strategies">
               <div class="card">
-                <div class="card-h"><h3>Comparaison</h3><p>Les quatre stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille papier.</p></div>
+                <div class="card-h"><h3>Comparaison</h3><p>Les deux stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille papier.</p></div>
                 <div class="tablebox" style="margin-bottom:14px">
                   <table><thead><tr>
                     <th>Stratégie</th><th>État</th><th class="num">Trades</th><th class="num">Winrate</th><th class="num">P&amp;L</th><th class="num">Gain moy.</th><th class="num">Perte moy.</th><th class="num">Drawdown</th><th class="num">Ouvertes</th><th class="num">Solde</th>
@@ -2787,7 +2787,7 @@ Message: ${r}.
   }
 
   /* ================================================================ rendu : en-tête */
-  const PAGES = { bot: ['Bot de trading', 'Terminal : 4 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { bot: ['Bot de trading', 'Terminal : 2 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
@@ -3867,24 +3867,16 @@ const STRAT_SECTIONS = [
   ]},
 ];
 const PRESETS = {
-  prudente: { onlyMigrated: false, minAgeSec: 30, maxEntryAgeSec: 240, minEntryMc: 35, maxEntryMc: 150, maxDevBuySol: 1, maxDevPct: 5, maxTop10: 25, maxBundlePct: 10, maxSnipers: 8, serialMax: 2, rejectDevSell: true, requireSocials: true,
-    targetBuyers: 40, targetVolSol: 20, scoreMin: 75, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 3,
-    slPct: 20, tp1Pct: 40, tp1Frac: 50, trailPct: 15, trailAlways: false, maxHoldSec: 480, exitOnDevSell: true },
   equilibree: { onlyMigrated: false, minAgeSec: 20, maxEntryAgeSec: 180, minEntryMc: 30, maxEntryMc: 200, maxDevBuySol: 2, maxDevPct: 10, maxTop10: 35, maxBundlePct: 20, maxSnipers: 15, serialMax: 3, rejectDevSell: true, requireSocials: false,
     targetBuyers: 25, targetVolSol: 15, scoreMin: 65, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 3,
     slPct: 25, tp1Pct: 50, tp1Frac: 50, trailPct: 20, trailAlways: false, maxHoldSec: 600, exitOnDevSell: true },
-  agressive: { onlyMigrated: false, minAgeSec: 8, maxEntryAgeSec: 120, minEntryMc: 28, maxEntryMc: 250, maxDevBuySol: 3, maxDevPct: 15, maxTop10: 45, maxBundlePct: 30, maxSnipers: 25, serialMax: 4, rejectDevSell: true, requireSocials: false,
-    targetBuyers: 15, targetVolSol: 8, scoreMin: 55, startBal: 5, sizeSol: 0.1, maxPositions: 5, feePct: 1, slipPct: 4,
-    slPct: 30, tp1Pct: 80, tp1Frac: 40, trailPct: 25, trailAlways: false, maxHoldSec: 900, exitOnDevSell: true },
   migration: { onlyMigrated: true, minAgeSec: 45, maxEntryAgeSec: 900, minEntryMc: 300, maxEntryMc: 4000, maxDevBuySol: 5, maxDevPct: 20, maxTop10: 60, maxBundlePct: 40, maxSnipers: 40, serialMax: 5, rejectDevSell: true, requireSocials: true,
     targetBuyers: 150, targetVolSol: 150, scoreMin: 60, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 2,
     slPct: 15, tp1Pct: 30, tp1Frac: 50, trailPct: 12, trailAlways: true, maxHoldSec: 1800, exitOnDevSell: true },
 };
-const PRESET_NAMES = { prudente: 'Prudente', equilibree: 'Équilibrée', agressive: 'Agressive', migration: 'Migration' };
+const PRESET_NAMES = { equilibree: 'Équilibrée', migration: 'Migration' };
 const STRAT_DEFAULTS = [
-  { id: 'prudente', name: 'Prudente', color: C.blue, enabled: true, P: Object.assign({}, PRESETS.prudente) },
   { id: 'equilibree', name: 'Équilibrée', color: C.green, enabled: true, P: Object.assign({}, PRESETS.equilibree) },
-  { id: 'agressive', name: 'Agressive', color: C.amber, enabled: true, P: Object.assign({}, PRESETS.agressive) },
   { id: 'migration', name: 'Migration', color: C.violet, enabled: true, P: Object.assign({}, PRESETS.migration) },
 ];
 let STRATS = loadStrats();
@@ -5165,8 +5157,8 @@ async function loadFromDb() {
   const closed = await IDB.all('closed');
   STRATS.forEach((s) => { S.port[s.id].closed = []; });
   closed.filter((c) => !c.demo).sort((a, b) => a.closedAt - b.closedAt).forEach((c) => {
-    const sid = c.sid && S.port[c.sid] ? c.sid : 'equilibree';
-    c.sid = sid; if (c.score == null) c.score = c.scoreAtEntry;
+    if (!c.sid || !S.port[c.sid]) return;               // stratégies retirées
+    const sid = c.sid; if (c.score == null) c.score = c.scoreAtEntry;
     S.port[sid].closed.push(c);
   });
   markAll();
