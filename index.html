@@ -477,7 +477,7 @@ textarea{font:inherit;color:inherit}
 .tp-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13.5px}
 .tp-foot .sum{margin-left:auto;font-family:var(--mono)}
 
-.idea .h .idea-logo{width:60px;height:60px;border-radius:14px;box-shadow:0 8px 20px -10px rgba(0,0,0,.8);flex:none;border:1px solid var(--line2);background:var(--bg)}
+.idea .h .idea-logo{width:72px;height:72px;border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.35);flex:none;border:1px solid var(--btn-edge,var(--line2));background:var(--bg)}
 .th-ic{display:inline-grid;place-items:center;width:18px;font-size:12.5px;color:var(--accent)}
 .chip.on .th-ic{color:var(--accent-ink)}
 
@@ -2571,8 +2571,10 @@ Message: ${r}.
     if (MOTIFS[motif]) motif = MOTIFS[motif][0];
     const k = W * 0.0074, dark = !P.light, ink = dark ? '#14120f' : '#1b1407', fg = P.fg && P.fg.length === 7 ? P.fg : '#d6b26e';
     const tint = { frog: '#7fd18a', cat: '#f0a35e', panda: '#f3efe6', flame: '#f39a4b' }[motif] || fg;
-    const glow = g.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W * 0.46);
-    glow.addColorStop(0, hexA(tint, dark ? 0.2 : 0.16)); glow.addColorStop(1, hexA(tint, 0));
+    // fond plat, comme les cartes d'univers : aplat sombre + lueur douce qui monte du bas
+    g.fillStyle = dark ? shade(P.bg[0], 0.02) : P.bg[1]; g.fillRect(0, 0, W, W);
+    const glow = g.createRadialGradient(W / 2, W * 1.02, 0, W / 2, W * 1.02, W * 0.95);
+    glow.addColorStop(0, hexA(tint, dark ? 0.26 : 0.2)); glow.addColorStop(0.55, hexA(tint, dark ? 0.08 : 0.06)); glow.addColorStop(1, hexA(tint, 0));
     g.fillStyle = glow; g.fillRect(0, 0, W, W);
     g.save(); g.translate(W / 2 - 60 * k, W / 2 - 37 * k); g.scale(k, k);
     const shadowOn = () => { g.shadowColor = dark ? 'rgba(0,0,0,.55)' : 'rgba(60,40,10,.3)'; g.shadowBlur = 40 * u / k; g.shadowOffsetY = 14 * u / k; };
@@ -2841,7 +2843,8 @@ Message: ${r}.
       serifLetter(g, P, letter, cx, cy + 4 * u, r * 1.15, Math.round(r * 1.5), u);
       caption(g, W, P, txt, W * 0.8, u);
     }
-    finish(g, W, P);
+    if (L.style === 'illus') { try { g.save(); g.globalAlpha = 0.03; g.globalCompositeOperation = 'overlay'; g.drawImage(grain(W), 0, 0); g.restore(); } catch (e) {} }
+    else finish(g, W, P);
     g.restore();
   }
   function shade(hex, f) {
