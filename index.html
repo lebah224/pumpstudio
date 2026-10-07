@@ -339,7 +339,7 @@ fieldset.dirty .actions{display:flex}
 .studio{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
 .preview{position:sticky;top:170px}
 .pv-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
-.pv-card:before{content:'Aperçu pump.fun';display:block;padding:9px 16px;font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600;border-bottom:1px solid var(--line);background:var(--bg2)}
+.pv-card:before{content:'Aperçu de la fiche';display:block;padding:9px 16px;font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600;border-bottom:1px solid var(--line);background:var(--bg2)}
 .pv-top{display:flex;gap:14px;padding:16px;align-items:center;border-bottom:1px solid var(--line)}
 .pv-img{width:76px;height:76px;border-radius:14px;background:var(--panel3);border:1px solid var(--line2);overflow:hidden;flex:none;display:grid;place-items:center;color:var(--dim);font-size:12px;text-align:center}
 .pv-img img{width:100%;height:100%;object-fit:cover}
@@ -1081,6 +1081,24 @@ textarea{font:inherit;color:inherit}
   .d-strat canvas{grid-column:1/-1;grid-row:2}
   .d-toks{grid-template-columns:1fr}
 }
+/* ---------- graphique DEX Screener (tokens hors pump.fun) ---------- */
+.dexchart{border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line);background:var(--bg2);height:380px}
+.dexchart iframe{width:100%;height:100%;border:0;display:block}
+@media (max-width:700px){.dexchart{height:320px}}
+/* ---------- choix de plateforme ---------- */
+.plat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.plat-card{position:relative;display:flex;align-items:flex-start;gap:12px;text-align:left;background:var(--btn-face,var(--panel2));border:1px solid var(--line2);border-radius:var(--r-sm);padding:12px 40px 12px 12px;cursor:pointer;color:var(--text);transition:border-color .15s,background .15s,box-shadow .15s}
+.plat-card:hover{border-color:var(--accent-line)}
+.plat-card.on{border-color:var(--accent);background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 12%,var(--panel2)),var(--panel2));box-shadow:0 0 0 1px color-mix(in oklab,var(--accent) 40%,transparent) inset}
+.plat-art{width:42px;height:42px;border-radius:11px;background:var(--bg2);border:1px solid var(--line2);display:grid;place-items:center;flex:none}
+.plat-art svg{width:30px;height:30px}
+.plat-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.plat-t b{font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.2px}
+.plat-t small{font-size:12px;color:var(--accent-ink);font-weight:500}
+.plat-t em{font-style:normal;font-size:12.5px;color:var(--muted);line-height:1.4;margin-top:2px}
+.plat-ck{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line2)}
+.plat-card.on .plat-ck{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 0 4px,transparent 5px)}
+@media (max-width:700px){.plat-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1114,7 +1132,7 @@ textarea{font:inherit;color:inherit}
     <div class="mbar"><button class="icon-btn" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-controls="side"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="mlogo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Pump<b>Studio</b></span></div><div class="spacer"></div><button class="mwallet" id="mWallet" type="button" aria-label="Wallet"></button><button class="icon-btn" id="mSearch" type="button" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
     <header class="top">
       <div class="topbar">
-        <div><div class="page-eyebrow" id="pageEyebrow">Créer</div><div class="page-title" id="pageTitle">Lancer un token</div><div class="page-sub" id="pageSub">Du concept à la publication sur pump.fun</div></div>
+        <div><div class="page-eyebrow" id="pageEyebrow">Créer</div><div class="page-title" id="pageTitle">Lancer un token</div><div class="page-sub" id="pageSub">Du concept à la publication sur pump.fun ou Bonk.fun</div></div>
         <div class="spacer"></div>
         <div class="status" id="rpcStatus"><span class="dot"></span><span>RPC non testé</span></div>
         <button class="btn wallet-btn" id="walletBtn" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2"/><path d="M22 11h-6a2 2 0 000 4h6v-4z"/></svg><span id="walletTxt">Connecter le wallet</span></button>
@@ -1252,6 +1270,7 @@ textarea{font:inherit;color:inherit}
             <!-- étape 4 -->
             <div class="card" data-stepcard="4" hidden>
               <div class="card-h"><h3>Lancement</h3><p>Un token à la fois, créé et signé par toi. Le studio ne revend jamais tout seul.</p></div>
+              <div class="field"><label>Plateforme de publication</label><div class="plat-grid" id="platPick" role="radiogroup" aria-label="Plateforme de publication"></div></div>
               <div class="row2">
                 <div class="field"><label for="fDev">Achat du créateur à la création <small>en SOL, 0 pour aucun</small></label>
                   <div class="amt"><input id="fDev" type="number" min="0" step="0.01" value="0.1"><em>SOL</em></div>
@@ -1296,7 +1315,7 @@ textarea{font:inherit;color:inherit}
 
       <!-- TRADER -->
       <section class="page" id="p-trade">
-        <div class="page-head"><div><h1>Trader</h1><p>Colle l'adresse d'un token pump.fun : analyse de risque, puis achat ou vente signés dans ton wallet.</p></div></div>
+        <div class="page-head"><div><h1>Trader</h1><p>Colle l'adresse d'un token Solana (pump.fun, Bonk.fun, Raydium…) : analyse de risque, puis achat ou vente signés dans ton wallet.</p></div></div>
         <div class="card"><div class="toolbar" style="margin:0"><input class="search" id="tradeMint" placeholder="Adresse du token (mint)" style="flex:1;font-family:var(--mono)"><button class="btn primary" id="tradeGo" type="button">Analyser</button></div></div>
         <div id="tradeDetail"></div>
       </section>
@@ -1544,6 +1563,12 @@ Message: ${r}.
   /* ================================================================ constantes pump.fun */
   const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
   const PUBLIC_RPC = 'https://api.mainnet-beta.solana.com';
+  // Plateformes de lancement : pump.fun (programme direct ou PumpPortal) et Bonk.fun (Raydium LaunchLab, via PumpPortal)
+  const PLATFORMS = {
+    pump: { n: 'pump.fun', tag: 'Courbe pump.fun · migration PumpSwap', d: 'La référence des memecoins Solana : le plus de trafic, moteur direct sans intermédiaire.', url: (m) => 'https://pump.fun/coin/' + m, fee: 0.02 },
+    bonk: { n: 'Bonk.fun', tag: 'LetsBonk · Raydium LaunchLab', d: 'Le launchpad de la communauté BONK sur Raydium. Migration vers Raydium, création via PumpPortal.', url: (m) => 'https://bonk.fun/token/' + m, fee: 0.03 },
+  };
+  const WSOL_MINT = 'So11111111111111111111111111111111111111112';
   const INIT_CURVE = { vSol: 30e9, vTok: 1.073e15, realTok: 7.931e14, realSol: 0, supply: 1e15, complete: false };
   const INIT_REAL_TOK = 7.931e14;
   const FAMOUS = ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF', 'FLOKI', 'POPCAT', 'MEW', 'BOME', 'SLERF', 'PNUT', 'GOAT', 'MOODENG', 'FARTCOIN', 'BRETT', 'MOG', 'TURBO', 'NEIRO', 'CHILLGUY', 'SOL', 'BTC', 'ETH', 'USDC', 'USDT', 'TRUMP', 'MELANIA'];
@@ -1556,11 +1581,13 @@ Message: ${r}.
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
   const S = {
     page: 'dash', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
-    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'illus', pal: 0, emoji: '', text: '', seed: 7 }, tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
+    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'illus', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
     tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []),
     ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, jf: 'real', busy: false, imgBlob: null,
   };
   const saveDraft = () => save(LS.draft, S.draft);
+  // plateforme d'un token : celle du lancement pour les tokens du studio, sinon déduite du marché lu
+  function platOf(mint) { const t = S.tokens.find((x) => x.mint === mint); if (t && t.platform) return t.platform; const C = S.cache[mint]; return C && C.curve && C.curve.ext ? (C.curve.dex === 'launchlab' || /bonk$/i.test(mint) ? 'bonk' : null) : 'pump'; }
   // Deux wallets possibles : le wallet externe (Phantom…) et le wallet rapide du studio.
   // S.wallet désigne toujours celui qui signe : le wallet rapide quand il est choisi, sinon l'externe.
   let SESSREC = load(LS.sess, null);
@@ -1570,7 +1597,7 @@ Message: ${r}.
     set(v) { S.ext = v; }, enumerable: true,
   });
   // brouillons des versions précédentes : univers, ton et style de logo d'avant
-  (function migrate() { const d = S.draft; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'ocean', 'food', 'gaming', 'nature', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
+  (function migrate() { const d = S.draft; if (!PLATFORMS[d.platform]) d.platform = 'pump'; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'ocean', 'food', 'gaming', 'nature', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
 
   /* ================================================================ outils binaires */
   function b64ToBytes(b64) { const s = atob(b64), out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
@@ -1720,13 +1747,32 @@ Message: ${r}.
     if (cache.length > 300) cache.length = 300;
     return cache;
   }
+  // Token hors pump.fun (Bonk.fun, Raydium…) : prix et capitalisation lus sur DEX Screener (gratuit).
+  // Il est traité comme un token « hors courbe » : pas de devis exact, achats et ventes routés par PumpPortal (pool auto).
+  async function dexMarket(mint) {
+    try {
+      const r = await fetch('https://api.dexscreener.com/tokens/v1/solana/' + mint); if (!r.ok) return null;
+      const j = await r.json(), ps = (Array.isArray(j) ? j : []).filter((p) => p.baseToken && p.baseToken.address === mint);
+      const liq = (p) => (p.liquidity || {}).usd || 0, sol = ps.filter((p) => p.quoteToken && p.quoteToken.address === WSOL_MINT).sort((a, b) => liq(b) - liq(a));
+      const p = sol[0] || ps.sort((a, b) => liq(b) - liq(a))[0]; if (!p) return null;
+      const price = p.quoteToken.address === WSOL_MINT ? +p.priceNative : (S.solUsd ? +p.priceUsd / S.solUsd : null);
+      if (!(price > 0)) return null;
+      const cap = +p.marketCap || +p.fdv || 0, supplyTok = cap && +p.priceUsd ? cap / +p.priceUsd : 1e9, realSol = p.quoteToken.address === WSOL_MINT ? +((p.liquidity || {}).quote || 0) : 0;
+      return { curve: { pda: null, exists: true, ext: true, complete: true, dex: p.dexId || '', pair: p.pairAddress || '', supply: supplyTok * 1e6 },
+        stats: { price, mcapSol: price * supplyTok, mcapUsd: S.solUsd ? price * supplyTok * S.solUsd : null, progress: p.dexId === 'launchlab' ? clamp(realSol / 85 * 100, 0, 100) : 100, realSol, supplyTok, liqUsd: liq(p) },  // LaunchLab (Bonk.fun) : migration vers Raydium à ~85 SOL
+        meta: { name: p.baseToken.name || '', symbol: p.baseToken.symbol || '', image: (p.info || {}).imageUrl || '' } };
+    } catch (e) { return null; }
+  }
+  const DEX_NAMES = { launchlab: 'Raydium LaunchLab', raydium: 'Raydium', pumpswap: 'PumpSwap', meteora: 'Meteora', orca: 'Orca', moonshot: 'Moonshot' };
+  const dexName = (c) => DEX_NAMES[c && c.dex] || (c && c.dex ? c.dex : 'DEX');
   async function loadToken(mint, full) {
     const C = S.cache[mint] = S.cache[mint] || { trades: [], meta: null, holders: [], at: 0 };
-    const c = await readCurve(mint);
-    C.curve = c; C.stats = c.exists ? curveStats(c) : null; C.at = Date.now(); C.error = null;
-    if (!C.meta) C.meta = await tokenMeta(mint);
+    let c = await readCurve(mint), X = null;
+    if (!c.exists) { X = await dexMarket(mint); if (X) c = X.curve; }
+    C.curve = c; C.stats = X ? X.stats : c.exists ? curveStats(c) : null; C.at = Date.now(); C.error = null;
+    if (!C.meta || (X && !C.meta.name)) { C.meta = await tokenMeta(mint); if (X && !C.meta.name) C.meta = Object.assign({}, X.meta, { image: C.meta.image || X.meta.image }); }
     if (c.exists && full) {
-      try { await trades(mint, c, C.trades); } catch (e) { C.tradeErr = e.message; }
+      if (!c.ext) try { await trades(mint, c, C.trades); } catch (e) { C.tradeErr = e.message; }
       if (!C.holdersAt || Date.now() - C.holdersAt > 45000) { try { C.holders = await holders(mint, c); C.holdersAt = Date.now(); } catch (e) { C.holdErr = e.message; } }
     }
     if (S.wallet) { try { C.myBal = await tokenBalance(S.wallet.pk, mint); } catch (e) {} }
@@ -1736,8 +1782,9 @@ Message: ${r}.
   /* ================================================================ analyse de risque */
   function risks(C) {
     const out = [], c = C.curve, st = C.stats;
-    if (!c || !c.exists) return [{ lvl: 'r', t: 'Courbe introuvable', d: 'Ce n\'est pas un token pump.fun, ou l\'adresse est fausse.' }];
-    if (c.complete) out.push({ lvl: 'b', t: 'Migré', d: 'La courbe est terminée : le token s\'échange maintenant sur PumpSwap. Les achats et ventes passent par le pool « auto ».' });
+    if (!c || !c.exists) return [{ lvl: 'r', t: 'Marché introuvable', d: 'Ni courbe pump.fun ni paire sur DEX Screener : l\'adresse est fausse, ou le token vient d\'être créé (il apparaît en général en moins d\'une minute).' }];
+    if (c.ext) out.push({ lvl: 'b', t: 'Hors pump.fun · ' + dexName(c), d: 'Prix lu sur DEX Screener' + (C.stats && C.stats.liqUsd ? ' · liquidité ' + fUsd(C.stats.liqUsd) : '') + '. Les achats et ventes passent par PumpPortal (pool auto), sans devis exact.' });
+    else if (c.complete) out.push({ lvl: 'b', t: 'Migré', d: 'La courbe est terminée : le token s\'échange maintenant sur PumpSwap. Les achats et ventes passent par le pool « auto ».' });
     else out.push({ lvl: st.progress > 60 ? 'g' : 'b', t: 'Courbe à ' + fPct(st.progress, 0), d: fSol(st.realSol, 2) + ' déjà dans la courbe.' });
     const H = C.holders || [], creator = H.find((h) => h.label === 'Créateur'), others = H.filter((h) => h.label !== 'Courbe de liaison');
     if (C.holdersAt) {
@@ -2348,7 +2395,7 @@ Message: ${r}.
     if (S.busy) return; S.busy = true;
     try {
       const C = await loadToken(mint, false);
-      if (!C.curve.exists) throw new Error('Courbe introuvable pour ce token.');
+      if (!C.curve.exists) throw new Error('Marché introuvable pour ce token (ni pump.fun, ni DEX Screener).');
       const sym = (C.meta && C.meta.symbol) || short(mint);
       let q = null, amount, denom;
       if (side === 'buy') {
@@ -2377,7 +2424,7 @@ Message: ${r}.
       const body = { publicKey: S.wallet.pk, action: side, mint, amount, denominatedInSol: denom, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: C.curve.complete ? 'auto' : 'pump' };
       // token migré (PumpSwap) : PumpPortal automatiquement, quel que soit le moteur choisi
       const migrated = !!C.curve.complete, direct = cfg.engine !== 'portal' && !migrated;
-      const viaPortal = async (x) => { x.tx = await portalTx(Object.assign({}, body, { pool: 'auto' })); return migrated ? 'token migré, routé par PumpPortal' : ''; };
+      const viaPortal = async (x) => { x.tx = await portalTx(Object.assign({}, body, { pool: 'auto' })); return C.curve.ext ? dexName(C.curve) + ', routé par PumpPortal' : migrated ? 'token migré, routé par PumpPortal' : ''; };
       const steps = [
         { label: direct ? 'Préparation de la transaction (programme pump.fun)' : 'Préparation de la transaction (PumpPortal)', run: async (x) => {
           if (!direct) return viaPortal(x);
@@ -2423,8 +2470,20 @@ Message: ${r}.
         const j = await r.json(); return 'https://ipfs.io/ipfs/' + j.data.cid;
       };
       const img = await up(blob, 'logo.' + imgExt(blob));
-      const meta = { name: d.name, symbol: d.symbol, description: d.desc, image: img, showName: true, createdOn: 'https://pump.fun', twitter: d.tw || undefined, telegram: d.tg || undefined, website: d.web || undefined };
+      const meta = { name: d.name, symbol: d.symbol, description: d.desc, image: img, showName: true, createdOn: d.platform === 'bonk' ? 'https://bonk.fun' : 'https://pump.fun', twitter: d.tw || undefined, telegram: d.tg || undefined, website: d.web || undefined };
       return up(new Blob([JSON.stringify(meta)], { type: 'application/json' }), 'metadata.json');
+    }
+    if (d.platform === 'bonk') {
+      // stockage utilisé par le site Bonk.fun ; en cas d'échec, repli sur l'IPFS de pump.fun (une adresse IPFS vaut pour toute plateforme)
+      try {
+        const fi = new FormData(); fi.append('image', blob, 'logo.' + imgExt(blob));
+        const ri = await fetch('https://nft-storage.letsbonk22.ws/upload/img', { method: 'POST', body: fi }), img = ri.ok ? (await ri.text()).trim().replace(/^"|"$/g, '') : '';
+        if (/^https?:\/\//.test(img)) {
+          const rm = await fetch('https://nft-storage.letsbonk22.ws/upload/meta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ createdOn: 'https://bonk.fun', description: d.desc, image: img, name: d.name, symbol: d.symbol, website: d.web || '', twitter: d.tw || '', telegram: d.tg || '' }) });
+          const uri = rm.ok ? (await rm.text()).trim().replace(/^"|"$/g, '') : '';
+          if (/^https?:\/\//.test(uri)) return uri;
+        }
+      } catch (e) {}
     }
     const fd = new FormData();
     fd.append('file', blob, 'logo.' + imgExt(blob)); fd.append('name', d.name); fd.append('symbol', d.symbol); fd.append('description', d.desc);
@@ -2441,23 +2500,24 @@ Message: ${r}.
     if (R.blocking.length) { toast('Pas encore prêt', R.blocking[0], 'a'); return; }
     if (!S.wallet) return walletMenu();
     if (!cfg.sim && !(await ensureSigner())) return;
-    const d = S.draft, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null;
+    const d = S.draft, bonk = d.platform === 'bonk', PL = PLATFORMS[d.platform] || PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 && !bonk ? quoteBuy(INIT_CURVE, dev) : null;
     const recap = '<div class="recap"><div class="kv">' +
       '<span>Token</span><span>' + esc(d.name) + ' · $' + esc(d.symbol) + '</span>' +
-      '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : 'aucun') + '</span>' +
-      '<span>Frais de réseau et comptes</span><span>≈ 0,02 SOL</span>' +
-      '<span>Coût total estimé</span><span>' + fSol(dev + 0.02) + '</span>' +
-      '<span>Métadonnées</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS)') + '</span>' +
+      '<span>Plateforme</span><span>' + PL.n + ' <small class="dim">' + PL.tag + '</small></span>' +
+      '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : ' · tokens selon la courbe') : 'aucun') + '</span>' +
+      '<span>Frais de réseau et comptes</span><span>≈ ' + fr(PL.fee, 2) + ' SOL</span>' +
+      '<span>Coût total estimé</span><span>' + fSol(dev + PL.fee + (bonk ? dev * cfg.portalFeePct / 100 : 0)) + '</span>' +
+      '<span>Métadonnées</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : bonk ? 'Bonk.fun (repli IPFS pump.fun)' : 'pump.fun (IPFS)') + '</span>' +
       '<span>Mode</span><span>' + (cfg.sim ? '<span class="badge v">simulation</span>' : '<span class="badge r">réel</span>') + '</span></div></div>' +
       (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? (d.slMode === 'trail' ? ' · stop suiveur −' : ' · stop −') + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente te sera présentée à signer.') + '</div>' : '') +
-      (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur pump.fun et visible par tous. Ton wallet va te présenter la transaction : vérifie avant de signer. Une création ne s\'annule pas.</p>');
+      (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur ' + PL.n + ' et visible par tous. Ton wallet va te présenter la transaction : vérifie avant de signer. Une création ne s\'annule pas.</p>');
     if (!(await confirmBox(cfg.sim ? 'Simuler le lancement ?' : 'Lancer ' + d.name + ' ?', recap, cfg.sim ? 'Simuler' : 'Préparer le lancement', !cfg.sim))) return;
     S.busy = true;
     const mintKp = W3().Keypair.generate(), mint = mintKp.publicKey.toBase58();
     const steps = [
       { label: cfg.sim ? 'Métadonnées (non envoyées en simulation)' : 'Envoi du logo et des métadonnées (IPFS)', run: async (x) => { x.uri = cfg.sim ? 'https://ipfs.io/ipfs/simulation' : await uploadMeta(d); return cfg.sim ? 'ignoré' : 'ok'; } },
-      { label: cfg.engine === 'portal' ? 'Préparation de la création (PumpPortal)' : 'Préparation de la création (programme pump.fun)', run: async (x) => {
-        x.tx = cfg.engine === 'portal' ? await portalTx({ publicKey: S.wallet.pk, action: 'create', tokenMetadata: { name: d.name, symbol: d.symbol, uri: x.uri }, mint, denominatedInSol: 'true', amount: dev, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: 'pump' })
+      { label: bonk ? 'Préparation de la création (Bonk.fun via PumpPortal)' : cfg.engine === 'portal' ? 'Préparation de la création (PumpPortal)' : 'Préparation de la création (programme pump.fun)', run: async (x) => {
+        x.tx = bonk || cfg.engine === 'portal' ? await portalTx({ publicKey: S.wallet.pk, action: 'create', tokenMetadata: { name: d.name, symbol: d.symbol, uri: x.uri }, mint, denominatedInSol: 'true', amount: dev, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: bonk ? 'bonk' : 'pump' })
           : await directCreate(mintKp, d, x.uri, dev);
       } },
       { label: 'Vérification par simulation', run: async (x) => { const v = await simulate(x.tx); x.logs = (v.logs || []).slice(-12).join('\n'); if (v.err) throw new Error(simError(v)); x.logs = ''; return 'acceptée'; } },
@@ -2477,10 +2537,10 @@ Message: ${r}.
       }
       const real = await actualDeltas(ctx.sig, mint);
       const thumb = await thumbnail(d.image);
-      S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: thumb, createdAt: Date.now(), sig: ctx.sig, dev, desc: d.desc, tw: d.tw, tg: d.tg, web: d.web });
+      S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: thumb, createdAt: Date.now(), sig: ctx.sig, dev, platform: d.platform || 'pump', desc: d.desc, tw: d.tw, tg: d.tg, web: d.web });
       save(LS.tokens, S.tokens);
       journalAdd({ type: 'create', mint, symbol: d.symbol, sim: false, status: 'ok', sig: ctx.sig, sol: -(real ? real.sol : dev), tokens: real ? real.tokens : (q ? q.tokens : 0), est: !real });
-      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est en ligne. <a href="https://pump.fun/coin/' + mint + '" target="_blank" rel="noopener">pump.fun</a> · <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Solscan</a></div>');
+      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est en ligne. <a href="' + PL.url(mint) + '" target="_blank" rel="noopener">' + PL.n + '</a> · <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Solscan</a></div>');
       toast('Token lancé', d.name + ' · ' + short(mint), 'g');
       // plan de prise de profit → ordres préparés (chaque vente demandera ta signature)
       const devTok = real ? real.tokens : (q ? q.tokens : 0), devSol = real ? real.sol : dev;
@@ -2587,8 +2647,8 @@ Message: ${r}.
     },
   };
   const DESC2 = {
-    en: { luxe: 'Fair launch on pump.fun. No presale, no team allocation.', minimal: '', witty: 'Not financial advice. Barely advice at all.', community: 'Fair launch on pump.fun.' },
-    fr: { luxe: 'Lancement équitable sur pump.fun. Sans prévente ni réserve d\'équipe.', minimal: '', witty: 'Pas un conseil financier. À peine un conseil.', community: 'Lancement équitable sur pump.fun.' },
+    en: { luxe: 'Fair launch on Solana. No presale, no team allocation.', minimal: '', witty: 'Not financial advice. Barely advice at all.', community: 'Fair launch on Solana.' },
+    fr: { luxe: 'Lancement équitable sur Solana. Sans prévente ni réserve d\'équipe.', minimal: '', witty: 'Pas un conseil financier. À peine un conseil.', community: 'Lancement équitable sur Solana.' },
   };
   const rnd = (a) => a[Math.floor(Math.random() * a.length)];
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
@@ -3492,7 +3552,7 @@ Message: ${r}.
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { dash: ['Tableau de bord', 'Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { dash: ['Tableau de bord', 'Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun ou Bonk.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
@@ -3705,7 +3765,7 @@ Message: ${r}.
     const last6 = L.slice(0, 6);
     $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + ' · ' + esc(j.symbol || short(j.mint)) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Tes achats, ventes et lancements apparaîtront ici.</div>';
     // tokens lancés
-    $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Crée ton premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
+    $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.ext ? (PLATFORMS[t.platform] || PLATFORMS.pump).n + (C.curve.dex === 'launchlab' ? ' · ≈ ' + fr(st.progress, 0) + ' %' : ' · ' + dexName(C.curve)) : C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Crée ton premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
     solHist(false);
   }
   /* ================================================================ rendu : lancer */
@@ -3738,13 +3798,32 @@ Message: ${r}.
     const cnt = (id, v, max) => { const el = $(id); el.textContent = (v || '').length + ' / ' + max; el.classList.toggle('over', (v || '').length > max); };
     cnt('cName', S.draft.name, 32); cnt('cSymbol', S.draft.symbol, 10); cnt('cDesc', S.draft.desc, 1000);
   }
+  const PLAT_ART = {
+    pump: '<svg viewBox="0 0 40 40"><rect x="7" y="13" width="26" height="14" rx="7" transform="rotate(-38 20 20)" fill="#5fd38d"/><path d="M20 20l7.6-5.9a7 7 0 01-8.6 11z" transform="rotate(0)" fill="#f4f1e8" opacity=".92"/></svg>',
+    bonk: '<svg viewBox="0 0 40 40"><circle cx="20" cy="21" r="12" fill="#f5a524"/><path d="M9 14l3-7 5 6M31 14l-3-7-5 6" fill="#f5a524"/><circle cx="15.5" cy="19" r="1.8" fill="#2a1a05"/><circle cx="24.5" cy="19" r="1.8" fill="#2a1a05"/><ellipse cx="20" cy="25" rx="3.2" ry="2.2" fill="#2a1a05"/><path d="M17 29q3 2 6 0" stroke="#2a1a05" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>',
+  };
+  function renderPlatPick() {
+    const el = $('platPick'); if (!el) return;
+    el.innerHTML = Object.keys(PLATFORMS).map((k) => { const P = PLATFORMS[k], on = S.draft.platform === k; return '<button type="button" class="plat-card' + (on ? ' on' : '') + '" data-plat="' + k + '" role="radio" aria-checked="' + on + '"><span class="plat-art">' + PLAT_ART[k] + '</span><span class="plat-t"><b>' + P.n + '</b><small>' + P.tag + '</small><em>' + P.d + '</em></span><span class="plat-ck" aria-hidden="true"></span></button>'; }).join('');
+  }
   function renderDevQuote() {
+    renderPlatPick();
+    if (S.draft.platform === 'bonk') {
+      const dev = num(S.draft.dev) || 0;
+      $('devQuote').innerHTML = '<div class="kv"><span>Achat du créateur</span><span>' + (dev ? fSol(dev) : 'aucun') + '</span><span>Tokens reçus</span><span>' + (dev ? 'selon la courbe LaunchLab' : '—') + '</span><span>Migration</span><span>vers Raydium à ~85 SOL</span><span>Frais PumpPortal</span><span>' + fPct(cfg.portalFeePct, 1) + ' de l\'achat</span></div>';
+      $('launchNote').innerHTML = 'Bonk.fun est créé via PumpPortal (gratuit, sans clé). En simulation, la transaction est construite puis vérifiée par la blockchain : tu sais avant de signer si le lancement passerait. Ensuite le prix est suivi via DEX Screener.';
+      const R = readiness();
+      $('launchBtn').textContent = cfg.sim ? 'Simuler le lancement sur Bonk.fun' : 'Lancer sur Bonk.fun';
+      $('launchBtn').className = 'btn ' + (cfg.sim ? 'primary' : 'danger'); $('launchBtn').disabled = S.busy;
+      $('launchHint').textContent = R.blocking.length ? 'À compléter : ' + R.blocking[0] : cfg.sim ? 'Prêt pour une simulation complète.' : 'Prêt. Le token sera publié sur Bonk.fun après ta signature.';
+      return;
+    }
     const dev = num(S.draft.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null, st = curveStats(INIT_CURVE);
     $('devQuote').innerHTML = '<div class="kv">' + (q ? '<span>Tu reçois</span><span>' + fTok(q.tokens) + ' tokens</span><span>Part de l\'offre</span><span class="' + (q.supplyPct > cfg.devMaxPct ? 'neg' : q.supplyPct > 5 ? 'warn' : 'pos') + '">' + fPct(q.supplyPct, 2) + '</span><span>Capitalisation après</span><span>' + (S.solUsd ? fUsd(q.mcapAfterSol * S.solUsd) : fSol(q.mcapAfterSol, 1)) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span>'
       : '<span>Achat du créateur</span><span>aucun</span><span>Capitalisation de départ</span><span>' + (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) + '</span>') + '</div>';
     $('launchNote').innerHTML = q && q.supplyPct > 5 ? 'Un créateur qui détient plus de 5 % de l\'offre fait fuir les acheteurs prudents : les outils d\'analyse l\'affichent en rouge.' : 'L\'achat du créateur est visible publiquement. Une petite part rassure : tu montres que tu crois au projet sans contrôler le prix.';
     const R = readiness();
-    $('launchBtn').textContent = cfg.sim ? 'Simuler le lancement' : 'Lancer le token';
+    $('launchBtn').textContent = cfg.sim ? 'Simuler le lancement' : 'Lancer sur pump.fun';
     $('launchBtn').className = 'btn ' + (cfg.sim ? 'primary' : 'danger');
     $('launchBtn').disabled = S.busy;
     $('launchHint').textContent = R.blocking.length ? 'À compléter : ' + R.blocking[0] : cfg.sim ? 'Prêt pour une simulation complète.' : 'Prêt. Le token sera publié après ta signature.';
@@ -3804,25 +3883,28 @@ Message: ${r}.
     if (!C) return '<div class="card"><div class="empty"><b>Chargement…</b>Lecture de la courbe de liaison sur la blockchain.</div></div>';
     if (C.error) return '<div class="notice bad">' + esc(C.error) + '</div>';
     const c = C.curve, st = C.stats, m = C.meta || {}, sym = m.symbol || short(mint), name = m.name || 'Token ' + short(mint);
-    if (!c.exists) return '<div class="notice bad">Aucune courbe pump.fun pour cette adresse. Vérifie le mint, ou le token n\'existe pas encore.</div>';
+    if (!c.exists) return '<div class="notice bad">Aucun marché pour cette adresse : ni courbe pump.fun, ni paire sur DEX Screener. Vérifie le mint ; un token tout juste créé peut mettre une minute à apparaître.</div>';
+    const plat = PLATFORMS[platOf(mint)];
     const pos = myPosition(mint, C), side = S.side[ctx], R = risks(C);
     const usd = (sol) => S.solUsd ? fUsd(sol * S.solUsd) : fSol(sol);
     const H = C.holders || [];
     const tradesHtml = (C.trades || []).slice(0, 40).map((x) => '<div class="tr"><span class="badge ' + (x.side === 'buy' ? 'g' : 'r') + '">' + (x.side === 'buy' ? 'Achat' : 'Vente') + '</span><span class="w">' + (x.wallet === c.creator ? '<b class="warn">créateur</b>' : S.wallet && x.wallet === S.wallet.pk ? '<b>toi</b>' : short(x.wallet)) + ' · ' + fAgo(x.t) + '</span><span class="num">' + fTok(x.tokens) + '</span><span class="num ' + (x.side === 'buy' ? 'pos' : 'neg') + '">' + fSol(x.sol, 3) + '</span></div>').join('');
     const orders = S.orders.filter((o) => o.mint === mint);
-    return '<div class="card"><div class="tok-head"><div class="av lg">' + (m.image ? '<img src="' + esc(m.image) + '" alt="">' : esc(sym.slice(0, 3))) + '</div><div><h2>' + esc(name) + ' <span class="badge v">$' + esc(sym) + '</span>' + (c.complete ? ' <span class="badge b">migré</span>' : '') + '</h2><p>' + short(mint, 8) + ' <button class="copy" data-copy="' + mint + '" type="button" title="Copier">⧉</button></p></div><div class="spacer"></div>' +
-      '<div class="links"><a href="https://pump.fun/coin/' + mint + '" target="_blank" rel="noopener">pump.fun</a><a href="https://solscan.io/token/' + mint + '" target="_blank" rel="noopener">Solscan</a><a href="https://dexscreener.com/solana/' + mint + '" target="_blank" rel="noopener">DEX Screener</a></div>' +
+    return '<div class="card"><div class="tok-head"><div class="av lg">' + (m.image ? '<img src="' + esc(m.image) + '" alt="">' : esc(sym.slice(0, 3))) + '</div><div><h2>' + esc(name) + ' <span class="badge v">$' + esc(sym) + '</span>' + (c.ext ? ' <span class="badge b">' + esc(plat ? plat.n : dexName(c)) + '</span>' : c.complete ? ' <span class="badge b">migré</span>' : '') + '</h2><p>' + short(mint, 8) + ' <button class="copy" data-copy="' + mint + '" type="button" title="Copier">⧉</button></p></div><div class="spacer"></div>' +
+      '<div class="links">' + (plat ? '<a href="' + plat.url(mint) + '" target="_blank" rel="noopener">' + plat.n + '</a>' : '') + '<a href="https://solscan.io/token/' + mint + '" target="_blank" rel="noopener">Solscan</a><a href="https://dexscreener.com/solana/' + mint + '" target="_blank" rel="noopener">DEX Screener</a></div>' +
       (C.live && Date.now() - C.live < 60000 ? '<span class="badge g" title="Prix reçu en direct (' + esc(C.liveSrc || 'blockchain') + ')">● temps réel</span>' : LIVE[mint] ? '<span class="badge b" title="Abonnement actif, en attente d\'une transaction">● à l\'écoute</span>' : '<span class="badge" title="Ajoute un RPC Helius pour le temps réel">actualisation ' + cfg.pollSec + ' s</span>') +
       '<button class="btn sm" data-refresh="' + ctx + '" type="button">Actualiser</button></div>' +
       '<div class="grid-stats" style="margin-top:14px">' +
       '<div class="stat"><div class="l">Capitalisation</div><div class="v">' + usd(st.mcapSol) + '</div><div class="s">' + fSol(st.mcapSol, 1) + '</div></div>' +
       '<div class="stat"><div class="l">Prix</div><div class="v">' + fPrice(st.price) + '</div><div class="s">SOL par token</div></div>' +
-      '<div class="stat"><div class="l">Courbe de liaison</div><div class="v">' + fPct(st.progress, 1) + '</div><div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div><div class="s">' + fSol(st.realSol, 2) + ' dans la courbe' + (c.complete ? ' · terminée' : '') + '</div></div>' +
+      (c.ext ? '<div class="stat"><div class="l">' + (c.dex === 'launchlab' ? 'Courbe LaunchLab' : 'Marché') + '</div><div class="v">' + (c.dex === 'launchlab' ? '≈ ' + fPct(st.progress, 0) : esc(dexName(c))) + '</div>' + (c.dex === 'launchlab' ? '<div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div>' : '') + '<div class="s">' + (st.realSol ? fSol(st.realSol, 2) + ' dans le pool' : 'liquidité ' + fUsd(st.liqUsd)) + (c.dex === 'launchlab' ? ' · migration à ~85 SOL' : '') + '</div></div>' :
+      '<div class="stat"><div class="l">Courbe de liaison</div><div class="v">' + fPct(st.progress, 1) + '</div><div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div><div class="s">' + fSol(st.realSol, 2) + ' dans la courbe' + (c.complete ? ' · terminée' : '') + '</div></div>') +
       '<div class="stat"><div class="l">Ta position</div><div class="v">' + (S.wallet ? fTok(pos.bal) : '—') + '</div><div class="s">' + (S.wallet ? usd(pos.value) + (pos.avg ? ' · PRU ' + fPrice(pos.avg) : '') : 'wallet non connecté') + '</div></div>' +
       '<div class="stat"><div class="l">Résultat</div><div class="v ' + cls(pos.pnl) + '">' + (pos.spent || pos.recv ? fSol(pos.pnl, 3) : '—') + '</div><div class="s">valeur + ventes − achats</div></div>' +
       '</div></div>' +
       '<div class="tok-grid"><div>' +
-      '<div class="card"><div class="card-h"><h3>Prix des dernières transactions</h3><p>Points verts : achats, rouges : ventes.</p></div><canvas class="pchart" data-mint="' + mint + '" height="230"></canvas></div>' +
+      (c.ext && c.pair ? '<div class="card"><div class="card-h"><h3>Graphique en direct</h3><p>Fourni par DEX Screener · ' + esc(dexName(c)) + '</p></div><div class="dexchart" data-pair="' + esc(c.pair) + '"><iframe src="https://dexscreener.com/solana/' + encodeURIComponent(c.pair) + '?embed=1&loadChartSettings=0&trades=0&tabs=0&info=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=1&chartType=usd&interval=1" title="Graphique DEX Screener" loading="lazy"></iframe></div></div>'
+        : '<div class="card"><div class="card-h"><h3>Prix des dernières transactions</h3><p>Points verts : achats, rouges : ventes.</p></div><canvas class="pchart" data-mint="' + mint + '" height="230"></canvas></div>') +
       '<div class="card"><div class="card-h"><h3>Analyse</h3><p>Lue sur la blockchain, mise à jour toutes les ' + cfg.pollSec + ' s.</p></div><div class="risk-list">' + R.map((r) => '<div class="rk"><span class="sdot" style="background:' + LVL[r.lvl] + '"></span><div><b>' + esc(r.t) + '</b><div class="muted">' + esc(r.d) + '</div></div></div>').join('') + '</div></div>' +
       '<div class="card"><div class="card-h"><h3>Transactions récentes</h3><p>' + (C.tradeErr ? '<span class="warn">' + esc(C.tradeErr) + '</span>' : (C.trades || []).length + ' lues sur la courbe') + '</p></div><div class="feed">' + (tradesHtml || '<div class="empty">Aucune transaction lue pour l\'instant.</div>') + '</div></div>' +
       '</div><div>' +
@@ -3850,7 +3932,7 @@ Message: ${r}.
     if (!el || !inp || !C || !C.curve || !C.curve.exists) return;
     const side = S.side[ctx], v = inp.value.trim();
     if (!v) { el.innerHTML = '<span class="muted">Saisis un montant pour voir le devis.</span>'; return; }
-    if (C.curve.complete) { el.innerHTML = '<span class="muted">Token migré : le prix dépend du pool PumpSwap, devis non disponible ici.</span>'; return; }
+    if (C.curve.complete) { el.innerHTML = '<span class="muted">' + (C.curve.ext ? 'Token ' + esc(dexName(C.curve)) + ' : le prix dépend du pool, devis exact non disponible ici.' : 'Token migré : le prix dépend du pool PumpSwap, devis non disponible ici.') + '</span>'; return; }
     const sym = (C.meta && C.meta.symbol) || 'tokens';
     if (side === 'buy') {
       const sol = num(v), q = quoteBuy(C.curve, sol);
@@ -3869,11 +3951,24 @@ Message: ${r}.
     try { await loadToken(mint, true); } catch (e) { S.cache[mint] = Object.assign(S.cache[mint] || {}, { error: e.message }); }
     renderTokenView(ctx); if (ctx === 'mine') renderMineList();
   }
+  // Remplace le contenu sans toucher au graphique DEX Screener (une iframe déplacée ou recréée se recharge à chaque actualisation)
+  function keepFrame(box, html) {
+    const old = box.querySelector('.dexchart'), tmp = document.createElement('div'); tmp.innerHTML = html;
+    const nw = tmp.querySelector('.dexchart');
+    if (!old || !nw || old.dataset.pair !== nw.dataset.pair) { box.innerHTML = html; return; }
+    const sync = (o, n) => {
+      const oc = [...o.childNodes], nc = [...n.childNodes];
+      if (oc.length !== nc.length) return false;
+      for (let i = 0; i < nc.length; i++) { if (oc[i] === old) continue; if (oc[i].contains && oc[i].contains(old)) { if (!sync(oc[i], nc[i])) return false; } else o.replaceChild(nc[i], oc[i]); }
+      return true;
+    };
+    if (!sync(box, tmp)) box.innerHTML = html;
+  }
   function renderTokenView(ctx) {
     const mint = S.view[ctx]; if (!mint) return;
     const box = ctx === 'mine' ? $('mineDetail') : $('tradeDetail');
     const inp = $('amt-' + ctx), keep = inp ? inp.value : '', focus = inp && document.activeElement === inp;
-    box.innerHTML = tokenHtml(mint, ctx);
+    keepFrame(box, tokenHtml(mint, ctx));
     const ni = $('amt-' + ctx); if (ni && keep) { ni.value = keep; if (focus) ni.focus(); }
     box.querySelectorAll('canvas.pchart').forEach((cv) => drawPriceChart(cv, S.cache[mint] || {}));
     updateQuote(ctx);
@@ -3886,7 +3981,7 @@ Message: ${r}.
   function renderMineList() {
     $('mineList').innerHTML = S.tokens.length ? S.tokens.map((t) => {
       const C = S.cache[t.mint], st = C && C.stats;
-      return '<button class="tok-card ' + (S.view.mine === t.mint ? 'on' : '') + '" data-mine="' + t.mint + '" type="button"><div class="tk"><div class="av">' + (t.image ? '<img src="' + esc(t.image) + '" alt="">' : esc(t.symbol.slice(0, 3))) + '</div><div class="nm"><b>' + esc(t.name) + '</b><small>$' + esc(t.symbol) + ' · lancé ' + fAgo(t.createdAt) + '</small></div></div>' +
+      return '<button class="tok-card ' + (S.view.mine === t.mint ? 'on' : '') + '" data-mine="' + t.mint + '" type="button"><div class="tk"><div class="av">' + (t.image ? '<img src="' + esc(t.image) + '" alt="">' : esc(t.symbol.slice(0, 3))) + '</div><div class="nm"><b>' + esc(t.name) + '</b><small>$' + esc(t.symbol) + ' · ' + esc((PLATFORMS[t.platform] || PLATFORMS.pump).n) + ' · ' + fAgo(t.createdAt) + '</small></div></div>' +
         '<div class="kv"><span>Capitalisation</span><span>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</span><span>Courbe</span><span>' + (st ? fPct(st.progress, 0) : '…') + '</span></div>' + (st ? '<div class="bar"><i style="width:' + st.progress.toFixed(1) + '%;background:var(--violet)"></i></div>' : '') + '</button>';
     }).join('') : '<div class="card"><div class="empty"><b>Aucun token lancé pour l\'instant</b>Lance ton premier token depuis « Lancer un token », ou ajoute un token existant.</div></div>';
   }
@@ -3920,27 +4015,28 @@ Message: ${r}.
     $('soTone').innerHTML = Object.keys(SO_TONES).map((k) => '<button class="chip ' + (soTone === k ? 'on' : '') + '" data-sotone="' + k + '" type="button">' + SO_TONES[k] + '</button>').join('');
     const t = list[+sel.value || 0];
     if (!t) { $('posts').innerHTML = '<div class="card"><div class="empty"><b>Rien à annoncer pour l\'instant</b>Prépare un token dans « Lancer un token ».</div></div>'; return; }
-    const link = t.mint ? 'https://pump.fun/coin/' + t.mint : (S.draft.lang !== 'fr' ? '[pump.fun link after launch]' : '[lien pump.fun après lancement]'), ca = t.mint || (S.draft.lang !== 'fr' ? '[contract after launch]' : '[adresse après lancement]');
+    const PLn = PLATFORMS[t.platform || (t.draft ? S.draft.platform : 'pump')] || PLATFORMS.pump;
+    const link = t.mint ? PLn.url(t.mint) : (S.draft.lang !== 'fr' ? '[' + PLn.n + ' link after launch]' : '[lien ' + PLn.n + ' après lancement]'), ca = t.mint || (S.draft.lang !== 'fr' ? '[contract after launch]' : '[adresse après lancement]');
     const C = t.mint && S.cache[t.mint], mc = C && C.stats && S.solUsd ? fUsd(C.stats.mcapSol * S.solUsd) : '[capitalisation]';
     const en = S.draft.lang !== 'fr', nfaTxt = $('soNfa').checked ? (en ? '\n\nNot financial advice.' : '\n\nPas un conseil financier.') : '';
     const T = en ? {
-      communaute: [['Launch announcement', '$' + t.symbol + ' is live on pump.fun.\n\n' + t.name + ' belongs to whoever holds it. Fair launch, no presale.\n\nCA: ' + ca + '\n' + link + nfaTxt],
+      communaute: [['Launch announcement', '$' + t.symbol + ' is live on ' + PLn.n + '.\n\n' + t.name + ' belongs to whoever holds it. Fair launch, no presale.\n\nCA: ' + ca + '\n' + link + nfaTxt],
         ['Milestone', t.name + ' just crossed ' + mc + ' market cap.\n\nThank you to everyone who showed up early.\n\n$' + t.symbol + '\n' + link + nfaTxt],
         ['Telegram welcome', 'Welcome to ' + t.name + '.\n\nOfficial contract: ' + ca + '\nThe team will never DM you first. Ignore anyone who does.' + nfaTxt]],
       drole: [['Launch announcement', 'We launched $' + t.symbol + '. Nobody asked. Here it is anyway.\n\nCA: ' + ca + '\n' + link + nfaTxt],
         ['Milestone', t.name + ' is at ' + mc + '. Our parents still don\'t know what we do.\n\n$' + t.symbol + '\n' + link + nfaTxt],
         ['Telegram welcome', 'You found ' + t.name + '. Rule one: memes. Rule two: see rule one.\n\nOfficial contract: ' + ca + '\nNo one from the team will DM you.' + nfaTxt]],
-      epique: [['Launch announcement', 'Every story starts small.\n\n' + t.name + ' ($' + t.symbol + ') is live on pump.fun.\n\nCA: ' + ca + '\n' + link + nfaTxt],
+      epique: [['Launch announcement', 'Every story starts small.\n\n' + t.name + ' ($' + t.symbol + ') is live on ' + PLn.n + '.\n\nCA: ' + ca + '\n' + link + nfaTxt],
         ['Milestone', t.name + ' reached ' + mc + '.\n\nThis is still the beginning.\n\n$' + t.symbol + '\n' + link + nfaTxt],
         ['Telegram welcome', 'Welcome to ' + t.name + '.\n\nOfficial contract: ' + ca + '\nNo team member will ever DM you first.' + nfaTxt]],
     }[soTone] : {
-      communaute: [['Annonce du lancement', '$' + t.symbol + ' est en ligne sur pump.fun.\n\n' + t.name + ' appartient à ceux qui le gardent. Lancement équitable, sans prévente.\n\nCA : ' + ca + '\n' + link + nfaTxt],
+      communaute: [['Annonce du lancement', '$' + t.symbol + ' est en ligne sur ' + PLn.n + '.\n\n' + t.name + ' appartient à ceux qui le gardent. Lancement équitable, sans prévente.\n\nCA : ' + ca + '\n' + link + nfaTxt],
         ['Palier atteint', t.name + ' vient de passer ' + mc + ' de capitalisation.\n\nMerci à ceux qui étaient là tôt.\n\n$' + t.symbol + '\n' + link + nfaTxt],
         ['Message Telegram de bienvenue', 'Bienvenue sur ' + t.name + '.\n\nContrat officiel : ' + ca + '\nL\'équipe ne t\'écrira jamais en privé la première.' + nfaTxt]],
       drole: [['Annonce du lancement', 'On a lancé $' + t.symbol + '. Personne ne l\'a demandé. Le voilà quand même.\n\nCA : ' + ca + '\n' + link + nfaTxt],
         ['Palier atteint', t.name + ' vaut ' + mc + '. Nos parents ne comprennent toujours pas ce qu\'on fait.\n\n$' + t.symbol + '\n' + link + nfaTxt],
         ['Message Telegram de bienvenue', 'Tu as trouvé ' + t.name + '. Règle un : des mèmes. Règle deux : voir règle un.\n\nContrat officiel : ' + ca + '\nPersonne de l\'équipe ne t\'écrira en privé.' + nfaTxt]],
-      epique: [['Annonce du lancement', 'Chaque histoire commence petite.\n\n' + t.name + ' ($' + t.symbol + ') est en ligne sur pump.fun.\n\nCA : ' + ca + '\n' + link + nfaTxt],
+      epique: [['Annonce du lancement', 'Chaque histoire commence petite.\n\n' + t.name + ' ($' + t.symbol + ') est en ligne sur ' + PLn.n + '.\n\nCA : ' + ca + '\n' + link + nfaTxt],
         ['Palier atteint', t.name + ' atteint ' + mc + '.\n\nCe n\'est que le début.\n\n$' + t.symbol + '\n' + link + nfaTxt],
         ['Message Telegram de bienvenue', 'Bienvenue sur ' + t.name + '.\n\nContrat officiel : ' + ca + '\nAucun membre de l\'équipe ne t\'écrira en privé le premier.' + nfaTxt]],
     }[soTone];
@@ -4216,6 +4312,7 @@ Message: ${r}.
     if (b.id === 'sideTheme') { navOpen(false); return themePicker(); }
     if (d.page) return setPage(d.page);
     if (d.dtok) { setPage('mine'); return typeof showToken === 'function' ? showToken('mine', d.dtok) : null; }
+    if (d.plat && PLATFORMS[d.plat]) { S.draft.platform = d.plat; saveDraft(); renderDevQuote(); renderLaunchSide(); return; }
     if (d.dact === 'radar') { setPage('launch'); return setLaunchTab('radar'); }
     if (d.dmode) { DASH.mode = d.dmode; try { localStorage.setItem('pstudio_dash_mode', d.dmode); } catch (x) {} return renderDash(); }
     if (d.drange) { DASH.range = d.drange; renderDash(); return solHist(true); }
