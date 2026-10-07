@@ -3206,7 +3206,8 @@ Message: ${r}.
      · trades : transactions qui mentionnent le mint de chaque token suivi (courbe pump.fun et PumpSwap).
      Les événements émis par les programmes ("Program data:") sont décodés et convertis au même format
      que l'ancien flux, pour que le studio et le terminal n'aient qu'une seule forme de message. */
-  const HL = { ws: null, state: 'off', want: [], limit: 60, subs: new Map(), bySub: new Map(), pend: new Map(), createSub: null, createPend: false, id: 0, retry: 0, timer: null, last: 0, msgs: 0, events: 0, seen: new Map() };
+  const HL = { ws: null, state: 'off', want: [], limit: 60, subs: new Map(), bySub: new Map(), acc: new Map(), byAcc: new Map(), pend: new Map(), createSub: null, createPend: false, id: 0, retry: 0, timer: null, last: 0, msgs: 0, events: 0, seen: new Map(),
+    logSeen: new Set(), failAt: new Map(), st: { create: 0, logs: 0, acc: 0, err: 0, lastErr: '' } };
   const PUMP_MINT_AUTH = 'TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM';
   const EV = { create: [27, 114, 169, 77, 222, 235, 99, 118], trade: [189, 219, 127, 211, 78, 230, 97, 238], complete: [95, 114, 97, 156, 212, 46, 152, 8], ammBuy: [103, 244, 82, 31, 44, 245, 119, 119], ammSell: [62, 47, 55, 10, 165, 3, 220, 42], ammMig: [189, 233, 93, 185, 92, 148, 234, 148] };
   const useHelius = () => !!cfg.rpc && cfg.liveSrc !== 'pumpportal';
@@ -3219,19 +3220,26 @@ Message: ${r}.
     clearTimeout(HL.timer); HL.state = 'connecting'; ppStatus();
     let ws; try { ws = new WebSocket(hlUrl()); } catch (e) { HL.state = 'error'; ppStatus(); return hlRetry(); }
     HL.ws = ws;
-    ws.onopen = () => { HL.state = 'on'; HL.retry = 0; HL.subs = new Map(); HL.bySub = new Map(); HL.pend = new Map(); HL.createSub = null; HL.createPend = false; ppStatus(); hlDiff(); };
+    ws.onopen = () => { HL.state = 'on'; HL.retry = 0; HL.subs = new Map(); HL.bySub = new Map(); HL.acc = new Map(); HL.byAcc = new Map(); HL.pend = new Map(); HL.createSub = null; HL.createPend = false; ppStatus(); hlDiff(); };
     ws.onmessage = (ev) => { HL.last = Date.now(); HL.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } try { hlOnMsg(m); } catch (e) {} };
     ws.onerror = () => { HL.state = 'error'; ppStatus(); };
-    ws.onclose = () => { if (HL.ws === ws) { HL.ws = null; HL.subs = new Map(); HL.bySub = new Map(); HL.createSub = null; if (HL.state !== 'off') { HL.state = 'error'; ppStatus(); hlRetry(); } } };
+    ws.onclose = () => { if (HL.ws === ws) { HL.ws = null; HL.subs = new Map(); HL.bySub = new Map(); HL.acc = new Map(); HL.byAcc = new Map(); HL.createSub = null; if (HL.state !== 'off') { HL.state = 'error'; ppStatus(); hlRetry(); } } };
   }
   function hlRetry() { if (!hlNeeded()) return; const wait = [1000, 2000, 5000, 10000, 30000][Math.min(HL.retry++, 4)]; clearTimeout(HL.timer); HL.timer = setTimeout(hlConnect, wait); }
-  function hlClose() { clearTimeout(HL.timer); HL.state = 'off'; const ws = HL.ws; HL.ws = null; HL.subs = new Map(); HL.bySub = new Map(); HL.createSub = null; try { if (ws) ws.close(); } catch (e) {} ppStatus(); }
+  function hlClose() { clearTimeout(HL.timer); HL.state = 'off'; const ws = HL.ws; HL.ws = null; HL.subs = new Map(); HL.bySub = new Map(); HL.acc = new Map(); HL.byAcc = new Map(); HL.createSub = null; try { if (ws) ws.close(); } catch (e) {} ppStatus(); }
   // Aligne les abonnements : un par mint suivi (dans la limite fixée) + le flux des lancements si le terminal tourne
   function hlDiff() {
     if (!HL.ws || HL.ws.readyState !== 1) return;
     const want = new Set(HL.want.slice(0, Math.max(1, HL.limit)));
     for (const [mint, sub] of HL.subs) if (!want.has(mint)) { if (sub != null) hlReq('logsUnsubscribe', [sub]); HL.subs.delete(mint); HL.bySub.delete(sub); }
-    for (const mint of want) if (!HL.subs.has(mint)) { const id = hlReq('logsSubscribe', [{ mentions: [mint] }, { commitment: 'confirmed' }]); if (id) { HL.subs.set(mint, null); HL.pend.set(id, mint); } }
+    for (const [mint, a] of HL.acc) if (!want.has(mint)) { if (a.sub != null) hlReq('accountUnsubscribe', [a.sub]); HL.acc.delete(mint); HL.byAcc.delete(a.sub); }
+    const now = Date.now();
+    for (const mint of want) {
+      if (now - (HL.failAt.get(mint) || 0) < 60000) continue;      // refusé il y a moins d'une minute : on attend
+      if (!HL.subs.has(mint)) { const id = hlReq('logsSubscribe', [{ mentions: [mint] }, { commitment: 'confirmed' }]); if (id) { HL.subs.set(mint, null); HL.pend.set(id, mint); } }
+      // second canal : le compte de la courbe change à chaque trade (prix exact, même si les logs n'arrivent pas)
+      if (!HL.acc.has(mint)) { let pda = null; try { pda = curvePda(mint); } catch (e) {} if (pda) { const id = hlReq('accountSubscribe', [pda, { encoding: 'base64', commitment: 'confirmed' }]); if (id) { HL.acc.set(mint, { sub: null, pda, last: null, n: 0 }); HL.pend.set(id, '@acc:' + mint); } } }
+    }
     if (PPX.on && HL.createSub == null && !HL.createPend) { const id = hlReq('logsSubscribe', [{ mentions: [PUMP_MINT_AUTH] }, { commitment: 'confirmed' }]); if (id) { HL.createPend = true; HL.pend.set(id, '@create'); } }
     if (!PPX.on && HL.createSub != null) { hlReq('logsUnsubscribe', [HL.createSub]); HL.bySub.delete(HL.createSub); HL.createSub = null; }
     ppStatus();
@@ -3239,15 +3247,39 @@ Message: ${r}.
   function hlOnMsg(m) {
     if (m.id && HL.pend.has(m.id)) {                       // réponse à un abonnement
       const key = HL.pend.get(m.id); HL.pend.delete(m.id);
-      if (m.result == null) { if (key === '@create') HL.createPend = false; else HL.subs.delete(key); return; }
+      if (m.result == null) {
+        HL.st.err++; HL.st.lastErr = (m.error && (m.error.message || JSON.stringify(m.error))) || 'abonnement refusé';
+        if (key === '@create') HL.createPend = false;
+        else if (key.indexOf('@acc:') === 0) { HL.acc.delete(key.slice(5)); HL.failAt.set(key.slice(5), Date.now()); }
+        else { HL.subs.delete(key); HL.failAt.set(key, Date.now()); }
+        ppStatus(); return;
+      }
+      if (key.indexOf('@acc:') === 0) { const mint = key.slice(5), a = HL.acc.get(mint); if (!a) { hlReq('accountUnsubscribe', [m.result]); return; } a.sub = m.result; HL.byAcc.set(m.result, mint); return; }
       if (key === '@create') { HL.createPend = false; if (!PPX.on) { hlReq('logsUnsubscribe', [m.result]); return; } HL.createSub = m.result; }
       else if (HL.subs.has(key)) HL.subs.set(key, m.result); else { hlReq('logsUnsubscribe', [m.result]); return; }
       HL.bySub.set(m.result, key); ppStatus(); return;
     }
+    if (m.method === 'accountNotification' && m.params) return hlOnAccount(HL.byAcc.get(m.params.subscription), m.params.result);
     if (m.method !== 'logsNotification' || !m.params) return;
     const key = HL.bySub.get(m.params.subscription), v = m.params.result && m.params.result.value;
     if (!key || !v || v.err || !Array.isArray(v.logs)) return;
+    if (key === '@create') HL.st.create++; else HL.st.logs++;
     hlDecodeTx(v.signature, v.logs, key === '@create' ? null : key);
+  }
+  // Variation du compte de la courbe : prix exact ; on en déduit un achat ou une vente (sans le wallet) tant que les logs de ce token n'arrivent pas
+  function hlOnAccount(mint, res) {
+    const a = mint && HL.acc.get(mint), d = res && res.value && res.value.data;
+    if (!a || !d) return;
+    HL.st.acc++;
+    let c; try { c = parseCurve(a.pda, b64u8(Array.isArray(d) ? d[0] : d)); } catch (e) { return; }
+    if (!c.exists || !(c.vTok > 0)) return;
+    const prev = a.last; a.last = { vSol: c.vSol, vTok: c.vTok };
+    const price = (c.vSol / 1e9) / (c.vTok / 1e6), base = { mint, vSolInBondingCurve: c.vSol / 1e9, vTokensInBondingCurve: c.vTok / 1e6, marketCapSol: price * 1e9, src: 'curve' };
+    if (prev && c.vSol !== prev.vSol && !HL.logSeen.has(mint)) {
+      const dSol = c.vSol - prev.vSol, dTok = Math.abs(c.vTok - prev.vTok);
+      liveEmit(Object.assign({ txType: dSol > 0 ? 'buy' : 'sell', signature: 'curve:' + mint + ':' + (res.context ? res.context.slot : '') + ':' + (++a.n), traderPublicKey: '', solAmount: Math.abs(dSol) / 1e9, tokenAmount: dTok / 1e6 }, base), 'Helius');
+    }
+    if (c.complete && !a.done) { a.done = true; liveEmit({ txType: 'migrate', mint, signature: 'curve-complete:' + mint, src: 'curve' }, 'Helius'); }
   }
   const b64u8 = (s) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
   function hlReader(u) {
@@ -3302,10 +3334,12 @@ Message: ${r}.
     }
     evs.forEach((e, i) => {
       if (e.k === 'trade' && !(cr && e.mint === cr.mint)) {
+        HL.logSeen.add(e.mint); if (HL.logSeen.size > 3000) HL.logSeen.delete(HL.logSeen.values().next().value);
         const price = (e.vSol / 1e9) / (e.vTok / 1e6);
         liveEmit({ txType: e.buy ? 'buy' : 'sell', mint: e.mint, signature: sig + (i ? ':' + i : ''), traderPublicKey: e.user, solAmount: e.sol / 1e9, tokenAmount: e.tok / 1e6,
           vSolInBondingCurve: e.vSol / 1e9, vTokensInBondingCurve: e.vTok / 1e6, marketCapSol: price * 1e9, src: 'helius' }, 'Helius');
       } else if (e.k === 'amm' && e.price * 1e9 > 5 && e.price * 1e9 < 1e7) {
+        HL.logSeen.add(e.mint);
         liveEmit({ txType: e.buy ? 'buy' : 'sell', mint: e.mint, signature: sig + (i ? ':' + i : ''), traderPublicKey: e.user, solAmount: e.sol / 1e9, tokenAmount: e.tok / 1e6,
           marketCapSol: e.price * 1e9, pool: 'pump-amm', src: 'helius' }, 'Helius');
       } else if (e.k === 'complete') liveEmit({ txType: 'migrate', mint: e.mint, signature: sig, src: 'helius' }, 'Helius');
@@ -3911,7 +3945,7 @@ Message: ${r}.
   window.PumpStudio = { PP, S, cfg, setPage, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
     pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => liveState(), source: () => useHelius() ? 'Helius' : 'PumpPortal',
-      setLimit(n) { HL.limit = Math.max(1, Math.round(+n || 60)); hlDiff(); }, stats: () => ({ msgs: HL.msgs, events: HL.events, subs: HL.subs.size, limit: HL.limit, pp: PP.msgs }) },
+      setLimit(n) { HL.limit = Math.max(1, Math.round(+n || 60)); hlDiff(); }, stats: () => ({ msgs: HL.msgs, events: HL.events, subs: HL.subs.size, accs: HL.acc.size, limit: HL.limit, pp: PP.msgs, create: HL.st.create, logs: HL.st.logs, acc: HL.st.acc, err: HL.st.err, lastErr: HL.st.lastErr, logTokens: HL.logSeen.size }) },
     SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
@@ -4305,21 +4339,23 @@ function onTrade(m, now) {
   S.tradeEvents++;
   const t = S.tokens.get(m.mint);
   if (!t) return;
-  if (t.src === 'snap') { t.buys = t.sells = 0; t.volBuy = t.volSell = 0; t.hist = []; }
-  t.src = 'trades'; t.lastTrade = now; S.lastTradeAt = now; t.lastPx = now;
+  const anon = m.src === 'curve' || !m.traderPublicKey;
+  if (t.src === 'snap' || (t.src === 'curve' && !anon)) { t.buys = t.sells = 0; t.volBuy = t.volSell = 0; t.hist = []; }
+  t.src = anon && t.src !== 'trades' ? 'curve' : 'trades'; t.lastTrade = now; S.lastTradeAt = now; t.lastPx = now;
   const side = m.txType, amount = num(m.solAmount) || 0, tok = num(m.tokenAmount) || 0, who = m.traderPublicKey || '';
   const age = now - t.createdAt;
   if (side === 'buy') {
     t.buys++; t.volBuy += amount;
-    if (!t.buyers.has(who)) { t.buyers.add(who); t.firstBuy.set(who, now); if (age <= SNIPE_WINDOW && who !== t.creator) t.snipers.add(who); }
-    if (age <= BUNDLE_WINDOW && who !== t.creator) t.bundleTok += tok;
+    if (who && !t.buyers.has(who)) { t.buyers.add(who); t.firstBuy.set(who, now); if (age <= SNIPE_WINDOW && who !== t.creator) t.snipers.add(who); }
+    if (who && age <= BUNDLE_WINDOW && who !== t.creator) t.bundleTok += tok;
   } else { t.sells++; t.volSell += amount; }
   if (who && who === t.creator && side === 'sell' && !t.devSold) {
     t.devSold = true; t.devSoldAt = now;
     if (age <= FAST_SELL_SEC * 1000) { devStat(t.creator).fastSell++; t.devSoldFast = true; }
   }
   const nb = num(m.newTokenBalance);
-  if (nb != null) t.balances.set(who, nb);
+  if (!who) { t.hist.push([now, t.buys]); if (t.hist.length > 60) t.hist.shift(); }
+  else if (nb != null) t.balances.set(who, nb);
   else t.balances.set(who, Math.max(0, (t.balances.get(who) || 0) + (side === 'buy' ? tok : -tok)));
   const mc = num(m.marketCapSol);
   if (mc) { t.mc = mc; if (mc > t.mcMax) t.mcMax = mc; }
@@ -4354,7 +4390,7 @@ function markMigrated(t, now) {
 /* --------------------------------------------------------------- instantanés DexScreener : quand PumpPortal ne transmet pas les trades
    Lecture groupée (30 tokens par requête) du prix, des achats, des ventes et du volume. Gratuit, sans clé. */
 const SNAP = { busy: false, last: 0, ok: 0, err: 0, at: 0, n: 0 };
-const isSnap = (t) => t.src === 'snap';
+const isSnap = (t) => t.src === 'snap' || t.src === 'curve';     // données sans wallet : snipers, top 10, bundle non mesurés
 const uniq = (t) => isSnap(t) ? t.buys : t.buyers.size;
 const WSOL = 'So11111111111111111111111111111111111111112';
 const solQuoted = (p) => !!(p.quoteToken && p.quoteToken.address === WSOL);
@@ -4796,8 +4832,8 @@ function renderFeed(now) {
   if (quiet) {
     const snapOk = cfg.snapshots && SNAP.ok > 0 && Date.now() - SNAP.at < 60000;
     nt.className = 'notice ' + (snapOk ? 'info' : cfg.snapshots && SNAP.err ? 'bad' : '');
-    const src = PS.pp.source ? PS.pp.source() : 'PumpPortal', why = src === 'Helius'
-      ? 'Helius ne remonte aucun trade décodable pour les tokens suivis'
+    const src = PS.pp.source ? PS.pp.source() : 'PumpPortal', hs0 = PS.pp.stats ? PS.pp.stats() : {}, why = src === 'Helius'
+      ? (hs0.err ? 'Helius refuse des abonnements (' + esc(hs0.lastErr) + ')' : 'Helius ne remonte aucun trade pour les tokens suivis (' + (hs0.logs || 0) + ' notifications de transactions, ' + (hs0.acc || 0) + ' de courbe)')
       : 'Sans clé Helius, le flux PumpPortal gratuit ne transmet que les lancements et les migrations. Ajoute ta clé Helius gratuite dans <b>Réglages du studio</b> (Adresse RPC) pour recevoir chaque trade en direct depuis la blockchain';
     nt.innerHTML = snapOk ? '<b>Mode de secours : instantanés DexScreener.</b> ' + why + ' : le terminal lit le prix, les achats et les ventes toutes les ' + clamp(cfg.snapSec || 4, 2, 30) + ' s. Snipers, bundle et top 10 ne sont pas mesurés dans ce mode.'
       : !cfg.snapshots ? '<b>Aucun trade reçu.</b> ' + why + '. Active les <b>Instantanés DexScreener</b> dans Réglages pour que les stratégies puissent travailler en attendant.'
@@ -5221,7 +5257,7 @@ async function renderData() {
   $('dataStats').innerHTML = st('Tokens en base', nt, est) + st('Trades en base', ntr, cfg.recordTrades ? 'enregistrement actif' : 'enregistrement coupé') +
     st('Trades papier en base', nc) + st('Tokens reçus (session)', S.totalTokens) + st('Trades reçus (session)', S.totalTrades) +
     st('Migrations vues', S.migrations) + st('Devs distincts', S.devStats.size, migr + ' tokens migrés au total') +
-    (() => { const h = PS.pp.stats ? PS.pp.stats() : null; return h ? st('Source en direct', PS.pp.source(), h.subs + ' / ' + h.limit + ' tokens abonnés') + st('Messages Helius', h.msgs, h.events + ' événements décodés') + st('Instantanés DexScreener', SNAP.n, SNAP.err + ' erreurs · ' + (SNAP.bad || 0) + ' prix écartés') : ''; })();
+    (() => { const h = PS.pp.stats ? PS.pp.stats() : null; return h ? st('Source en direct', PS.pp.source(), h.subs + ' / ' + h.limit + ' tokens abonnés') + st('Messages Helius', h.msgs, h.events + ' événements décodés') + st('Lancements · trades', (h.create || 0) + ' · ' + (h.logs || 0), 'notifications Helius reçues') + st('Courbes suivies', (h.accs || 0) + ' comptes', (h.acc || 0) + ' mises à jour reçues') + st('Abonnements refusés', h.err || 0, h.lastErr ? esc(String(h.lastErr).slice(0, 80)) : 'aucun') + st('Instantanés DexScreener', SNAP.n, SNAP.err + ' erreurs · ' + (SNAP.bad || 0) + ' prix écartés') : ''; })();
   const p = S.perf;
   $('engineStats').innerHTML = st('Temps moyen par message', (p.n ? p.ms / p.n : 0).toFixed(3) + ' ms', 'depuis le démarrage') +
     st('Sur les 10 dernières s', (p.lastWinMs || 0).toFixed(3) + ' ms', (p.lastWinN || 0) + ' messages') +
