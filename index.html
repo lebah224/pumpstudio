@@ -764,6 +764,7 @@ textarea{font:inherit;color:inherit}
 .pb-sel b{display:block;font-family:var(--display);font-size:15px}
 .pb-sel span{font-size:13px;color:var(--muted)}
 .pb-sel .seg button{gap:8px}
+.pb-selr{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .pb-sel .seg button.on{box-shadow:inset 0 0 0 1px var(--line2)}
 .pb-kpis{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden;margin-bottom:14px;grid-template-columns:repeat(auto-fit,minmax(138px,1fr))}
 .pb-kpis .kpi{padding:11px 16px 12px;border-bottom:1px solid var(--line);margin-bottom:-1px}
@@ -805,7 +806,8 @@ textarea{font:inherit;color:inherit}
   .pb-kpis .kpi{border-right:1px solid var(--line);padding:9px 12px}
   .pb-kpis .kpi:nth-child(2n){border-right:none}
   .pb-kpis .kpi:last-child{grid-column:1/-1;border-right:none}
-  .pb-sel .seg{width:100%}
+  .pb-selr,.pb-sel .seg{width:100%}
+  #pb-stratTune{width:100%}
   .pb-sel .seg button{flex:1;justify-content:center;padding:8px 6px}
   .pb-kpis .kpi .v{font-size:16px}
   .pb-tabs{width:100%}
@@ -982,7 +984,7 @@ textarea{font:inherit;color:inherit}
         <div class="pb-head">
           <div class="pb-id">
             <div class="pb-mark"><svg class="i" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
-            <div><h1>Terminal de trading</h1><p>Deux stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : Équilibrée sur les lancements, Migration sur les migrations. Mode papier : aucun ordre réel.</p></div>
+            <div><h1>Terminal de trading</h1><p>Trois stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : Équilibrée, Migration et Flash. Mode papier : aucun ordre réel.</p></div>
           </div>
           <div class="pb-ctl">
             <label class="pb-view"><span>Vue</span><select class="sel" id="pb-viewStrat" aria-label="Stratégie affichée"></select></label>
@@ -991,7 +993,7 @@ textarea{font:inherit;color:inherit}
             <button class="btn primary" id="pb-btnConn" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0M12 19.5h.01"/></svg><span>Connecter</span></button>
           </div>
         </div>
-        <div class="pb-sel"><div><b>Stratégie active</b><span id="pb-stratHint">Choisis la stratégie qui ouvre des positions.</span></div><div class="seg" id="pb-stratSel" role="radiogroup" aria-label="Stratégie active"></div></div>
+        <div class="pb-sel"><div><b>Stratégie active</b><span id="pb-stratHint">Choisis la stratégie qui ouvre des positions.</span></div><div class="pb-selr"><div class="seg" id="pb-stratSel" role="radiogroup" aria-label="Stratégie active"></div><button class="btn" id="pb-stratTune" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Paramètres</button></div></div>
         <div class="kpis pb-kpis">
           <div class="kpi"><div class="l">Tokens / min</div><div class="v" id="pb-kRate">0</div><div class="s" id="pb-kRateS">—</div></div>
           <div class="kpi"><div class="l">Suivis</div><div class="v" id="pb-kWatch">0</div><div class="s" id="pb-kWatchS">—</div></div>
@@ -1081,7 +1083,7 @@ textarea{font:inherit;color:inherit}
             <!-- stratégies -->
             <div class="pb-pg" id="pb-p-strategies">
               <div class="card">
-                <div class="card-h"><h3>Comparaison</h3><p>Les deux stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille papier.</p></div>
+                <div class="card-h"><h3>Comparaison</h3><p>Les stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille papier.</p></div>
                 <div class="tablebox" style="margin-bottom:14px">
                   <table><thead><tr>
                     <th>Stratégie</th><th>État</th><th class="num">Trades</th><th class="num">Winrate</th><th class="num">P&amp;L</th><th class="num">Gain moy.</th><th class="num">Perte moy.</th><th class="num">Drawdown</th><th class="num">Ouvertes</th><th class="num">Solde</th>
@@ -2795,7 +2797,7 @@ Message: ${r}.
   }
 
   /* ================================================================ rendu : en-tête */
-  const PAGES = { bot: ['Bot de trading', 'Terminal : 2 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
@@ -3834,6 +3836,38 @@ function loadCfg() {
 function saveCfg() { try { localStorage.setItem('pstudio_pb_cfg', JSON.stringify(cfg)); } catch (e) {} }
 
 /* --------------------------------------------------------------- stratégies */
+const FLASH_SECTIONS = [
+  { id: 'f_targets', title: 'Cibles', fields: [
+    ['flashLaunch', 'Jouer les nouveaux lancements', 'bool', 'Achat dès la création du token'],
+    ['flashMig', 'Jouer les migrations', 'bool', 'Achat dès l\'annonce de la migration'],
+    ['phaseSec', 'Durée de la 1re phase', 'num', 'Après, la cible baisse', 's'],
+    ['lTp1', 'Lancement : objectif 1re phase', 'num', 'Vente totale', '%'],
+    ['lTp2', 'Lancement : objectif après la 1re phase', 'num', '', '%'],
+    ['mTp1', 'Migration : objectif 1re phase', 'num', '', '%'],
+    ['mTp2', 'Migration : objectif après la 1re phase', 'num', '', '%'],
+    ['exitFlat', 'Vendre après la 1re phase si pas de hausse', 'bool', 'Si le prix est sous le prix d\'entrée'],
+  ]},
+  { id: 'f_risk', title: 'Protection', fields: [
+    ['lSl', 'Lancement : stop loss', 'num', 'À tout moment', '%'],
+    ['mSl', 'Migration : stop loss', 'num', '', '%'],
+    ['maxHoldSec', 'Vente forcée après', 'num', 'Durée maximale d\'une position', 's'],
+  ]},
+  { id: 'f_filters', title: 'Filtres rapides', fields: [
+    ['launchWindowSec', 'Lancement : entrer au plus tard', 'num', 'Après la création', 's'],
+    ['migWindowSec', 'Migration : entrer au plus tard', 'num', 'Après la migration (attend le premier prix)', 's'],
+    ['maxDevBuySol', 'Dev buy maximum', 'num', 'Achat du créateur au lancement', 'SOL'],
+    ['serialMax', 'Rejet si le dev a lancé au moins', 'num', 'Tokens vus pendant la session', 'tok.'],
+    ['requireName', 'Exiger un nom et un symbole', 'bool', ''],
+    ['maxPerMin', 'Entrées maximum par minute', 'num', 'Évite d\'acheter tout le flux', ''],
+  ]},
+  { id: 'f_money', title: 'Capital', fields: [
+    ['startBal', 'Solde de départ', 'num', '', 'SOL'],
+    ['sizeSol', 'Mise par trade', 'num', '', 'SOL'],
+    ['maxPositions', 'Positions simultanées', 'num', '', ''],
+    ['feePct', 'Frais par transaction', 'num', 'pump.fun + réseau', '%'],
+    ['slipPct', 'Slippage simulé', 'num', 'Pénalité d\'entrée et de sortie (on arrive après les snipers)', '%'],
+  ]},
+];
 const STRAT_SECTIONS = [
   { id: 'entry', title: 'Fenêtre d\'entrée', fields: [
     ['minAgeSec', 'Âge minimum avant d\'entrer', 'num', 'Laisse passer les snipers', 's'],
@@ -3878,14 +3912,19 @@ const PRESETS = {
   equilibree: { onlyMigrated: false, minAgeSec: 20, maxEntryAgeSec: 180, minEntryMc: 30, maxEntryMc: 200, maxDevBuySol: 2, maxDevPct: 10, maxTop10: 35, maxBundlePct: 20, maxSnipers: 15, serialMax: 3, rejectDevSell: true, requireSocials: false,
     targetBuyers: 25, targetVolSol: 15, scoreMin: 65, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 3,
     slPct: 25, tp1Pct: 50, tp1Frac: 50, trailPct: 20, trailAlways: false, maxHoldSec: 600, exitOnDevSell: true },
+  flash: { mode: 'flash', flashLaunch: true, flashMig: true, phaseSec: 60, lTp1: 100, lTp2: 50, mTp1: 50, mTp2: 25, exitFlat: true,
+    lSl: 30, mSl: 20, maxHoldSec: 180, launchWindowSec: 20, migWindowSec: 60, maxDevBuySol: 2, serialMax: 2, requireName: true, maxPerMin: 6,
+    startBal: 5, sizeSol: 0.1, maxPositions: 5, feePct: 1, slipPct: 5,
+    targetBuyers: 25, targetVolSol: 15, scoreMin: 50, maxTop10: 100, maxDevPct: 100, maxSnipers: 1000, maxBundlePct: 100, slPct: 30, tp1Pct: 100 },
   migration: { onlyMigrated: true, minAgeSec: 45, maxEntryAgeSec: 900, minEntryMc: 300, maxEntryMc: 4000, maxDevBuySol: 5, maxDevPct: 20, maxTop10: 60, maxBundlePct: 40, maxSnipers: 40, serialMax: 5, rejectDevSell: true, requireSocials: true,
     targetBuyers: 150, targetVolSol: 150, scoreMin: 60, startBal: 5, sizeSol: 0.1, maxPositions: 3, feePct: 1, slipPct: 2,
     slPct: 15, tp1Pct: 30, tp1Frac: 50, trailPct: 12, trailAlways: true, maxHoldSec: 1800, exitOnDevSell: true },
 };
-const PRESET_NAMES = { equilibree: 'Équilibrée', migration: 'Migration' };
+const PRESET_NAMES = { equilibree: 'Équilibrée', migration: 'Migration', flash: 'Flash' };
 const STRAT_DEFAULTS = [
   { id: 'equilibree', name: 'Équilibrée', color: C.green, enabled: true, P: Object.assign({}, PRESETS.equilibree) },
   { id: 'migration', name: 'Migration', color: C.violet, enabled: true, P: Object.assign({}, PRESETS.migration) },
+  { id: 'flash', name: 'Flash', color: C.amber, enabled: true, P: Object.assign({}, PRESETS.flash) },
 ];
 let STRATS = loadStrats();
 function loadStrats() {
@@ -3898,6 +3937,8 @@ function loadStrats() {
 }
 function saveStrats() { try { localStorage.setItem('pstudio_pb_strats', JSON.stringify(STRATS.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, P: s.P })))); } catch (e) {} }
 const stratById = (id) => STRATS.find((s) => s.id === id);
+const isFlash = (s) => s && s.P.mode === 'flash';
+const secsOf = (s) => isFlash(s) ? FLASH_SECTIONS : STRAT_SECTIONS;
 
 /* --------------------------------------------------------------- état global */
 const S = {
@@ -4105,7 +4146,7 @@ function onCreate(m, now, fromMig) {
     balances: new Map(), devSold: false, devSoldAt: 0, snipers: new Set(), bundleTok: 0,
     top10: 0, devPct: 0, bundlePct: 0, rec30: 0, prev30: 0,
     meta: { state: 'none' }, track: 'ok', watching: false, watchEnd: 0, migrated: false,
-    st: {}, ver: 1, rv: 0, lastMcShown: mc, isNew: true, src: 'none', hist: [], lastTrade: 0, fromMigration: !!fromMig, migratedAt: 0,
+    st: {}, ver: 1, rv: 0, lastMcShown: mc, isNew: true, src: 'none', hist: [], lastTrade: 0, fromMigration: !!fromMig, migratedAt: 0, lastPx: mc ? now : 0,
   };
   if (t.creator) { t.balances.set(t.creator, t.devTokens); devStat(t.creator).n++; }
   S.tokens.set(t.mint, t);
@@ -4127,7 +4168,7 @@ function onTrade(m, now) {
   const t = S.tokens.get(m.mint);
   if (!t) return;
   if (t.src === 'snap') { t.buys = t.sells = 0; t.volBuy = t.volSell = 0; t.hist = []; }
-  t.src = 'trades'; t.lastTrade = now; S.lastTradeAt = now;
+  t.src = 'trades'; t.lastTrade = now; S.lastTradeAt = now; t.lastPx = now;
   const side = m.txType, amount = num(m.solAmount) || 0, tok = num(m.tokenAmount) || 0, who = m.traderPublicKey || '';
   const age = now - t.createdAt;
   if (side === 'buy') {
@@ -4168,7 +4209,7 @@ function markMigrated(t, now) {
   t.migrated = true; t.migratedAt = now;
   if (t.creator) devStat(t.creator).migrated++;
   if (canTrack() && (t.watching || countWatched() < cfg.maxWatched)) { t.watching = true; t.track = 'ok'; t.watchEnd = Math.max(t.watchEnd, now + cfg.watchSec * 1000); keysLater(); }
-  for (const s of STRATS) if (s.P.onlyMigrated) { const st = stOf(t, s.id); if (st.status === 'expired' || st.status === 'late' || st.status === 'skipped') { st.status = 'watch'; st.reason = ''; } }
+  for (const s of STRATS) if (s.P.onlyMigrated || (isFlash(s) && s.P.flashMig)) { const st = stOf(t, s.id); if (st.status === 'expired' || st.status === 'late' || st.status === 'skipped') { st.status = 'watch'; st.reason = ''; } }
   t.ver++; IDB.put('tokens', tokenRecord(t)); S.dirty.feed = true;
 }
 
@@ -4220,7 +4261,7 @@ function applySnap(t, p, now) {
   const db = Math.max(0, b - t.buys), ds = Math.max(0, sl - t.sells), prevMc = t.mc;
   t.buys = Math.max(t.buys, b); t.sells = Math.max(t.sells, sl);
   t.volBuy = tot ? volSol * b / tot : 0; t.volSell = tot ? volSol * sl / tot : 0;
-  t.mc = mc; if (mc > t.mcMax) t.mcMax = mc; if (!t.mc0) t.mc0 = mc;
+  t.mc = mc; t.lastPx = now; if (mc > t.mcMax) t.mcMax = mc; if (!t.mc0) t.mc0 = mc;
   if (!t.migrated) { t.vSol = Math.sqrt(mc * 32.19); if (p.dexId === 'pumpswap') markMigrated(t, now); }
   t.hist.push([now, t.buys]); if (t.hist.length > 60) t.hist.shift();
   if (db || ds || mc !== prevMc) { t.trades.push([now, mc, db >= ds ? 1 : -1, tot ? (db + ds) * volSol / tot : 0]); if (t.trades.length > 2500) t.trades.shift(); }
@@ -4324,6 +4365,7 @@ function evaluate(t, s, now) {
   const sp = scoreParts(t, P); st.parts = sp.parts; st.score = sp.score; if (st.score > st.scoreMax) st.scoreMax = st.score;
   if (st.status !== 'watch' || !s.enabled) { if (!s.enabled && st.status === 'watch') st.blockers = ['Stratégie en pause']; return; }
 
+  if (P.mode === 'flash') return evaluateFlash(t, s, st, now);
   if (P.onlyMigrated && !t.migrated) { st.blockers = ['Attend la migration']; return; }
   if (!P.onlyMigrated && t.fromMigration) { st.status = 'late'; st.reason = 'Déjà migré à son arrivée'; st.blockers = []; return; }
   const snap = isSnap(t), dev = S.devStats.get(t.creator);
@@ -4347,6 +4389,38 @@ function evaluate(t, s, now) {
   if (!b.length && balance(s) < P.sizeSol) b.push('Solde insuffisant');
   st.blockers = b;
   if (!b.length) openPosition(t, s, now);
+}
+// Flash : achat immédiat au lancement ou à la migration, après quelques filtres lisibles tout de suite
+function evaluateFlash(t, s, st, now) {
+  const P = s.P, mig = t.migrated && P.flashMig, launch = !t.migrated && !t.fromMigration && P.flashLaunch;
+  if (!mig && !launch) { if (!t.migrated && P.flashMig && !P.flashLaunch) { st.blockers = ['Attend la migration']; return; } st.status = 'late'; st.reason = t.migrated ? 'Migrations désactivées' : 'Lancements désactivés'; st.blockers = []; return; }
+  const age = (now - (mig ? t.migratedAt : t.createdAt)) / 1000, win = mig ? P.migWindowSec : P.launchWindowSec;
+  if (age > win) { st.status = 'late'; st.reason = 'Fenêtre d\'achat passée (' + win + ' s)'; st.blockers = []; return; }
+  const dev = S.devStats.get(t.creator);
+  if (launch && t.devBuySol > P.maxDevBuySol) return reject(st, 'Dev buy trop gros (' + f2(t.devBuySol) + ' SOL)');
+  if (launch && dev && dev.n >= P.serialMax) return reject(st, 'Lanceur en série (' + dev.n + ' tokens)');
+  if (launch && P.requireName && (!t.symbol.trim() || !t.name.trim())) return reject(st, 'Nom ou symbole manquant');
+  const b = [];
+  if (!(t.mc > 0) || (mig && !(t.lastPx > t.migratedAt))) b.push('Attend le premier prix');
+  const port = S.port[s.id];
+  port.ent = (port.ent || []).filter((x) => now - x < 60000);
+  if (port.positions.size >= P.maxPositions) b.push('Positions max atteintes');
+  if (port.ent.length >= P.maxPerMin) b.push('Limite d\'entrées par minute');
+  if (balance(s) < P.sizeSol) b.push('Solde insuffisant');
+  st.blockers = b;
+  if (b.length) return;
+  port.ent.push(now);
+  openPosition(t, s, now);
+  const p = port.positions.get(t.mint);
+  if (p) { p.kind = mig ? 'mig' : 'launch'; p.sl = mig ? P.mSl : P.lSl; p.tpA = mig ? P.mTp1 : P.lTp1; p.tpB = mig ? P.mTp2 : P.lTp2; st.reason = mig ? 'Acheté à la migration' : 'Acheté au lancement'; }
+}
+function flashCheck(p, s, t, now) {
+  const P = s.P, mc = t.mc;
+  if (mc > p.peak) p.peak = mc;
+  const r = factor(p, P, mc) - 1, phase2 = (now - p.openedAt) / 1000 >= P.phaseSec, tp = phase2 ? p.tpB : p.tpA;
+  if (r <= -p.sl / 100) return sell(p, s, p.remaining, mc, 'Stop loss', now);
+  if (r >= tp / 100) return sell(p, s, p.remaining, mc, 'Objectif +' + tp + ' %', now);
+  if (phase2 && P.exitFlat && mc <= p.entryMc) return sell(p, s, p.remaining, mc, t.lastPx > p.openedAt ? 'Pas de hausse après ' + P.phaseSec + ' s' : 'Prix non lu après ' + P.phaseSec + ' s', now);
 }
 function reject(st, why) { st.status = 'rejected'; st.reason = why; st.blockers = []; }
 
@@ -4391,6 +4465,7 @@ function closePosition(p, s, mc, why, now) {
 function onPrice(t, s, now) {
   const p = S.port[s.id].positions.get(t.mint);
   if (!p) return;
+  if (p.kind) return flashCheck(p, s, t, now);
   const P = s.P, mc = t.mc;
   if (mc > p.peak) p.peak = mc;
   const r = factor(p, P, mc) - 1;
@@ -4443,6 +4518,7 @@ function tick() {
     for (const p of [...S.port[s.id].positions.values()]) {
       const t = S.tokens.get(p.mint);
       if (t && (now - p.openedAt) / 1000 >= s.P.maxHoldSec) sell(p, s, p.remaining, t.mc, 'Durée max', now);
+      else if (t && p.kind) flashCheck(p, s, t, now);
     }
   }
   let done = 0;
@@ -4606,7 +4682,8 @@ function renderPositions(now) {
     STRATS.map((s) => stat('<span class="sdot" style="background:' + s.color + '"></span> ' + esc(s.name), S.port[s.id].positions.size + ' / ' + s.P.maxPositions, '', 'solde ' + f3(balance(s)) + ' SOL')).join('');
   $('posBody').innerHTML = list.map((p) => {
     const t = S.tokens.get(p.mint), s = stratById(p.sid), P = s.P, ur = unrealized(p), r = t ? factor(p, P, t.mc) - 1 : 0;
-    const lo = -P.slPct / 100, hi = P.tp1Pct / 100, pos = clamp((r - lo) / (hi - lo), 0, 1) * 100;
+    const fl = !!p.kind, ph2 = fl && (now - p.openedAt) / 1000 >= P.phaseSec, slv = fl ? p.sl : P.slPct, tpv = fl ? (ph2 ? p.tpB : p.tpA) : P.tp1Pct;
+    const lo = -slv / 100, hi = tpv / 100, pos = clamp((r - lo) / (hi - lo), 0, 1) * 100;
     return '<tr class="click" data-mint="' + esc(p.mint) + '">' +
       '<td><div class="tk">' + (t ? avatar(t) : '') + '<div class="nm"><b>' + esc(p.symbol || '?') + '</b><small>' + esc(p.name) + '</small></div></div></td>' +
       '<td>' + sBadge(s) + '</td>' +
@@ -4615,7 +4692,7 @@ function renderPositions(now) {
       '<td class="num">' + f1(p.entryMc) + ' → ' + f1(t ? t.mc : null) + '<div class="trend dim">plus haut ' + f1(p.peak) + '</div></td>' +
       '<td class="num ' + cls(ur) + '">' + sol(ur) + '<div class="trend">' + pct(ur / p.size * 100) + '</div></td>' +
       '<td style="min-width:170px"><div class="pb-gauge" style="background:linear-gradient(90deg,var(--red-bg),var(--line) ' + (-lo / (hi - lo) * 100).toFixed(0) + '%,var(--green-bg))"><span style="left:calc(' + pos.toFixed(1) + '% - 7px);background:' + (r >= 0 ? C.green : C.red) + '"></span></div>' +
-        '<div class="trend dim" style="display:flex;justify-content:space-between;margin-top:5px"><span>-' + P.slPct + ' %</span><span>' + (p.tp1Done ? 'TP1 atteint · trailing ' + P.trailPct + ' %' : '+' + P.tp1Pct + ' %') + '</span></div></td>' +
+        '<div class="trend dim" style="display:flex;justify-content:space-between;margin-top:5px"><span>-' + slv + ' %</span><span>' + (fl ? (p.kind === 'mig' ? 'migration · ' : 'lancement · ') + 'objectif +' + tpv + ' %' + (ph2 ? ' (phase 2)' : '') : p.tp1Done ? 'TP1 atteint · trailing ' + P.trailPct + ' %' : '+' + P.tp1Pct + ' %') + '</span></div></td>' +
       '<td class="num">' + Math.round(p.remaining * 100) + ' %</td>' +
       '<td><button class="btn sm danger" data-close="' + esc(p.sid + '|' + p.mint) + '" type="button">Fermer</button></td></tr>';
   }).join('');
@@ -4859,18 +4936,18 @@ function buildStratCards() {
       (s.enabled ? '<span class="badge g">active</span>' : '<span class="badge">en pause</span>') +
       '<div class="spacer"></div>' +
       '<button class="btn sm" data-sact="toggle" type="button">' + (s.enabled ? 'Mettre en pause' : 'Activer') + '</button>' +
-      '<select class="sel" data-sact="preset" aria-label="Modèle de réglages">' + Object.keys(PRESETS).map((k) => '<option value="' + k + '"' + (k === s.id ? ' selected' : '') + '>Modèle ' + PRESET_NAMES[k] + '</option>').join('') + '</select>' +
+      '<select class="sel" data-sact="preset" aria-label="Modèle de réglages">' + Object.keys(PRESETS).filter((k) => (k === 'flash') === isFlash(s)).map((k) => '<option value="' + k + '"' + (k === s.id ? ' selected' : '') + '>Modèle ' + PRESET_NAMES[k] + '</option>').join('') + '</select>' +
       '<button class="btn sm" data-sact="applyPreset" type="button">Appliquer le modèle</button>' +
       '<button class="btn sm danger" data-sact="resetPort" type="button">Réinitialiser le portefeuille</button></div>' +
       '<div class="forms">' +
         sectionHtml('strat:' + s.id, { id: 'general', title: 'Général', fields: [['name', 'Nom de la stratégie', 'text', '']] }, { name: s.name }, 'pbs_' + s.id) +
-        STRAT_SECTIONS.map((sec) => sectionHtml('strat:' + s.id, sec, s.P, 'pbs_' + s.id)).join('') +
+        secsOf(s).map((sec) => sectionHtml('strat:' + s.id, sec, s.P, 'pbs_' + s.id)).join('') +
       '</div></div>').join('');
 }
 function fieldsOf(scope, secId) {
   if (scope === 'cfg') return CFG_SECTIONS.find((x) => x.id === secId).fields;
   if (secId === 'general') return [['name', 'Nom', 'text']];
-  return STRAT_SECTIONS.find((x) => x.id === secId).fields;
+  return secsOf(stratById(scope.split(':')[1])).find((x) => x.id === secId).fields;
 }
 function currentValues(scope, secId) {
   if (scope === 'cfg') return cfg;
@@ -4942,27 +5019,32 @@ function saveFieldset(fs) {
     const s = stratById(scope.split(':')[1]);
     if (secId === 'general') s.name = vals.name; else Object.assign(s.P, vals);
     saveStrats();
-    toast('Stratégie mise à jour', s.name + ' · ' + (secId === 'general' ? 'Général' : STRAT_SECTIONS.find((x) => x.id === secId).title), 'g');
+    toast('Stratégie mise à jour', s.name + ' · ' + (secId === 'general' ? 'Général' : secsOf(s).find((x) => x.id === secId).title), 'g');
     if (secId === 'general') { buildStratCards(); buildViewSelect(); buildStratSel(); } else fs.classList.remove('dirty');
     for (const t of S.tokens.values()) t.ver++;
   }
   markAll();
 }
-const DESC = { equilibree: 'Joue les nouveaux lancements pump.fun.', migration: 'Joue les tokens juste après leur migration.' };
+const DESC = { equilibree: 'Joue les nouveaux lancements pump.fun avec le score de momentum.', migration: 'Joue les tokens juste après leur migration.', flash: 'Achète dès le lancement ou la migration, vend à l\'objectif, au stop ou au bout du temps.' };
 function buildStratSel() {
   const on = STRATS.filter((s) => s.enabled), all = on.length === STRATS.length, one = on.length === 1 ? on[0].id : null;
   $('stratSel').innerHTML = STRATS.map((s) => '<button type="button" role="radio" aria-checked="' + (one === s.id) + '" data-strat="' + s.id + '" class="' + (one === s.id ? 'on' : '') + '"><span class="sdot" style="background:' + s.color + '"></span>' + esc(s.name) + '</button>').join('') +
-    '<button type="button" role="radio" aria-checked="' + all + '" data-strat="all" class="' + (all ? 'on' : '') + '">Les deux</button>';
-  $('stratHint').textContent = all ? 'Les deux stratégies ouvrent des positions, chacune avec son portefeuille.' : one ? DESC[one] || '' : 'Aucune stratégie active : le terminal observe sans entrer.';
+    '<button type="button" role="radio" aria-checked="' + all + '" data-strat="all" class="' + (all ? 'on' : '') + '">Toutes</button>';
+  $('stratHint').textContent = all ? 'Toutes les stratégies ouvrent des positions, chacune avec son portefeuille.' : one ? DESC[one] || '' : 'Aucune stratégie active : le terminal observe sans entrer.';
 }
 function pickStrat(id) {
   STRATS.forEach((s) => { s.enabled = id === 'all' || s.id === id; });
   if (id !== 'all') { S.view = id; try { localStorage.setItem('pstudio_pb_view', id); } catch (e) {} }
   saveStrats(); buildStratSel(); buildViewSelect(); buildStratCards();
   for (const t of S.tokens.values()) { for (const s of STRATS) { const st = stOf(t, s.id); if (s.enabled && st.status === 'watch') st.blockers = []; } t.ver++; }
-  toast('Stratégie active', id === 'all' ? 'Les deux stratégies' : stratById(id).name, 'g');
+  toast('Stratégie active', id === 'all' ? 'Toutes les stratégies' : stratById(id).name, 'g');
   markAll(); render(true);
 }
+$('stratTune').addEventListener('click', () => {
+  const on = STRATS.filter((s) => s.enabled), id = on.length === 1 ? on[0].id : S.view;
+  goPage('strategies');
+  setTimeout(() => { const c = ROOT.querySelector('.strat-card[data-sid="' + id + '"]'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+});
 $('stratSel').addEventListener('click', (e) => { const b = e.target.closest('[data-strat]'); if (b) pickStrat(b.dataset.strat); });
 function buildViewSelect() {
   $('viewStrat').innerHTML = STRATS.map((s) => '<option value="' + s.id + '"' + (S.view === s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>').join('');
