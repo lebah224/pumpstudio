@@ -5090,10 +5090,8 @@ ROOT.addEventListener('click', async (e) => {
     e.stopPropagation();
     const [sid, mint] = c.dataset.close.split('|'), s = stratById(sid), p = S.port[sid].positions.get(mint), t = S.tokens.get(mint);
     if (!p || !t) return;
-    if (await confirmBox('Fermer la position ' + (p.symbol || '') + ' ?', 'Vente simulée de ' + Math.round(p.remaining * 100) + ' % au market cap actuel (' + f1(t.mc) + ' SOL), stratégie ' + s.name + '.', 'Fermer la position', true)) {
-      if (S.port[sid].positions.get(mint) === p) sell(p, s, p.remaining, t.mc, 'Fermeture manuelle', Date.now());
-      render(true);
-    }
+    sell(p, s, p.remaining, t.mc, 'Fermeture manuelle', Date.now());
+    render(true);
     return;
   }
   const act = e.target.closest('[data-fact]');
