@@ -7,6 +7,7 @@ import { useSyncStatus } from '../sync/useDataSync';
 import { detect, walletById } from '../wallets/catalog';
 import { linkWallet } from '../wallets/walletAuth';
 import { useAccountStatus, useLinkedWallets } from '../wallets/useWallets';
+import { disablePush } from '../notify/push';
 
 const THEME_NAMES: Record<string, string> = { or: 'Or', platine: 'Platine', saphir: 'Saphir', jade: 'Jade', cuivre: 'Cuivre', iris: 'Iris' };
 const DEPTH_NAMES: Record<string, string> = { nuit: 'Nuit', profond: 'Profond', doux: 'Doux' };
@@ -98,6 +99,8 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     catch (e) { toast('Ajout impossible', readable(e), 'r'); } finally { setBusy(null); }
   }
   async function logout() {
+    // les alertes de ce compte ne doivent pas arriver sur un navigateur dont on se déconnecte
+    await disablePush().catch(() => {});
     await signOut();
     await hub?.disconnect(); hub?.quickLock();
     toast('Déconnecté', 'Compte et wallet déconnectés. Le wallet rapide reste chiffré dans ce navigateur.', '');

@@ -10,6 +10,7 @@ import './legacy/terminal.js';
 import { App } from './App';
 import { installSelectMenus } from './ui/selectMenu';
 import { installRpcRelay } from './lib/rpcRelay';
+import { installPushRouting } from './notify/push';
 
 // Images distantes cassées (logos de tokens) : retirées sans gestionnaire en ligne, compatible avec la CSP
 document.addEventListener('error', (e) => {
@@ -21,6 +22,8 @@ document.addEventListener('error', (e) => {
 installSelectMenus();
 // RPC du compte : lecture de la blockchain sans clé Helius personnelle
 installRpcRelay();
+// clic sur une alerte : le studio s'ouvre sur la page des ordres
+installPushRouting();
 
 const root = document.getElementById('ts-root');
 if (root) createRoot(root).render(<StrictMode><App /></StrictMode>);

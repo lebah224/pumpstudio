@@ -7,6 +7,7 @@ import { MfaSettings } from '../auth/Mfa';
 import { savePrefs } from './usePrefsSync';
 import { studio, toast } from '../legacy/bridge';
 import { DataTab } from '../sync/DataTab';
+import { PushCard } from '../notify/PushCard';
 
 const GUEST = { start: 'choose' as const };
 type Tab = 'profile' | 'prefs' | 'wallets' | 'data' | 'security';
@@ -182,9 +183,10 @@ function PrefsTab() {
           </div>
         </div>
         <div className="card">
-          <div className="card-h"><h3>Notifications</h3><p>Les alertes par e-mail arriveront avec la surveillance des ordres côté serveur.</p></div>
+          <div className="card-h"><h3>Notifications</h3><p>Alertes quand un prix atteint la condition d'un de tes ordres.</p></div>
           <label className="check"><input type="checkbox" checked={p.notify_orders} onChange={(e) => set({ notify_orders: e.target.checked })} /><span>M'alerter quand un ordre se déclenche</span></label>
-          <label className="check"><input type="checkbox" checked={p.notify_email} onChange={(e) => set({ notify_email: e.target.checked })} disabled={!user?.email} /><span>Par e-mail {user?.email ? '(' + user.email + ')' : '(ajoute d\'abord un e-mail dans Profil)'}</span></label>
+          <PushCard enabled={p.notify_orders} />
+          <label className="check"><input type="checkbox" checked={false} disabled /><span>Par e-mail <small className="muted">(bientôt : arrive avec l'envoi d'e-mails du domaine TokenStudio)</small></span></label>
         </div>
       </div>
       {err && <div className="ts-note bad" role="alert">{err}</div>}
