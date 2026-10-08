@@ -706,15 +706,17 @@
     if (!(r && r.value)) return TOKEN_PROGRAM_ID;
     return (MPC[mint] = r.value.owner === TOKEN_2022_PROGRAM_ID.toBase58() ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID);
   }
-  async function directCreate(mintKp, d, uri, dev) {
+  // creatorPk : wallet affiché comme créateur sur pump.fun et destinataire des frais de créateur ;
+  // le wallet actif (user) paie, signe et reçoit l'achat du créateur
+  async function directCreate(mintKp, d, uri, dev, creatorPk) {
     const { P, BN, web3, NATIVE_MINT } = KIT(), st = await pumpGlobal();
-    const user = new web3.PublicKey(S.wallet.pk), mint = mintKp.publicKey;
+    const user = new web3.PublicKey(S.wallet.pk), mint = mintKp.publicKey, creator = new web3.PublicKey(creatorPk || S.wallet.pk);
     let ixs;
     if (dev > 0) {
       const solAmount = new BN(Math.round(dev * 1e9));
       const amount = P.getBuyTokenAmountFromSolAmount({ global: st.global, feeConfig: st.fee, mintSupply: null, bondingCurve: null, amount: solAmount, quoteMint: NATIVE_MINT });
-      ixs = await P.PUMP_SDK.createV2AndBuyInstructions({ global: st.global, mint, name: d.name, symbol: d.symbol, uri, creator: user, user, amount, solAmount, mayhemMode: false });
-    } else ixs = [await P.PUMP_SDK.createV2Instruction({ mint, name: d.name, symbol: d.symbol, uri, creator: user, user, mayhemMode: false })];
+      ixs = await P.PUMP_SDK.createV2AndBuyInstructions({ global: st.global, mint, name: d.name, symbol: d.symbol, uri, creator, user, amount, solAmount, mayhemMode: false });
+    } else ixs = [await P.PUMP_SDK.createV2Instruction({ mint, name: d.name, symbol: d.symbol, uri, creator, user, mayhemMode: false })];
     return txFrom(ixs, 400000);
   }
   async function directTrade(mint, side, amt, slip) {
@@ -993,23 +995,36 @@
     if (!S.wallet) return walletMenu();
     if (!cfg.sim && !(await ensureSigner())) return;
     const d = S.draft, PL = PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null;
+    // Créateur affiché sur pump.fun : le wallet principal (Phantom…) de préférence, même quand le wallet rapide signe
+    const ses = S.wallet.id === 'session', ext = S.ext, canPick = ses && !!ext && cfg.engine !== 'portal';
+    const who = (w) => (w.id === 'session' ? 'Wallet rapide' : esc(w.name)) + ' · <span class="mono">' + short(w.pk) + '</span>';
+    const creatorHtml = canPick
+      ? '<div class="cr-pick"><div class="cr-h">Créateur affiché sur pump.fun</div>' +
+        '<label class="cr-opt"><input type="radio" name="crWho" value="ext" checked><span><b>' + who(ext) + '</b><small>Recommandé · ton profil pump.fun s\'affiche et les frais de créateur arrivent sur ' + esc(ext.name) + '. Le wallet rapide paie et signe, sans fenêtre.</small></span></label>' +
+        '<label class="cr-opt"><input type="radio" name="crWho" value="quick"><span><b>' + who(S.wallet) + '</b><small>Son adresse s\'affiche comme créateur et reçoit les frais.</small></span></label></div>'
+      : '';
     const recap = '<div class="recap"><div class="kv">' +
       '<span>Token</span><span>' + esc(d.name) + ' · $' + esc(d.symbol) + '</span>' +
+      (canPick ? '' : '<span>Créateur affiché</span><span>' + who(S.wallet) + (ses ? '' : ' <small class="dim">(ou ton pseudo pump.fun)</small>') + '</span>') +
       '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
       '<span>Frais de réseau et comptes</span><span>≈ ' + fr(PL.fee, 2) + ' SOL</span>' +
       '<span>Coût total estimé</span><span>' + fSol(dev + PL.fee) + '</span>' +
       '<span>Métadonnées</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS)') + '</span>' +
-      '<span>Mode</span><span>' + (cfg.sim ? '<span class="badge v">simulation</span>' : '<span class="badge r">réel</span>') + '</span></div></div>' +
+      '<span>Mode</span><span>' + (cfg.sim ? '<span class="badge v">simulation</span>' : '<span class="badge r">réel</span>') + '</span></div></div>' + creatorHtml +
+      (ses && !ext ? '<div class="notice">Le wallet rapide sera affiché comme créateur et recevra les frais de créateur. Pour lancer en ton nom, connecte Phantom (ou ton wallet principal) : il sera proposé comme créateur.</div>' : '') +
+      (ses && ext && cfg.engine === 'portal' ? '<div class="notice">Avec PumpPortal, le créateur est forcément le wallet qui signe (wallet rapide). Choisis le moteur Direct dans Réglages pour afficher ' + esc(ext.name) + '.</div>' : '') +
       (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? (d.slMode === 'trail' ? ' · stop suiveur −' : ' · stop −') + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente te sera présentée à signer.') + '</div>' : '') +
       (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur ' + PL.n + ' et visible par tous. Ton wallet va te présenter la transaction : vérifie avant de signer. Une création ne s\'annule pas.</p>');
     if (!(await confirmBox(cfg.sim ? 'Simuler le lancement ?' : 'Lancer ' + d.name + ' ?', recap, cfg.sim ? 'Simuler' : 'Préparer le lancement', !cfg.sim))) return;
+    const pick = document.querySelector('input[name="crWho"]:checked');
+    const creatorPk = canPick && (!pick || pick.value === 'ext') ? ext.pk : S.wallet.pk;
     S.busy = true;
     const mintKp = W3().Keypair.generate(), mint = mintKp.publicKey.toBase58();
     const steps = [
       { label: cfg.sim ? 'Métadonnées (non envoyées en simulation)' : 'Envoi du logo et des métadonnées (IPFS)', run: async (x) => { x.uri = cfg.sim ? 'https://ipfs.io/ipfs/simulation' : await uploadMeta(d); return cfg.sim ? 'ignoré' : 'ok'; } },
       { label: cfg.engine === 'portal' ? 'Préparation de la création (PumpPortal)' : 'Préparation de la création (programme pump.fun)', run: async (x) => {
         x.tx = cfg.engine === 'portal' ? await portalTx({ publicKey: S.wallet.pk, action: 'create', tokenMetadata: { name: d.name, symbol: d.symbol, uri: x.uri }, mint, denominatedInSol: 'true', amount: dev, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: 'pump' })
-          : await directCreate(mintKp, d, x.uri, dev);
+          : await directCreate(mintKp, d, x.uri, dev, creatorPk);
       } },
       { label: 'Vérification par simulation', run: async (x) => { const v = await simulate(x.tx); x.logs = (v.logs || []).slice(-12).join('\n'); if (v.err) throw new Error(simError(v)); x.logs = ''; return 'acceptée'; } },
     ];
@@ -1028,7 +1043,7 @@
       }
       const real = await actualDeltas(ctx.sig, mint);
       const thumb = await thumbnail(d.image);
-      S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: thumb, createdAt: Date.now(), sig: ctx.sig, dev, platform: 'pump', desc: d.desc, tw: d.tw, tg: d.tg, web: d.web });
+      S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: thumb, createdAt: Date.now(), sig: ctx.sig, dev, platform: 'pump', creator: creatorPk, desc: d.desc, tw: d.tw, tg: d.tg, web: d.web });
       save(LS.tokens, S.tokens);
       journalAdd({ type: 'create', mint, symbol: d.symbol, sim: false, status: 'ok', sig: ctx.sig, sol: -(real ? real.sol : dev), tokens: real ? real.tokens : (q ? q.tokens : 0), est: !real });
       $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est en ligne. <a href="' + PL.url(mint) + '" target="_blank" rel="noopener">' + PL.n + '</a> · <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Solscan</a></div>');
@@ -2583,8 +2598,10 @@
   // pump.fun reverse au créateur une part des frais de chaque échange. Ils s'accumulent par wallet créateur
   // (tous ses tokens confondus), sur la courbe pump.fun et sur PumpSwap après migration.
   const CFEE = { pk: null, sol: null, at: 0, loading: false, err: null };
+  // wallet créateur : le wallet principal (Phantom…) s'il est connecté, c'est lui que le studio propose comme créateur
+  const feeWallet = () => S.ext || S.wallet;
   async function feesRead(force) {
-    const pk = S.wallet && S.wallet.pk; if (!pk) return;
+    const pk = feeWallet() && feeWallet().pk; if (!pk) return;
     if (!force && CFEE.pk === pk && (CFEE.loading || Date.now() - CFEE.at < 60000)) return;
     if (CFEE.pk !== pk) { CFEE.sol = null; CFEE.err = null; }
     CFEE.pk = pk; CFEE.loading = true; renderFees();
@@ -2593,7 +2610,7 @@
     CFEE.loading = false; CFEE.at = Date.now(); renderFees();
   }
   function feesHtml() {
-    const w = S.wallet;
+    const w = feeWallet();
     if (!w) return '<div class="fee-l"><span class="fee-ic">' + IC.wallet + '</span><span><b>Frais de créateur</b><small>Connecte le wallet qui a créé tes tokens pour voir ce qu\'ils t\'ont rapporté.</small></span></div>';
     const amt = CFEE.pk === w.pk ? CFEE.sol : null, has = amt > 0;
     return '<div class="fee-l"><span class="fee-ic">' + IC.wallet + '</span><span><b>Frais de créateur à récupérer</b><small>' +
@@ -2604,23 +2621,24 @@
   }
   function renderFees() { ['dFees', 'mineFees'].forEach((id) => { const el = $(id); if (el) el.innerHTML = feesHtml(); }); }
   async function claimFees() {
-    if (!S.wallet) return walletMenu();
-    if (!cfg.sim && !(await ensureSigner())) return;
+    const W = feeWallet();
+    if (!W) return walletMenu();
+    if (!cfg.sim && W.id === 'session' && !(await ensureSigner())) return;
     if (S.busy) return;
     await feesRead(true);
-    const amt = CFEE.sol || 0, pk = S.wallet.pk;
+    const amt = CFEE.sol || 0, pk = W.pk;
     if (!(amt > 0)) { toast('Rien à récupérer', CFEE.err || 'Aucun frais de créateur en attente pour ce wallet.', 'a'); return; }
     const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSol(amt, 5) + (S.solUsd ? ' · ≈ ' + fUsd(amt * S.solUsd) : '') + '</span><span>Wallet créateur</span><span>' + short(pk, 6) + '</span><span>Sources</span><span>courbe pump.fun + PumpSwap</span><span>Frais de réseau</span><span>≈ 0,0001 SOL</span><span>Mode</span><span>' + (cfg.sim ? '<span class="badge v">simulation</span>' : '<span class="badge r">réel</span>') + '</span></div></div>' +
-      (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : '<p>Les SOL arrivent directement sur ce wallet. ' + (S.wallet.id === 'session' ? 'Le wallet rapide signe dès que tu confirmes.' : 'Ton wallet va te présenter la transaction.') + '</p>');
+      (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : '<p>Les SOL arrivent directement sur ce wallet. ' + (W.id === 'session' ? 'Le wallet rapide signe dès que tu confirmes.' : 'Ton wallet va te présenter la transaction.') + '</p>');
     if (!(await confirmBox(cfg.sim ? 'Simuler la récupération ?' : 'Récupérer ' + fSol(amt, 4) + ' ?', recap, cfg.sim ? 'Simuler' : 'Récupérer'))) return;
     S.busy = true; renderFees();
     try {
       const steps = [
-        { label: 'Préparation (pump.fun et PumpSwap)', run: async (x) => { const { web3 } = KIT(), u = new web3.PublicKey(pk); const ixs = await pumpConn().online.collectCoinCreatorFeeInstructions(u, u); x.tx = await txFrom(ixs, 200000); } },
+        { label: 'Préparation (pump.fun et PumpSwap)', run: async (x) => { const { web3 } = KIT(), u = new web3.PublicKey(pk); const ixs = await pumpConn().online.collectCoinCreatorFeeInstructions(u, u); x.tx = await txFrom(ixs, 200000, { payer: pk }); } },
         { label: 'Vérification par simulation', run: async (x) => { const v = await simulate(x.tx); x.logs = (v.logs || []).slice(-12).join('\n'); if (v.err) throw new Error(simError(v)); x.logs = ''; return 'acceptée'; } },
       ];
       if (!cfg.sim) {
-        steps.push({ label: signLabel(), run: async (x) => { x.sig = await signAndSend(x.tx); return short(x.sig, 6); } });
+        steps.push({ label: W.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans ton wallet', run: async (x) => { x.sig = await signAndSend(x.tx, null, W); return short(x.sig, 6); } });
         steps.push({ label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) });
       }
       const ctx = await runFlow((cfg.sim ? 'Simulation · ' : '') + 'Frais de créateur', steps);
