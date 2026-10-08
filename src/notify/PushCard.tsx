@@ -33,7 +33,7 @@ export function PushCard({ enabled }: { enabled: boolean }) {
   return (
     <div className="ts-push">
       <div className="ts-push-h">
-        <div><b>Alertes sur tes appareils</b><small>Le serveur surveille tes ordres chaque minute et t'envoie une notification, même studio fermé. Il n'exécute jamais de vente : c'est toi qui valides.</small></div>
+        <div><b>Alertes sur tes appareils</b><small>Le serveur surveille tes ordres chaque minute, même outil fermé, et t'envoie une notification. Si ton wallet rapide détient le token, il vend aussi pour toi (ventes automatiques) ; sinon, c'est toi qui valides.</small></div>
         <span className={'badge ' + tone}>{label}</span>
       </div>
       {st === 'ios-install' && <div className="ts-note warn">Sur iPhone, les notifications marchent dans l'appli installée : touche <b>Partager</b> puis <b>Sur l'écran d'accueil</b>, et ouvre TokenStudio depuis son icône.</div>}
