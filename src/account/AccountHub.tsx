@@ -105,7 +105,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     // les alertes de ce compte ne doivent pas arriver sur un navigateur dont on se déconnecte
     await disablePush().catch(() => {});
     await signOut();
-    await hub?.disconnect(); hub?.quickLock();
+    await hub?.signOut();
     toast('Déconnecté', 'Compte et wallet déconnectés. Le wallet rapide reste chiffré dans ce navigateur.', '');
   }
 

@@ -416,6 +416,7 @@
     if (i !== 1) return null;
     const p = $('pw1').value; closeModal(); return p || null;
   }
+  function quickOn() { if (!cfg.quickOff) return; cfg.quickOff = false; save(LS.cfg, cfg); renderAll(); }
   async function sessUnlock(quiet) {
     if (!SESSREC) return false;
     if (SESSW.kp) return true;
@@ -424,7 +425,7 @@
     try {
       const sk = await openSecret(SESSREC, pass), kp = W3().Keypair.fromSecretKey(sk);
       if (kp.publicKey.toBase58() !== SESSREC.pk) throw new Error('Clé incohérente.');
-      SESSW.kp = kp;
+      SESSW.kp = kp; quickOn();
       if (!quiet) toast('Wallet rapide déverrouillé', canAuto() ? 'Ventes automatiques actives.' : 'Prêt à signer.', 'g');
       refreshBal(); renderAll(); watchOrders().catch(() => {});
       return true;
@@ -451,7 +452,7 @@
     closeModal();
     const kp = W3().Keypair.generate();
     const rec = Object.assign({ pk: kp.publicKey.toBase58(), at: Date.now() }, await sealSecret(kp.secretKey, p1));
-    save(LS.sess, rec); SESSREC = rec; SESSW.kp = kp;
+    save(LS.sess, rec); SESSREC = rec; SESSW.kp = kp; quickOn();
     cfg.useSess = true; save(LS.cfg, cfg);
     S.bal = 0; renderAll();
     await sessBackup(kp.secretKey, true);
@@ -555,7 +556,7 @@
     if (S.ext && rec.pk === S.ext.pk) return toast('Wallet principal refusé', 'Le wallet rapide doit rester distinct de ton wallet Phantom.', 'r');
     if (SESSREC && rec.pk === SESSREC.pk) { $('impKey').value = ''; closeModal(); SESSW.kp = kp; renderAll(); toast('Déjà en place', 'C\'est ton wallet rapide actuel. Il est déverrouillé.', 'g'); return noPanel ? rec.pk : walletPanel(); }
     $('impKey').value = ''; closeModal();
-    save(LS.sess, rec); SESSREC = rec; SESSW.kp = kp;
+    save(LS.sess, rec); SESSREC = rec; SESSW.kp = kp; quickOn();
     cfg.useSess = true; save(LS.cfg, cfg);
     S.bal = null; await refreshBal().catch(() => {}); renderAll();
     toast('Wallet rapide restauré', short(rec.pk, 6) + ' est prêt et déverrouillé.', 'g');
@@ -3874,7 +3875,9 @@
         const w = S.wallet, ses = !!(w && w.id === 'session');
         return { wallet: w ? { name: ses ? 'Wallet rapide' : w.name, pk: w.pk, session: ses, locked: ses && !SESSW.kp } : null,
           ext: S.ext ? { id: S.ext.id, name: S.ext.name, pk: S.ext.pk, bal: ses ? S.extBal : S.bal } : null,
-          quick: SESSREC ? { pk: SESSREC.pk, active: ses, unlocked: !!SESSW.kp, bal: ses ? S.bal : null } : null,
+          // après une déconnexion, le wallet rapide reste chiffré dans ce navigateur mais n'est plus affiché ni utilisé
+          quick: SESSREC && !cfg.quickOff ? { pk: SESSREC.pk, active: ses, unlocked: !!SESSW.kp, bal: ses ? S.bal : null } : null,
+          quickSaved: SESSREC ? { pk: SESSREC.pk, unlocked: !!SESSW.kp } : null,
           srv: SRVPK ? { pk: SRVPK, active: !!(w && w.id === 'server'), bal: w && w.id === 'server' ? S.bal : null } : null,
           hasSession: !!SESSREC, bal: S.bal, solUsd: S.solUsd, sim: !!cfg.sim, rpcOk: S.rpcOk, theme: uiTheme, depth: uiDepth,
           demo: { bal: DEMO.bal, positions: Object.values(DEMO.pos).filter((x) => x > 0).length } };
@@ -3885,7 +3888,7 @@
       quickUnlock: () => sessUnlock(),
       quickLock: () => { if (!SESSW.kp) return; SESSW.kp = null; toast('Wallet rapide verrouillé', 'Ventes automatiques en pause.', ''); renderAll(); },
       quickKeypair: () => SESSW.kp,
-      useQuick: async (on) => { if (on && !SESSREC) return; if (!on && !S.ext && !SRVPK) return; cfg.useSess = !!on; if (on) cfg.useSrv = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
+      useQuick: async (on) => { if (on && !SESSREC) return; if (!on && !S.ext && !SRVPK) return; cfg.useSess = !!on; if (on) { cfg.useSrv = false; cfg.quickOff = false; } save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
       useServer: async (on) => { if (on && !SRVPK) return; cfg.useSrv = !!on; if (on) cfg.useSess = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
       setServer: (pk) => { if (SRVPK === pk) return; SRVPK = pk || null; S.bal = null; refreshBal().catch(() => {}); renderAll(); },
       useExt: async () => { cfg.useSess = false; cfg.useSrv = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
@@ -3896,6 +3899,12 @@
       walletMenu: () => walletMenu(),
       walletPanel: () => walletPanel(),
       disconnect: () => disconnectWallet(false),
+      // déconnexion du compte : plus aucun wallet affiché ni actif (extension déconnectée, wallet rapide verrouillé et mis de côté)
+      signOut: async () => {
+        await disconnectWallet(false);
+        SESSW.kp = null; cfg.useSess = false; cfg.useSrv = false; cfg.quickOff = !!SESSREC; save(LS.cfg, cfg);
+        S.bal = null; renderAll();
+      },
       walletAction: (a) => swAction(a),
       rpc: (method, params) => rpc(method, params),
       page: () => S.page,

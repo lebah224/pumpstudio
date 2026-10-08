@@ -6,9 +6,8 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/app", "destination": "/app.html" },
-    { "source": "/connexion", "destination": "/index.html" },
-    { "source": "/inscription", "destination": "/index.html" }
+    { "source": "/connexion", "destination": "/" },
+    { "source": "/inscription", "destination": "/" }
   ],
   "headers": [
     {

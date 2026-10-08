@@ -34,7 +34,8 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
   const [err, setErr] = useState<string | null>(null);
   const [more, setMore] = useState(false);
   const hub = studio()?.hub;
-  const quick = hub?.state().quick ?? null;
+  // wallet rapide de ce navigateur, même mis de côté après une déconnexion
+  const quick = hub?.state().quickSaved ?? null;
   const { found, others } = walletChoices();
   const adding = step === 'add';
   const srv = useServerWallet();

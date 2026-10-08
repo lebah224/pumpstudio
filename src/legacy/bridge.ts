@@ -5,6 +5,7 @@ export type HubState = {
   /** wallet externe connecté (Phantom…) et wallet rapide du studio */
   ext: { id: string; name: string; pk: string; bal: number | null } | null;
   quick: { pk: string; active: boolean; unlocked: boolean; bal: number | null } | null;
+  quickSaved: { pk: string; unlocked: boolean } | null;
   srv: { pk: string; active: boolean; bal: number | null } | null;
   hasSession: boolean; bal: number | null; solUsd: number | null; sim: boolean; rpcOk: boolean | null; theme: string; depth: string;
   demo: { bal: number; positions: number };
@@ -22,6 +23,7 @@ type LegacyStudio = {
     walletMenu: () => void;
     walletPanel: () => void;
     disconnect: () => Promise<void>;
+    signOut: () => Promise<void>;
     walletAction: (a: string) => void;
     connect: (id: string) => Promise<string | null>;
     quickCreate: () => Promise<string | undefined>;
