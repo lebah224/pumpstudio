@@ -5,6 +5,7 @@ import { SignInDialog } from './auth/SignIn';
 import { MfaChallenge } from './auth/Mfa';
 import { AccountHub } from './account/AccountHub';
 import { AccountPage } from './account/AccountPage';
+import { WalletPage } from './wallet/WalletPage';
 import { usePrefsSync } from './account/usePrefsSync';
 import { useDataSync } from './sync/useDataSync';
 import { studio } from './legacy/bridge';
@@ -32,11 +33,13 @@ function Mounts() {
   const hub = document.getElementById('ts-hub');
   const hubMobile = document.getElementById('ts-hub-m');
   const page = document.getElementById('ts-account-page');
+  const wallet = document.getElementById('ts-wallet-page');
   return (
     <>
       {hub && createPortal(<AccountHub />, hub)}
       {hubMobile && createPortal(<AccountHub mobile />, hubMobile)}
       {page && createPortal(<AccountPage />, page)}
+      {wallet && createPortal(<WalletPage />, wallet)}
       <SignInDialog />
       <MfaChallenge />
       {syncPrompt}

@@ -2210,7 +2210,7 @@
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres, bot et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de tes wallets'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     // le bouton wallet historique est remplacé par le menu de compte (React) ; on le met à jour s'il existe encore
@@ -2261,7 +2261,8 @@
     navOpen(false);
     document.querySelectorAll('.page').forEach((s) => s.classList.toggle('active', s.id === 'p-' + p));
     $('pageTitle').textContent = PAGES[p][0]; $('pageSub').textContent = PAGES[p][1];
-    $('pageEyebrow').textContent = { account: 'Compte', dash: 'Vue d\'ensemble', bot: 'Trader', launch: 'Créer', social: 'Créer', dist: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
+    try { window.dispatchEvent(new CustomEvent('pstudio-page', { detail: p })); } catch (e) {}
+    $('pageEyebrow').textContent = { account: 'Compte', dash: 'Vue d\'ensemble', wallet: 'Vue d\'ensemble', bot: 'Trader', launch: 'Créer', social: 'Créer', dist: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
     try { localStorage.setItem('pstudio_page', p); } catch (e) {}
     renderPage(); window.scrollTo(0, 0); ppSync(liveSet());
     if (p === 'launch') setLaunchTab(S.ltab);
@@ -3676,6 +3677,8 @@
       walletPanel: () => walletPanel(),
       disconnect: () => disconnectWallet(false),
       walletAction: (a) => swAction(a),
+      rpc: (method, params) => rpc(method, params),
+      page: () => S.page,
       copyAddress: async () => { const pk = S.wallet && S.wallet.pk; if (!pk) return; try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk, 6), 'g'); } catch (e) {} },
       appearance: () => themePicker(),
       goReal, goSim,

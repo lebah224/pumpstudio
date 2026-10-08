@@ -176,12 +176,13 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         {!ext && !quick && <p className="ts-hub-note">Aucun wallet connecté dans ce navigateur.</p>}
         <div className="ts-hub-row">
           <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'add' }))}>{I.plus}Ajouter un wallet</button>
-          {(ext || quick) && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => hub?.walletPanel())}>Fonds et sauvegarde</button>}
+          {(ext || quick) && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}Portefeuille</button>}
         </div>
       </section>
       {modeSec}
       <nav className="ts-hub-sec ts-hub-menu" aria-label="Compte">
         <button type="button" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}<span>Mon compte</span><em>profil, wallets</em></button>
+        <button type="button" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}<span>Portefeuille</span><em>solde, dépôt, retrait</em></button>
         <button type="button" data-hub-item onClick={act(() => openTab('prefs'))}>{I.sliders}<span>Préférences</span><em>trading, studio, notifications</em></button>
         <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}<span>Apparence</span><em>{(THEME_NAMES[st.theme] ?? st.theme) + ' · ' + (DEPTH_NAMES[st.depth] ?? st.depth)}</em></button>
         <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}<span>Réglages avancés</span><em>RPC, vitesse, frais</em></button>

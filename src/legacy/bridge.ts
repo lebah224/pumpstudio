@@ -29,6 +29,8 @@ type LegacyStudio = {
     quickKeypair: () => Keypair | null;
     useQuick: (on: boolean) => Promise<void>;
     setAuth: (on: boolean) => void;
+    rpc: <T = any>(method: string, params: unknown[]) => Promise<T>;
+    page: () => string;
     copyAddress: () => void;
     appearance: () => void;
     goReal: () => void;
