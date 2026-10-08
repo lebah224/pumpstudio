@@ -1,4 +1,4 @@
-// Surveillance des ordres et alertes push. Appelée chaque minute par la tâche planifiée (pg_cron),
+// Surveillance des ordres et alertes push. Appelée toutes les 10 secondes par la tâche planifiée (pg_cron),
 // ou par un utilisateur connecté pour envoyer une notification de test à ses appareils.
 // Elle compare les prix aux conditions des ordres. Quand un ordre se déclenche et que le wallet rapide du compte
 // détient le token (ventes automatiques activées), elle le fait vendre par la fonction server-wallet, une seule fois ;
