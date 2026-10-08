@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { readable } from './SignIn';
 import { toast } from '../legacy/bridge';
+import { logoutEverywhere } from '../account/logout';
 
 type Factor = { id: string; friendly_name?: string; factor_type: string; status: string; created_at: string };
 
@@ -29,7 +30,7 @@ export function MfaChallenge() {
         <div className="ts-si-h"><b>Double authentification</b><span>Saisis le code à 6 chiffres affiché par ton application (Google Authenticator, 1Password, Authy…).</span></div>
         <label className="field"><span className="ts-lbl">Code</span><input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} autoFocus /></label>
         {err && <div className="ts-note bad" role="alert">{err}</div>}
-        <div className="ts-row"><button type="button" className="btn ghost" onClick={() => signOut()}>Se déconnecter</button><button className="btn primary" disabled={busy}>{busy ? 'Vérification…' : 'Valider'}</button></div>
+        <div className="ts-row"><button type="button" className="btn ghost" onClick={() => logoutEverywhere(signOut)}>Se déconnecter</button><button className="btn primary" disabled={busy}>{busy ? 'Vérification…' : 'Valider'}</button></div>
       </form>
     </div>
   );

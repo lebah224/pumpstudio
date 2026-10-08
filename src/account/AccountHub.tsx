@@ -7,7 +7,7 @@ import { useSyncStatus } from '../sync/useDataSync';
 import { detect, walletById } from '../wallets/catalog';
 import { linkWallet } from '../wallets/walletAuth';
 import { useAccountStatus, useLinkedWallets } from '../wallets/useWallets';
-import { disablePush } from '../notify/push';
+import { logoutEverywhere } from './logout';
 
 const THEME_NAMES: Record<string, string> = { or: 'Or', platine: 'Platine', saphir: 'Saphir', jade: 'Jade', cuivre: 'Cuivre', iris: 'Iris' };
 const DEPTH_NAMES: Record<string, string> = { nuit: 'Nuit', profond: 'Profond', doux: 'Doux' };
@@ -101,13 +101,8 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     try { const r = await linkWallet(src === 'quick' ? { kind: 'quick' } : { kind: 'ext', id: ext!.id }); toast('Wallet ajouté à ton compte', short(r.address)); }
     catch (e) { toast('Ajout impossible', readable(e), 'r'); } finally { setBusy(null); }
   }
-  async function logout() {
-    // les alertes de ce compte ne doivent pas arriver sur un navigateur dont on se déconnecte
-    await disablePush().catch(() => {});
-    await signOut();
-    await hub?.signOut();
-    toast('Déconnecté', 'Compte et wallet déconnectés. Le wallet rapide reste chiffré dans ce navigateur.', '');
-  }
+  // compte et wallets déconnectés, puis retour à la page de connexion
+  const logout = () => logoutEverywhere(signOut);
 
   // bouton déclencheur
   const trigger = w ? (

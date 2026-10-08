@@ -8,6 +8,7 @@ import { savePrefs } from './usePrefsSync';
 import { studio, toast } from '../legacy/bridge';
 import { DataTab } from '../sync/DataTab';
 import { PushCard } from '../notify/PushCard';
+import { logoutEverywhere } from './logout';
 
 const GUEST = { start: 'choose' as const };
 type Tab = 'profile' | 'prefs' | 'wallets' | 'data' | 'security';
@@ -269,7 +270,7 @@ function SecurityTab() {
       </div>
       <div className="card">
         <div className="card-h"><h3>Sessions</h3><p>Déconnecte tous les appareils si tu as un doute.</p></div>
-        <div className="toolbar"><button className="btn" type="button" onClick={() => signOut()}>Se déconnecter</button><button className="btn danger" type="button" onClick={() => { if (window.confirm('Déconnecter tous tes appareils ?')) signOut(true); }}>Déconnecter tous les appareils</button></div>
+        <div className="toolbar"><button className="btn" type="button" onClick={() => logoutEverywhere(signOut)}>Se déconnecter</button><button className="btn danger" type="button" onClick={() => { if (window.confirm('Déconnecter tous tes appareils ?')) logoutEverywhere(signOut, true); }}>Déconnecter tous les appareils</button></div>
         <ul className="ts-promise">
           <li>Aucune clé privée n'est envoyée au serveur, jamais.</li>
           <li>Le wallet rapide reste chiffré dans ce navigateur uniquement.</li>
