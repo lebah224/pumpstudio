@@ -424,3 +424,48 @@
 .ts-cloud-dot.spin{animation:tsSpin 1s linear infinite}
 @keyframes tsSpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.ts-cloud-dot.spin{animation:none}}
+
+/* ---------- avatar du compte ---------- */
+.ts-uav{display:inline-block;flex:none;border-radius:50%;overflow:hidden;background:var(--panel3);box-shadow:0 0 0 1px color-mix(in oklab,var(--line2) 70%,transparent)}
+.ts-uav img{display:block;width:100%;height:100%;object-fit:cover}
+.ts-uav.lg{box-shadow:0 0 0 2px var(--accent-line),0 10px 30px -14px rgba(0,0,0,.8)}
+
+/* menu en haut à droite, connecté : solde du wallet actif, puis avatar */
+.ts-hub-btn.acct{padding:0 8px 0 4px;gap:8px}
+.ts-hub-balbox{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.ts-hub-btn.acct:hover .ts-hub-balbox,.ts-hub-btn.acct.on .ts-hub-balbox{border-color:var(--line2);background:var(--panel3)}
+.ts-hub.m .ts-hub-btn.acct{padding:0 4px;gap:6px}
+.ts-hub.m .ts-hub-balbox{height:30px;padding:0 9px}
+
+/* choix de l'avatar */
+.ts-avpick{display:flex;align-items:center;gap:18px;margin:4px 0 16px}
+.ts-avpick-r{display:flex;flex-direction:column;gap:10px;min-width:0}
+.ts-avpick-grid{display:grid;grid-template-columns:repeat(4,40px);gap:6px}
+.ts-avpick-grid button{width:40px;height:40px;padding:2px;border-radius:50%;border:1px solid transparent;background:none;cursor:pointer}
+.ts-avpick-grid button img{display:block;width:100%;height:100%;border-radius:50%}
+.ts-avpick-grid button:hover{border-color:var(--line2)}
+.ts-avpick-grid button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
+.ts-avpick-grid button:focus-visible{outline:none;box-shadow:var(--focus)}
+@media (max-width:520px){.ts-avpick{flex-direction:column;align-items:flex-start}}
+
+/* nom d'utilisateur : préfixe @ et état de disponibilité */
+.ts-at{display:flex;align-items:center;background:var(--bg);border:1px solid var(--line2);border-radius:var(--r-sm);min-height:44px;padding-left:12px}
+.ts-at span{color:var(--dim);font-weight:600}
+.ts-at input{flex:1;min-width:0;border:0!important;background:none!important;box-shadow:none!important;padding-left:4px}
+.ts-at:focus-within{border-color:var(--accent);box-shadow:var(--focus)}
+.ts-at.free{border-color:color-mix(in oklab,var(--green) 45%,var(--line2))}
+.ts-at.taken,.ts-at.bad{border-color:var(--red-line)}
+.ts-at-h{font-size:12.5px;color:var(--dim)}
+.ts-at-h.free{color:var(--green)}
+.ts-at-h.taken,.ts-at-h.bad{color:var(--red-ink)}
+.ts-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ts-chip{font:inherit;font-size:12.5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line2);background:var(--panel2);color:var(--muted);cursor:pointer}
+.ts-chip:hover{color:var(--text);border-color:var(--accent-line)}
+
+/* fenêtre de bienvenue */
+.ts-onboard .ts-modal-box{width:min(520px,100%);padding:26px}
+.ts-onb-h{margin-bottom:18px}
+.ts-onb-k{margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent)}
+.ts-onb-h h2{margin:0;font-family:var(--display);font-size:26px;letter-spacing:-.4px}
+.ts-onb-h p:last-child{margin:8px 0 0;color:var(--muted);font-size:14.5px}
+.ts-onb-act{justify-content:flex-end;margin-top:8px}

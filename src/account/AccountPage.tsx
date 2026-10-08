@@ -9,6 +9,9 @@ import { studio, toast } from '../legacy/bridge';
 import { DataTab } from './DataTab';
 import { PushCard } from '../notify/PushCard';
 import { logoutEverywhere } from './logout';
+import { USERNAME_RE, updateProfile, useProfile } from './profile';
+import { UserAvatar, cleanAvatars } from './Avatar';
+import { AvatarPicker, UsernameField } from './Onboarding';
 
 const GUEST = { start: 'choose' as const };
 type Tab = 'profile' | 'prefs' | 'wallets' | 'data' | 'security';
@@ -58,31 +61,33 @@ export function AccountPage() {
 /* ---------------- Profil ---------------- */
 function ProfileTab() {
   const { user } = useAuth();
-  const [p, setP] = useState<Profile | null>(null);
+  const p = useProfile();
   const [form, setForm] = useState({ username: '', display_name: '', bio: '', locale: 'fr', timezone: 'Europe/Paris' });
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [free, setFree] = useState<boolean | null>(null);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    supabase.from('profiles').select('*').eq('id', user.id).single<Profile>().then(({ data }) => {
-      if (!data) return; setP(data);
-      setForm({ username: data.username ?? '', display_name: data.display_name ?? '', bio: data.bio ?? '', locale: data.locale, timezone: data.timezone });
-    });
-  }, [user]);
+    if (!p) return;
+    setForm({ username: p.username ?? '', display_name: p.display_name ?? '', bio: p.bio ?? '', locale: p.locale, timezone: p.timezone });
+    setAvatar(p.avatar_url ?? 'gen:0');
+  }, [p]);
 
   async function save(ev: FormEvent) {
     ev.preventDefault(); if (!user) return; setErr(null);
     const u = form.username.trim();
-    if (u && !/^[A-Za-z0-9_]{3,24}$/.test(u)) { setErr('Pseudo : 3 à 24 lettres, chiffres ou _.'); return; }
+    if (u && !USERNAME_RE.test(u)) { setErr('Nom d\'utilisateur : 3 à 24 lettres, chiffres ou _.'); return; }
+    if (u && u !== p?.username && free === false) { setErr('Ce nom d\'utilisateur n\'est pas disponible.'); return; }
     setBusy(true);
-    const { data, error } = await supabase.from('profiles').update({
-      username: u || null, display_name: form.display_name.trim() || null, bio: form.bio.trim() || null, locale: form.locale, timezone: form.timezone.trim() || 'Europe/Paris',
-    }).eq('id', user.id).select().single<Profile>();
+    const e = await updateProfile({
+      username: u || null, display_name: form.display_name.trim() || null, bio: form.bio.trim() || null, locale: form.locale as Profile['locale'], timezone: form.timezone.trim() || 'Europe/Paris', avatar_url: avatar,
+    });
     setBusy(false);
-    if (error) { setErr(/duplicate|unique/i.test(error.message) ? 'Ce pseudo est déjà pris.' : readable(error)); return; }
-    setP(data); toast('Profil enregistré');
+    if (e) { setErr(e); return; }
+    cleanAvatars(user.id, avatar).catch(() => {});
+    toast('Profil enregistré');
   }
   async function addEmail(ev: FormEvent) {
     ev.preventDefault(); setErr(null);
@@ -93,15 +98,16 @@ function ProfileTab() {
     setEmail(''); toast('Vérifie ta boîte mail', 'Clique sur le lien envoyé à ' + v + ' pour confirmer l\'adresse.');
   }
 
-  const initial = (form.display_name || form.username || userLabel(user)).slice(0, 1).toUpperCase();
+  if (!user || !p) return <div className="card"><div className="empty"><b>Chargement…</b></div></div>;
   return (
     <div className="ts-grid2">
       <form className="card" onSubmit={save}>
-        <div className="card-h"><h3>Profil</h3><p>Ce qui te représente dans TokenStudio. Rien n'est public pour l'instant.</p></div>
-        <div className="ts-avatar-row"><div className="ts-avatar">{initial}</div><div><b>{form.display_name || form.username || userLabel(user)}</b><small>Membre depuis le {p ? new Date(p.created_at).toLocaleDateString('fr-FR') : '…'}</small></div></div>
+        <div className="card-h"><h3>Profil</h3><p>Ton nom et ton avatar dans TokenStudio. Rien n'est public : ils ne sont visibles que par toi.</p></div>
+        <div className="ts-avatar-row"><UserAvatar profile={{ id: user.id, avatar_url: avatar }} size={52} /><div><b>{form.display_name || form.username || userLabel(user)}</b><small>{form.username ? '@' + form.username + ' · ' : ''}membre depuis le {new Date(p.created_at).toLocaleDateString('fr-FR')}</small></div></div>
+        <div className="field"><span className="ts-lbl">Avatar</span><AvatarPicker userId={user.id} value={avatar} onChange={setAvatar} /></div>
         <div className="row2">
-          <label className="field"><span className="ts-lbl">Pseudo</span><input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} maxLength={24} placeholder="satoshi_fr" autoComplete="nickname" /></label>
-          <label className="field"><span className="ts-lbl">Nom affiché</span><input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} maxLength={40} /></label>
+          <label className="field"><span className="ts-lbl">Nom affiché</span><input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} maxLength={40} autoComplete="nickname" /></label>
+          <UsernameField value={form.username} onChange={(v) => setForm({ ...form, username: v })} base={form.display_name || userLabel(user)} onState={(ok) => setFree(form.username.trim() === p.username ? true : ok)} />
         </div>
         <label className="field"><span className="ts-lbl">Bio <small>280 caractères max</small></span><textarea rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} maxLength={280} /></label>
         <div className="row2">
@@ -113,12 +119,12 @@ function ProfileTab() {
       </form>
       <div className="card">
         <div className="card-h"><h3>Identifiants de connexion</h3><p>Tu peux te connecter avec l'un ou l'autre.</p></div>
-        <div className="ts-kv"><span>E-mail</span><b>{user?.email || 'aucun'}</b></div>
+        <div className="ts-kv"><span>E-mail</span><b>{user.email || 'aucun'}</b></div>
         <div className="ts-kv"><span>Wallet de connexion</span><b className="mono">{walletOf(user) || 'aucun'}</b></div>
-        {user?.new_email && <div className="ts-note">Confirmation en attente pour <b>{user.new_email}</b> : clique sur le lien reçu.</div>}
+        {user.new_email && <div className="ts-note">Confirmation en attente pour <b>{user.new_email}</b> : clique sur le lien reçu.</div>}
         <form onSubmit={addEmail} className="ts-row" style={{ marginTop: 12 }}>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={user?.email ? 'Nouvelle adresse e-mail' : 'Ajouter un e-mail'} aria-label="Adresse e-mail" />
-          <button className="btn">{user?.email ? 'Changer' : 'Ajouter'}</button>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={user.email ? 'Nouvelle adresse e-mail' : 'Ajouter un e-mail'} aria-label="Adresse e-mail" />
+          <button className="btn">{user.email ? 'Changer' : 'Ajouter'}</button>
         </form>
         <p className="muted ts-small">Un e-mail permet de récupérer ton compte et de recevoir les alertes de tes ordres.</p>
       </div>
@@ -273,7 +279,7 @@ function SecurityTab() {
         <div className="toolbar"><button className="btn" type="button" onClick={() => logoutEverywhere(signOut)}>Se déconnecter</button><button className="btn danger" type="button" onClick={() => { if (window.confirm('Déconnecter tous tes appareils ?')) logoutEverywhere(signOut, true); }}>Déconnecter tous les appareils</button></div>
         <ul className="ts-promise">
           <li>Aucune clé privée n'est envoyée au serveur, jamais.</li>
-          <li>Le wallet rapide reste chiffré dans ce navigateur uniquement.</li>
+          <li>La clé du wallet rapide est chiffrée sur le serveur et ne signe que dans tes plafonds.</li>
           <li>Chaque table de la base est privée à ton compte (règles RLS).</li>
         </ul>
       </div>

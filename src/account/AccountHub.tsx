@@ -9,6 +9,8 @@ import { linkWallet } from '../wallets/walletAuth';
 import { useAccountStatus, useLinkedWallets } from '../wallets/useWallets';
 import { logoutEverywhere } from './logout';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
+import { useProfile } from './profile';
+import { UserAvatar } from './Avatar';
 
 const THEME_NAMES: Record<string, string> = { or: 'Or', platine: 'Platine', saphir: 'Saphir', jade: 'Jade', cuivre: 'Cuivre', iris: 'Iris' };
 const DEPTH_NAMES: Record<string, string> = { nuit: 'Nuit', profond: 'Profond', doux: 'Doux' };
@@ -66,6 +68,8 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   const w = st?.wallet ?? null;
   const linked = useLinkedWallets(signed ? user!.id : null, open);
   const status = useAccountStatus(!user && w ? w.pk : null, open);
+  const prof = useProfile();
+  const me = signed && prof && prof.id === user!.id ? prof : null;
 
   const close = useCallback((focus = true) => { setOpen(false); if (focus) btn.current?.focus(); }, []);
   useEffect(() => {
@@ -105,9 +109,16 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   // compte et wallets déconnectés, puis retour à la page de connexion
   const logout = () => logoutEverywhere(signOut);
 
-  // bouton déclencheur
-  const trigger = w ? (
-    <><Avatar pk={w.pk} cls="sm" /><span className="ts-hub-bal mono">{st.bal == null ? '—' : fmt(st.bal, st.bal >= 100 ? 2 : mobile ? 3 : 4)}<small> SOL</small></span>{w.locked && <span className="ts-hub-lock" title="Wallet rapide verrouillé">●</span>}</>
+  // bouton déclencheur : connecté, solde du wallet actif puis avatar du compte (comme les grandes plateformes) ;
+  // wallet sans compte, son avatar et son solde ; invité, bouton de connexion
+  const name = me?.display_name || (me?.username ? '@' + me.username : '') || label;
+  const balTxt = st.bal == null ? '—' : fmt(st.bal, st.bal >= 100 ? 2 : mobile ? 3 : 4);
+  const trigger = signed ? (<>
+    {w && <span className="ts-hub-balbox" title={'Solde du wallet actif · ' + short(w.pk)}>{w.locked && <span className="ts-hub-lock" title="Wallet rapide verrouillé">●</span>}<span className="ts-hub-bal mono">{balTxt}<small> SOL</small></span></span>}
+    {me ? <UserAvatar profile={me} size={mobile ? 28 : 30} /> : <span className="ts-hub-av">{label.slice(0, 1).toUpperCase()}</span>}
+    {!w && !mobile && <span className="ts-hub-name">{name}</span>}
+  </>) : w ? (
+    <><Avatar pk={w.pk} cls="sm" /><span className="ts-hub-bal mono">{balTxt}<small> SOL</small></span>{w.locked && <span className="ts-hub-lock" title="Wallet rapide verrouillé">●</span>}</>
   ) : user ? (
     <><span className="ts-hub-av">{label.slice(0, 1).toUpperCase()}</span>{!mobile && <span className="ts-hub-name">{label}</span>}</>
   ) : (
@@ -166,10 +177,11 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     body = (<>
       <section className="ts-hub-sec ts-hub-acc">
         <div className="ts-hub-id">
-          <span className="ts-hub-av lg">{label.slice(0, 1).toUpperCase()}</span>
-          <span className="ts-hub-t"><b>{label}</b><small>{aal.current === 'aal2' ? 'Compte protégé · double authentification' : 'Compte TokenStudio'}</small></span>
+          {me ? <UserAvatar profile={me} size={46} /> : <span className="ts-hub-av lg">{label.slice(0, 1).toUpperCase()}</span>}
+          <span className="ts-hub-t"><b>{name}</b><small>{me?.username ? '@' + me.username + ' · ' : ''}{aal.current === 'aal2' ? 'compte protégé (2FA)' : 'compte TokenStudio'}</small></span>
           {aal.current === 'aal2' && <span className="ts-hub-shield" title="Double authentification active">{I.shield}</span>}
         </div>
+        <div className="ts-hub-row"><button type="button" className="btn sm" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}Modifier le profil</button>{!me?.username && <span className="ts-hub-note">Choisis ton nom d'utilisateur</span>}</div>
       </section>
       <section className="ts-hub-sec">
         <div className="ts-hub-h">Wallets{linked && <em>{linked.length} lié{linked.length > 1 ? 's' : ''} au compte</em>}</div>
@@ -252,11 +264,10 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
 
   return (
     <div className={'ts-hub' + (mobile ? ' m' : '')}>
-      <button ref={btn} type="button" className={'ts-hub-btn' + (!w && !user ? ' primary' : '') + (st.sim ? ' demo' : '') + (open ? ' on' : '')}
+      <button ref={btn} type="button" aria-label={signed ? 'Compte de ' + name + (w ? ', solde ' + balTxt + ' SOL' : '') : undefined} className={'ts-hub-btn' + (!w && !user ? ' primary' : '') + (signed ? ' acct' : '') + (st.sim ? ' demo' : '') + (open ? ' on' : '')}
         aria-haspopup="dialog" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
         {st.sim && <span className="ts-hub-demo">Démo</span>}
         {trigger}
-        {user && w && <span className="ts-hub-av xs" aria-hidden="true">{label.slice(0, 1).toUpperCase()}</span>}
         {I.chev}
       </button>
       {open && sheet(mobile, (

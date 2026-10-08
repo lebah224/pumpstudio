@@ -838,7 +838,7 @@ textarea{font:inherit;color:inherit}
 .btn.ghost{background:none;border-color:transparent;box-shadow:none;color:var(--muted);font-weight:500}
 .btn.ghost:hover{background:var(--panel2);border-color:var(--line2);color:var(--text);box-shadow:none}
 .btn.sm{min-height:32px;padding:5px 12px;font-size:13.5px;border-radius:9px}
-.btn:disabled,.btn:disabled:hover{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none;background:var(--panel2);border-color:var(--line2)}
+.btn:disabled,.btn:disabled:hover{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none;background:var(--panel2);border-color:var(--line2);color:var(--muted)}
 .btn:disabled svg.i{color:inherit}
 /* boutons ronds, puces, segments, onglets : même logique de survol et d'état actif */
 .icon-btn{background:var(--btn-face);border-color:var(--btn-edge);box-shadow:var(--btn-lift);transition:border-color .15s,transform .12s,box-shadow .18s}

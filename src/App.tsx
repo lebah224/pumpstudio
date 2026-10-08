@@ -13,6 +13,8 @@ import { studio } from './legacy/bridge';
 import { clearServerWallet, refreshServerWallet } from './serverWallet/api';
 import { ServerWalletDialog } from './serverWallet/ServerWalletDialog';
 import { isDemoGuest, isLeaving } from './lib/guest';
+import { loadProfile } from './account/profile';
+import { Onboarding } from './account/Onboarding';
 
 /** Le studio demande une connexion (wallet manquant, passage en réel) : on ouvre la fenêtre de connexion du compte */
 function useConnectBridge() {
@@ -27,6 +29,8 @@ function useConnectBridge() {
   }, [signed, openSignIn]);
   // mode réel réservé aux comptes connectés : le studio repasse en simulation sinon
   useEffect(() => { if (ready) studio()?.hub?.setAuth(signed); }, [ready, signed]);
+  // profil du compte (nom, nom d'utilisateur, avatar) pour le menu et la fenêtre de bienvenue
+  useEffect(() => { if (ready) loadProfile(signed ? user!.id : null); }, [ready, signed, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // wallet rapide serveur du compte (s'il existe)
   useEffect(() => { if (!ready) return; if (signed) refreshServerWallet(); else clearServerWallet(); }, [ready, signed, user?.id]);
   // sans compte, l'outil n'est ouvert qu'en démo : sinon retour à l'accueil
@@ -62,6 +66,7 @@ function Mounts() {
       <SignInDialog />
       <ServerWalletDialog />
       <MfaChallenge />
+      <Onboarding />
       <CloudNotice />
     </>
   );
