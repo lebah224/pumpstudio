@@ -79,7 +79,7 @@ function HeroDesk() {
           <li>{IC.check}Logo et fiche sur IPFS</li>
           <li>{IC.check}Transaction préparée</li>
           <li>{IC.check}Simulation acceptée</li>
-          <li className="now"><i />Signature dans votre wallet</li>
+          <li className="now"><i />Signature dans ton wallet</li>
         </ol>
       </div>
     </div>
@@ -87,21 +87,21 @@ function HeroDesk() {
 }
 
 const FEATURES: { ic: ReactNode; t: string; d: string; unit: string }[] = [
-  { ic: IC.spark, t: 'Studio de création', d: 'Idées de noms, symboles, descriptions et logos dans six univers. Ou partez de votre propre concept.', unit: '6 univers · 12 styles de logo' },
-  { ic: IC.rocket, t: 'Lancement vérifié', d: 'Le token est préparé, simulé sur la blockchain, puis publié sur pump.fun après votre signature.', unit: '≈ 0,02 SOL de frais réseau' },
+  { ic: IC.spark, t: 'Studio de création', d: 'Idées de noms, symboles, descriptions et logos dans six univers. Ou pars de ton propre concept.', unit: '6 univers · 12 styles de logo' },
+  { ic: IC.rocket, t: 'Lancement vérifié', d: 'Le token est préparé, simulé sur la blockchain, puis publié sur pump.fun après ta signature.', unit: '≈ 0,02 SOL de frais réseau' },
   { ic: IC.swap, t: 'Trader et ordres', d: 'Achat, vente, analyse de risque, prises de profit par paliers et stop suiveur, surveillés en continu.', unit: 'Alertes push même studio fermé' },
-  { ic: IC.bot, t: 'Bot de trading', d: 'Trois stratégies sur le flux pump.fun en direct. Entraînez-vous en papier, puis passez en réel avec plafonds.', unit: 'Équilibrée · Migration · Flash' },
+  { ic: IC.bot, t: 'Bot de trading', d: 'Trois stratégies sur le flux pump.fun en direct. Entraîne-toi en démo, puis passe en réel avec plafonds.', unit: 'Équilibrée · Migration · Flash' },
   { ic: IC.wallet, t: 'Portefeuille', d: 'Valeur, évolution, répartition, tokens détenus et activité. Dépôt par QR code, retrait en un geste.', unit: 'Solana Pay inclus' },
   { ic: IC.radio, t: 'Diffusion', d: 'Les étapes pour être référencé sur DexScreener, GeckoTerminal, Jupiter, CoinGecko et les autres.', unit: '8 plateformes suivies' },
 ];
 
 const FAQ: [string, string][] = [
-  ['Combien coûte TokenStudio ?', 'L\'outil est gratuit. Vous ne payez que les frais du réseau Solana et de pump.fun lors d\'un lancement ou d\'un trade, environ 0,02 SOL pour une création.'],
-  ['TokenStudio peut-il toucher à mes fonds ?', 'Non. Vos clés restent dans votre wallet, qui vous présente chaque transaction à signer. Seul le wallet rapide, si vous l\'activez, signe pour vous, et uniquement des opérations de trading dans la limite de vos plafonds.'],
-  ['Sous quel nom mon token apparaît-il sur pump.fun ?', 'Sous l\'adresse de votre wallet, ou sous votre pseudo pump.fun si ce wallet a un profil. Votre compte TokenStudio et votre e-mail ne sont jamais publiés.'],
-  ['À quoi sert la démo ?', 'À tout découvrir sans compte, avec un wallet démo de 10 SOL fictifs. Pour vérifier une opération sur la blockchain comme en réel, il faut un compte gratuit.'],
-  ['Quels sont les risques ?', 'Les memecoins sont extrêmement volatils : leur valeur peut tomber à zéro en quelques minutes. N\'engagez que ce que vous acceptez de perdre. TokenStudio ne promet aucun gain.'],
-  ['Où sont mes données ?', 'Sur votre compte : tout est enregistré automatiquement et vous suit sur chaque appareil. Vous pouvez les exporter ou supprimer votre compte à tout moment.'],
+  ['Combien coûte TokenStudio ?', 'L\'outil est gratuit. Tu ne paies que les frais du réseau Solana et de pump.fun lors d\'un lancement ou d\'un trade, environ 0,02 SOL pour une création.'],
+  ['TokenStudio peut-il toucher à mes fonds ?', 'Non. Tes clés restent dans ton wallet, qui te présente chaque transaction à signer. Seul le wallet rapide, si tu le crées, signe pour toi, et uniquement des opérations de trading dans la limite de tes plafonds.'],
+  ['Sous quel nom mon token apparaît-il sur pump.fun ?', 'Sous l\'adresse de ton wallet, ou sous ton pseudo pump.fun si ce wallet a un profil. Ton compte TokenStudio et ton e-mail ne sont jamais publiés.'],
+  ['À quoi sert la démo ?', 'À tout découvrir sans compte, avec un wallet démo de 10 SOL fictifs : création, lancement, ordres, bot, tout est simulé. Pour passer en réel, crée ton compte gratuit.'],
+  ['Quels sont les risques ?', 'Les memecoins sont extrêmement volatils : leur valeur peut tomber à zéro en quelques minutes. N\'engage que ce que tu acceptes de perdre. TokenStudio ne promet aucun gain.'],
+  ['Où sont mes données ?', 'Sur ton compte : tout est enregistré automatiquement et te suit sur chaque appareil. Tu peux les exporter ou supprimer ton compte à tout moment.'],
 ];
 
 export function Landing() {
@@ -122,7 +122,7 @@ export function Landing() {
   if ((!ready && maybeSignedIn()) || signed) return null;
   return (
     <div className="lp">
-      {deleted && <div className="lp-flash" role="status">Votre compte et toutes ses données ont été supprimés.</div>}
+      {deleted && <div className="lp-flash" role="status">Ton compte et toutes ses données ont été supprimés.</div>}
       <header className={'lp-nav' + (scrolled ? ' on' : '')}>
         <div className="lp-wrap lp-nav-in">
           <a className="lp-brand" href="/" aria-label="TokenStudio, accueil">
@@ -145,14 +145,14 @@ export function Landing() {
         <section className="lp-hero lp-wrap">
           <div className="lp-hero-t">
             <p className="lp-eyebrow">Studio de tokens Solana · pump.fun</p>
-            <h1>Créez, lancez et pilotez vos tokens Solana.<span> En toute maîtrise.</span></h1>
-            <p className="lp-lead">Du concept au lancement sur pump.fun, puis le suivi, les ordres et le bot de trading. Chaque transaction est vérifiée sur la blockchain avant que vous la signiez.</p>
+            <h1>Crée, lance et pilote tes tokens Solana.<span> En toute maîtrise.</span></h1>
+            <p className="lp-lead">Du concept au lancement sur pump.fun, puis le suivi, les ordres et le bot de trading. Chaque transaction est vérifiée sur la blockchain avant que tu la signes.</p>
             <div className="lp-cta">
               <a className="lp-btn lg" href={start.href}>{start.label}{IC.arrow}</a>
               <a className="lp-btn lg ghost" href="/app?demo=1">Essayer la démo</a>
             </div>
             <ul className="lp-trust">
-              <li>{IC.key}Non-custodial : vos clés restent dans votre wallet</li>
+              <li>{IC.key}Non-custodial : tes clés restent dans ton wallet</li>
               <li>{IC.eye}Démo sans compte, 10 SOL fictifs</li>
             </ul>
           </div>
@@ -183,14 +183,14 @@ export function Landing() {
         <section className="lp-sec lp-wrap" id="etapes">
           <div className="lp-sec-h"><p className="lp-eyebrow">Comment ça marche</p><h2>Trois étapes, de l'idée à la courbe.</h2></div>
           <ol className="lp-steps">
-            <li><span className="lp-n mono">1</span><h3>Créez</h3><p>Choisissez un univers, une idée, un logo. Le studio rédige la fiche et vérifie qu'il ne manque rien.</p></li>
-            <li><span className="lp-n mono">2</span><h3>Lancez</h3><p>Le token est simulé sur la blockchain, puis publié sur pump.fun dès que vous signez. Votre achat de départ passe dans la même transaction.</p></li>
-            <li><span className="lp-n mono">3</span><h3>Pilotez</h3><p>Suivez la courbe, fixez vos paliers de vente, recevez les alertes, laissez le bot travailler dans vos limites.</p></li>
+            <li><span className="lp-n mono">1</span><h3>Crée</h3><p>Choisis un univers, une idée, un logo. Le studio rédige la fiche et vérifie qu'il ne manque rien.</p></li>
+            <li><span className="lp-n mono">2</span><h3>Lance</h3><p>Le token est simulé sur la blockchain, puis publié sur pump.fun dès que tu signes. Ton achat de départ passe dans la même transaction.</p></li>
+            <li><span className="lp-n mono">3</span><h3>Pilote</h3><p>Suis la courbe, fixe tes paliers de vente, reçois les alertes, laisse le bot travailler dans tes limites.</p></li>
           </ol>
         </section>
 
         <section className="lp-sec lp-wrap" id="modes">
-          <div className="lp-sec-h"><p className="lp-eyebrow">Démo ou réel</p><h2>Entraînez-vous sans risque, passez en réel quand vous êtes prêt.</h2></div>
+          <div className="lp-sec-h"><p className="lp-eyebrow">Démo ou réel</p><h2>Entraîne-toi sans risque, passe en réel quand tu es prêt.</h2></div>
           <div className="lp-modes">
             <article className="lp-mode demo">
               <header><span className="lp-tag v">Démo</span><b>Sans compte</b></header>
@@ -198,17 +198,17 @@ export function Landing() {
                 <li>Wallet démo de 10 SOL fictifs</li>
                 <li>Lancements, achats et ventes simulés</li>
                 <li>Bot sur données simulées</li>
-                <li>Créez un compte pour vérifier chaque opération sur la blockchain</li>
+                <li>Crée ton compte quand tu veux passer en réel</li>
               </ul>
               <a className="lp-btn ghost" href="/app?demo=1">Ouvrir la démo</a>
             </article>
             <article className="lp-mode real">
               <header><span className="lp-tag r">Réel</span><b>Avec un compte gratuit</b></header>
               <ul>
-                <li>Votre vrai wallet : Phantom, Solflare, Backpack…</li>
+                <li>Ton vrai wallet : Phantom, Solflare, Backpack…</li>
                 <li>Vérification sur la blockchain avant chaque signature</li>
                 <li>« Tester avant de lancer » sur chaque action</li>
-                <li>Ordres et bot avec plafonds, alertes sur vos appareils</li>
+                <li>Ordres et bot avec plafonds, alertes sur tes appareils</li>
               </ul>
               <a className="lp-btn" href={start.href}>{start.label}</a>
             </article>
@@ -216,14 +216,14 @@ export function Landing() {
         </section>
 
         <section className="lp-sec lp-wrap lp-sec-split" id="securite">
-          <div className="lp-sec-h"><p className="lp-eyebrow">Sécurité</p><h2>Vos fonds restent à vous.</h2>
-            <p className="lp-sub">TokenStudio prépare les transactions. Votre wallet les signe. Rien ne part sans votre accord.</p></div>
+          <div className="lp-sec-h"><p className="lp-eyebrow">Sécurité</p><h2>Tes fonds restent à toi.</h2>
+            <p className="lp-sub">TokenStudio prépare les transactions. Ton wallet les signe. Rien ne part sans ton accord.</p></div>
           <ul className="lp-sec-list">
-            <li>{IC.key}<div><b>Non-custodial</b><span>Vos clés ne quittent jamais votre wallet. L'outil ne voit que votre adresse publique.</span></div></li>
-            <li>{IC.eye}<div><b>Vérifié avant signature</b><span>Chaque transaction est simulée sur la blockchain : si elle doit échouer, vous ne payez rien.</span></div></li>
+            <li>{IC.key}<div><b>Non-custodial</b><span>Tes clés ne quittent jamais ton wallet. L'outil ne voit que ton adresse publique.</span></div></li>
+            <li>{IC.eye}<div><b>Vérifié avant signature</b><span>Chaque transaction est simulée sur la blockchain : si elle doit échouer, tu ne paies rien.</span></div></li>
             <li>{IC.gauge}<div><b>Plafonds</b><span>Limite par achat et plafond journalier pour le bot et le wallet rapide.</span></div></li>
             <li>{IC.lock}<div><b>Compte protégé</b><span>Connexion par wallet ou e-mail sans mot de passe, double authentification, journal de sécurité.</span></div></li>
-            <li>{IC.bell}<div><b>Alertes, jamais d'exécution cachée</b><span>Le serveur vous prévient quand un ordre se déclenche. Il ne vend jamais sans votre réglage.</span></div></li>
+            <li>{IC.bell}<div><b>Alertes, jamais d'exécution cachée</b><span>Le serveur te prévient quand un ordre se déclenche. Il ne vend que selon les ordres que tu as réglés.</span></div></li>
           </ul>
         </section>
 
@@ -236,8 +236,8 @@ export function Landing() {
 
         <section className="lp-final lp-wrap">
           <div className="lp-final-in">
-            <h2>Votre prochain token commence ici.</h2>
-            <p>Découvrez l'outil en démo, ou créez votre compte gratuit pour passer en réel.</p>
+            <h2>Ton prochain token commence ici.</h2>
+            <p>Découvre l'outil en démo, ou crée ton compte gratuit pour passer en réel.</p>
             <div className="lp-cta">
               <a className="lp-btn lg" href={start.href}>{start.label}{IC.arrow}</a>
               <a className="lp-btn lg ghost" href="/app?demo=1">Essayer la démo</a>

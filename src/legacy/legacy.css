@@ -212,7 +212,10 @@ canvas{width:100%;display:block}
 .forms{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start}
 fieldset{border:1px solid var(--line);border-radius:var(--r);padding:16px 18px 14px;margin:0;background:var(--panel);display:flex;flex-direction:column;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow);min-width:0}
 fieldset.dirty{border-color:var(--amber-line);box-shadow:0 0 0 1px var(--amber-line) inset}
-legend{padding:0 6px;color:var(--text);font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.1px}
+/* titre d'un bloc de réglages : bandeau en tête du bloc, nettement distinct des réglages qu'il contient */
+legend{float:left;width:100%;display:flex;align-items:center;gap:10px;margin:0 0 4px;padding:2px 0 12px;border-bottom:1px solid var(--line);color:var(--accent-ink);font-family:var(--sans);font-size:12.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase}
+legend::before{content:"";flex:none;width:4px;height:16px;border-radius:2px;background:var(--accent)}
+legend+*{clear:both}
 .f{display:grid;grid-template-columns:minmax(0,1fr) minmax(136px,44%);align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .f:last-of-type{border-bottom:none}
 .f label{font-size:14px;font-weight:500}
@@ -1210,4 +1213,4 @@ textarea{font:inherit;color:inherit}
 .kp-in:focus{outline:none;border-color:var(--accent);box-shadow:var(--focus)}
 .kp-err{margin:10px 0 0}
 .kp-note{margin:10px 0 0;font-size:12.5px;color:var(--dim)}
-.kp-help{display:block;width:fit-content;margin:0 0 6px auto}
+.kp-help{display:block;width:fit-content;margin:0 0 6px auto;color:var(--accent-ink)}

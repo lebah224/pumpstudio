@@ -19,11 +19,11 @@ export function AuthPage({ signup }: { signup: boolean }) {
           <span>Token<b>Studio</b></span>
         </a>
         <div className="lp-auth-copy">
-          <h1>{signup ? 'Votre studio de tokens, prêt en une signature.' : 'Bon retour sur TokenStudio.'}</h1>
+          <h1>{signup ? 'Ton studio de tokens, prêt en une signature.' : 'Bon retour sur TokenStudio.'}</h1>
           <ul>
             <li>{CHECK}Lancements vérifiés sur la blockchain avant signature</li>
             <li>{CHECK}Ordres, alertes et bot avec plafonds</li>
-            <li>{CHECK}Vos clés restent dans votre wallet</li>
+            <li>{CHECK}Tes clés restent dans ton wallet</li>
           </ul>
         </div>
         <div className="lp-auth-art" aria-hidden="true">
@@ -33,7 +33,7 @@ export function AuthPage({ signup }: { signup: boolean }) {
             <path d="M0 150 C 90 148, 170 138, 240 110 S 350 40, 400 10" className="lp-line" pathLength={1} />
           </svg>
         </div>
-        <p className="lp-auth-foot">Gratuit. Aucun compte n'est créé sans votre accord.</p>
+        <p className="lp-auth-foot">Gratuit. Aucun compte n'est créé sans ton accord.</p>
       </aside>
       <main className="lp-auth-main">
         <div className="lp-auth-card">
