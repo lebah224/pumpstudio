@@ -68,7 +68,7 @@ export function DataTab() {
         <p className="muted ts-small">Jamais enregistrés : les clés privées de tes wallets (sauf celle du wallet rapide, chiffrée) et les opérations de la démo.</p>
       </div>
       <div className="card">
-        <div className="card-h"><h3>Tes données</h3><p>Elles t'appartiennent : tu peux les récupérer ou supprimer ton compte quand tu veux.</p></div>
+        <div className="card-h"><h3>Tes données</h3><p>Elles t'appartiennent : tu peux les récupérer ou supprimer ton compte quand tu veux. Détails dans la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a> et les <a href="/conditions" target="_blank" rel="noopener">conditions d'utilisation</a>.</p></div>
         <div className="ts-data-act">
           <div><b>Exporter</b><span>Profil, préférences, wallets, tokens, journal, ordres et bot dans un fichier JSON.</span></div>
           <button type="button" className="btn sm" disabled={!!busy} onClick={download}>{busy === 'export' ? 'Préparation…' : 'Télécharger'}</button>

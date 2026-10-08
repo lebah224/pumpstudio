@@ -5,6 +5,7 @@ import { studio, toast } from '../legacy/bridge';
 import { initials, isMobile, walletChoices, type WalletInfo } from '../wallets/catalog';
 import { createAccountWithWallet, linkWallet, signInWithWallet, type Source } from '../wallets/walletAuth';
 import { useServerWallet } from '../serverWallet/api';
+import { lang, t } from '../lib/i18n';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 
 type Step = 'choose' | 'quick' | 'none' | 'email' | 'email-none' | 'code' | 'add';
@@ -54,7 +55,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     setSrc(s); setAddr(address);
     if (session) {
       await linkWallet(s);
-      toast('Wallet ajouté à ton compte', short(address));
+      toast(t('Wallet ajouté à ton compte', 'Wallet added to your account'), short(address));
       close(); return;
     }
     if ((await signInWithWallet(s)) === 'none') { if (signup) await createAccountWithWallet(s); else setStep('none'); }
@@ -69,7 +70,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     if (standalone) {
       // page de connexion : on connecte l'extension directement ; l'outil la reconnectera à l'ouverture
       const p = walletChoices().found.find((x) => x.id === id)?.p;
-      if (!p) throw new Error('Wallet non détecté.');
+      if (!p) throw new Error(t('Wallet non détecté.', 'Wallet not detected.'));
       await p.connect();
       pk = p.publicKey?.toString();
       try { localStorage.setItem('pstudio_wallet_v1', JSON.stringify(id)); } catch { /* navigation privée */ }
@@ -98,9 +99,10 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
   async function sendEmail(ev: FormEvent | null, createUser: boolean) {
     ev?.preventDefault(); setErr(null);
     const v = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { setErr('Adresse e-mail invalide.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { setErr(t('Adresse e-mail invalide.', 'Invalid email address.')); return; }
     setBusy('email');
-    const { error } = await supabase.auth.signInWithOtp({ email: v, options: { shouldCreateUser: createUser || !!signup, emailRedirectTo: location.origin + (standalone ? '/connexion' : location.pathname) } });
+    // langue des e-mails (modèles bilingues) : retenue à la création du compte
+    const { error } = await supabase.auth.signInWithOtp({ email: v, options: { shouldCreateUser: createUser || !!signup, emailRedirectTo: location.origin + (standalone ? '/connexion' : location.pathname), data: { lang: lang() } } });
     setBusy(null);
     if (error && /signups? not allowed|user not found/i.test(error.message)) { setEmail(v); setStep('email-none'); return; }
     if (error) { setErr(readable(error)); return; }
@@ -108,32 +110,32 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
   }
   async function verify(ev: FormEvent) {
     ev.preventDefault(); setErr(null);
-    const t = code.replace(/\D/g, '');
-    if (t.length < 6) { setErr('Le code fait 6 chiffres (ou plus).'); return; }
+    const tok = code.replace(/\D/g, '');
+    if (tok.length < 6) { setErr(t('Le code fait 6 chiffres (ou plus).', 'The code is 6 digits (or more).')); return; }
     setBusy('code');
-    const { error } = await supabase.auth.verifyOtp({ email, token: t, type: 'email' });
+    const { error } = await supabase.auth.verifyOtp({ email, token: tok, type: 'email' });
     setBusy(null);
     if (error) setErr(readable(error));
   }
 
-  const back = (to: Step) => <button type="button" className="btn ghost" onClick={() => { setErr(null); setStep(to); }}>Retour</button>;
+  const back = (to: Step) => <button type="button" className="btn ghost" onClick={() => { setErr(null); setStep(to); }}>{t('Retour', 'Back')}</button>;
   const head = (title: string, text: ReactNode) => <div className="ts-si-h"><b>{title}</b><span>{text}</span></div>;
   const here = location.href, ref = location.origin;
 
   const walletList = (
     <>
-      {location.protocol === 'file:' && <div className="ts-note warn">Les wallets ne fonctionnent pas sur une page ouverte comme fichier : utilise la version en ligne.</div>}
+      {location.protocol === 'file:' && <div className="ts-note warn">{t('Les wallets ne fonctionnent pas sur une page ouverte comme fichier : utilise la version en ligne.', 'Wallets don\'t work on a page opened as a file: use the online version.')}</div>}
       <div className="ts-si-list" role="list">
         {found.map((x) => (
           <button key={x.id} type="button" role="listitem" className="ts-si-opt" disabled={!!busy} onClick={() => pickWallet(x.id)}>
             <WalletMark w={x} /><span className="ts-si-n">{x.name}</span>
-            <em className="ts-si-tag ok">{busy === x.id ? 'Validation…' : 'Détecté'}</em>
+            <em className="ts-si-tag ok">{busy === x.id ? t('Validation…', 'Confirming…') : t('Détecté', 'Detected')}</em>
           </button>
         ))}
         {legacyQuick && !adding && (
           <button type="button" role="listitem" className="ts-si-opt" disabled={!!busy} onClick={() => { setErr(null); if (standalone) { location.href = '/app?signin=quick'; return; } setStep('quick'); }}>
-            <QuickMark /><span className="ts-si-n">Ancien wallet rapide<small>{quick ? short(quick.pk) + ' · ' : ''}dans ce navigateur</small></span>
-            <em className="ts-si-tag">Mot de passe</em>
+            <QuickMark /><span className="ts-si-n">{t('Ancien wallet rapide', 'Former quick wallet')}<small>{quick ? short(quick.pk) + ' · ' : ''}{t('dans ce navigateur', 'in this browser')}</small></span>
+            <em className="ts-si-tag">{t('Mot de passe', 'Password')}</em>
           </button>
         )}
         {(more || !found.length ? others : others.slice(0, 2)).map((x) => {
@@ -141,25 +143,25 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
           return (
             <a key={x.id} role="listitem" className="ts-si-opt" href={link} target={isMobile() && x.mobile ? undefined : '_blank'} rel="noopener noreferrer">
               <WalletMark w={x} /><span className="ts-si-n">{x.name}</span>
-              <em className="ts-si-tag">{isMobile() && x.mobile ? 'Ouvrir l\'app' : 'Installer ↗'}</em>
+              <em className="ts-si-tag">{isMobile() && x.mobile ? t('Ouvrir l\'app', 'Open the app') : t('Installer ↗', 'Install ↗')}</em>
             </a>
           );
         })}
       </div>
-      {found.length > 0 && others.length > 2 && <button type="button" className="ts-si-more" onClick={() => setMore((m) => !m)}>{more ? 'Moins de wallets' : 'Plus de wallets (' + others.length + ')'}</button>}
+      {found.length > 0 && others.length > 2 && <button type="button" className="ts-si-more" onClick={() => setMore((m) => !m)}>{more ? t('Moins de wallets', 'Fewer wallets') : t('Plus de wallets', 'More wallets') + ' (' + others.length + ')'}</button>}
     </>
   );
 
   return (
     <div className="ts-signin">
       {step === 'choose' && (<>
-        {signup ? head('Créer ton compte', 'Avec ton wallet ou ton e-mail. Une signature gratuite suffit : aucune transaction, aucun frais.')
-          : head('Connexion à TokenStudio', 'Choisis comment te connecter. Tes clés privées ne quittent jamais ton wallet.')}
+        {signup ? head(t('Créer ton compte', 'Create your account'), t('Avec ton wallet ou ton e-mail. Une signature gratuite suffit : aucune transaction, aucun frais.', 'With your wallet or your email. One free signature is enough: no transaction, no fees.'))
+          : head(t('Connexion à TokenStudio', 'Sign in to TokenStudio'), t('Choisis comment te connecter. Tes clés privées ne quittent jamais ton wallet.', 'Choose how to sign in. Your private keys never leave your wallet.'))}
         {intent.reason === 'real' && <div className="ts-note warn">Le mode réel demande un compte. La démo reste ouverte sans compte.</div>}
         {walletList}
-        <div className="ts-si-or"><span>ou</span></div>
-        <button type="button" className="btn ts-si-mail" onClick={() => { setErr(null); setStep('email'); }}>Continuer avec un e-mail</button>
-        <button type="button" className="ts-si-sim" onClick={simulate}>Essayer la démo sans compte</button>
+        <div className="ts-si-or"><span>{t('ou', 'or')}</span></div>
+        <button type="button" className="btn ts-si-mail" onClick={() => { setErr(null); setStep('email'); }}>{t('Continuer avec un e-mail', 'Continue with email')}</button>
+        <button type="button" className="ts-si-sim" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
       </>)}
 
       {step === 'add' && (<>
@@ -188,37 +190,37 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
       </>)}
 
       {step === 'none' && (<>
-        {head('Aucun compte pour ce wallet', <>Le wallet <b className="mono">{short(addr)}</b> n'est lié à aucun compte TokenStudio. Rien n'a été créé.</>)}
+        {head(t('Aucun compte pour ce wallet', 'No account for this wallet'), <>{t('Le wallet', 'The wallet')} <b className="mono">{short(addr)}</b> {t('n\'est lié à aucun compte TokenStudio. Rien n\'a été créé.', 'isn\'t linked to any TokenStudio account. Nothing was created.')}</>)}
         <div className="ts-si-choices">
-          <button type="button" className="btn primary" disabled={!!busy} onClick={create}>{busy === 'create' ? 'Signature en attente…' : 'Créer mon compte avec ce wallet'}</button>
-          <button type="button" className="btn" disabled={!!busy} onClick={() => { setErr(null); setStep('email'); }}>J'ai déjà un compte (e-mail)</button>
-          <button type="button" className="btn ghost" onClick={simulate}>Essayer la démo sans compte</button>
+          <button type="button" className="btn primary" disabled={!!busy} onClick={create}>{busy === 'create' ? t('Signature en attente…', 'Waiting for signature…') : t('Créer mon compte avec ce wallet', 'Create my account with this wallet')}</button>
+          <button type="button" className="btn" disabled={!!busy} onClick={() => { setErr(null); setStep('email'); }}>{t('J\'ai déjà un compte (e-mail)', 'I already have an account (email)')}</button>
+          <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
-        <p className="muted ts-small">Le compte garde tes préférences et ton historique sur tous tes appareils, et permet le mode réel. Connecté par e-mail, tu pourras ajouter ce wallet ensuite.</p>
+        <p className="muted ts-small">{t('Le compte garde tes préférences et ton historique sur tous tes appareils, et permet le mode réel. Connecté par e-mail, tu pourras ajouter ce wallet ensuite.', 'An account keeps your settings and history on all your devices, and unlocks live mode. Signed in by email, you can add this wallet afterwards.')}</p>
       </>)}
 
       {step === 'email' && (
         <form onSubmit={(e) => sendEmail(e, false)} className="ts-si-form">
-          {head('Connexion par e-mail', 'On t\'envoie un lien et un code de connexion. Pas de mot de passe à retenir.')}
-          <label className="field"><span className="ts-lbl">Adresse e-mail</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="toi@exemple.com" autoFocus /></label>
-          <div className="ts-row">{back(src ? 'none' : 'choose')}<button className="btn primary" disabled={busy === 'email'}>{busy === 'email' ? 'Envoi…' : 'Recevoir le code'}</button></div>
+          {head(t('Connexion par e-mail', 'Sign in by email'), t('On t\'envoie un lien et un code de connexion. Pas de mot de passe à retenir.', 'We send you a sign-in link and code. No password to remember.'))}
+          <label className="field"><span className="ts-lbl">{t('Adresse e-mail', 'Email address')}</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('toi@exemple.com', 'you@example.com')} autoFocus /></label>
+          <div className="ts-row">{back(src ? 'none' : 'choose')}<button className="btn primary" disabled={busy === 'email'}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Recevoir le code', 'Get the code')}</button></div>
         </form>
       )}
 
       {step === 'email-none' && (<>
-        {head('Aucun compte avec cette adresse', <>Aucun compte TokenStudio n'utilise <b>{email}</b>. Rien n'a été créé.</>)}
+        {head(t('Aucun compte avec cette adresse', 'No account with this address'), <>{t('Aucun compte TokenStudio n\'utilise', 'No TokenStudio account uses')} <b>{email}</b>. {t('Rien n\'a été créé.', 'Nothing was created.')}</>)}
         <div className="ts-si-choices">
-          <button type="button" className="btn primary" disabled={busy === 'email'} onClick={() => sendEmail(null, true)}>{busy === 'email' ? 'Envoi…' : 'Créer mon compte avec cet e-mail'}</button>
-          <button type="button" className="btn" onClick={() => { setErr(null); setStep('email'); }}>Changer d'adresse</button>
-          <button type="button" className="btn ghost" onClick={simulate}>Essayer la démo sans compte</button>
+          <button type="button" className="btn primary" disabled={busy === 'email'} onClick={() => sendEmail(null, true)}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Créer mon compte avec cet e-mail', 'Create my account with this email')}</button>
+          <button type="button" className="btn" onClick={() => { setErr(null); setStep('email'); }}>{t('Changer d\'adresse', 'Change address')}</button>
+          <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
       </>)}
 
       {step === 'code' && (
         <form onSubmit={verify} className="ts-si-form">
-          {head('Vérifie ta boîte mail', <>Clique sur le lien reçu à <b>{email}</b>, ou saisis le code qu'il contient.</>)}
-          <label className="field"><span className="ts-lbl">Code reçu</span><input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" maxLength={10} autoFocus /></label>
-          <div className="ts-row"><button type="button" className="btn ghost" onClick={() => setStep('email')}>Changer d'adresse</button><button className="btn primary" disabled={busy === 'code'}>{busy === 'code' ? 'Vérification…' : 'Se connecter'}</button></div>
+          {head(t('Vérifie ta boîte mail', 'Check your inbox'), <>{t('Clique sur le lien reçu à', 'Click the link sent to')} <b>{email}</b>{t(', ou saisis le code qu\'il contient.', ', or enter the code it contains.')}</>)}
+          <label className="field"><span className="ts-lbl">{t('Code reçu', 'Code received')}</span><input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" maxLength={10} autoFocus /></label>
+          <div className="ts-row"><button type="button" className="btn ghost" onClick={() => setStep('email')}>{t('Changer d\'adresse', 'Change address')}</button><button className="btn primary" disabled={busy === 'code'}>{busy === 'code' ? t('Vérification…', 'Verifying…') : t('Se connecter', 'Sign in')}</button></div>
         </form>
       )}
       {err && <div className="ts-note bad" role="alert">{err}</div>}
@@ -247,10 +249,10 @@ export function SignInDialog() {
 
 export function readable(e: unknown): string {
   const m = (e as { message?: string })?.message || String(e);
-  if (/rejected|denied|declined|cancel/i.test(m)) return 'Signature refusée dans le wallet.';
-  if (/web3.*(disabled|not enabled)|provider.*disabled|unsupported provider/i.test(m)) return 'La connexion par wallet n\'est pas encore activée sur le serveur.';
-  if (/rate limit|too many/i.test(m)) return 'Trop de tentatives : réessaie dans quelques minutes.';
-  if (/expired|invalid.*(otp|token)|otp.*invalid/i.test(m)) return 'Code invalide ou expiré : demande un nouveau code.';
-  if (/redirect|url.*not allowed|uri/i.test(m)) return 'Cette adresse de site n\'est pas autorisée dans la configuration du serveur.';
+  if (/rejected|denied|declined|cancel/i.test(m)) return t('Signature refusée dans le wallet.', 'Signature rejected in the wallet.');
+  if (/web3.*(disabled|not enabled)|provider.*disabled|unsupported provider/i.test(m)) return t('La connexion par wallet n\'est pas encore activée sur le serveur.', 'Wallet sign-in isn\'t enabled on the server yet.');
+  if (/rate limit|too many/i.test(m)) return t('Trop de tentatives : réessaie dans quelques minutes.', 'Too many attempts: try again in a few minutes.');
+  if (/expired|invalid.*(otp|token)|otp.*invalid/i.test(m)) return t('Code invalide ou expiré : demande un nouveau code.', 'Invalid or expired code: request a new one.');
+  if (/redirect|url.*not allowed|uri/i.test(m)) return t('Cette adresse de site n\'est pas autorisée dans la configuration du serveur.', 'This site address isn\'t allowed in the server configuration.');
   return m.slice(0, 200);
 }

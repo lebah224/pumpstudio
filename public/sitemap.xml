@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://tokenstudio-sol.vercel.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://tokenstudio-sol.vercel.app/connexion</loc><priority>0.5</priority></url>
-  <url><loc>https://tokenstudio-sol.vercel.app/inscription</loc><priority>0.6</priority></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url><loc>https://tokenstudio-sol.vercel.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority><xhtml:link rel="alternate" hreflang="fr" href="https://tokenstudio-sol.vercel.app/?lang=fr"/><xhtml:link rel="alternate" hreflang="en" href="https://tokenstudio-sol.vercel.app/?lang=en"/></url>
+  <url><loc>https://tokenstudio-sol.vercel.app/connexion</loc><priority>0.5</priority><xhtml:link rel="alternate" hreflang="fr" href="https://tokenstudio-sol.vercel.app/connexion?lang=fr"/><xhtml:link rel="alternate" hreflang="en" href="https://tokenstudio-sol.vercel.app/connexion?lang=en"/></url>
+  <url><loc>https://tokenstudio-sol.vercel.app/inscription</loc><priority>0.6</priority><xhtml:link rel="alternate" hreflang="fr" href="https://tokenstudio-sol.vercel.app/inscription?lang=fr"/><xhtml:link rel="alternate" hreflang="en" href="https://tokenstudio-sol.vercel.app/inscription?lang=en"/></url>
+  <url><loc>https://tokenstudio-sol.vercel.app/conditions</loc><priority>0.3</priority><xhtml:link rel="alternate" hreflang="fr" href="https://tokenstudio-sol.vercel.app/conditions?lang=fr"/><xhtml:link rel="alternate" hreflang="en" href="https://tokenstudio-sol.vercel.app/conditions?lang=en"/></url>
+  <url><loc>https://tokenstudio-sol.vercel.app/confidentialite</loc><priority>0.3</priority><xhtml:link rel="alternate" hreflang="fr" href="https://tokenstudio-sol.vercel.app/confidentialite?lang=fr"/><xhtml:link rel="alternate" hreflang="en" href="https://tokenstudio-sol.vercel.app/confidentialite?lang=en"/></url>
+  <url><loc>https://tokenstudio-sol.vercel.app/risques</loc><priority>0.3</priority><xhtml:link rel="alternate" hreflang="fr" href="https://tokenstudio-sol.vercel.app/risques?lang=fr"/><xhtml:link rel="alternate" hreflang="en" href="https://tokenstudio-sol.vercel.app/risques?lang=en"/></url>
+  <url><loc>https://tokenstudio-sol.vercel.app/mentions-legales</loc><priority>0.2</priority><xhtml:link rel="alternate" hreflang="fr" href="https://tokenstudio-sol.vercel.app/mentions-legales?lang=fr"/><xhtml:link rel="alternate" hreflang="en" href="https://tokenstudio-sol.vercel.app/mentions-legales?lang=en"/></url>
 </urlset>

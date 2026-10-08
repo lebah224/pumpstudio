@@ -1,6 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { maybeSignedIn } from '../lib/guest';
+import { t } from '../lib/i18n';
+import { Brand, Footer } from './Chrome';
+import { LangSwitch } from './LangSwitch';
 
 /* ---------- petites icônes au trait ---------- */
 const P = (d: ReactNode) => <svg className="lp-i" viewBox="0 0 24 24" aria-hidden="true">{d}</svg>;
@@ -31,7 +34,7 @@ function Curve() {
   const area = cut.map(([x, v], i) => (i ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ') + ` L${X(fill).toFixed(1)} ${H - 14} L${X(0)} ${H - 14} Z`;
   const v = ((30 + 85 * fill) / 30) ** 2;
   return (
-    <svg className="lp-curve" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Courbe de liaison remplie à 62,4 %">
+    <svg className="lp-curve" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('Courbe de liaison remplie à 62,4 %', 'Bonding curve 62.4% filled')}>
       <defs>
         <linearGradient id="lpA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--gold)" stopOpacity=".38" /><stop offset="1" stopColor="var(--gold)" stopOpacity="0" /></linearGradient>
       </defs>
@@ -42,66 +45,66 @@ function Curve() {
       <line x1={X(fill)} x2={X(fill)} y1={Y(v)} y2={H - 14} className="lp-drop" />
       <circle cx={X(fill)} cy={Y(v)} r="6" className="lp-dot" />
       <text x="8" y={H - 1} className="lp-axis">0 SOL</text>
-      <text x={W - 8} y={H - 1} className="lp-axis" textAnchor="end">85 SOL · migration</text>
+      <text x={W - 8} y={H - 1} className="lp-axis" textAnchor="end">{t('85 SOL · migration', '85 SOL · migration')}</text>
     </svg>
   );
 }
 
 function HeroDesk() {
   return (
-    <div className="lp-desk" aria-label="Aperçu de TokenStudio (exemple)">
+    <div className="lp-desk" aria-label={t('Aperçu de TokenStudio (exemple)', 'TokenStudio preview (example)')}>
       <div className="lp-card lp-main">
         <div className="lp-card-h">
           <span className="lp-tok">RP</span>
           <span className="lp-tok-n"><b>Rocket Pup</b><small className="mono">$PUP · 7xKX…gAsU</small></span>
-          <span className="lp-pill">exemple</span>
+          <span className="lp-pill">{t('exemple', 'example')}</span>
         </div>
         <Curve />
         <div className="lp-stats">
-          <div><small>Courbe de liaison</small><b className="mono">62,4 %</b></div>
-          <div><small>SOL dans la courbe</small><b className="mono">53,0 / 85</b></div>
-          <div><small>Capitalisation</small><b className="mono">41,2 k$</b></div>
+          <div><small>{t('Courbe de liaison', 'Bonding curve')}</small><b className="mono">{t('62,4 %', '62.4%')}</b></div>
+          <div><small>{t('SOL dans la courbe', 'SOL in the curve')}</small><b className="mono">{t('53,0 / 85', '53.0 / 85')}</b></div>
+          <div><small>{t('Capitalisation', 'Market cap')}</small><b className="mono">{t('41,2 k$', '$41.2k')}</b></div>
         </div>
         <div className="lp-bar" aria-hidden="true"><i style={{ width: '62.4%' }} /></div>
       </div>
       <div className="lp-card lp-side lp-plan">
-        <div className="lp-mini-h">{IC.gauge}<b>Plan de sortie</b></div>
+        <div className="lp-mini-h">{IC.gauge}<b>{t('Plan de sortie', 'Exit plan')}</b></div>
         <ul>
-          <li><span className="mono">×2</span><span>vendre 25 %</span><em className="ok">atteint</em></li>
-          <li><span className="mono">×3</span><span>vendre 25 %</span><em>en attente</em></li>
-          <li><span className="mono">×5</span><span>vendre 25 %</span><em>en attente</em></li>
-          <li><span className="mono">−30 %</span><span>stop suiveur</span><em>armé</em></li>
+          <li><span className="mono">×2</span><span>{t('vendre 25 %', 'sell 25%')}</span><em className="ok">{t('atteint', 'hit')}</em></li>
+          <li><span className="mono">×3</span><span>{t('vendre 25 %', 'sell 25%')}</span><em>{t('en attente', 'waiting')}</em></li>
+          <li><span className="mono">×5</span><span>{t('vendre 25 %', 'sell 25%')}</span><em>{t('en attente', 'waiting')}</em></li>
+          <li><span className="mono">−30 %</span><span>{t('stop suiveur', 'trailing stop')}</span><em>{t('armé', 'armed')}</em></li>
         </ul>
       </div>
       <div className="lp-card lp-side lp-check">
-        <div className="lp-mini-h">{IC.lock}<b>Lancement vérifié</b></div>
+        <div className="lp-mini-h">{IC.lock}<b>{t('Lancement vérifié', 'Verified launch')}</b></div>
         <ol>
-          <li>{IC.check}Logo et fiche sur IPFS</li>
-          <li>{IC.check}Transaction préparée</li>
-          <li>{IC.check}Simulation acceptée</li>
-          <li className="now"><i />Signature dans ton wallet</li>
+          <li>{IC.check}{t('Logo et fiche sur IPFS', 'Logo and metadata on IPFS')}</li>
+          <li>{IC.check}{t('Transaction préparée', 'Transaction prepared')}</li>
+          <li>{IC.check}{t('Simulation acceptée', 'Simulation passed')}</li>
+          <li className="now"><i />{t('Signature dans ton wallet', 'Signing in your wallet')}</li>
         </ol>
       </div>
     </div>
   );
 }
 
-const FEATURES: { ic: ReactNode; t: string; d: string; unit: string }[] = [
-  { ic: IC.spark, t: 'Studio de création', d: 'Idées de noms, symboles, descriptions et logos dans six univers. Ou pars de ton propre concept.', unit: '6 univers · 12 styles de logo' },
-  { ic: IC.rocket, t: 'Lancement vérifié', d: 'Le token est préparé, simulé sur la blockchain, puis publié sur pump.fun après ta signature.', unit: '≈ 0,02 SOL de frais réseau' },
-  { ic: IC.swap, t: 'Trader et ordres', d: 'Achat, vente, analyse de risque, prises de profit par paliers et stop suiveur, surveillés en continu.', unit: 'Alertes push même studio fermé' },
-  { ic: IC.bot, t: 'Bot de trading', d: 'Trois stratégies sur le flux pump.fun en direct. Entraîne-toi en démo, puis passe en réel avec plafonds.', unit: 'Équilibrée · Migration · Flash' },
-  { ic: IC.wallet, t: 'Portefeuille', d: 'Valeur, évolution, répartition, tokens détenus et activité. Dépôt par QR code, retrait en un geste.', unit: 'Solana Pay inclus' },
-  { ic: IC.radio, t: 'Diffusion', d: 'Les étapes pour être référencé sur DexScreener, GeckoTerminal, Jupiter, CoinGecko et les autres.', unit: '8 plateformes suivies' },
+const FEATURES = (): { ic: ReactNode; t: string; d: string; unit: string }[] => [
+  { ic: IC.spark, t: t('Studio de création', 'Creation studio'), d: t('Idées de noms, symboles, descriptions et logos dans six univers. Ou pars de ton propre concept.', 'Name, ticker, description and logo ideas across six themes. Or start from your own concept.'), unit: t('6 univers · 12 styles de logo', '6 themes · 12 logo styles') },
+  { ic: IC.rocket, t: t('Lancement vérifié', 'Verified launch'), d: t('Le token est préparé, simulé sur la blockchain, puis publié sur pump.fun après ta signature.', 'Your token is prepared, simulated on-chain, then published on pump.fun once you sign.'), unit: t('≈ 0,02 SOL de frais réseau', '≈ 0.02 SOL in network fees') },
+  { ic: IC.swap, t: t('Trader et ordres', 'Trading and orders'), d: t('Achat, vente, analyse de risque, prises de profit par paliers et stop suiveur, surveillés en continu.', 'Buy, sell, risk analysis, tiered take-profits and trailing stops, watched around the clock.'), unit: t('Ventes automatiques par le serveur', 'Automatic sells by the server') },
+  { ic: IC.bot, t: t('Bot de trading', 'Trading bot'), d: t('Trois stratégies sur le flux pump.fun en direct. Entraîne-toi en démo, puis passe en réel avec plafonds.', 'Three strategies on the live pump.fun feed. Practise in the demo, then go live with spending caps.'), unit: t('Équilibrée · Migration · Flash', 'Balanced · Migration · Flash') },
+  { ic: IC.wallet, t: t('Portefeuille', 'Portfolio'), d: t('Valeur, évolution, répartition, tokens détenus et activité. Dépôt par QR code, retrait en un geste.', 'Value, history, allocation, holdings and activity. Deposit by QR code, withdraw in one tap.'), unit: t('Solana Pay inclus', 'Solana Pay included') },
+  { ic: IC.radio, t: t('Diffusion', 'Listings'), d: t('Les étapes pour être référencé sur DexScreener, GeckoTerminal, Jupiter, CoinGecko et les autres.', 'The steps to get listed on DexScreener, GeckoTerminal, Jupiter, CoinGecko and more.'), unit: t('8 plateformes suivies', '8 platforms tracked') },
 ];
 
-const FAQ: [string, string][] = [
-  ['Combien coûte TokenStudio ?', 'L\'outil est gratuit. Tu ne paies que les frais du réseau Solana et de pump.fun lors d\'un lancement ou d\'un trade, environ 0,02 SOL pour une création.'],
-  ['TokenStudio peut-il toucher à mes fonds ?', 'Non. Tes clés restent dans ton wallet, qui te présente chaque transaction à signer. Seul le wallet rapide, si tu le crées, signe pour toi, et uniquement des opérations de trading dans la limite de tes plafonds.'],
-  ['Sous quel nom mon token apparaît-il sur pump.fun ?', 'Sous l\'adresse de ton wallet, ou sous ton pseudo pump.fun si ce wallet a un profil. Ton compte TokenStudio et ton e-mail ne sont jamais publiés.'],
-  ['À quoi sert la démo ?', 'À tout découvrir sans compte, avec un wallet démo de 10 SOL fictifs : création, lancement, ordres, bot, tout est simulé. Pour passer en réel, crée ton compte gratuit.'],
-  ['Quels sont les risques ?', 'Les memecoins sont extrêmement volatils : leur valeur peut tomber à zéro en quelques minutes. N\'engage que ce que tu acceptes de perdre. TokenStudio ne promet aucun gain.'],
-  ['Où sont mes données ?', 'Sur ton compte : tout est enregistré automatiquement et te suit sur chaque appareil. Tu peux les exporter ou supprimer ton compte à tout moment.'],
+const FAQ = (): [string, string][] => [
+  [t('Combien coûte TokenStudio ?', 'How much does TokenStudio cost?'), t('L\'outil est gratuit. Tu ne paies que les frais du réseau Solana et de pump.fun lors d\'un lancement ou d\'un trade, environ 0,02 SOL pour une création.', 'The tool is free. You only pay Solana network and pump.fun fees when you launch or trade, about 0.02 SOL for a token creation.')],
+  [t('TokenStudio peut-il toucher à mes fonds ?', 'Can TokenStudio touch my funds?'), t('Non. Tes clés restent dans ton wallet, qui te présente chaque transaction à signer. Seul le wallet rapide, si tu le crées, signe pour toi, et uniquement des opérations de trading dans la limite de tes plafonds.', 'No. Your keys stay in your wallet, which shows you every transaction to sign. Only the quick wallet, if you create one, signs for you, and only trading operations within your caps.')],
+  [t('Sous quel nom mon token apparaît-il sur pump.fun ?', 'Under what name does my token appear on pump.fun?'), t('Sous l\'adresse de ton wallet, ou sous ton pseudo pump.fun si ce wallet a un profil. Ton compte TokenStudio et ton e-mail ne sont jamais publiés.', 'Under your wallet address, or your pump.fun username if that wallet has a profile. Your TokenStudio account and email are never published.')],
+  [t('À quoi sert la démo ?', 'What is the demo for?'), t('À tout découvrir sans compte, avec un wallet démo de 10 SOL fictifs : création, lancement, ordres, bot, tout est simulé. Pour passer en réel, crée ton compte gratuit.', 'To try everything without an account, with a demo wallet holding 10 fake SOL: creation, launch, orders, bot, everything is simulated. To go live, create your free account.')],
+  [t('Quels sont les risques ?', 'What are the risks?'), t('Les memecoins sont extrêmement volatils : leur valeur peut tomber à zéro en quelques minutes. N\'engage que ce que tu acceptes de perdre. TokenStudio ne promet aucun gain.', 'Memecoins are extremely volatile: their value can drop to zero within minutes. Only commit what you can afford to lose. TokenStudio promises no profit.')],
+  [t('Où sont mes données ?', 'Where is my data?'), t('Sur ton compte : tout est enregistré automatiquement et te suit sur chaque appareil. Tu peux les exporter ou supprimer ton compte à tout moment.', 'In your account: everything is saved automatically and follows you on every device. You can export it or delete your account at any time.')],
 ];
 
 export function Landing() {
@@ -116,27 +119,24 @@ export function Landing() {
   const signed = ready && !!session;
   // connecté : l'accueil laisse place à l'outil
   useEffect(() => { if (signed) location.replace('/app'); }, [signed]);
-  const start = signed ? { href: '/app', label: 'Ouvrir l\'outil' } : { href: '/inscription', label: 'Commencer gratuitement' };
+  const start = signed ? { href: '/app', label: t('Ouvrir l\'outil', 'Open the tool') } : { href: '/inscription', label: t('Commencer gratuitement', 'Get started free') };
+  const demo = t('Essayer la démo', 'Try the demo');
 
   // session enregistrée en cours de vérification, ou redirection vers l'outil : rien à afficher
   if ((!ready && maybeSignedIn()) || signed) return null;
   return (
     <div className="lp">
-      {deleted && <div className="lp-flash" role="status">Ton compte et toutes ses données ont été supprimés.</div>}
+      {deleted && <div className="lp-flash" role="status">{t('Ton compte et toutes ses données ont été supprimés.', 'Your account and all its data have been deleted.')}</div>}
       <header className={'lp-nav' + (scrolled ? ' on' : '')}>
         <div className="lp-wrap lp-nav-in">
-          <a className="lp-brand" href="/" aria-label="TokenStudio, accueil">
-            <span className="lp-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 20.5h17" /><path d="M4 18c7 0 11-3.5 15.5-13" /><circle cx="19.5" cy="5" r="1.6" /></svg></span>
-            <span>Token<b>Studio</b></span>
-          </a>
-          <nav className="lp-links" aria-label="Sections">
-            <a href="#fonctionnalites">Fonctionnalités</a><a href="#etapes">Comment ça marche</a><a href="#securite">Sécurité</a><a href="#faq">FAQ</a>
+          <Brand />
+          <nav className="lp-links" aria-label={t('Sections', 'Sections')}>
+            <a href="#fonctionnalites">{t('Fonctionnalités', 'Features')}</a><a href="#etapes">{t('Comment ça marche', 'How it works')}</a><a href="#securite">{t('Sécurité', 'Security')}</a><a href="#faq">{t('FAQ', 'FAQ')}</a>
           </nav>
           <div className="lp-nav-cta">
-            {signed ? <a className="lp-btn" href="/app">Ouvrir l'outil</a> : (<>
-              <a className="lp-btn ghost" href="/connexion">Se connecter</a>
-              <a className="lp-btn" href="/app?demo=1">Essayer la démo</a>
-            </>)}
+            <LangSwitch />
+            <a className="lp-btn ghost" href="/connexion">{t('Se connecter', 'Sign in')}</a>
+            <a className="lp-btn" href="/app?demo=1">{demo}</a>
           </div>
         </div>
       </header>
@@ -144,33 +144,33 @@ export function Landing() {
       <main>
         <section className="lp-hero lp-wrap">
           <div className="lp-hero-t">
-            <p className="lp-eyebrow">Studio de tokens Solana · pump.fun</p>
-            <h1>Crée, lance et pilote tes tokens Solana.<span> En toute maîtrise.</span></h1>
-            <p className="lp-lead">Du concept au lancement sur pump.fun, puis le suivi, les ordres et le bot de trading. Chaque transaction est vérifiée sur la blockchain avant que tu la signes.</p>
+            <p className="lp-eyebrow">{t('Studio de tokens Solana · pump.fun', 'Solana token studio · pump.fun')}</p>
+            <h1>{t('Crée, lance et pilote tes tokens Solana.', 'Create, launch and manage your Solana tokens.')}<span>{t(' En toute maîtrise.', ' Fully in control.')}</span></h1>
+            <p className="lp-lead">{t('Du concept au lancement sur pump.fun, puis le suivi, les ordres et le bot de trading. Chaque transaction est vérifiée sur la blockchain avant que tu la signes.', 'From concept to launch on pump.fun, then tracking, orders and the trading bot. Every transaction is checked on-chain before you sign it.')}</p>
             <div className="lp-cta">
               <a className="lp-btn lg" href={start.href}>{start.label}{IC.arrow}</a>
-              <a className="lp-btn lg ghost" href="/app?demo=1">Essayer la démo</a>
+              <a className="lp-btn lg ghost" href="/app?demo=1">{demo}</a>
             </div>
             <ul className="lp-trust">
-              <li>{IC.key}Non-custodial : tes clés restent dans ton wallet</li>
-              <li>{IC.eye}Démo sans compte, 10 SOL fictifs</li>
+              <li>{IC.key}{t('Non-custodial : tes clés restent dans ton wallet', 'Non-custodial: your keys stay in your wallet')}</li>
+              <li>{IC.eye}{t('Démo sans compte, 10 SOL fictifs', 'No-account demo, 10 fake SOL')}</li>
             </ul>
           </div>
           <HeroDesk />
         </section>
 
-        <section className="lp-strip" aria-label="Compatibilité">
+        <section className="lp-strip" aria-label={t('Compatibilité', 'Compatibility')}>
           <div className="lp-wrap lp-strip-in">
-            <span>Fonctionne avec</span>
+            <span>{t('Fonctionne avec', 'Works with')}</span>
             <ul><li>Phantom</li><li>Solflare</li><li>Backpack</li><li>Coinbase Wallet</li><li>OKX Wallet</li><li>Trust Wallet</li></ul>
-            <span className="lp-strip-src">Données pump.fun, DexScreener, Jupiter</span>
+            <span className="lp-strip-src">{t('Données pump.fun, DexScreener, Jupiter', 'Data from pump.fun, DexScreener, Jupiter')}</span>
           </div>
         </section>
 
         <section className="lp-sec lp-wrap" id="fonctionnalites">
-          <div className="lp-sec-h"><p className="lp-eyebrow">Fonctionnalités</p><h2>Tout le cycle de vie d'un token, au même endroit.</h2></div>
+          <div className="lp-sec-h"><p className="lp-eyebrow">{t('Fonctionnalités', 'Features')}</p><h2>{t('Tout le cycle de vie d\'un token, au même endroit.', 'A token\'s whole life cycle, in one place.')}</h2></div>
           <div className="lp-feat">
-            {FEATURES.map((f) => (
+            {FEATURES().map((f) => (
               <article key={f.t} className="lp-f">
                 <span className="lp-f-ic">{f.ic}</span>
                 <h3>{f.t}</h3><p>{f.d}</p>
@@ -181,34 +181,34 @@ export function Landing() {
         </section>
 
         <section className="lp-sec lp-wrap" id="etapes">
-          <div className="lp-sec-h"><p className="lp-eyebrow">Comment ça marche</p><h2>Trois étapes, de l'idée à la courbe.</h2></div>
+          <div className="lp-sec-h"><p className="lp-eyebrow">{t('Comment ça marche', 'How it works')}</p><h2>{t('Trois étapes, de l\'idée à la courbe.', 'Three steps, from idea to curve.')}</h2></div>
           <ol className="lp-steps">
-            <li><span className="lp-n mono">1</span><h3>Crée</h3><p>Choisis un univers, une idée, un logo. Le studio rédige la fiche et vérifie qu'il ne manque rien.</p></li>
-            <li><span className="lp-n mono">2</span><h3>Lance</h3><p>Le token est simulé sur la blockchain, puis publié sur pump.fun dès que tu signes. Ton achat de départ passe dans la même transaction.</p></li>
-            <li><span className="lp-n mono">3</span><h3>Pilote</h3><p>Suis la courbe, fixe tes paliers de vente, reçois les alertes, laisse le bot travailler dans tes limites.</p></li>
+            <li><span className="lp-n mono">1</span><h3>{t('Crée', 'Create')}</h3><p>{t('Choisis un univers, une idée, un logo. Le studio rédige la fiche et vérifie qu\'il ne manque rien.', 'Pick a theme, an idea, a logo. The studio writes the token page and checks nothing is missing.')}</p></li>
+            <li><span className="lp-n mono">2</span><h3>{t('Lance', 'Launch')}</h3><p>{t('Le token est simulé sur la blockchain, puis publié sur pump.fun dès que tu signes. Ton achat de départ passe dans la même transaction.', 'The token is simulated on-chain, then published on pump.fun as soon as you sign. Your initial buy goes through in the same transaction.')}</p></li>
+            <li><span className="lp-n mono">3</span><h3>{t('Pilote', 'Manage')}</h3><p>{t('Suis la courbe, fixe tes paliers de vente, reçois les alertes, laisse le bot travailler dans tes limites.', 'Follow the curve, set your sell tiers, get alerts, and let the bot work within your limits.')}</p></li>
           </ol>
         </section>
 
         <section className="lp-sec lp-wrap" id="modes">
-          <div className="lp-sec-h"><p className="lp-eyebrow">Démo ou réel</p><h2>Entraîne-toi sans risque, passe en réel quand tu es prêt.</h2></div>
+          <div className="lp-sec-h"><p className="lp-eyebrow">{t('Démo ou réel', 'Demo or live')}</p><h2>{t('Entraîne-toi sans risque, passe en réel quand tu es prêt.', 'Practise risk-free, go live when you\'re ready.')}</h2></div>
           <div className="lp-modes">
             <article className="lp-mode demo">
-              <header><span className="lp-tag v">Démo</span><b>Sans compte</b></header>
+              <header><span className="lp-tag v">{t('Démo', 'Demo')}</span><b>{t('Sans compte', 'No account')}</b></header>
               <ul>
-                <li>Wallet démo de 10 SOL fictifs</li>
-                <li>Lancements, achats et ventes simulés</li>
-                <li>Bot sur données simulées</li>
-                <li>Crée ton compte quand tu veux passer en réel</li>
+                <li>{t('Wallet démo de 10 SOL fictifs', 'Demo wallet with 10 fake SOL')}</li>
+                <li>{t('Lancements, achats et ventes simulés', 'Simulated launches, buys and sells')}</li>
+                <li>{t('Bot sur données simulées', 'Bot on simulated data')}</li>
+                <li>{t('Crée ton compte quand tu veux passer en réel', 'Create your account when you want to go live')}</li>
               </ul>
-              <a className="lp-btn ghost" href="/app?demo=1">Ouvrir la démo</a>
+              <a className="lp-btn ghost" href="/app?demo=1">{t('Ouvrir la démo', 'Open the demo')}</a>
             </article>
             <article className="lp-mode real">
-              <header><span className="lp-tag r">Réel</span><b>Avec un compte gratuit</b></header>
+              <header><span className="lp-tag r">{t('Réel', 'Live')}</span><b>{t('Avec un compte gratuit', 'With a free account')}</b></header>
               <ul>
-                <li>Ton vrai wallet : Phantom, Solflare, Backpack…</li>
-                <li>Vérification sur la blockchain avant chaque signature</li>
-                <li>« Tester avant de lancer » sur chaque action</li>
-                <li>Ordres et bot avec plafonds, alertes sur tes appareils</li>
+                <li>{t('Ton vrai wallet : Phantom, Solflare, Backpack…', 'Your real wallet: Phantom, Solflare, Backpack…')}</li>
+                <li>{t('Vérification sur la blockchain avant chaque signature', 'On-chain check before every signature')}</li>
+                <li>{t('« Tester avant de lancer » sur chaque action', '“Test before launching” on every action')}</li>
+                <li>{t('Ordres et bot avec plafonds, alertes sur tes appareils', 'Orders and bot with caps, alerts on your devices')}</li>
               </ul>
               <a className="lp-btn" href={start.href}>{start.label}</a>
             </article>
@@ -216,43 +216,37 @@ export function Landing() {
         </section>
 
         <section className="lp-sec lp-wrap lp-sec-split" id="securite">
-          <div className="lp-sec-h"><p className="lp-eyebrow">Sécurité</p><h2>Tes fonds restent à toi.</h2>
-            <p className="lp-sub">TokenStudio prépare les transactions. Ton wallet les signe. Rien ne part sans ton accord.</p></div>
+          <div className="lp-sec-h"><p className="lp-eyebrow">{t('Sécurité', 'Security')}</p><h2>{t('Tes fonds restent à toi.', 'Your funds stay yours.')}</h2>
+            <p className="lp-sub">{t('TokenStudio prépare les transactions. Ton wallet les signe. Rien ne part sans ton accord.', 'TokenStudio prepares transactions. Your wallet signs them. Nothing goes out without your approval.')}</p></div>
           <ul className="lp-sec-list">
-            <li>{IC.key}<div><b>Non-custodial</b><span>Tes clés ne quittent jamais ton wallet. L'outil ne voit que ton adresse publique.</span></div></li>
-            <li>{IC.eye}<div><b>Vérifié avant signature</b><span>Chaque transaction est simulée sur la blockchain : si elle doit échouer, tu ne paies rien.</span></div></li>
-            <li>{IC.gauge}<div><b>Plafonds</b><span>Limite par achat et plafond journalier pour le bot et le wallet rapide.</span></div></li>
-            <li>{IC.lock}<div><b>Compte protégé</b><span>Connexion par wallet ou e-mail sans mot de passe, double authentification, journal de sécurité.</span></div></li>
-            <li>{IC.bell}<div><b>Alertes, jamais d'exécution cachée</b><span>Le serveur te prévient quand un ordre se déclenche. Il ne vend que selon les ordres que tu as réglés.</span></div></li>
+            <li>{IC.key}<div><b>{t('Non-custodial', 'Non-custodial')}</b><span>{t('Tes clés ne quittent jamais ton wallet. L\'outil ne voit que ton adresse publique.', 'Your keys never leave your wallet. The tool only sees your public address.')}</span></div></li>
+            <li>{IC.eye}<div><b>{t('Vérifié avant signature', 'Checked before signing')}</b><span>{t('Chaque transaction est simulée sur la blockchain : si elle doit échouer, tu ne paies rien.', 'Every transaction is simulated on-chain: if it would fail, you pay nothing.')}</span></div></li>
+            <li>{IC.gauge}<div><b>{t('Plafonds', 'Caps')}</b><span>{t('Limite par achat et plafond journalier pour le bot et le wallet rapide.', 'A per-buy limit and a daily cap for the bot and the quick wallet.')}</span></div></li>
+            <li>{IC.lock}<div><b>{t('Compte protégé', 'Protected account')}</b><span>{t('Connexion par wallet ou e-mail sans mot de passe, double authentification, journal de sécurité.', 'Sign in with your wallet or a passwordless email, two-factor authentication, security log.')}</span></div></li>
+            <li>{IC.bell}<div><b>{t('Alertes, jamais d\'exécution cachée', 'Alerts, never hidden execution')}</b><span>{t('Le serveur te prévient quand un ordre se déclenche. Il ne vend que selon les ordres que tu as réglés.', 'The server lets you know when an order triggers. It only sells according to the orders you set.')}</span></div></li>
           </ul>
         </section>
 
         <section className="lp-sec lp-wrap" id="faq">
-          <div className="lp-sec-h"><p className="lp-eyebrow">Questions fréquentes</p><h2>Ce qu'on nous demande le plus.</h2></div>
+          <div className="lp-sec-h"><p className="lp-eyebrow">{t('Questions fréquentes', 'Frequently asked questions')}</p><h2>{t('Ce qu\'on nous demande le plus.', 'What people ask us most.')}</h2></div>
           <div className="lp-faq">
-            {FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}
+            {FAQ().map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}
           </div>
         </section>
 
         <section className="lp-final lp-wrap">
           <div className="lp-final-in">
-            <h2>Ton prochain token commence ici.</h2>
-            <p>Découvre l'outil en démo, ou crée ton compte gratuit pour passer en réel.</p>
+            <h2>{t('Ton prochain token commence ici.', 'Your next token starts here.')}</h2>
+            <p>{t('Découvre l\'outil en démo, ou crée ton compte gratuit pour passer en réel.', 'Explore the tool in the demo, or create your free account to go live.')}</p>
             <div className="lp-cta">
               <a className="lp-btn lg" href={start.href}>{start.label}{IC.arrow}</a>
-              <a className="lp-btn lg ghost" href="/app?demo=1">Essayer la démo</a>
+              <a className="lp-btn lg ghost" href="/app?demo=1">{demo}</a>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="lp-foot">
-        <div className="lp-wrap lp-foot-in">
-          <div className="lp-brand sm"><span className="lp-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 20.5h17" /><path d="M4 18c7 0 11-3.5 15.5-13" /><circle cx="19.5" cy="5" r="1.6" /></svg></span><span>Token<b>Studio</b></span></div>
-          <p className="lp-risk">Les memecoins sont des actifs extrêmement risqués. TokenStudio est un outil : il ne fournit pas de conseil en investissement et ne garantit aucun gain. TokenStudio n'est affilié ni à pump.fun ni aux wallets cités.</p>
-          <nav className="lp-foot-links" aria-label="Liens"><a href="/app?demo=1">Démo</a><a href="/connexion">Connexion</a><a href="/inscription">Créer un compte</a></nav>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

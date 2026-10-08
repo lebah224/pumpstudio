@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { studio } from '../legacy/bridge';
 import type { Wallet } from '../lib/types';
 import { detect, type SolProvider } from './catalog';
+import { t } from '../lib/i18n';
 
 /** Wallet avec lequel on signe : une extension (Phantom…) ou le wallet rapide du studio */
 export type Source = { kind: 'ext'; id: string } | { kind: 'quick' };
@@ -23,7 +24,7 @@ export function signerFor(src: Source): Signer {
   }
   const p = detect().find((x) => x.id === src.id)?.p;
   const address = p?.publicKey?.toString();
-  if (!p || !address) throw new Error('Wallet non connecté : reconnecte-le puis réessaie.');
+  if (!p || !address) throw new Error(t('Wallet non connecté : reconnecte-le puis réessaie.', 'Wallet not connected: reconnect it and try again.'));
   return {
     address, provider: p,
     signMessage: async (m) => { const r = await p.signMessage(m, 'utf8'); return r instanceof Uint8Array ? r : r.signature; },
@@ -33,11 +34,11 @@ export function signerFor(src: Source): Signer {
 /** Un compte existe-t-il pour cette adresse ? (connexion par wallet, wallet lié à un compte, ou aucun) */
 export async function accountStatus(address: string): Promise<AccountStatus> {
   const { data, error } = await supabase.rpc('wallet_account_status', { addr: address });
-  if (error) throw new Error('Vérification du compte impossible : ' + error.message);
+  if (error) throw new Error(t('Vérification du compte impossible : ', 'Could not check the account: ') + error.message);
   return data === 'web3' || data === 'linked' ? data : 'none';
 }
 
-const STATEMENT = 'Connexion à TokenStudio. Cette signature est gratuite : elle prouve que ce wallet t\'appartient et n\'autorise aucune transaction.';
+const STATEMENT = () => t('Connexion à TokenStudio. Cette signature est gratuite : elle prouve que ce wallet t\'appartient et n\'autorise aucune transaction.', 'Sign in to TokenStudio. This signature is free: it proves this wallet is yours and authorizes no transaction.');
 
 /** Connexion Supabase native (Sign-In With Solana) : crée le compte s'il n'existe pas, donc appelée seulement après accord */
 async function web3SignIn(s: Signer) {
@@ -45,7 +46,7 @@ async function web3SignIn(s: Signer) {
   // car plusieurs wallets répondent à signMessage par { signature } au lieu d'un Uint8Array
   const wallet = typeof s.provider?.signIn === 'function' ? s.provider
     : { publicKey: { toBase58: () => s.address }, signMessage: (m: Uint8Array) => s.signMessage(m) };
-  const { error } = await supabase.auth.signInWithWeb3({ chain: 'solana', statement: STATEMENT, wallet: wallet as never });
+  const { error } = await supabase.auth.signInWithWeb3({ chain: 'solana', statement: STATEMENT(), wallet: wallet as never });
   if (error) throw error;
 }
 

@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { readable } from './SignIn';
 import { toast } from '../legacy/bridge';
 import { logoutEverywhere } from '../account/logout';
+import { t } from '../lib/i18n';
 
 type Factor = { id: string; friendly_name?: string; factor_type: string; status: string; created_at: string };
 
@@ -18,19 +19,19 @@ export function MfaChallenge() {
     ev.preventDefault(); setErr(null); setBusy(true);
     try {
       const { data: f, error: e1 } = await supabase.auth.mfa.listFactors(); if (e1) throw e1;
-      const totp = f.totp.find((x) => x.status === 'verified'); if (!totp) throw new Error('Aucun facteur actif.');
+      const totp = f.totp.find((x) => x.status === 'verified'); if (!totp) throw new Error(t('Aucun facteur actif.', 'No active factor.'));
       const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: totp.id, code: code.replace(/\D/g, '') });
       if (error) throw error;
       await refreshAal();
     } catch (e) { setErr(readable(e)); } finally { setBusy(false); }
   }
   return (
-    <div className="ts-modal" role="dialog" aria-modal="true" aria-label="Double authentification">
+    <div className="ts-modal" role="dialog" aria-modal="true" aria-label={t('Double authentification', 'Two-factor authentication')}>
       <form className="ts-modal-box" onSubmit={submit}>
-        <div className="ts-si-h"><b>Double authentification</b><span>Saisis le code à 6 chiffres affiché par ton application (Google Authenticator, 1Password, Authy…).</span></div>
-        <label className="field"><span className="ts-lbl">Code</span><input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} autoFocus /></label>
+        <div className="ts-si-h"><b>{t('Double authentification', 'Two-factor authentication')}</b><span>{t('Saisis le code à 6 chiffres affiché par ton application (Google Authenticator, 1Password, Authy…).', 'Enter the 6-digit code shown by your app (Google Authenticator, 1Password, Authy…).')}</span></div>
+        <label className="field"><span className="ts-lbl">{t('Code', 'Code')}</span><input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} autoFocus /></label>
         {err && <div className="ts-note bad" role="alert">{err}</div>}
-        <div className="ts-row"><button type="button" className="btn ghost" onClick={() => logoutEverywhere(signOut)}>Se déconnecter</button><button className="btn primary" disabled={busy}>{busy ? 'Vérification…' : 'Valider'}</button></div>
+        <div className="ts-row"><button type="button" className="btn ghost" onClick={() => logoutEverywhere(signOut)}>{t('Se déconnecter', 'Sign out')}</button><button className="btn primary" disabled={busy}>{busy ? t('Vérification…', 'Verifying…') : t('Valider', 'Confirm')}</button></div>
       </form>
     </div>
   );

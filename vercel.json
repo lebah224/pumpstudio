@@ -7,7 +7,11 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/connexion", "destination": "/" },
-    { "source": "/inscription", "destination": "/" }
+    { "source": "/inscription", "destination": "/" },
+    { "source": "/conditions", "destination": "/" },
+    { "source": "/confidentialite", "destination": "/" },
+    { "source": "/risques", "destination": "/" },
+    { "source": "/mentions-legales", "destination": "/" }
   ],
   "headers": [
     {
