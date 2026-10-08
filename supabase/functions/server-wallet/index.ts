@@ -95,7 +95,9 @@ const PUMP = new Set(['6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P', 'pAMMBay6oc
 const WSOL = 'So11111111111111111111111111111111111111112';
 const u32 = (d: Uint8Array, o: number) => d[o]! | (d[o + 1]! << 8) | (d[o + 2]! << 16) | (d[o + 3]! << 24);
 const u64 = (d: Uint8Array, o: number) => Number(new DataView(d.buffer, d.byteOffset + o, 8).getBigUint64(0, true));
-function policy(tx: VersionedTransaction, payer: string) {
+// sell : vente lancée par le serveur lui-même ; les frais de service ne sont pas plafonnés ici, car la simulation
+// vérifie ensuite que le wallet ne perd pas de SOL
+function policy(tx: VersionedTransaction, payer: string, sell = false) {
   const keys = tx.message.staticAccountKeys.map((k) => k.toBase58());
   if (keys[0] !== payer) throw new Fail(403, 'Transaction refusée : le wallet serveur doit payer la transaction.');
   const wsolAta = PublicKey.findProgramAddressSync([new PublicKey(payer).toBuffer(), new PublicKey(TOKEN).toBuffer(), new PublicKey(WSOL).toBuffer()], new PublicKey(ATA))[0].toBase58();
@@ -111,7 +113,7 @@ function policy(tx: VersionedTransaction, payer: string) {
       if (t === 2) {                                         // virement : vers son propre compte SOL enveloppé, ou petits frais (pourboire, frais de service)
         const to = keys[ix.accountKeyIndexes[1]!], lam = u64(d, 4);
         if (to === wsolAta) continue;
-        small += lam; if (to && small <= 50_000_000) continue; // 0,05 SOL au total
+        small += lam; if (to && (sell || small <= 50_000_000)) continue; // 0,05 SOL au total
       }
       throw new Fail(403, 'Transaction refusée : virement de SOL non autorisé.');
     }
@@ -125,11 +127,11 @@ function policy(tx: VersionedTransaction, payer: string) {
   }
 }
 
-async function signSend(uid: string, row: Row, raw: unknown) {
+async function signSend(uid: string, row: Row, raw: unknown, sell = false) {
   if (typeof raw !== 'string' || raw.length > 4000) throw new Fail(400, 'Transaction invalide.');
   let tx: VersionedTransaction;
   try { tx = VersionedTransaction.deserialize(unb64(raw)); } catch { throw new Fail(400, 'Transaction illisible.'); }
-  policy(tx, row.address);
+  policy(tx, row.address, sell);
   // simulation : combien de SOL sortent vraiment du wallet ?
   const [pre, sim] = await Promise.all([
     rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }]),
@@ -139,6 +141,7 @@ async function signSend(uid: string, row: Row, raw: unknown) {
   const post = sim.value.accounts?.[0]?.lamports;
   if (post == null) throw new Fail(502, 'Simulation incomplète : réessaie.');
   const spent = Math.max(0, (pre.value - post) / 1e9);
+  if (sell && pre.value - post > 10_000_000) throw new Fail(403, 'Vente refusée : elle ferait perdre du SOL au wallet.');
   const { data: pref } = await admin.from('preferences').select('max_buy_sol').eq('user_id', uid).maybeSingle();
   const maxBuy = Number(pref?.max_buy_sol ?? 1);
   if (spent > maxBuy + 0.05) throw new Fail(403, 'Au-delà de ta limite par achat (' + maxBuy + ' SOL). Modifie-la dans Préférences si c\'est voulu.');
@@ -157,6 +160,46 @@ async function signSend(uid: string, row: Row, raw: unknown) {
     if (counted) await admin.rpc('srvw_release', { uid, sol: counted });
     throw e;
   }
+}
+
+/* ---------- vente automatique d'un ordre (appel interne de la surveillance des ordres, même outil fermé) ---------- */
+const B58RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+async function tokenHeld(owner: string, mint: string) {
+  const r = await rpc<{ value: { account: { data: { parsed: { info: { tokenAmount: { amount: string; decimals: number } } } } } }[] }>('getTokenAccountsByOwner', [owner, { mint }, { encoding: 'jsonParsed', commitment: 'confirmed' }]);
+  let raw = 0n, dec = 6;
+  for (const a of r.value ?? []) { const t = a.account.data.parsed.info.tokenAmount; raw += BigInt(t.amount); dec = t.decimals; }
+  return { raw, dec };
+}
+async function autoSell(uid: string, body: Record<string, unknown>) {
+  const row = await load(uid);
+  if (!row) throw new Fail(404, 'no_wallet');
+  const mint = String(body.mint ?? '');
+  if (!B58RE.test(mint)) throw new Fail(400, 'Token invalide.');
+  const held = await tokenHeld(row.address, mint);
+  if (held.raw <= 0n) throw new Fail(409, 'no_tokens');
+  const pct = Math.min(100, Math.max(0, Number(body.pct) || 100)), tok = Number(body.tokens);
+  let amount = tok > 0 ? BigInt(Math.floor(tok * 10 ** held.dec)) : held.raw * BigInt(Math.round(pct * 100)) / 10000n;
+  if (amount > held.raw) amount = held.raw;
+  if (amount <= 0n) throw new Fail(409, 'no_tokens');
+  const ui = Number(amount) / 10 ** held.dec, slippage = Math.min(50, Math.max(1, Number(body.slippage) || 25));
+  const r = await fetch('https://pumpportal.fun/api/trade-local', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ publicKey: row.address, action: 'sell', mint, amount: ui, denominatedInSol: 'false', slippage, priorityFee: 0.0005, pool: 'auto' }), signal: AbortSignal.timeout(15_000) });
+  if (!r.ok) throw new Fail(502, 'PumpPortal ne peut pas préparer la vente (' + r.status + ').');
+  const raw = b64(new Uint8Array(await r.arrayBuffer()));
+  const before = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
+  const sent = await signSend(uid, row, raw, true);
+  // confirmation (jusqu'à ~30 s)
+  let ok = false;
+  for (let i = 0; i < 30 && !ok; i++) {
+    await new Promise((res) => setTimeout(res, 1000));
+    const st = await rpc<{ value: ({ err: unknown; confirmationStatus?: string } | null)[] }>('getSignatureStatuses', [[sent.signature]]).catch(() => null);
+    const v = st?.value?.[0];
+    if (v?.err) throw new Fail(422, 'Vente refusée par la blockchain (' + JSON.stringify(v.err).slice(0, 100) + ').');
+    if (v && (v.confirmationStatus === 'confirmed' || v.confirmationStatus === 'finalized')) ok = true;
+  }
+  const after = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
+  await audit(uid, 'server_auto_sell', { signature: sent.signature, mint, tokens: ui, confirmed: ok });
+  return { signature: sent.signature, confirmed: ok, sol: Math.max(0, (after - before) / 1e9), tokens: ui };
 }
 
 async function withdraw(uid: string, row: Row, to: unknown, amount: unknown) {
@@ -203,6 +246,20 @@ Deno.serve(async (req) => {
   const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   if (req.method === 'OPTIONS') return new Response('ok', { headers: h });
   if (req.method !== 'POST') return json(405, { error: 'Méthode non autorisée.' });
+  // appel interne de la surveillance des ordres (clé secrète du serveur) : vente automatique d'un ordre
+  const wk = req.headers.get('x-watch-key');
+  if (wk) {
+    const { data: key } = await admin.rpc('app_secret', { n: 'watch_key' });
+    if (!key || !same(wk, key as string)) return json(401, { error: 'Clé invalide.' });
+    let b: Record<string, unknown>; try { b = await req.json(); } catch { return json(400, { error: 'Requête invalide.' }); }
+    try {
+      if (b.action === 'auto_sell' && typeof b.uid === 'string') return json(200, await autoSell(b.uid, b));
+      return json(400, { error: 'Action inconnue.' });
+    } catch (e) {
+      if (e instanceof Fail) return json(e.status, { error: e.message });
+      return json(500, { error: ((e as Error).message || 'erreur').slice(0, 160) });
+    }
+  }
   const { data: { user } } = await admin.auth.getUser((req.headers.get('Authorization') ?? '').replace(/^Bearer /, ''));
   if (!user) return json(401, { error: 'Connexion requise.' });
   const uid = user.id;

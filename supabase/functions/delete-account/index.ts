@@ -40,7 +40,7 @@ async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   }
   throw new Error('rpc');
 }
-const TOKEN_PROGRAMS = ['TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PeqhazaiPhgTZGQs'];
+const TOKEN_PROGRAMS = ['TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'];
 /** Le wallet serveur est-il vide (moins de 0,001 SOL et aucun token) ? null si la vérification est impossible */
 async function walletEmpty(address: string): Promise<{ empty: boolean; sol: number; tokens: number } | null> {
   try {

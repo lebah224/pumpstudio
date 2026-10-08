@@ -177,6 +177,14 @@ function union<T extends Obj>(cloud: T[], local: T[] | undefined, key: (x: T) =>
   return extra.length ? cloud.concat(extra) : cloud;
 }
 
+// verrou d'exécution d'un ordre, partagé avec le serveur (false : déjà pris en charge ailleurs)
+(window as unknown as { TSClaimOrder?: (id: string) => Promise<boolean> }).TSClaimOrder = async (id: string) => {
+  if (!uid || !ready) return true;
+  await flushAll();   // l'ordre doit exister dans la base pour être réservé
+  const { data, error } = await supabase.rpc('order_claim', { p_client_id: String(id) });
+  return !error && data === true;
+};
+
 /** Connexion : charge le compte, reprend une fois les anciennes données du navigateur, puis branche l'écriture */
 export async function attachCloud(userId: string) {
   if (uid === userId && (ready || status.loading)) return;

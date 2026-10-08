@@ -3651,7 +3651,24 @@
     const C = S.cache[mint]; if (!C || !C.stats) return;
     S.orders.filter((o) => o.active && o.mint === mint).forEach((o) => { if (orderHit(o, C)) fireOrder(o); });
   }
+  // réservation des ordres (en mémoire seulement, jamais enregistrée avec l'ordre) : 'wait' en cours, 'ok' obtenue
+  const CLAIMS = new Map();
   function fireOrder(o) {
+    // un ordre ne s'exécute qu'une fois : l'onglet le réserve d'abord (le serveur peut aussi le vendre, outil fermé)
+    if (!cfg.sim && window.TSClaimOrder) {
+      const c = CLAIMS.get(o.id);
+      if (c === 'wait') return;
+      if (c !== 'ok') {
+        CLAIMS.set(o.id, 'wait');
+        window.TSClaimOrder(o.id).then((ok) => {
+          if (ok) { CLAIMS.set(o.id, 'ok'); fireOrder(o); return; }
+          CLAIMS.delete(o.id); o.active = false; o.triggered = Date.now(); save(LS.orders, S.orders);
+          toast('Ordre pris en charge par le serveur', o.symbol + ' : ton wallet rapide le vend côté serveur.', ''); renderAll();
+        });
+        return;
+      }
+      CLAIMS.delete(o.id);
+    }
     o.active = false; o.triggered = Date.now(); save(LS.orders, S.orders);
     if (cfg.sim) { toast('Ordre déclenché', o.symbol + ' : condition atteinte, vente démo en cours.', 'a'); if (cfg.sound) beep(); demoOrderSell(o); return; }
     const auto = canAuto();
