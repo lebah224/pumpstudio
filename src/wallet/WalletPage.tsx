@@ -4,6 +4,8 @@ import { WalletMark } from '../auth/SignIn';
 import { goTo, studio, toast, type HubState } from '../legacy/bridge';
 import { walletById } from '../wallets/catalog';
 import { AreaChart, Donut, QrCode, type Slice } from './charts';
+import { useServerWallet } from '../serverWallet/api';
+import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 import { activity, balanceOf, balanceSeries, forget, holdings, solHistory, type Holding, type Pt, type Range, type Tx } from './walletData';
 
 // Couleurs de répartition (palette catégorielle validée pour fond sombre, ordre fixe) et « Autres » en neutre
@@ -47,7 +49,8 @@ export function WalletPage() {
   const st = useHub();
   const visible = useVisible();
   const { openSignIn } = useAuth();
-  const [pick, setPick] = useState<'ext' | 'quick' | null>(null);
+  const [pick, setPick] = useState<'ext' | 'quick' | 'srv' | null>(null);
+  const srvSt = useServerWallet();
   const [range, setRange] = useState<Range>('7d');
   const [unit, setUnit] = useState<'usd' | 'sol'>('usd');
   const [bal, setBal] = useState<number | null>(null);
@@ -58,9 +61,10 @@ export function WalletPage() {
   const [busy, setBusy] = useState(false);
   const [receive, setReceive] = useState(false);
 
-  const ext = st?.ext ?? null, quick = st?.quick ?? null;
-  const which: 'ext' | 'quick' | null = pick === 'ext' && ext ? 'ext' : pick === 'quick' && quick ? 'quick' : quick?.active ? 'quick' : ext ? 'ext' : quick ? 'quick' : null;
-  const pk = which === 'ext' ? ext!.pk : which === 'quick' ? quick!.pk : null;
+  const ext = st?.ext ?? null, quick = st?.quick ?? null, srv = st?.srv ?? null;
+  const which: 'ext' | 'quick' | 'srv' | null = pick === 'ext' && ext ? 'ext' : pick === 'quick' && quick ? 'quick' : pick === 'srv' && srv ? 'srv'
+    : srv?.active ? 'srv' : quick?.active ? 'quick' : ext ? 'ext' : srv ? 'srv' : quick ? 'quick' : null;
+  const pk = which === 'ext' ? ext!.pk : which === 'quick' ? quick!.pk : which === 'srv' ? srv!.pk : null;
   const solUsd = st?.solUsd ?? price[price.length - 1]?.v ?? null;
 
   const load = useCallback(async (force = false) => {
@@ -136,9 +140,12 @@ export function WalletPage() {
           )}
         </section>
   );
-  const isQuick = which === 'quick';
-  const signs = isQuick ? quick!.active : !quick?.active;
-  const name = isQuick ? 'Wallet rapide' : ext!.name;
+  const isQuick = which === 'quick', isSrv = which === 'srv';
+  const signer = srv?.active ? 'srv' : quick?.active ? 'quick' : 'ext';
+  const signs = signer === which;
+  const name = isSrv ? 'Wallet rapide serveur' : isQuick ? 'Wallet rapide' : ext!.name;
+  const useIt = () => (isSrv ? hub?.useServer(true) : isQuick ? hub?.useQuick(true) : hub?.useExt());
+  const capPct = srvSt?.daily_cap_sol ? Math.min(100, ((srvSt.spent_today ?? 0) / srvSt.daily_cap_sol) * 100) : 0;
   const hub = studio()?.hub;
 
   return (
@@ -146,6 +153,7 @@ export function WalletPage() {
       {/* choix du wallet affiché */}
       <div className="ts-wp-bar">
         <div className="ts-wp-tabs" role="tablist" aria-label="Wallet affiché">
+          {srv && <button type="button" role="tab" aria-selected={which === 'srv'} className={which === 'srv' ? 'on' : ''} onClick={() => setPick('srv')}><span className="ts-wmark srv" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18a5 5 0 01-.6-9.96A6 6 0 0118 9a4.5 4.5 0 01-.5 9H7z" /></svg></span><span><b>Wallet serveur</b><small className="mono">{short(srv.pk)}</small></span></button>}
           {ext && <button type="button" role="tab" aria-selected={which === 'ext'} className={which === 'ext' ? 'on' : ''} onClick={() => setPick('ext')}><WalletMark w={walletById(ext.id) ?? { name: ext.name, color: '#7c8595' }} /><span><b>{ext.name}</b><small className="mono">{short(ext.pk)}</small></span></button>}
           {quick && <button type="button" role="tab" aria-selected={which === 'quick'} className={which === 'quick' ? 'on' : ''} onClick={() => setPick('quick')}><span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span><span><b>Wallet rapide</b><small className="mono">{short(quick.pk)}</small></span></button>}
         </div>
@@ -161,7 +169,7 @@ export function WalletPage() {
         <section className="card ts-wp-hero">
           <div className="ts-wp-h">
             <div>
-              <div className="ts-wp-eye">{name} · {signs ? <span className="ts-hub-pill ok">signe tes transactions</span> : <button type="button" className="ts-hub-pill" onClick={() => hub?.useQuick(isQuick)}>Utiliser pour signer</button>}{isQuick && !quick!.unlocked && <span className="badge a">verrouillé</span>}</div>
+              <div className="ts-wp-eye">{name} · {signs ? <span className="ts-hub-pill ok">signe tes transactions</span> : <button type="button" className="ts-hub-pill" onClick={useIt}>Utiliser pour signer</button>}{isQuick && !quick!.unlocked && <span className="badge a">verrouillé</span>}</div>
               <div className="ts-wp-total mono">{total != null ? usd(total) : bal != null ? sol(bal) : '—'}</div>
               <div className="ts-wp-sub">
                 <span className="mono">{bal != null ? sol(bal) : '…'}</span>
@@ -173,7 +181,8 @@ export function WalletPage() {
 
           <div className="ts-wp-actions">
             <button type="button" className="ts-wp-act" onClick={() => setReceive(true)}><span className="ts-wp-aic">↓</span>Déposer</button>
-            {isQuick
+            {isSrv ? <button type="button" className="ts-wp-act" onClick={() => openServerWallet('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
+              : isQuick
               ? <button type="button" className="ts-wp-act" onClick={() => hub?.walletAction('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
               : quick ? <button type="button" className="ts-wp-act" title={'Envoyer des SOL de ' + name + ' vers ton wallet rapide'} onClick={() => hub?.walletAction('fund')}><span className="ts-wp-aic">⇄</span>Vers le rapide</button>
               : <button type="button" className="ts-wp-act" title="Wallet du studio qui signe seul : ventes automatiques instantanées" onClick={() => hub?.walletAction('create')}><span className="ts-wp-aic">ϟ</span>Wallet rapide</button>}
@@ -227,6 +236,22 @@ export function WalletPage() {
         </section>
 
 
+        {/* gestion du wallet serveur */}
+        {isSrv && srvSt?.address && (
+          <section className="card ts-wp-sec">
+            <div className="card-h"><h3>Wallet rapide serveur</h3><p>Clé chiffrée sur le serveur. Il signe seul, uniquement des opérations de trading, dans la limite de tes plafonds.</p></div>
+            <div className="ts-cap">
+              <div className="ts-cap-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(capPct)} aria-label="Plafond du jour utilisé"><i className={capPct > 80 ? 'hot' : ''} style={{ width: capPct + '%' }} /></div>
+              <div className="ts-cap-t"><span>Dépensé aujourd'hui : <b className="mono">{nf(srvSt.spent_today ?? 0, 3)} SOL</b></span><span>plafond {nf(srvSt.daily_cap_sol ?? 10, 2)} SOL</span></div>
+            </div>
+            {bal != null && srvSt.alert_balance_sol != null && bal > srvSt.alert_balance_sol && <div className="ts-note warn">Solde au-dessus de ton seuil d'alerte ({nf(srvSt.alert_balance_sol, 2)} SOL) : pense à retirer les gains vers ton wallet principal.</div>}
+            <div className="ts-wp-secb">
+              <button type="button" className="btn sm" onClick={() => openServerWallet('limits')}>Plafonds</button>
+              <button type="button" className="btn sm ghost" onClick={() => openServerWallet('export')}>Exporter la clé</button>
+              <button type="button" className="btn sm ghost danger" onClick={() => openServerWallet('delete')}>Supprimer</button>
+            </div>
+          </section>
+        )}
         {/* gestion du wallet rapide */}
         {isQuick && (
           <section className="card ts-wp-sec">

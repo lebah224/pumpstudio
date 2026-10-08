@@ -9,6 +9,8 @@ import { WalletPage } from './wallet/WalletPage';
 import { usePrefsSync } from './account/usePrefsSync';
 import { useDataSync } from './sync/useDataSync';
 import { studio } from './legacy/bridge';
+import { clearServerWallet, refreshServerWallet } from './serverWallet/api';
+import { ServerWalletDialog } from './serverWallet/ServerWalletDialog';
 
 /** Le studio demande une connexion (wallet manquant, passage en réel) : on ouvre la fenêtre de connexion du compte */
 function useConnectBridge() {
@@ -23,6 +25,8 @@ function useConnectBridge() {
   }, [signed, openSignIn]);
   // mode réel réservé aux comptes connectés : le studio repasse en simulation sinon
   useEffect(() => { if (ready) studio()?.hub?.setAuth(signed); }, [ready, signed]);
+  // wallet rapide serveur du compte (s'il existe)
+  useEffect(() => { if (!ready) return; if (signed) refreshServerWallet(); else clearServerWallet(); }, [ready, signed, user?.id]);
 }
 
 /** Les écrans React s'insèrent dans le studio historique par des portails, le temps de migrer page par page */
@@ -41,6 +45,7 @@ function Mounts() {
       {page && createPortal(<AccountPage />, page)}
       {wallet && createPortal(<WalletPage />, wallet)}
       <SignInDialog />
+      <ServerWalletDialog />
       <MfaChallenge />
       {syncPrompt}
     </>

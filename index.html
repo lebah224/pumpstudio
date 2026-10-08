@@ -292,7 +292,7 @@
         <div class="pb-head">
           <div class="pb-id">
             <div class="pb-mark"><svg class="i" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
-            <div><h1>Terminal de trading</h1><p>Trois stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : Équilibrée, Migration et Flash. Mode papier : aucun ordre réel.</p></div>
+            <div><h1>Terminal de trading</h1><p>Trois stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : Équilibrée, Migration et Flash. Choisis le wallet du bot : papier pour s'entraîner, ou un wallet pour trader en réel.</p></div>
           </div>
           <div class="pb-ctl">
             <label class="pb-view"><span>Vue</span><select class="sel" id="pb-viewStrat" aria-label="Stratégie affichée"></select></label>
@@ -301,6 +301,7 @@
             <button class="btn primary" id="pb-btnConn" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0M12 19.5h.01"/></svg><span>Connecter</span></button>
           </div>
         </div>
+        <div class="pb-wal" id="pb-wallet"></div>
         <div class="pb-sel"><div><b>Stratégie active</b><span id="pb-stratHint">Choisis la stratégie qui ouvre des positions.</span></div><div class="pb-selr"><div class="seg" id="pb-stratSel" role="radiogroup" aria-label="Stratégie active"></div><button class="btn" id="pb-stratTune" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Paramètres</button></div></div>
         <div class="kpis pb-kpis">
           <div class="kpi"><div class="l">Tokens / min</div><div class="v" id="pb-kRate">0</div><div class="s" id="pb-kRateS">—</div></div>

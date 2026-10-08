@@ -68,8 +68,14 @@
   // S.wallet désigne toujours celui qui signe : le wallet rapide quand il est choisi, sinon l'externe.
   let SESSREC = load(LS.sess, null);
   const SESSW = { id: 'session', name: 'Wallet rapide', pk: null, kp: null, prov: null };
+  // Wallet rapide serveur : sa clé reste sur le serveur, qui signe selon sa politique (trading seulement, plafonds)
+  const SRVW = { id: 'server', name: 'Wallet rapide serveur', pk: null, prov: null };
+  let SRVPK = null;
   Object.defineProperty(S, 'wallet', {
-    get() { if (cfg.useSess && SESSREC) { SESSW.pk = SESSREC.pk; return SESSW; } return S.ext; },
+    get() {
+      if (cfg.useSrv && SRVPK && window.TSServerWallet) { SRVW.pk = SRVPK; return SRVW; }
+      if (cfg.useSess && SESSREC) { SESSW.pk = SESSREC.pk; return SESSW; } return S.ext;
+    },
     set(v) { S.ext = v; }, enumerable: true,
   });
   // brouillons des versions précédentes : univers, ton et style de logo d'avant
@@ -418,10 +424,10 @@
     } catch (e) { toast('Déverrouillage impossible', e.message, 'r'); return false; }
   }
   async function ensureSigner() {
-    const w = S.wallet; if (!w || w.id !== 'session' || SESSW.kp) return true;
+    const w = S.wallet; if (!w || w.id !== 'session' || SESSW.kp) return true;   // wallet serveur : rien à déverrouiller
     return sessUnlock(true);
   }
-  const signLabel = () => S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans ton wallet';
+  const signLabel = () => S.wallet && S.wallet.id === 'server' ? 'Signature par le wallet rapide serveur' : S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans ton wallet';
 
   async function sessCreate(noPanel) {
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
@@ -719,17 +725,18 @@
     } else ixs = [await P.PUMP_SDK.createV2Instruction({ mint, name: d.name, symbol: d.symbol, uri, creator, user, mayhemMode: false })];
     return txFrom(ixs, 400000);
   }
-  async function directTrade(mint, side, amt, slip) {
-    const { P, BN, web3 } = KIT(), slippage = slip || cfg.slippage;
+  // pk : wallet qui achète ou vend (par défaut le wallet actif) ; utile au bot qui a son propre wallet
+  async function directTrade(mint, side, amt, slip, pk) {
+    const { P, BN, web3 } = KIT(), slippage = slip || cfg.slippage, payer = pk || S.wallet.pk;
     const [st, tp] = await Promise.all([pumpGlobal(), mintProgram(mint)]);
-    const user = new web3.PublicKey(S.wallet.pk), m = new web3.PublicKey(mint);
+    const user = new web3.PublicKey(payer), m = new web3.PublicKey(mint);
     if (side === 'buy') {
       const s = await st.online.fetchBuyState(m, user, tp);
       if (s.bondingCurve.complete) throw new Error('MIGRATED');
       const solAmount = new BN(Math.round(amt * 1e9));
       const amount = P.getBuyTokenAmountFromSolAmount({ global: st.global, feeConfig: st.fee, mintSupply: s.bondingCurve.tokenTotalSupply, bondingCurve: s.bondingCurve, amount: solAmount, quoteMint: s.quoteMint });
       const ixs = await P.PUMP_SDK.buyInstructions({ global: st.global, bondingCurveAccountInfo: s.bondingCurveAccountInfo, bondingCurve: s.bondingCurve, associatedUserAccountInfo: s.associatedUserAccountInfo, mint: m, user, amount, solAmount, slippage, tokenProgram: tp });
-      return txFrom(ixs, 250000);
+      return txFrom(ixs, 250000, { payer });
     }
     let s;
     try { s = await st.online.fetchSellState(m, user, tp); } catch (e) { throw new Error(/Associated token account/.test(e.message) ? 'Tu ne détiens pas ce token dans ce wallet.' : e.message); }
@@ -737,11 +744,55 @@
     const amount = new BN(String(amt));
     const solAmount = P.getSellSolAmountFromTokenAmount({ global: st.global, feeConfig: st.fee, mintSupply: s.bondingCurve.tokenTotalSupply, bondingCurve: s.bondingCurve, amount });
     const ixs = await P.PUMP_SDK.sellInstructions({ global: st.global, bondingCurveAccountInfo: s.bondingCurveAccountInfo, bondingCurve: s.bondingCurve, mint: m, user, amount, solAmount, slippage, tokenProgram: tp, mayhemMode: !!s.bondingCurve.isMayhemMode });
-    return txFrom(ixs, 250000);
+    return txFrom(ixs, 250000, { payer });
   }
   async function tokenRaw(owner, mint) {
     const r = await rpc('getTokenAccountsByOwner', [owner, { mint }, { encoding: 'jsonParsed', commitment: 'confirmed' }]);
     return (r && r.value || []).reduce((s2, a) => s2 + BigInt((((a.account.data.parsed || {}).info || {}).tokenAmount || {}).amount || '0'), 0n);
+  }
+
+  /* ================================================================ exécution réelle pour le bot */
+  // Wallets que le bot peut utiliser : le wallet rapide serveur d'abord (signe seul, même studio fermé)
+  function botWallets() {
+    return [
+      { id: 'srv', name: 'Wallet rapide serveur', pk: SRVPK, ready: !!(SRVPK && window.TSServerWallet), note: SRVPK ? 'signe seul, plafonds du serveur' : 'à créer (menu du compte → Ajouter un wallet)' },
+      { id: 'quick', name: 'Wallet rapide', pk: SESSREC && SESSREC.pk, ready: !!(SESSREC && SESSW.kp), note: !SESSREC ? 'à créer' : SESSW.kp ? 'signe seul tant que l\'onglet est ouvert' : 'verrouillé : déverrouille-le' },
+      { id: 'ext', name: S.ext ? S.ext.name : 'Wallet connecté', pk: S.ext && S.ext.pk, ready: !!S.ext, note: S.ext ? 'chaque trade à signer dans ' + S.ext.name : 'aucun wallet connecté' },
+    ];
+  }
+  function botWallet(id) {
+    if (id === 'srv' && SRVPK && window.TSServerWallet) { SRVW.pk = SRVPK; return SRVW; }
+    if (id === 'quick' && SESSREC && SESSW.kp) { SESSW.pk = SESSREC.pk; return SESSW; }
+    if (id === 'ext' && S.ext) return S.ext;
+    return null;
+  }
+  let BOTQ = Promise.resolve();
+  // Achat (sol) ou vente (frac : part de ce que le wallet détient) sans fenêtre de confirmation, une opération à la fois
+  function botExec(mint, side, o) {
+    const job = BOTQ.then(async () => {
+      if (cfg.sim) throw new Error('Studio en simulation : rien n\'est envoyé.');
+      const w = botWallet(o.wallet); if (!w) throw new Error('Wallet du bot indisponible.');
+      const slip = Math.max(cfg.slippage, o.slip || 0);
+      let tx = null, amount;
+      if (side === 'buy') {
+        amount = Math.min(o.sol, cfg.maxSol); if (!(amount > 0)) throw new Error('Mise invalide.');
+        try { tx = await directTrade(mint, 'buy', amount, slip, w.pk); } catch (e) { if (e.message !== 'MIGRATED') throw e; }
+        if (!tx) tx = await portalTx({ publicKey: w.pk, action: 'buy', mint, amount, denominatedInSol: 'true', slippage: slip, priorityFee: cfg.priorityFee, pool: 'auto' });
+      } else {
+        const raw = await tokenRaw(w.pk, mint); if (raw <= 0n) throw new Error('Plus aucun token à vendre.');
+        let sellRaw = o.frac >= 0.999 ? raw : raw * BigInt(Math.round(o.frac * 10000)) / 10000n; if (sellRaw <= 0n) sellRaw = raw;
+        try { tx = await directTrade(mint, 'sell', sellRaw.toString(), slip, w.pk); } catch (e) { if (e.message !== 'MIGRATED') throw e; }
+        if (!tx) tx = await portalTx({ publicKey: w.pk, action: 'sell', mint, amount: Number(sellRaw) / 1e6, denominatedInSol: 'false', slippage: slip, priorityFee: cfg.priorityFee, pool: 'auto' });
+      }
+      const sig = await signAndSend(tx, null, w);
+      await confirmSig(sig);
+      const d = await actualDeltas(sig, mint);
+      journalAdd({ type: side, mint, symbol: o.symbol || short(mint), sim: false, status: 'ok', sig, sol: d ? d.sol : (side === 'buy' ? -amount : 0), tokens: d ? d.tokens : 0, est: !d, bot: true });
+      refreshBal(); renderTop();
+      return { sig, sol: d ? d.sol : null, tokens: d ? d.tokens : null };
+    });
+    BOTQ = job.catch(() => {});
+    return job;
   }
 
   /* ================================================================ temps réel : abonnement à la courbe */
@@ -849,6 +900,13 @@
   }
   async function signAndSend(tx, extraSigners, w) {
     w = w || S.wallet;
+    if (w.id === 'server') {
+      if (!window.TSServerWallet) throw new Error('Wallet serveur indisponible : reconnecte-toi à ton compte.');
+      if (extraSigners && extraSigners.length) tx.sign(extraSigners);   // ex. clé du mint au lancement
+      const r = await window.TSServerWallet.signSend(bytesToB64(tx.serialize()));
+      INFLIGHT[r.signature] = { raw: r.raw, viaSender: false };
+      return r.signature;
+    }
     if (w.id === 'session') {
       if (!SESSW.kp) throw new Error('Wallet rapide verrouillé : déverrouille-le puis relance.');
       tx.sign([SESSW.kp].concat(extraSigners || []));
@@ -996,7 +1054,7 @@
     if (!cfg.sim && !(await ensureSigner())) return;
     const d = S.draft, PL = PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null;
     // Créateur affiché sur pump.fun : le wallet principal (Phantom…) de préférence, même quand le wallet rapide signe
-    const ses = S.wallet.id === 'session', ext = S.ext, canPick = ses && !!ext && cfg.engine !== 'portal';
+    const ses = S.wallet.id === 'session' || S.wallet.id === 'server', ext = S.ext, canPick = ses && !!ext && cfg.engine !== 'portal';
     const who = (w) => (w.id === 'session' ? 'Wallet rapide' : esc(w.name)) + ' · <span class="mono">' + short(w.pk) + '</span>';
     const creatorHtml = canPick
       ? '<div class="cr-pick"><div class="cr-h">Créateur affiché sur pump.fun</div>' +
@@ -3167,7 +3225,7 @@
   function sellOrder(o) { trade(o.mint, 'sell', o.tokens ? String(Math.floor(o.tokens)) : o.pct + '%', { title: 'Ordre déclenché · vendre ' + o.pct + ' % de ' + o.symbol + ' ?', note: 'Condition atteinte : ' + (o.kind === 'trail' ? 'recul de ' + o.value + ' % depuis le plus haut' : o.kind === 'tp' ? 'prix +' + o.value + ' %' : o.kind === 'sl' ? 'prix −' + o.value + ' %' : 'capitalisation ' + fUsd(o.value)) + '.' }).then((ok) => { if (ok) o.done = true; save(LS.orders, S.orders); renderAll(); }); } // vente refusée ou échouée : l'ordre reste « à signer »
   /* ---------- exécution automatique par le wallet rapide */
   let AUTOQ = Promise.resolve();
-  function canAuto() { return !!(cfg.autoExec && S.wallet && S.wallet.id === 'session' && SESSW.kp); }
+  function canAuto() { return !!(cfg.autoExec && S.wallet && ((S.wallet.id === 'session' && SESSW.kp) || S.wallet.id === 'server')); }
   async function autoSell(o) {
     const t0 = performance.now(), sym = o.symbol, pk = S.wallet.pk;
     const slip = o.kind === 'sl' || o.kind === 'trail' ? Math.max(cfg.slippage, cfg.slSlippage) : cfg.slippage;
@@ -3175,7 +3233,8 @@
     for (let attempt = 0; attempt <= cfg.autoRetry; attempt++) {
       let sent = false;
       try {
-        if (!SESSW.kp) throw new Error('Wallet rapide verrouillé.');
+        const srv = S.wallet && S.wallet.id === 'server';
+        if (!srv && !SESSW.kp) throw new Error('Wallet rapide verrouillé.');
         const raw = await tokenRaw(pk, o.mint);
         let sellRaw = o.tokens ? BigInt(Math.floor(o.tokens * 1e6)) : raw * BigInt(Math.round(o.pct * 100)) / 10000n;
         if (sellRaw > raw) sellRaw = raw;
@@ -3190,8 +3249,9 @@
           o.done = true; o.auto = 'ok'; o.ms = Math.round(performance.now() - t0); save(LS.orders, S.orders);
           toast('Vente automatique simulée', sym + ' · passerait en réel · ' + (o.ms / 1000).toFixed(1).replace('.', ',') + ' s', 'g'); renderAll(); return;
         }
-        tx.sign([SESSW.kp]);
-        const sig = await sendRaw(tx); sent = true;
+        let sig;
+        if (srv) sig = await signAndSend(tx, null, S.wallet); else { tx.sign([SESSW.kp]); sig = await sendRaw(tx); }
+        sent = true;
         await confirmSig(sig);
         o.ms = Math.round(performance.now() - t0);
         const d = await actualDeltas(sig, o.mint);
@@ -3693,7 +3753,7 @@
   window.PumpStudio = { PP, S, cfg, setPage, openPanel, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
     pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => PP.state },
-    SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
+    SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, botWallets, botExec, isSim: () => !!cfg.sim, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
     // Menu de compte (React) : état du wallet et du mode, et actions associées
     hub: {
       state: () => {
@@ -3701,6 +3761,7 @@
         return { wallet: w ? { name: ses ? 'Wallet rapide' : w.name, pk: w.pk, session: ses, locked: ses && !SESSW.kp } : null,
           ext: S.ext ? { id: S.ext.id, name: S.ext.name, pk: S.ext.pk, bal: ses ? S.extBal : S.bal } : null,
           quick: SESSREC ? { pk: SESSREC.pk, active: ses, unlocked: !!SESSW.kp, bal: ses ? S.bal : null } : null,
+          srv: SRVPK ? { pk: SRVPK, active: !!(w && w.id === 'server'), bal: w && w.id === 'server' ? S.bal : null } : null,
           hasSession: !!SESSREC, bal: S.bal, solUsd: S.solUsd, sim: !!cfg.sim, rpcOk: S.rpcOk, theme: uiTheme, depth: uiDepth };
       },
       connect: async (id) => { const pv = providers().find((x) => x.id === id); return pv ? connectWallet(pv) : null; },
@@ -3709,7 +3770,10 @@
       quickUnlock: () => sessUnlock(),
       quickLock: () => { if (!SESSW.kp) return; SESSW.kp = null; toast('Wallet rapide verrouillé', 'Ventes automatiques en pause.', ''); renderAll(); },
       quickKeypair: () => SESSW.kp,
-      useQuick: async (on) => { if (on && !SESSREC) return; if (!on && !S.ext) return; cfg.useSess = !!on; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
+      useQuick: async (on) => { if (on && !SESSREC) return; if (!on && !S.ext && !SRVPK) return; cfg.useSess = !!on; if (on) cfg.useSrv = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
+      useServer: async (on) => { if (on && !SRVPK) return; cfg.useSrv = !!on; if (on) cfg.useSess = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
+      setServer: (pk) => { if (SRVPK === pk) return; SRVPK = pk || null; S.bal = null; refreshBal().catch(() => {}); renderAll(); },
+      useExt: async () => { cfg.useSess = false; cfg.useSrv = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
       setAuth,
       avatar: (pk, cls) => wAv(pk, cls),
       walletMenu: () => walletMenu(),

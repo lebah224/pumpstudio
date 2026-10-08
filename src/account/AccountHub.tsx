@@ -89,7 +89,10 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   const openTab = (tab: string) => { try { sessionStorage.setItem('ts-account-tab', tab); } catch { /* navigation privée */ } window.dispatchEvent(new CustomEvent('ts-account-tab', { detail: tab })); goTo('account'); };
   if (!ready || !st) return null;
 
-  const ext = st.ext, quick = st.quick;
+  const ext = st.ext, quick = st.quick, srv = st.srv;
+  // celui qui signe : le wallet serveur s'il est choisi, sinon le wallet rapide, sinon l'extension
+  const signer = srv?.active ? 'srv' : quick?.active ? 'quick' : ext ? 'ext' : null;
+  const use = (k: 'ext' | 'quick' | 'srv') => (k === 'srv' ? hub?.useServer(true) : k === 'quick' ? hub?.useQuick(true) : hub?.useExt());
   const usd = (b: number | null) => (b != null && st.solUsd ? '≈ ' + fmt(b * st.solUsd, 2) + ' $' : 'SOL');
   const bal = (b: number | null) => (b == null ? '—' : fmt(b, b >= 100 ? 2 : 4));
   const signIn = (wallet?: string) => act(() => openSignIn({ start: 'choose', wallet }));
@@ -136,26 +139,26 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   );
 
   // ligne d'un wallet : identité, solde, rôle (signe ou non) et actions
-  const walletRow = (kind: 'ext' | 'quick') => {
-    const x = kind === 'ext' ? ext! : quick!;
-    const activeW = kind === 'quick' ? quick!.active : !quick?.active;
-    const mark = kind === 'quick' ? <span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span> : <WalletMark w={walletById(ext!.id) ?? { name: ext!.name, color: '#7c8595' }} />;
-    const isLinked = !signed || !linked ? true : linked.includes(x.pk);
+  const walletRow = (kind: 'ext' | 'quick' | 'srv') => {
+    const x = kind === 'ext' ? ext! : kind === 'quick' ? quick! : srv!;
+    const activeW = signer === kind;
+    const mark = kind === 'srv' ? <span className="ts-wmark srv" aria-hidden="true">{I.cloud}</span> : kind === 'quick' ? <span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span> : <WalletMark w={walletById(ext!.id) ?? { name: ext!.name, color: '#7c8595' }} />;
+    const isLinked = kind === 'srv' || !signed || !linked ? true : linked.includes(x.pk);
     return (
       <div className={'ts-hub-wr' + (activeW ? ' on' : '')}>
         {mark}
         <span className="ts-hub-t">
-          <b>{kind === 'quick' ? 'Wallet rapide' : ext!.name}{kind === 'quick' && !quick!.unlocked && <em className="badge a">verrouillé</em>}</b>
+          <b>{kind === 'srv' ? 'Wallet rapide serveur' : kind === 'quick' ? 'Wallet rapide' : ext!.name}{kind === 'quick' && !quick!.unlocked && <em className="badge a">verrouillé</em>}</b>
           <button type="button" className="ts-hub-addr mono" data-hub-item onClick={() => copy(x.pk)} title="Copier l'adresse">{short(x.pk)} {I.copy}</button>
         </span>
         <span className="ts-hub-wb"><b className="mono">{bal(x.bal)}</b><small>{usd(x.bal)}</small></span>
         <div className="ts-hub-wa">
           {activeW ? <span className="ts-hub-pill ok" title="Ce wallet signe tes transactions">Signe</span>
-            : <button type="button" className="ts-hub-pill" data-hub-item onClick={() => hub?.useQuick(kind === 'quick')}>Utiliser</button>}
+            : <button type="button" className="ts-hub-pill" data-hub-item onClick={() => use(kind)}>Utiliser</button>}
           {kind === 'quick' && (quick!.unlocked
             ? <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={() => hub?.quickLock()}>Verrouiller</button>
             : <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={act(() => hub?.quickUnlock())}>Déverrouiller</button>)}
-          {signed && !isLinked && <button type="button" className="ts-hub-pill warn" data-hub-item disabled={!!busy} title="Ajouter ce wallet à ton compte (signature gratuite)" onClick={() => link(kind)}>{busy === 'link-' + kind ? 'Signature…' : 'Lier au compte'}</button>}
+          {signed && !isLinked && kind !== 'srv' && <button type="button" className="ts-hub-pill warn" data-hub-item disabled={!!busy} title="Ajouter ce wallet à ton compte (signature gratuite)" onClick={() => link(kind)}>{busy === 'link-' + kind ? 'Signature…' : 'Lier au compte'}</button>}
           {kind === 'ext' && <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={() => hub?.disconnect()}>Déconnecter</button>}
         </div>
       </div>
@@ -174,12 +177,13 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
       </section>
       <section className="ts-hub-sec">
         <div className="ts-hub-h">Wallets{linked && <em>{linked.length} lié{linked.length > 1 ? 's' : ''} au compte</em>}</div>
-        {ext && walletRow('ext')}
+        {srv && walletRow('srv')}
         {quick && walletRow('quick')}
-        {!ext && !quick && <p className="ts-hub-note">Aucun wallet connecté dans ce navigateur.</p>}
+        {ext && walletRow('ext')}
+        {!ext && !quick && !srv && <p className="ts-hub-note">Aucun wallet connecté.</p>}
         <div className="ts-hub-row">
           <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'add' }))}>{I.plus}Ajouter un wallet</button>
-          {(ext || quick) && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}Portefeuille</button>}
+          {(ext || quick || srv) && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}Portefeuille</button>}
         </div>
       </section>
       {modeSec}

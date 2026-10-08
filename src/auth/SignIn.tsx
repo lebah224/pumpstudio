@@ -4,6 +4,8 @@ import { useAuth, type SignInIntent } from './AuthContext';
 import { studio, toast } from '../legacy/bridge';
 import { initials, isMobile, walletChoices, type WalletInfo } from '../wallets/catalog';
 import { createAccountWithWallet, linkWallet, signInWithWallet, type Source } from '../wallets/walletAuth';
+import { useServerWallet } from '../serverWallet/api';
+import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 
 type Step = 'choose' | 'quick' | 'none' | 'email' | 'email-none' | 'code' | 'add';
 const short = (a: string) => a.slice(0, 4) + '…' + a.slice(-4);
@@ -31,6 +33,7 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
   const quick = hub?.state().quick ?? null;
   const { found, others } = walletChoices();
   const adding = step === 'add';
+  const srv = useServerWallet();
   const close = () => openSignIn(false);
 
   async function run(key: string, fn: () => Promise<void>) {
@@ -55,7 +58,7 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
   const pickWallet = (id: string) => run(id, async () => {
     const pk = await hub?.connect(id);
     if (!pk) return;
-    await hub?.useQuick(false);
+    await hub?.useExt();
     await afterConnect({ kind: 'ext', id }, pk);
   });
   const pickQuick = (how: 'use' | 'create' | 'restore') => run('quick-' + how, async () => {
@@ -142,6 +145,12 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
 
       {step === 'add' && (<>
         {head('Ajouter un wallet', 'Connecte un wallet puis signe un message gratuit : il est ajouté à ton compte. Aucune transaction n\'est autorisée.')}
+        {srv && !srv.address && (
+          <button type="button" className="ts-si-opt ts-si-srv" onClick={() => { close(); setTimeout(() => openServerWallet('create'), 0); }}>
+            <span className="ts-wmark srv" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18a5 5 0 01-.6-9.96A6 6 0 0118 9a4.5 4.5 0 01-.5 9H7z" /></svg></span>
+            <span className="ts-si-n">Wallet rapide serveur<small>Signe seul, même studio fermé · recommandé pour le bot</small></span><em className="ts-si-tag ok">Nouveau</em>
+          </button>
+        )}
         {walletList}
       </>)}
 

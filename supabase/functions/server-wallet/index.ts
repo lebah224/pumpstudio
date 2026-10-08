@@ -1,0 +1,237 @@
+// Wallet rapide serveur : la clé est chiffrée (AES-256-GCM, clé maître dans Vault) et ne quitte jamais cette fonction,
+// sauf export demandé avec le mot de passe du wallet.
+// Politique de signature : seulement des transactions de trading (pump.fun, PumpSwap, frais de créateur, comptes de
+// tokens), simulées avant signature ; le SOL qui sort est compté dans la limite par achat et le plafond du jour.
+// Retraits : uniquement vers les wallets liés et prouvés du compte.
+import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
+import { Keypair, PublicKey, SystemProgram, Transaction, VersionedTransaction } from 'npm:@solana/web3.js@1.98.4';
+import bs58 from 'npm:bs58@6.0.0';
+
+const HOSTS = [
+  /^tokenstudio-sol\.vercel\.app$/,
+  /^pumpstudio\.vercel\.app$/,
+  /^tokenstudio(-git)?-[a-z0-9-]+-sadou-9f22dc7f\.vercel\.app$/,
+  /^localhost(:\d{2,5})?$/,
+];
+function cors(origin: string | null) {
+  let ok = false;
+  try { ok = !!origin && HOSTS.some((re) => re.test(new URL(origin).host)); } catch { ok = false; }
+  return {
+    'Access-Control-Allow-Origin': ok && origin ? origin : 'https://tokenstudio-sol.vercel.app',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  };
+}
+class Fail extends Error { constructor(public status: number, msg: string) { super(msg); } }
+
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+const enc = new TextEncoder();
+const b64 = (u: Uint8Array) => { let s = ''; u.forEach((b) => { s += String.fromCharCode(b); }); return btoa(s); };
+const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+/* ---------- RPC : clé Helius du serveur si présente, sinon RPC publics ---------- */
+const upstreams = () => {
+  const own = (Deno.env.get('SOLANA_RPC_URL') ?? '').split(',').map((s) => s.trim()).filter((s) => s.startsWith('https://'));
+  return own.length ? own : ['https://solana-rpc.publicnode.com', 'https://api.mainnet-beta.solana.com'];
+};
+async function rpc<T>(method: string, params: unknown[]): Promise<T> {
+  let last = 'RPC injoignable';
+  for (const url of upstreams()) {
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(15_000) });
+      if (!r.ok) { last = 'RPC ' + r.status; continue; }
+      const j = await r.json();
+      if (j.error) throw new Fail(400, 'RPC : ' + (j.error.message || 'erreur'));
+      return j.result as T;
+    } catch (e) { if (e instanceof Fail) throw e; last = 'RPC injoignable'; }
+  }
+  throw new Fail(502, last);
+}
+
+/* ---------- chiffrement de la clé et mot de passe ---------- */
+let master: CryptoKey | null = null;
+async function masterKey() {
+  if (master) return master;
+  const { data } = await admin.rpc('app_secret', { n: 'wallet_master_key' });
+  if (!data) throw new Fail(500, 'Configuration du serveur incomplète.');
+  master = await crypto.subtle.importKey('raw', unb64(data as string), 'AES-GCM', false, ['encrypt', 'decrypt']);
+  return master;
+}
+async function seal(secret: Uint8Array, aad: string) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const c = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(aad) }, await masterKey(), secret);
+  return { enc: b64(new Uint8Array(c)), iv: b64(iv) };
+}
+async function open(row: { enc: string; iv: string }, aad: string) {
+  const p = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(row.iv), additionalData: enc.encode(aad) }, await masterKey(), unb64(row.enc));
+  return Keypair.fromSecretKey(new Uint8Array(p));
+}
+const ITER = 150_000;
+async function pwHash(pw: string, salt: Uint8Array, iter: number) {
+  const k = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
+  return b64(new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, k, 256)));
+}
+const same = (a: string, b: string) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+
+type Row = { address: string; daily_cap_sol: number; alert_balance_sol: number; enc: string; iv: string; pw_hash: string; pw_salt: string; pw_iter: number; fails: number; locked_until: string | null; spent_today: number };
+async function load(uid: string): Promise<Row | null> {
+  const { data, error } = await admin.rpc('srvw_get', { uid });
+  if (error) throw new Fail(500, 'Lecture du wallet impossible.');
+  return (data as Row[])?.[0] ?? null;
+}
+async function checkPw(uid: string, row: Row, pw: unknown) {
+  if (row.locked_until && Date.parse(row.locked_until) > Date.now()) throw new Fail(429, 'Trop d\'essais : réessaie dans 15 minutes.');
+  const ok = typeof pw === 'string' && same(await pwHash(pw, unb64(row.pw_salt), row.pw_iter), row.pw_hash);
+  await admin.rpc('srvw_pw_result', { uid, ok });
+  if (!ok) throw new Fail(403, 'Mot de passe incorrect.');
+}
+const audit = (uid: string, event: string, detail: Record<string, unknown>) => admin.from('audit_log').insert({ user_id: uid, event, detail });
+
+/* ---------- politique de signature ---------- */
+const SYSTEM = '11111111111111111111111111111111', CB = 'ComputeBudget111111111111111111111111111111';
+const TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', TOKEN22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', ATA = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+const PUMP = new Set(['6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P', 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA', 'pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ', 'MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e']);
+const WSOL = 'So11111111111111111111111111111111111111112';
+const u32 = (d: Uint8Array, o: number) => d[o]! | (d[o + 1]! << 8) | (d[o + 2]! << 16) | (d[o + 3]! << 24);
+const u64 = (d: Uint8Array, o: number) => Number(new DataView(d.buffer, d.byteOffset + o, 8).getBigUint64(0, true));
+function policy(tx: VersionedTransaction, payer: string) {
+  const keys = tx.message.staticAccountKeys.map((k) => k.toBase58());
+  if (keys[0] !== payer) throw new Fail(403, 'Transaction refusée : le wallet serveur doit payer la transaction.');
+  const wsolAta = PublicKey.findProgramAddressSync([new PublicKey(payer).toBuffer(), new PublicKey(TOKEN).toBuffer(), new PublicKey(WSOL).toBuffer()], new PublicKey(ATA))[0].toBase58();
+  let small = 0;
+  for (const ix of tx.message.compiledInstructions) {
+    const pid = keys[ix.programIdIndex];
+    if (!pid) throw new Fail(403, 'Transaction refusée : programme inconnu.');
+    if (pid === CB || pid === ATA || PUMP.has(pid)) continue;
+    const d = ix.data;
+    if (pid === SYSTEM) {
+      const t = u32(d, 0);
+      if (t === 0 || t === 3) continue;                       // création de compte (loyer des comptes de tokens)
+      if (t === 2) {                                         // virement : vers son propre compte SOL enveloppé, ou petits frais (pourboire, frais de service)
+        const to = keys[ix.accountKeyIndexes[1]!], lam = u64(d, 4);
+        if (to === wsolAta) continue;
+        small += lam; if (to && small <= 50_000_000) continue; // 0,05 SOL au total
+      }
+      throw new Fail(403, 'Transaction refusée : virement de SOL non autorisé.');
+    }
+    if (pid === TOKEN || pid === TOKEN22) {
+      const op = d[0];
+      if (op === 17 || op === 1 || op === 16 || op === 18) continue;   // synchronisation et ouverture de compte
+      if (op === 9 && keys[ix.accountKeyIndexes[1]!] === payer) continue; // fermeture vers le wallet lui-même
+      throw new Fail(403, 'Transaction refusée : opération sur les tokens non autorisée (transfert, délégation…).');
+    }
+    throw new Fail(403, 'Transaction refusée : programme non autorisé (' + pid.slice(0, 6) + '…).');
+  }
+}
+
+async function signSend(uid: string, row: Row, raw: unknown) {
+  if (typeof raw !== 'string' || raw.length > 4000) throw new Fail(400, 'Transaction invalide.');
+  let tx: VersionedTransaction;
+  try { tx = VersionedTransaction.deserialize(unb64(raw)); } catch { throw new Fail(400, 'Transaction illisible.'); }
+  policy(tx, row.address);
+  // simulation : combien de SOL sortent vraiment du wallet ?
+  const [pre, sim] = await Promise.all([
+    rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }]),
+    rpc<{ value: { err: unknown; logs: string[] | null; accounts: ({ lamports: number } | null)[] | null } }>('simulateTransaction', [raw, { encoding: 'base64', sigVerify: false, replaceRecentBlockhash: false, commitment: 'confirmed', accounts: { encoding: 'base64', addresses: [row.address] } }]),
+  ]);
+  if (sim.value.err) throw new Fail(422, 'La blockchain refuse cette transaction (' + JSON.stringify(sim.value.err).slice(0, 120) + ').');
+  const post = sim.value.accounts?.[0]?.lamports;
+  if (post == null) throw new Fail(502, 'Simulation incomplète : réessaie.');
+  const spent = Math.max(0, (pre.value - post) / 1e9);
+  const { data: pref } = await admin.from('preferences').select('max_buy_sol').eq('user_id', uid).maybeSingle();
+  const maxBuy = Number(pref?.max_buy_sol ?? 1);
+  if (spent > maxBuy + 0.05) throw new Fail(403, 'Au-delà de ta limite par achat (' + maxBuy + ' SOL). Modifie-la dans Préférences si c\'est voulu.');
+  const counted = spent > 0.001 ? spent : 0;
+  if (counted) { const { error } = await admin.rpc('srvw_reserve', { uid, sol: counted }); if (error) throw new Fail(403, error.message); }
+  try {
+    const kp = await open(row, uid + ':' + row.address);
+    if (kp.publicKey.toBase58() !== row.address) throw new Fail(500, 'Clé incohérente.');
+    tx.sign([kp]);
+    const signed = b64(tx.serialize());
+    await rpc('sendTransaction', [signed, { encoding: 'base64', skipPreflight: true, maxRetries: 3 }]);
+    const signature = bs58.encode(tx.signatures[0]!);
+    await audit(uid, 'server_wallet_tx', { signature, spent_sol: Number(spent.toFixed(6)) });
+    return { signature, raw: signed, spent };
+  } catch (e) {
+    if (counted) await admin.rpc('srvw_release', { uid, sol: counted });
+    throw e;
+  }
+}
+
+async function withdraw(uid: string, row: Row, to: unknown, amount: unknown) {
+  if (typeof to !== 'string') throw new Fail(400, 'Adresse de destination manquante.');
+  const { data: w } = await admin.from('wallets').select('address').eq('user_id', uid).eq('address', to).maybeSingle();
+  if (!w) throw new Fail(403, 'Retrait refusé : la destination doit être un wallet lié à ton compte (Mon compte → Wallets).');
+  const bal = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
+  const fee = 5000;
+  const lam = amount === 'max' ? bal - fee : Math.round(Number(amount) * 1e9);
+  if (!(lam > 0) || lam + fee > bal) throw new Fail(400, 'Montant invalide ou solde insuffisant.');
+  const kp = await open(row, uid + ':' + row.address);
+  const { value } = await rpc<{ value: { blockhash: string } }>('getLatestBlockhash', [{ commitment: 'confirmed' }]);
+  const tx = new Transaction({ feePayer: kp.publicKey, recentBlockhash: value.blockhash }).add(SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(to), lamports: lam }));
+  tx.sign(kp);
+  const raw = b64(tx.serialize());
+  await rpc('sendTransaction', [raw, { encoding: 'base64', maxRetries: 3 }]);
+  const signature = bs58.encode(tx.signature!);
+  await audit(uid, 'server_wallet_withdraw', { signature, to, sol: lam / 1e9 });
+  return { signature, raw, sol: lam / 1e9 };
+}
+
+function parseSecret(s: unknown): Keypair {
+  if (typeof s !== 'string' || s.length > 400) throw new Fail(400, 'Clé invalide.');
+  const t = s.trim();
+  let bytes: Uint8Array;
+  try { bytes = t.startsWith('[') ? Uint8Array.from(JSON.parse(t)) : bs58.decode(t); } catch { throw new Fail(400, 'Clé illisible.'); }
+  if (bytes.length !== 64) throw new Fail(400, 'Clé invalide : 64 octets attendus.');
+  return Keypair.fromSecretKey(bytes);
+}
+async function create(uid: string, pw: unknown, kp: Keypair) {
+  if (typeof pw !== 'string' || pw.length < 10 || pw.length > 200) throw new Fail(400, 'Mot de passe de 10 caractères minimum.');
+  const addr = kp.publicKey.toBase58();
+  const { data: linked } = await admin.from('wallets').select('user_id').eq('address', addr).maybeSingle();
+  if (linked && linked.user_id !== uid) throw new Fail(409, 'Ce wallet appartient à un autre compte.');
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const s = await seal(kp.secretKey, uid + ':' + addr);
+  const { error } = await admin.rpc('srvw_create', { uid, addr, p_enc: s.enc, p_iv: s.iv, p_hash: await pwHash(pw, salt, ITER), p_salt: b64(salt), p_iter: ITER });
+  if (error) throw new Fail(/duplicate|unique/i.test(error.message) ? 409 : 500, /duplicate|unique/i.test(error.message) ? 'Tu as déjà un wallet rapide serveur, ou cette adresse est déjà utilisée.' : 'Création impossible.');
+  return { address: addr };
+}
+
+Deno.serve(async (req) => {
+  const h = cors(req.headers.get('Origin'));
+  const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: h });
+  if (req.method !== 'POST') return json(405, { error: 'Méthode non autorisée.' });
+  const { data: { user } } = await admin.auth.getUser((req.headers.get('Authorization') ?? '').replace(/^Bearer /, ''));
+  if (!user) return json(401, { error: 'Connexion requise.' });
+  const uid = user.id;
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return json(400, { error: 'Requête invalide.' }); }
+  try {
+    const action = body.action;
+    if (action === 'create') return json(200, await create(uid, body.password, Keypair.generate()));
+    if (action === 'import') { const kp = parseSecret(body.secret); const r = await create(uid, body.password, kp); await audit(uid, 'server_wallet_imported', { address: r.address }); return json(200, r); }
+    const row = await load(uid);
+    if (action === 'status') return json(200, row ? { address: row.address, daily_cap_sol: Number(row.daily_cap_sol), alert_balance_sol: Number(row.alert_balance_sol), spent_today: Number(row.spent_today), locked: !!(row.locked_until && Date.parse(row.locked_until) > Date.now()) } : { address: null });
+    if (!row) throw new Fail(404, 'Aucun wallet rapide serveur sur ce compte.');
+    if (action === 'sign_send') return json(200, await signSend(uid, row, body.tx));
+    await checkPw(uid, row, body.password);
+    if (action === 'withdraw') return json(200, await withdraw(uid, row, body.to, body.amount));
+    if (action === 'export') { const kp = await open(row, uid + ':' + row.address); await audit(uid, 'server_wallet_export', {}); return json(200, { secret: bs58.encode(kp.secretKey) }); }
+    if (action === 'limits') {
+      const cap = Number(body.daily_cap_sol), alert = Number(body.alert_balance_sol);
+      if (!(cap >= 0.1 && cap <= 100) || !(alert >= 0 && alert <= 100000)) throw new Fail(400, 'Plafond entre 0,1 et 100 SOL par jour.');
+      await admin.rpc('srvw_limits', { uid, cap, alert }); return json(200, { ok: true });
+    }
+    if (action === 'delete') {
+      const bal = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
+      if (bal > 1_000_000 && body.force !== true) throw new Fail(409, 'Le wallet contient encore ' + (bal / 1e9).toFixed(4) + ' SOL : retire-les d\'abord.');
+      await admin.rpc('srvw_delete', { uid }); return json(200, { ok: true });
+    }
+    throw new Fail(400, 'Action inconnue.');
+  } catch (e) {
+    if (e instanceof Fail) return json(e.status, { error: e.message });
+    return json(500, { error: 'Erreur du serveur : ' + ((e as Error).message || 'inconnue').slice(0, 160) });
+  }
+});

@@ -5,6 +5,7 @@ export type HubState = {
   /** wallet externe connecté (Phantom…) et wallet rapide du studio */
   ext: { id: string; name: string; pk: string; bal: number | null } | null;
   quick: { pk: string; active: boolean; unlocked: boolean; bal: number | null } | null;
+  srv: { pk: string; active: boolean; bal: number | null } | null;
   hasSession: boolean; bal: number | null; solUsd: number | null; sim: boolean; rpcOk: boolean | null; theme: string; depth: string;
 };
 type Keypair = { publicKey: { toBase58: () => string }; secretKey: Uint8Array };
@@ -28,6 +29,9 @@ type LegacyStudio = {
     quickLock: () => void;
     quickKeypair: () => Keypair | null;
     useQuick: (on: boolean) => Promise<void>;
+    useServer: (on: boolean) => Promise<void>;
+    useExt: () => Promise<void>;
+    setServer: (pk: string | null) => void;
     setAuth: (on: boolean) => void;
     rpc: <T = any>(method: string, params: unknown[]) => Promise<T>;
     page: () => string;

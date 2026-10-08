@@ -221,6 +221,43 @@ function ring(score, color, size) {
 const toast = (title, text, kind) => PS.toast(title, text ? ' ' + text : '', kind);
 const confirmBox = (title, text, ok, danger) => PS.confirm(title, text, ok, danger);
 
+/* --------------------------------------------------------------- wallet du bot (papier ou réel) */
+// Le bot peut trader en réel avec un wallet : le wallet rapide serveur en premier (il signe seul, même studio fermé),
+// puis le wallet rapide du navigateur, puis le wallet connecté (chaque trade à signer). Papier = simulation.
+let EXEC = 'paper';
+try { const e = localStorage.getItem('pb-exec'); if (['paper', 'srv', 'quick', 'ext'].includes(e)) EXEC = e; } catch (e) {}
+const execWallet = () => (EXEC === 'paper' ? null : (PS.botWallets() || []).find((w) => w.id === EXEC) || null);
+// réel seulement hors démo, studio en mode réel et wallet prêt
+const liveOn = () => { const w = execWallet(); return !!(w && w.ready && !S.demo && !PS.isSim()); };
+function renderWallet() {
+  const el = document.getElementById('pb-wallet'); if (!el) return;
+  const ws = PS.botWallets() || [], cur = execWallet(), live = liveOn();
+  const opt = (id, name, note, ready, rec) => '<button type="button" class="pb-wopt' + (EXEC === id ? ' on' : '') + (ready ? '' : ' off') + '" data-exec="' + id + '"' + (EXEC === id ? ' aria-pressed="true"' : ' aria-pressed="false"') + '><b>' + esc(name) + (rec ? ' <em>recommandé</em>' : '') + '</b><small>' + esc(note) + '</small></button>';
+  const state = EXEC === 'paper' ? '<span class="badge v">papier</span> Les positions sont simulées : aucun ordre réel.'
+    : !cur || !cur.ready ? '<span class="badge a">en attente</span> ' + esc(cur ? cur.note : 'Wallet indisponible') + '. Le bot reste en papier.'
+    : S.demo ? '<span class="badge v">démo</span> La démo utilise des données simulées : rien n\'est envoyé.'
+    : PS.isSim() ? '<span class="badge a">studio en simulation</span> Passe le studio en mode réel pour que le bot trade avec ce wallet.'
+    : '<span class="badge r">réel</span> Chaque entrée achète vraiment, chaque sortie vend vraiment, avec ' + esc(cur.name) + ' (' + esc((cur.pk || '').slice(0, 4) + '…' + (cur.pk || '').slice(-4)) + ').';
+  el.innerHTML = '<div class="pb-wal-h"><b>Wallet du bot</b><span>' + state + '</span></div><div class="pb-wal-o">' +
+    ws.map((w) => opt(w.id, w.name, w.note, w.ready, w.id === 'srv')).join('') + opt('paper', 'Papier', 'simulation, aucun SOL engagé', true, false) + '</div>';
+  el.classList.toggle('live', live);
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest && e.target.closest('#pb-wallet [data-exec]'); if (!b) return;
+  const id = b.dataset.exec; if (id === EXEC) return;
+  if (id !== 'paper') {
+    const w = (PS.botWallets() || []).find((x) => x.id === id);
+    if (!w || !w.ready) { toast('Wallet indisponible', w ? w.note : '', 'a'); return; }
+    const s0 = STRATS.find((x) => x.enabled) || STRATS[0];
+    const ok = await confirmBox('Trader en réel avec ' + w.name + ' ?', 'Le bot achètera réellement ' + s0.P.sizeSol + ' SOL par entrée (limite par achat du studio : appliquée), jusqu\'à ' + s0.P.maxPositions + ' positions, et vendra selon la stratégie. Les memecoins peuvent perdre toute leur valeur en quelques secondes : n\'engage que ce que tu acceptes de perdre.' + (id === 'ext' ? ' Chaque trade te sera présenté à signer.' : ''), 'Activer le trading réel', true);
+    if (!ok) return;
+  }
+  EXEC = id; try { localStorage.setItem('pb-exec', id); } catch (e2) {}
+  renderWallet();
+});
+window.addEventListener('pstudio-state', () => renderWallet());
+setTimeout(renderWallet, 0);
+
 /* --------------------------------------------------------------- IndexedDB */
 const IDB = {
   db: null, q: { tokens: [], trades: [], closed: [] },
@@ -664,6 +701,12 @@ function openPosition(t, s, now) {
     remaining: 1, proceeds: 0, peak: t.mc, tp1Done: false, score: stOf(t, s.id).score, exits: [],
   };
   S.port[s.id].positions.set(t.mint, p);
+  if (liveOn()) {
+    p.wallet = EXEC; p.live = 'pending';
+    p.job = PS.botExec(t.mint, 'buy', { wallet: EXEC, sol: P.sizeSol, symbol: t.symbol, slip: P.slipPct })
+      .then((r) => { p.live = 'ok'; p.buySig = r.sig; if (r.sol != null) p.realCost = -r.sol; toast('Achat réel · ' + s.name, (t.symbol || '?') + ' · ' + (r.sol != null ? (-r.sol).toFixed(3) + ' SOL' : 'confirmé'), 'g'); })
+      .catch((e) => { p.live = 'ko'; p.err = e.message; toast('Achat réel échoué', (t.symbol || '?') + ' : ' + e.message + ' Position suivie en papier.', 'r'); });
+  }
   const st = stOf(t, s.id); st.status = 'entered'; st.reason = 'Entré à score ' + p.score; st.blockers = [];
   if (cfg.toastTrades) toast('Entrée · ' + s.name, (t.symbol || '?') + ' à ' + f1(t.mc) + ' SOL de MC, score ' + p.score, 'g');
   S.dirty.pos = S.dirty.header = S.dirty.strat = true;
@@ -673,6 +716,14 @@ function valueOf(p, P, mc, frac) { return p.invested * frac * factor(p, P, mc) *
 function sell(p, s, frac, mc, why, now) {
   frac = Math.min(frac, p.remaining);
   if (frac <= 0) return;
+  if (p.live === 'ok' || p.live === 'pending') {
+    // part de ce que le wallet détient encore : la vente réelle suit la sortie papier
+    const part = frac / p.remaining >= 0.999 ? 1 : frac / p.remaining;
+    const go = () => PS.botExec(p.mint, 'sell', { wallet: p.wallet, frac: part, symbol: p.symbol, slip: Math.max(s.P.slipPct, 10) })
+      .then((r) => toast('Vente réelle · ' + s.name, (p.symbol || '?') + ' · ' + why + (r.sol != null ? ' · +' + r.sol.toFixed(3) + ' SOL' : ''), 'g'))
+      .catch((e) => toast('Vente réelle échouée', (p.symbol || '?') + ' : ' + e.message + ' Vends depuis Trader.', 'r'));
+    if (p.live === 'pending' && p.job) p.job.then(() => { if (p.live === 'ok') go(); }); else go();
+  }
   p.proceeds += valueOf(p, s.P, mc, frac);
   p.remaining -= frac;
   p.exits.push({ t: now, frac, mc, why });
@@ -684,7 +735,7 @@ function closePosition(p, s, mc, why, now) {
   const rec = {
     id: p.id, sid: s.id, mint: p.mint, symbol: p.symbol, name: p.name, openedAt: p.openedAt, closedAt: now,
     size: p.size, proceeds: p.proceeds, pnl: p.proceeds - p.size, pnlPct: (p.proceeds / p.size - 1) * 100,
-    entryMc: p.entryMc, exitMc: mc, peakMc: p.peak, why, score: p.score, exits: p.exits, demo: S.demo,
+    entryMc: p.entryMc, exitMc: mc, peakMc: p.peak, why, score: p.score, exits: p.exits, demo: S.demo, live: p.live === 'ok' ? p.wallet : undefined, buySig: p.buySig,
   };
   S.port[s.id].closed.push(rec);
   IDB.put('closed', rec);
