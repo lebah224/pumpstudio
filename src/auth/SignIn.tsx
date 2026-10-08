@@ -16,7 +16,7 @@ const QuickMark = () => <span className="ts-wmark quick" aria-hidden="true"><svg
 /**
  * Connexion et ajout de wallets.
  * Invité : wallet (Phantom, Solflare…), wallet rapide ou e-mail. Un compte n'est jamais créé sans accord :
- * si le wallet ou l'e-mail n'a pas de compte, on propose de le créer ou de continuer en simulation.
+ * si le wallet ou l'e-mail n'a pas de compte, on propose de le créer ou de continuer en démo.
  * Connecté (écran « add ») : ajoute un wallet au compte après une signature gratuite.
  */
 export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: (hidden: boolean) => void }) {
@@ -77,7 +77,7 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
     else if (intent.wallet) pickWallet(intent.wallet);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const simulate = () => { close(); hub?.goSim(); toast('Mode simulation', 'Tout fonctionne sans compte, rien n\'est envoyé sur la blockchain. Tes données restent dans ce navigateur.', 'g'); };
+  const simulate = () => { close(); hub?.goSim(); toast('Mode démo', 'Explore l\'outil avec un wallet démo de 10 SOL fictifs. Rien n\'est envoyé ; crée ton compte pour vérifier sur la blockchain.', 'g'); };
 
   async function sendEmail(ev: FormEvent | null, createUser: boolean) {
     ev?.preventDefault(); setErr(null);
@@ -136,11 +136,11 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
     <div className="ts-signin">
       {step === 'choose' && (<>
         {head('Connexion à TokenStudio', 'Choisis comment te connecter. Tes clés privées ne quittent jamais ton wallet.')}
-        {intent.reason === 'real' && <div className="ts-note warn">Le mode réel demande un compte. La simulation reste ouverte sans compte.</div>}
+        {intent.reason === 'real' && <div className="ts-note warn">Le mode réel demande un compte. La démo reste ouverte sans compte.</div>}
         {walletList}
         <div className="ts-si-or"><span>ou</span></div>
         <button type="button" className="btn ts-si-mail" onClick={() => { setErr(null); setStep('email'); }}>Continuer avec un e-mail</button>
-        <button type="button" className="ts-si-sim" onClick={simulate}>Continuer sans compte · simulation</button>
+        <button type="button" className="ts-si-sim" onClick={simulate}>Essayer la démo sans compte</button>
       </>)}
 
       {step === 'add' && (<>
@@ -180,7 +180,7 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
         <div className="ts-si-choices">
           <button type="button" className="btn primary" disabled={!!busy} onClick={create}>{busy === 'create' ? 'Signature en attente…' : 'Créer mon compte avec ce wallet'}</button>
           <button type="button" className="btn" disabled={!!busy} onClick={() => { setErr(null); setStep('email'); }}>J'ai déjà un compte (e-mail)</button>
-          <button type="button" className="btn ghost" onClick={simulate}>Continuer sans compte · simulation</button>
+          <button type="button" className="btn ghost" onClick={simulate}>Essayer la démo sans compte</button>
         </div>
         <p className="muted ts-small">Le compte garde tes préférences et ton historique sur tous tes appareils, et permet le mode réel. Connecté par e-mail, tu pourras ajouter ce wallet ensuite.</p>
       </>)}
@@ -198,7 +198,7 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
         <div className="ts-si-choices">
           <button type="button" className="btn primary" disabled={busy === 'email'} onClick={() => sendEmail(null, true)}>{busy === 'email' ? 'Envoi…' : 'Créer mon compte avec cet e-mail'}</button>
           <button type="button" className="btn" onClick={() => { setErr(null); setStep('email'); }}>Changer d'adresse</button>
-          <button type="button" className="btn ghost" onClick={simulate}>Continuer sans compte · simulation</button>
+          <button type="button" className="btn ghost" onClick={simulate}>Essayer la démo sans compte</button>
         </div>
       </>)}
 

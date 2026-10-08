@@ -25,7 +25,10 @@ const setState = (s: SrvStatus | null) => { state = s; subs.forEach((f) => f());
 export const srvStore = { get: () => state, subscribe: (f: () => void) => { subs.add(f); return () => subs.delete(f); } };
 export const useServerWallet = () => useSyncExternalStore(srvStore.subscribe, srvStore.get);
 
-declare global { interface Window { TSServerWallet?: { pk: string; signSend: (tx: string) => Promise<{ signature: string; raw: string }> } } }
+declare global { interface Window {
+  TSServerWallet?: { pk: string; signSend: (tx: string) => Promise<{ signature: string; raw: string }> };
+  TSServerWalletImport?: (password: string | null, secret: string) => Promise<string>;
+} }
 /** Le studio historique signe via le serveur quand le wallet serveur est choisi */
 function syncLegacy() {
   const pk = state?.address ?? null;
@@ -41,6 +44,8 @@ export function clearServerWallet() { setState(null); }
 
 export async function createServerWallet(password: string) { const r = await call<{ address: string }>('create', { password }); await refreshServerWallet(); return r.address; }
 export async function importServerWallet(password: string, secret: string) { const r = await call<{ address: string }>('import', { password, secret }); await refreshServerWallet(); return r.address; }
+// le bot place le wallet rapide existant sur le serveur avec son propre mot de passe
+window.TSServerWalletImport = (password, secret) => importServerWallet(password ?? '', secret);
 export async function withdrawServerWallet(password: string, to: string, amount: number | 'max') { return call<{ signature: string; sol: number }>('withdraw', { password, to, amount }); }
 export async function exportServerWallet(password: string) { return (await call<{ secret: string }>('export', { password })).secret; }
 export async function setServerLimits(password: string, daily_cap_sol: number, alert_balance_sol: number) { await call('limits', { password, daily_cap_sol, alert_balance_sol }); await refreshServerWallet(); }

@@ -48,7 +48,7 @@ const I = {
 
 /**
  * Menu unique en haut à droite. Trois états :
- * - invité : choix de connexion (wallets, wallet rapide, e-mail) ou simulation sans compte ;
+ * - invité : choix de connexion (wallets, wallet rapide, e-mail) ou démo sans compte ;
  * - wallet connecté sans compte : se connecter au compte de ce wallet, ou le créer (jamais automatiquement) ;
  * - connecté : wallets du compte (ajout, choix du signataire), mode, préférences, sécurité, déconnexion.
  */
@@ -122,12 +122,12 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     <section className="ts-hub-sec">
       <div className="ts-hub-h">Mode</div>
       <div className="seg ts-hub-mode" role="group" aria-label="Mode de trading">
-        <button type="button" className={st.sim ? 'on' : ''} aria-pressed={st.sim} data-hub-item onClick={act(() => hub?.goSim())}>Simulation</button>
+        <button type="button" className={st.sim ? 'on' : ''} aria-pressed={st.sim} data-hub-item onClick={act(() => hub?.goSim())}>Démo</button>
         {signed
           ? <button type="button" className={!st.sim ? 'on real' : ''} aria-pressed={!st.sim} data-hub-item onClick={act(() => hub?.goReal())}>Réel</button>
           : <button type="button" className="locked" data-hub-item title="Le mode réel demande un compte" onClick={act(() => openSignIn({ start: 'choose', reason: 'real' }))}>{I.lock}Réel</button>}
       </div>
-      {!signed && <p className="ts-hub-note">Le mode réel demande un compte. La simulation est ouverte à tous.</p>}
+      {!signed && <p className="ts-hub-note">Le mode réel demande un compte. La démo est ouverte à tous.</p>}
     </section>
   );
   const quickLinks = (
@@ -246,7 +246,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
           <button type="button" className="ts-si-opt" data-hub-item onClick={signIn()}><span className="ts-wmark ghost" aria-hidden="true">{I.wallet}</span><span className="ts-si-n">{found.length ? 'Autres wallets' : 'Phantom, Solflare et autres'}</span></button>
           <button type="button" className="ts-si-opt" data-hub-item onClick={act(() => openSignIn({ start: 'email' }))}><span className="ts-wmark ghost" aria-hidden="true">{I.mail}</span><span className="ts-si-n">E-mail</span></button>
         </div>
-        <button type="button" className="ts-si-sim" data-hub-item onClick={act(() => { hub?.goSim(); })}>Continuer sans compte · simulation</button>
+        <button type="button" className="ts-si-sim" data-hub-item onClick={act(() => { hub?.goSim(); })}>Essayer la démo sans compte</button>
       </section>
       {quickLinks}
     </>);

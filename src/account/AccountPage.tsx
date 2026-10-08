@@ -172,7 +172,7 @@ function PrefsTab() {
         </div>
         <div className="card">
           <div className="card-h"><h3>Trading</h3><p>Garde-fous appliqués à chaque achat et vente.</p></div>
-          <div className="field"><span className="ts-lbl">Mode</span>{seg<'sim' | 'real'>([['sim', 'Simulation'], ['real', 'Réel']], p.sim_mode ? 'sim' : 'real', (x) => set({ sim_mode: x === 'sim' }))}</div>
+          <div className="field"><span className="ts-lbl">Mode</span>{seg<'sim' | 'real'>([['sim', 'Démo'], ['real', 'Réel']], p.sim_mode ? 'sim' : 'real', (x) => set({ sim_mode: x === 'sim' }))}</div>
           <div className="row2">
             <label className="field"><span className="ts-lbl">Slippage maximum <small>%</small></span><input type="number" min={0.1} max={50} step="any" value={p.slippage_pct} onChange={(e) => set({ slippage_pct: Number(e.target.value) })} /></label>
             <label className="field"><span className="ts-lbl">Limite par achat <small>SOL</small></span><input type="number" min={0.001} max={100} step="any" value={p.max_buy_sol} onChange={(e) => set({ max_buy_sol: Number(e.target.value) })} /></label>
@@ -252,7 +252,7 @@ function WalletsTab() {
 /* ---------------- Sécurité ---------------- */
 const EVENTS: Record<string, string> = {
   account_created: 'Compte créé', wallet_added: 'Wallet ajouté', wallet_removed: 'Wallet retiré',
-  mode_reel: 'Passage en mode réel', mode_simulation: 'Retour en simulation', limite_achat_modifiee: 'Limite par achat modifiée',
+  mode_reel: 'Passage en mode réel', mode_simulation: 'Retour en démo', limite_achat_modifiee: 'Limite par achat modifiée',
 };
 function SecurityTab() {
   const { user, signOut } = useAuth();

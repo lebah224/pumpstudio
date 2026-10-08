@@ -233,24 +233,28 @@ function renderWallet() {
   const el = document.getElementById('pb-wallet'); if (!el) return;
   const ws = PS.botWallets() || [], cur = execWallet(), live = liveOn();
   const opt = (id, name, note, ready, rec) => '<button type="button" class="pb-wopt' + (EXEC === id ? ' on' : '') + (ready ? '' : ' off') + '" data-exec="' + id + '"' + (EXEC === id ? ' aria-pressed="true"' : ' aria-pressed="false"') + '><b>' + esc(name) + (rec ? ' <em>recommandé</em>' : '') + '</b><small>' + esc(note) + '</small></button>';
-  const state = EXEC === 'paper' ? '<span class="badge v">papier</span> Les positions sont simulées : aucun ordre réel.'
+  const authed = PS.hub && PS.hub.authed && PS.hub.authed();
+  const state = !authed ? '<span class="badge a">compte requis</span> Crée ton compte pour connecter le bot au flux réel. La démo (données simulées) reste ouverte.'
+    : EXEC === 'paper' ? '<span class="badge v">papier</span> Les positions sont simulées : aucun ordre réel.'
     : !cur || !cur.ready ? '<span class="badge a">en attente</span> ' + esc(cur ? cur.note : 'Wallet indisponible') + '. Le bot reste en papier.'
     : S.demo ? '<span class="badge v">démo</span> La démo utilise des données simulées : rien n\'est envoyé.'
     : PS.isSim() ? '<span class="badge a">studio en simulation</span> Passe le studio en mode réel pour que le bot trade avec ce wallet.'
     : '<span class="badge r">réel</span> Chaque entrée achète vraiment, chaque sortie vend vraiment, avec ' + esc(cur.name) + ' (' + esc((cur.pk || '').slice(0, 4) + '…' + (cur.pk || '').slice(-4)) + ').';
   el.innerHTML = '<div class="pb-wal-h"><b>Wallet du bot</b><span>' + state + '</span></div><div class="pb-wal-o">' +
-    ws.map((w) => opt(w.id, w.name, w.note, w.ready, w.id === 'srv')).join('') + opt('paper', 'Papier', 'simulation, aucun SOL engagé', true, false) + '</div>';
+    ws.map((w) => opt(w.id, w.name, w.note, authed && (w.ready || w.armable), w.id === 'srv')).join('') + opt('paper', 'Papier', 'simulation, aucun SOL engagé', true, false) + '</div>';
   el.classList.toggle('live', live);
 }
 document.addEventListener('click', async (e) => {
   const b = e.target.closest && e.target.closest('#pb-wallet [data-exec]'); if (!b) return;
-  const id = b.dataset.exec; if (id === EXEC) return;
+  const id = b.dataset.exec;
+  // jamais de bot sans compte (la démo reste disponible)
+  if (!(PS.hub && PS.hub.authed && PS.hub.authed())) { toast('Compte requis', 'Crée ton compte ou connecte-toi pour utiliser le bot sur le flux réel.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'bot' })); } catch (e2) {} return; }
+  if (id === EXEC && execWallet() && execWallet().ready) return;
   if (id !== 'paper') {
     const w = (PS.botWallets() || []).find((x) => x.id === id);
-    if (!w || !w.ready) { toast('Wallet indisponible', w ? w.note : '', 'a'); return; }
+    if (!w || !(w.ready || w.armable)) { toast('Wallet indisponible', w ? w.note : '', 'a'); return; }
     const s0 = STRATS.find((x) => x.enabled) || STRATS[0];
-    const ok = await confirmBox('Trader en réel avec ' + w.name + ' ?', 'Le bot achètera réellement ' + s0.P.sizeSol + ' SOL par entrée (limite par achat du studio : appliquée), jusqu\'à ' + s0.P.maxPositions + ' positions, et vendra selon la stratégie. Les memecoins peuvent perdre toute leur valeur en quelques secondes : n\'engage que ce que tu acceptes de perdre.' + (id === 'ext' ? ' Chaque trade te sera présenté à signer.' : ''), 'Activer le trading réel', true);
-    if (!ok) return;
+    if (!(await PS.botArm(id, { size: s0.P.sizeSol, max: s0.P.maxPositions }))) return;
   }
   EXEC = id; try { localStorage.setItem('pb-exec', id); } catch (e2) {}
   renderWallet();
@@ -1448,6 +1452,7 @@ function goPage(p) {
 function selectToken(m) { S.selected = m; for (const t of S.tokens.values()) t.ver++; markAll(); render(true); }
 $('menu').addEventListener('click', (e) => { const b = e.target.closest('button[data-pb]'); if (!b) return; if (b.dataset.pb === 'settings') return openTermSettings(); goPage(b.dataset.pb); });
 $('btnConn').addEventListener('click', async () => {
+  if (!S.wantConn && !(PS.hub && PS.hub.authed && PS.hub.authed())) { toast('Compte requis', 'Le bot sur le flux réel demande un compte. Essaie la démo en attendant.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'bot' })); } catch (e) {} return; }
   if (S.wantConn) { if (await confirmBox('Déconnecter le terminal ?', 'Il arrête de recevoir les tokens et les trades. Les positions papier ouvertes ne seront plus mises à jour.', 'Déconnecter')) disconnect(); }
   else connect();
 });

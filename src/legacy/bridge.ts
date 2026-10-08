@@ -7,6 +7,7 @@ export type HubState = {
   quick: { pk: string; active: boolean; unlocked: boolean; bal: number | null } | null;
   srv: { pk: string; active: boolean; bal: number | null } | null;
   hasSession: boolean; bal: number | null; solUsd: number | null; sim: boolean; rpcOk: boolean | null; theme: string; depth: string;
+  demo: { bal: number; positions: number };
 };
 type Keypair = { publicKey: { toBase58: () => string }; secretKey: Uint8Array };
 
@@ -33,6 +34,8 @@ type LegacyStudio = {
     useExt: () => Promise<void>;
     setServer: (pk: string | null) => void;
     setAuth: (on: boolean) => void;
+    authed: () => boolean;
+    demoReset: () => void;
     rpc: <T = any>(method: string, params: unknown[]) => Promise<T>;
     page: () => string;
     copyAddress: () => void;
