@@ -1099,6 +1099,50 @@ textarea{font:inherit;color:inherit}
 .plat-ck{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line2)}
 .plat-card.on .plat-ck{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 0 4px,transparent 5px)}
 @media (max-width:700px){.plat-grid{grid-template-columns:1fr}}
+/* ---------- diffusion ---------- */
+.dist-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;margin-bottom:16px}
+.dist-top .card{margin:0}
+.dist-sum{display:flex;align-items:center;gap:16px}
+.dist-sum .ring{width:58px;height:58px;flex:none;position:relative;display:grid;place-items:center}
+.dist-sum .ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.dist-sum .ring span{font-family:var(--mono);font-size:14px;font-weight:600;position:relative}
+.dist-sum .ring span::after{content:'%';font-size:10px;color:var(--dim)}
+.dist-sum>div:nth-child(2){display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.dist-sum b{font-family:var(--display);font-size:17px}
+.dist-sum span{font-size:13px;color:var(--muted)}
+.dist-act{display:flex;flex-direction:column;gap:4px}
+.dist-act b{font-family:var(--display);font-size:16px}
+.dist-act>span{font-size:13px;color:var(--muted)}
+.dist-act .toolbar{margin-top:10px}
+.dist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:16px}
+.dist-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow);transition:border-color .15s}
+.dist-card.sel{border-color:var(--accent-line);background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 6%,var(--panel)),var(--panel))}
+.dist-h{display:flex;align-items:center;gap:10px}
+.dist-ck{position:relative;width:20px;height:20px;flex:none;cursor:pointer}
+.dist-ck input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.dist-ck span{position:absolute;inset:0;border-radius:6px;border:1.5px solid var(--line2);background:var(--bg2)}
+.dist-ck input:checked+span{background:var(--accent);border-color:var(--accent)}
+.dist-ck input:checked+span::after{content:'';position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid var(--on-accent);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.dist-ck input:focus-visible+span{box-shadow:var(--focus)}
+.dist-ck.off{border-radius:6px;border:1.5px dashed var(--line2);opacity:.6;cursor:default}
+.dist-logo{width:34px;height:34px;border-radius:9px;background:var(--panel3);border:1px solid var(--line2);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:13px;color:var(--accent-ink);flex:none}
+.dist-n{display:flex;flex-direction:column;flex:1;min-width:0}
+.dist-n b{font-size:15px;font-weight:600}
+.dist-n small{font-size:12px;color:var(--dim)}
+.dist-n em{font-style:normal}
+.c-free{color:var(--green-ink)}.c-auto{color:var(--blue-ink)}
+.dist-st{font-family:var(--mono);font-size:12.5px;color:var(--text);background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.dist-card p{margin:0;font-size:13px;color:var(--muted);line-height:1.45;flex:1}
+.dist-b{display:flex;flex-wrap:wrap;gap:6px}
+.dist-b a.btn{text-decoration:none}
+.dist-kit{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin-bottom:14px}
+.dist-kit>div{display:grid;grid-template-columns:200px minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 12px;border-top:1px solid var(--line)}
+.dist-kit>div:first-child{border-top:none}
+.dist-kit span{font-size:13px;color:var(--dim)}
+.dist-kit b{font-weight:500;font-size:13.5px;word-break:break-all;font-family:var(--mono)}
+.dist-kit .miss b{color:var(--amber-ink);font-family:var(--sans);font-style:italic;font-weight:400}
+@media (max-width:900px){.dist-top{grid-template-columns:1fr}}
+@media (max-width:700px){.dist-sum{flex-wrap:wrap}.dist-sum .btn{width:100%}.dist-kit>div{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}.dist-kit span{grid-column:1/-1}.dist-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1114,6 +1158,7 @@ textarea{font:inherit;color:inherit}
       <div class="menu-label">Créer</div>
       <button data-page="launch" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg>Lancer un token</button>
       <button data-page="social" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-11.8 7L4 20l1.1-4.6A8 8 0 1121 12z"/></svg>Communication</button>
+      <button data-page="dist" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/></svg>Diffusion</button>
       <div class="menu-label">Suivre</div>
       <button data-page="mine" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Mes tokens<span class="count" id="cMine">0</span></button>
       <button data-page="trade" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Trader</button>
@@ -1489,6 +1534,13 @@ textarea{font:inherit;color:inherit}
           <div class="field"><label>Mention de prudence</label><label class="check" style="padding:6px 0"><input type="checkbox" id="soNfa" checked><span>Ajouter « Pas un conseil financier »</span></label></div>
         </div></div>
         <div class="posts" id="posts"></div>
+      </section>
+
+      <!-- DIFFUSION -->
+      <section class="page" id="p-dist">
+        <div class="page-head"><div><h1>Diffusion</h1><p>Rends ton token visible sur les grandes plateformes : DEX Screener, GeckoTerminal, Birdeye, Jupiter, CoinGecko, CoinMarketCap, Solscan et RugCheck. Le studio détecte où il apparaît déjà et prépare tes demandes.</p></div></div>
+        <div class="card"><div class="row2"><div class="field"><label for="distTok">Token</label><select id="distTok"></select></div><div class="notice info" style="margin:0">Ces plateformes n'acceptent pas d'envoi automatique : chaque demande se fait sur leur formulaire officiel, avec ton compte. Personne ne peut « garantir » un listing ; méfie-toi des intermédiaires payants.</div></div></div>
+        <div id="distBody"></div>
       </section>
 
       <!-- RÉGLAGES -->
@@ -3552,7 +3604,7 @@ Message: ${r}.
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { dash: ['Tableau de bord', 'Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun ou Bonk.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { dash: ['Tableau de bord', 'Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun ou Bonk.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
@@ -3588,7 +3640,7 @@ Message: ${r}.
     navOpen(false);
     document.querySelectorAll('.page').forEach((s) => s.classList.toggle('active', s.id === 'p-' + p));
     $('pageTitle').textContent = PAGES[p][0]; $('pageSub').textContent = PAGES[p][1];
-    $('pageEyebrow').textContent = { dash: 'Vue d\'ensemble', bot: 'Trader', launch: 'Créer', social: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
+    $('pageEyebrow').textContent = { dash: 'Vue d\'ensemble', bot: 'Trader', launch: 'Créer', social: 'Créer', dist: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
     try { localStorage.setItem('pstudio_page', p); } catch (e) {}
     renderPage(); window.scrollTo(0, 0); ppSync(liveSet());
     if (p === 'launch') setLaunchTab(S.ltab);
@@ -3768,6 +3820,122 @@ Message: ${r}.
     $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.ext ? (PLATFORMS[t.platform] || PLATFORMS.pump).n + (C.curve.dex === 'launchlab' ? ' · ≈ ' + fr(st.progress, 0) + ' %' : ' · ' + dexName(C.curve)) : C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Crée ton premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
     solHist(false);
   }
+  /* ================================================================ diffusion : référencement sur les grandes plateformes */
+  // Aucune de ces plateformes n'accepte d'envoi automatique (compte + formulaire du projet). Le studio détecte
+  // où le token est déjà visible (API publiques gratuites), prépare le dossier et ouvre les formulaires choisis.
+  const DIST = [
+    { id: 'dexscreener', n: 'DEX Screener', k: 'Agrégateur DEX', cost: 'auto', costL: 'Automatique', note: 'Indexé seul dès le premier échange. Fiche enrichie (logo, liens, bannière) : service payant optionnel.', page: (m, X) => 'https://dexscreener.com/solana/' + (X.pair || m), form: 'https://marketplace.dexscreener.com/product/token-info', formL: 'Fiche enrichie (payant)' },
+    { id: 'geckoterminal', n: 'GeckoTerminal', k: 'Agrégateur DEX', cost: 'auto', costL: 'Automatique', note: 'Indexé seul avec le pool. Logo et liens : demande de mise à jour via le support CoinGecko.', page: (m, X) => X.pair ? 'https://www.geckoterminal.com/solana/pools/' + X.pair : '', form: 'https://support.coingecko.com/hc/en-us/sections/22611282215833-Token-Information-Update', formL: 'Mettre à jour les infos' },
+    { id: 'birdeye', n: 'Birdeye', k: 'Agrégateur DEX', cost: 'auto', costL: 'Automatique', note: 'Indexé seul. Le formulaire officiel est le seul moyen de modifier les infos affichées (il ne donne pas la coche verte).', page: (m) => 'https://birdeye.so/token/' + m + '?chain=solana', form: 'https://docs.birdeye.so/docs/token-info-update-service', formL: 'Formulaire d\'infos' },
+    { id: 'jupiter', n: 'Jupiter', k: 'Vérification', cost: 'free', costL: 'Gratuit', note: 'Liste vérifiée VRFD : coche verte dans Jupiter, Phantom et l\'explorateur Solana. Examinée sur la liquidité, les métadonnées et la communauté.', page: (m) => 'https://jup.ag/tokens/' + m, form: 'https://verified.jup.ag/tokens', formL: 'Demander la vérification' },
+    { id: 'coingecko', n: 'CoinGecko', k: 'Listing', cost: 'free', costL: 'Gratuit', note: 'Le token doit s\'échanger sur une plateforme suivie par CoinGecko. Connexion à un compte, puis « New Coin/Token Listing ». Plus de chances après la migration, avec un volume régulier.', page: (m, X) => X.cgId ? 'https://www.coingecko.com/en/coins/' + X.cgId : '', form: 'https://www.coingecko.com/request-form', formL: 'Formulaire de listing' },
+    { id: 'coinmarketcap', n: 'CoinMarketCap', k: 'Listing', cost: 'free', costL: 'Gratuit · délai variable', note: 'Formulaire unique accepté. Un dossier complet et prouvé est traité en priorité ; le délai gratuit va de quelques jours à plusieurs mois.', page: () => '', form: 'https://support.coinmarketcap.com/hc/en-us/requests/new', formL: 'Formulaire de listing' },
+    { id: 'solscan', n: 'Solscan', k: 'Explorateur', cost: 'free', costL: 'Gratuit', note: 'Page créée automatiquement. Le formulaire sert à mettre à jour les infos affichées ou la réputation du token.', page: (m) => 'https://solscan.io/token/' + m, form: 'https://kb.solscan.io/solscan-token-update-guideline', formL: 'Mise à jour des infos' },
+    { id: 'rugcheck', n: 'RugCheck', k: 'Confiance', cost: 'auto', costL: 'Automatique', note: 'Rapport de risque automatique, utilisé par l\'explorateur Solana et de nombreux traders avant d\'acheter.', page: (m) => 'https://rugcheck.xyz/tokens/' + m, form: '', formL: '' },
+  ];
+  const LSD = 'pstudio_dist_v1';
+  const DS = { mint: '', sel: null, cache: {}, rec: load(LSD, {}) };
+  try { DS.sel = new Set(JSON.parse(localStorage.getItem('pstudio_dist_sel') || 'null') || ['jupiter', 'coingecko', 'coinmarketcap', 'solscan']); } catch (e) { DS.sel = new Set(['jupiter', 'coingecko', 'coinmarketcap', 'solscan']); }
+  const saveSel = () => { try { localStorage.setItem('pstudio_dist_sel', JSON.stringify([...DS.sel])); } catch (e) {} };
+  const tfetch = (u, ms) => Promise.race([fetch(u), new Promise((_, r) => setTimeout(() => r(new Error('délai')), ms || 8000))]);
+  async function distCheck(mint, force) {
+    const X0 = DS.cache[mint]; if (X0 && !force && Date.now() - X0.at < 120000) return X0;
+    const X = DS.cache[mint] = { at: Date.now(), st: {}, loading: true }; if (S.page === 'dist') renderDist();
+    const set = (id, s, t) => { X.st[id] = { s, t }; };
+    await Promise.all([
+      tfetch('https://api.dexscreener.com/tokens/v1/solana/' + mint).then((r) => r.json()).then((j) => {
+        const ps = (Array.isArray(j) ? j : []).filter((p) => p.baseToken && p.baseToken.address === mint).sort((a, b) => ((b.liquidity || {}).usd || 0) - ((a.liquidity || {}).usd || 0));
+        if (ps.length) { const p = ps[0]; X.pair = p.pairAddress; X.dex = p.dexId; X.vol = (p.volume || {}).h24; X.liq = (p.liquidity || {}).usd; X.enh = !!(p.info && (p.info.imageUrl || (p.info.socials || []).length)); set('dexscreener', 'on', ps.length + ' paire' + (ps.length > 1 ? 's' : '') + ' · ' + (DEX_NAMES[p.dexId] || p.dexId) + (X.enh ? ' · fiche enrichie' : '')); }
+        else set('dexscreener', 'off', 'pas encore indexé (aucun échange)');
+      }).catch(() => set('dexscreener', 'unk', 'vérification impossible')),
+      tfetch('https://api.geckoterminal.com/api/v2/networks/solana/tokens/' + mint).then((r) => { if (r.status === 404) return null; if (!r.ok) throw new Error(); return r.json(); }).then((j) => {
+        if (!j || !j.data) return set('geckoterminal', 'off', 'pas encore indexé');
+        const a = j.data.attributes || {}; set('geckoterminal', 'on', 'indexé' + (a.image_url && !/missing/.test(a.image_url) ? ' · logo affiché' : ' · logo à ajouter'));
+      }).catch(() => set('geckoterminal', 'unk', 'vérification impossible')),
+      tfetch('https://lite-api.jup.ag/tokens/v2/search?query=' + mint).then((r) => r.json()).then((j) => {
+        const t = (Array.isArray(j) ? j : []).find((x) => x.id === mint || x.address === mint);
+        if (!t) return set('jupiter', 'off', 'pas encore dans Jupiter');
+        const v = t.isVerified || (t.tags || []).includes('verified');
+        set('jupiter', v ? 'on' : 'mid', v ? 'vérifié ✓' : 'échangeable, non vérifié');
+      }).catch(() => set('jupiter', 'unk', 'vérification impossible')),
+      tfetch('https://api.coingecko.com/api/v3/coins/solana/contract/' + mint).then((r) => { if (r.status === 404) return set('coingecko', 'off', 'non listé'); if (!r.ok) throw new Error(); return r.json().then((j) => { X.cgId = j.id; set('coingecko', 'on', 'listé'); }); }).catch(() => set('coingecko', 'unk', 'à vérifier sur le site')),
+      tfetch('https://api.rugcheck.xyz/v1/tokens/' + mint + '/report/summary').then((r) => { if (!r.ok) throw new Error(); return r.json(); }).then((j) => {
+        const lv = (j.risks || []).filter((x) => x.level === 'danger').length; set('rugcheck', lv ? 'mid' : 'on', 'rapport disponible' + (j.score_normalised != null ? ' · score ' + j.score_normalised : '') + (lv ? ' · ' + lv + ' alerte' + (lv > 1 ? 's' : '') : ''));
+      }).catch(() => set('rugcheck', 'unk', 'rapport pas encore disponible')),
+    ]);
+    set('birdeye', X.pair ? 'mid' : 'off', X.pair ? 'indexé automatiquement avec la paire' : 'apparaît avec le premier échange');
+    set('solscan', 'on', 'page du token disponible');
+    set('coinmarketcap', 'man', 'statut à vérifier sur le site');
+    X.loading = false; X.at = Date.now();
+    if (S.page === 'dist' && DS.mint === mint) renderDist();
+    return X;
+  }
+  function distKit(t) {
+    const C = S.cache[t.mint] || {}, X = DS.cache[t.mint] || {}, st = C.stats, PL = PLATFORMS[t.platform] || PLATFORMS.pump;
+    const desc = t.desc || (S.draft.symbol === t.symbol ? S.draft.desc : '') || '';
+    return [
+      ['Nom', t.name], ['Symbole', t.symbol], ['Réseau', 'Solana'], ['Adresse du contrat (mint)', t.mint], ['Décimales', '6'],
+      ['Offre totale', st && st.supplyTok ? Math.round(st.supplyTok).toLocaleString('fr-FR') : '1 000 000 000'],
+      ['Plateforme de lancement', PL.n + ' · ' + PL.url(t.mint)],
+      ['Paire principale', X.pair ? (DEX_NAMES[X.dex] || X.dex || 'DEX') + ' · ' + X.pair : 'après le premier échange'],
+      ['Date de lancement', new Date(t.createdAt).toLocaleDateString('fr-FR')],
+      ['Description courte', desc.split(/(?<=[.!?])\s/)[0] || ''], ['Description complète', desc],
+      ['Site web', t.web || ''], ['X (Twitter)', t.tw || ''], ['Telegram', t.tg || ''],
+      ['Logo', (C.meta && C.meta.image && /^https?:/.test(C.meta.image)) ? C.meta.image : 'logo de la fiche ' + PL.n],
+      ['Explorateur', 'https://solscan.io/token/' + t.mint],
+    ];
+  }
+  function renderDist() {
+    const box = $('distBody'); if (!box) return;
+    const list = S.tokens.filter((t) => t.mint);
+    const sel = $('distTok');
+    sel.innerHTML = list.length ? list.map((t) => '<option value="' + esc(t.mint) + '">' + esc(t.name) + ' · $' + esc(t.symbol) + ' · ' + esc((PLATFORMS[t.platform] || PLATFORMS.pump).n) + '</option>').join('') : '<option value="">Aucun token lancé</option>';
+    if (!list.find((t) => t.mint === DS.mint)) DS.mint = list.length ? list[0].mint : '';
+    sel.value = DS.mint;
+    if (!DS.mint) { box.innerHTML = '<div class="card"><div class="empty"><b>Aucun token à diffuser</b>Lance un token (ou ajoute-en un existant dans Mes tokens) : son adresse est nécessaire pour toutes les plateformes. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div></div>'; return; }
+    const t = list.find((x) => x.mint === DS.mint), X = DS.cache[t.mint], rec = DS.rec[t.mint] || {};
+    if (!X || (!X.loading && Date.now() - X.at > 120000)) { distCheck(t.mint); if (!S.cache[t.mint]) loadToken(t.mint, false).then(() => { if (S.page === 'dist') renderDist(); }).catch(() => {}); }
+    const XX = X || { st: {}, loading: true }, vis = DIST.filter((p) => (XX.st[p.id] || {}).s === 'on').length;
+    const nSel = DIST.filter((p) => DS.sel.has(p.id) && p.form).length, sent = DIST.filter((p) => rec[p.id]).length;
+    const SL = { on: ['g', 'Visible'], mid: ['a', 'Partiel'], off: ['', 'Absent'], unk: ['', 'Inconnu'], man: ['b', 'Manuel'] };
+    box.innerHTML =
+      '<div class="dist-top">' +
+        '<div class="card dist-sum"><div class="ring" style="--p:' + Math.round(vis / DIST.length * 100) + '">' + ring(vis / DIST.length * 100, 'var(--accent)') + '</div><div><b>Visible sur ' + vis + ' / ' + DIST.length + ' plateformes</b><span>' + (XX.loading ? 'Vérification en cours…' : 'Vérifié ' + fAgo(XX.at)) + ' · ' + sent + ' demande' + (sent > 1 ? 's' : '') + ' envoyée' + (sent > 1 ? 's' : '') + '</span>' + (XX.vol != null ? '<span>Volume 24 h ' + fUsd(XX.vol) + ' · liquidité ' + fUsd(XX.liq) + '</span>' : '') + '</div><button class="btn sm" data-dist="refresh" type="button">Revérifier</button></div>' +
+        '<div class="card dist-act"><b>Soumettre en une fois</b><span>Coche les plateformes, copie le dossier, puis ouvre tous leurs formulaires d\'un clic.</span><div class="toolbar"><button class="btn sm" data-dist="free" type="button">Sélection gratuite</button><button class="btn sm" data-dist="none" type="button">Aucune</button><button class="btn primary" data-dist="open" type="button"' + (nSel ? '' : ' disabled') + '>Ouvrir la sélection (' + nSel + ')</button></div></div>' +
+      '</div>' +
+      '<div class="dist-grid">' + DIST.map((p) => {
+        const st = XX.st[p.id] || { s: XX.loading ? 'unk' : 'unk', t: XX.loading ? 'vérification…' : '—' }, l = SL[st.s] || SL.unk, r = rec[p.id], pg = p.page(t.mint, XX);
+        return '<div class="dist-card' + (DS.sel.has(p.id) && p.form ? ' sel' : '') + '">' +
+          '<div class="dist-h">' + (p.form ? '<label class="dist-ck"><input type="checkbox" data-distsel="' + p.id + '"' + (DS.sel.has(p.id) ? ' checked' : '') + '><span></span></label>' : '<span class="dist-ck off" title="Rien à soumettre"></span>') +
+          '<span class="dist-logo">' + esc(p.n.replace(/[^A-Za-z]/g, '').slice(0, 2)) + '</span><span class="dist-n"><b>' + p.n + '</b><small>' + p.k + ' · <em class="c-' + p.cost + '">' + p.costL + '</em></small></span><span class="badge ' + l[0] + '">' + l[1] + '</span></div>' +
+          '<div class="dist-st">' + (XX.loading && !XX.st[p.id] ? '<span class="dim">vérification…</span>' : esc(st.t)) + (r ? ' · <span class="pos">demande ' + (r.done ? 'acceptée' : 'envoyée le ' + new Date(r.at).toLocaleDateString('fr-FR')) + '</span>' : '') + '</div>' +
+          '<p>' + esc(p.note) + '</p>' +
+          '<div class="dist-b">' + (pg ? '<a class="btn sm" href="' + esc(pg) + '" target="_blank" rel="noopener">Voir la fiche</a>' : '') + (p.form ? '<a class="btn sm' + (p.cost === 'free' ? ' primary' : '') + '" href="' + esc(p.form) + '" target="_blank" rel="noopener" data-distform="' + p.id + '">' + esc(p.formL) + '</a><button class="btn sm ghost" data-distmark="' + p.id + '" type="button">' + (r ? (r.done ? 'Annuler' : 'Acceptée ?') : 'Marquer envoyé') + '</button>' : '') + '</div></div>';
+      }).join('') + '</div>' +
+      '<div class="card"><div class="card-h"><h3>Dossier de soumission</h3><p>Les mêmes informations sont demandées partout : copie chaque champ, ou tout le dossier d\'un coup. Les champs vides sont à compléter dans Lancer un token (liens) avant d\'envoyer une demande.</p></div>' +
+      '<div class="dist-kit">' + distKit(t).map((f, i) => '<div class="' + (f[1] ? '' : 'miss') + '"><span>' + esc(f[0]) + '</span><b>' + (f[1] ? esc(f[1]) : 'à compléter') + '</b>' + (f[1] ? '<button class="btn sm ghost" data-distcp="' + i + '" type="button">Copier</button>' : '') + '</div>').join('') + '</div>' +
+      '<div class="toolbar"><button class="btn primary" data-distcp="all" type="button">Copier tout le dossier</button><span class="muted" style="font-size:13px">Conseil : un site web, un compte X actif et un volume régulier font la différence pour CoinGecko, CoinMarketCap et Jupiter.</span></div></div>';
+  }
+  async function distAction(b) {
+    const d = b.dataset, t = S.tokens.find((x) => x.mint === DS.mint);
+    if (d.dist === 'refresh') { if (DS.mint) distCheck(DS.mint, true); return; }
+    if (d.dist === 'free') { DS.sel = new Set(DIST.filter((p) => p.form && p.cost === 'free').map((p) => p.id)); saveSel(); return renderDist(); }
+    if (d.dist === 'none') { DS.sel = new Set(); saveSel(); return renderDist(); }
+    if (d.dist === 'open') {
+      const ps = DIST.filter((p) => DS.sel.has(p.id) && p.form); let blocked = 0;
+      try { await navigator.clipboard.writeText(distKit(t).map((f) => f[0] + ' : ' + (f[1] || '')).join('\n')); } catch (e) {}
+      ps.forEach((p) => { const w = window.open(p.form, '_blank', 'noopener'); if (!w) blocked++; distMark(p.id, true); });
+      if (blocked) toast('Onglets bloqués', blocked + ' formulaire(s) bloqué(s) par le navigateur : autorise les fenêtres pop-up pour ce site, ou ouvre-les depuis chaque carte.', 'a');
+      else toast(ps.length + ' formulaires ouverts', 'Le dossier complet est copié : colle-le au fur et à mesure.', 'g');
+      return renderDist();
+    }
+    if (d.distmark) { const r = (DS.rec[DS.mint] || {})[d.distmark]; if (!r) distMark(d.distmark, true); else if (!r.done) { r.done = true; save(LSD, DS.rec); } else { delete DS.rec[DS.mint][d.distmark]; save(LSD, DS.rec); } return renderDist(); }
+    if (d.distcp) {
+      const K = distKit(t), txt = d.distcp === 'all' ? K.map((f) => f[0] + ' : ' + (f[1] || '')).join('\n') : K[+d.distcp][1];
+      try { await navigator.clipboard.writeText(txt); toast('Copié', d.distcp === 'all' ? 'Dossier complet' : K[+d.distcp][0], 'g'); } catch (e) { toast('Copie impossible', 'Sélectionne le texte à la main.', 'a'); }
+    }
+  }
+  function distMark(id, on) { if (!DS.mint) return; const R = DS.rec[DS.mint] = DS.rec[DS.mint] || {}; if (on && !R[id]) R[id] = { at: Date.now() }; save(LSD, DS.rec); }
   /* ================================================================ rendu : lancer */
   function renderLaunch() {
     document.querySelectorAll('#stepper button').forEach((b) => { const n = +b.dataset.step; b.classList.toggle('on', n === S.step); b.classList.toggle('done', n < S.step); });
@@ -4299,11 +4467,13 @@ Message: ${r}.
     else if (S.page === 'bot') { if (window.PumpBotUI) window.PumpBotUI.show(); }
     else if (S.page === 'journal') renderJournal();
     else if (S.page === 'social') renderSocial();
+    else if (S.page === 'dist') renderDist();
   }
   function renderAll() { renderPage(); }
   function refreshView() { if (S.page === 'mine' && S.view.mine) showToken('mine', S.view.mine); if (S.page === 'trade' && S.view.trade) showToken('trade', S.view.trade); }
 
   /* ================================================================ évènements */
+  document.addEventListener('click', (e) => { const a = e.target.closest('a[data-distform]'); if (a) { distMark(a.dataset.distform, true); setTimeout(renderDist, 300); } });
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('button, a[data-px]'); if (!b) return;
     const d = b.dataset;
@@ -4312,6 +4482,7 @@ Message: ${r}.
     if (b.id === 'sideTheme') { navOpen(false); return themePicker(); }
     if (d.page) return setPage(d.page);
     if (d.dtok) { setPage('mine'); return typeof showToken === 'function' ? showToken('mine', d.dtok) : null; }
+    if (d.dist || d.distmark || d.distcp) return distAction(b);
     if (d.plat && PLATFORMS[d.plat]) { S.draft.platform = d.plat; saveDraft(); renderDevQuote(); renderLaunchSide(); return; }
     if (d.dact === 'radar') { setPage('launch'); return setLaunchTab('radar'); }
     if (d.dmode) { DASH.mode = d.dmode; try { localStorage.setItem('pstudio_dash_mode', d.dmode); } catch (x) {} return renderDash(); }
@@ -4393,6 +4564,8 @@ Message: ${r}.
       return;
     }
     if (t.id === 'soTok' || t.id === 'soNfa') { renderSocial(); return; }
+    if (t.id === 'distTok') { DS.mint = t.value; renderDist(); return; }
+    if (t.dataset && t.dataset.distsel) { if (t.checked) DS.sel.add(t.dataset.distsel); else DS.sel.delete(t.dataset.distsel); saveSel(); renderDist(); return; }
     if (t.id === 'tpOn') { S.draft.tpOn = t.checked; saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (t.dataset && (t.dataset.tpx != null || t.dataset.tpp != null)) { renderTpPlan(); return; }
     const fs = t.closest && t.closest('fieldset[data-form]'); if (fs) fs.classList.toggle('dirty', formDirty(fs));
