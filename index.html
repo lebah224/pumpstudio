@@ -1085,20 +1085,6 @@ textarea{font:inherit;color:inherit}
 .dexchart{border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line);background:var(--bg2);height:380px}
 .dexchart iframe{width:100%;height:100%;border:0;display:block}
 @media (max-width:700px){.dexchart{height:320px}}
-/* ---------- choix de plateforme ---------- */
-.plat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.plat-card{position:relative;display:flex;align-items:flex-start;gap:12px;text-align:left;background:var(--btn-face,var(--panel2));border:1px solid var(--line2);border-radius:var(--r-sm);padding:12px 40px 12px 12px;cursor:pointer;color:var(--text);transition:border-color .15s,background .15s,box-shadow .15s}
-.plat-card:hover{border-color:var(--accent-line)}
-.plat-card.on{border-color:var(--accent);background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 12%,var(--panel2)),var(--panel2));box-shadow:0 0 0 1px color-mix(in oklab,var(--accent) 40%,transparent) inset}
-.plat-art{width:42px;height:42px;border-radius:11px;background:var(--bg2);border:1px solid var(--line2);display:grid;place-items:center;flex:none}
-.plat-art svg{width:30px;height:30px}
-.plat-t{display:flex;flex-direction:column;gap:2px;min-width:0}
-.plat-t b{font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.2px}
-.plat-t small{font-size:12px;color:var(--accent-ink);font-weight:500}
-.plat-t em{font-style:normal;font-size:12.5px;color:var(--muted);line-height:1.4;margin-top:2px}
-.plat-ck{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line2)}
-.plat-card.on .plat-ck{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 0 4px,transparent 5px)}
-@media (max-width:700px){.plat-grid{grid-template-columns:1fr}}
 /* ---------- diffusion ---------- */
 .dist-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;margin-bottom:16px}
 .dist-top .card{margin:0}
@@ -1177,7 +1163,7 @@ textarea{font:inherit;color:inherit}
     <div class="mbar"><button class="icon-btn" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-controls="side"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="mlogo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Pump<b>Studio</b></span></div><div class="spacer"></div><button class="mwallet" id="mWallet" type="button" aria-label="Wallet"></button><button class="icon-btn" id="mSearch" type="button" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
     <header class="top">
       <div class="topbar">
-        <div><div class="page-eyebrow" id="pageEyebrow">Créer</div><div class="page-title" id="pageTitle">Lancer un token</div><div class="page-sub" id="pageSub">Du concept à la publication sur pump.fun ou Bonk.fun</div></div>
+        <div><div class="page-eyebrow" id="pageEyebrow">Créer</div><div class="page-title" id="pageTitle">Lancer un token</div><div class="page-sub" id="pageSub">Du concept à la publication sur pump.fun</div></div>
         <div class="spacer"></div>
         <div class="status" id="rpcStatus"><span class="dot"></span><span>RPC non testé</span></div>
         <button class="btn wallet-btn" id="walletBtn" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2"/><path d="M22 11h-6a2 2 0 000 4h6v-4z"/></svg><span id="walletTxt">Connecter le wallet</span></button>
@@ -1315,7 +1301,6 @@ textarea{font:inherit;color:inherit}
             <!-- étape 4 -->
             <div class="card" data-stepcard="4" hidden>
               <div class="card-h"><h3>Lancement</h3><p>Un token à la fois, créé et signé par toi. Le studio ne revend jamais tout seul.</p></div>
-              <div class="field"><label>Plateforme de publication</label><div class="plat-grid" id="platPick" role="radiogroup" aria-label="Plateforme de publication"></div></div>
               <div class="row2">
                 <div class="field"><label for="fDev">Achat du créateur à la création <small>en SOL, 0 pour aucun</small></label>
                   <div class="amt"><input id="fDev" type="number" min="0" step="0.01" value="0.1"><em>SOL</em></div>
@@ -1360,7 +1345,7 @@ textarea{font:inherit;color:inherit}
 
       <!-- TRADER -->
       <section class="page" id="p-trade">
-        <div class="page-head"><div><h1>Trader</h1><p>Colle l'adresse d'un token Solana (pump.fun, Bonk.fun, Raydium…) : analyse de risque, puis achat ou vente signés dans ton wallet.</p></div></div>
+        <div class="page-head"><div><h1>Trader</h1><p>Colle l'adresse d'un token Solana (pump.fun, PumpSwap, Raydium…) : analyse de risque, puis achat ou vente signés dans ton wallet.</p></div></div>
         <div class="card"><div class="toolbar" style="margin:0"><input class="search" id="tradeMint" placeholder="Adresse du token (mint)" style="flex:1;font-family:var(--mono)"><button class="btn primary" id="tradeGo" type="button">Analyser</button></div></div>
         <div id="tradeDetail"></div>
       </section>
@@ -1615,10 +1600,9 @@ Message: ${r}.
   /* ================================================================ constantes pump.fun */
   const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
   const PUBLIC_RPC = 'https://api.mainnet-beta.solana.com';
-  // Plateformes de lancement : pump.fun (programme direct ou PumpPortal) et Bonk.fun (Raydium LaunchLab, via PumpPortal)
+  // Plateforme de lancement (pump.fun : programme direct ou PumpPortal)
   const PLATFORMS = {
     pump: { n: 'pump.fun', tag: 'Courbe pump.fun · migration PumpSwap', d: 'La référence des memecoins Solana : le plus de trafic, moteur direct sans intermédiaire.', url: (m) => 'https://pump.fun/coin/' + m, fee: 0.02 },
-    bonk: { n: 'Bonk.fun', tag: 'LetsBonk · Raydium LaunchLab', d: 'Le launchpad de la communauté BONK sur Raydium. Migration vers Raydium, création via PumpPortal.', url: (m) => 'https://bonk.fun/token/' + m, fee: 0.03 },
   };
   const WSOL_MINT = 'So11111111111111111111111111111111111111112';
   const INIT_CURVE = { vSol: 30e9, vTok: 1.073e15, realTok: 7.931e14, realSol: 0, supply: 1e15, complete: false };
@@ -1639,7 +1623,7 @@ Message: ${r}.
   };
   const saveDraft = () => save(LS.draft, S.draft);
   // plateforme d'un token : celle du lancement pour les tokens du studio, sinon déduite du marché lu
-  function platOf(mint) { const t = S.tokens.find((x) => x.mint === mint); if (t && t.platform) return t.platform; const C = S.cache[mint]; return C && C.curve && C.curve.ext ? (C.curve.dex === 'launchlab' || /bonk$/i.test(mint) ? 'bonk' : null) : 'pump'; }
+  function platOf(mint) { const t = S.tokens.find((x) => x.mint === mint); if (t && t.platform) return t.platform; const C = S.cache[mint]; return C && C.curve && C.curve.ext ? null : 'pump'; }
   // Deux wallets possibles : le wallet externe (Phantom…) et le wallet rapide du studio.
   // S.wallet désigne toujours celui qui signe : le wallet rapide quand il est choisi, sinon l'externe.
   let SESSREC = load(LS.sess, null);
@@ -1649,7 +1633,7 @@ Message: ${r}.
     set(v) { S.ext = v; }, enumerable: true,
   });
   // brouillons des versions précédentes : univers, ton et style de logo d'avant
-  (function migrate() { const d = S.draft; if (!PLATFORMS[d.platform]) d.platform = 'pump'; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'ocean', 'food', 'gaming', 'nature', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
+  (function migrate() { const d = S.draft; d.platform = 'pump'; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'ocean', 'food', 'gaming', 'nature', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
 
   /* ================================================================ outils binaires */
   function b64ToBytes(b64) { const s = atob(b64), out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
@@ -1799,7 +1783,7 @@ Message: ${r}.
     if (cache.length > 300) cache.length = 300;
     return cache;
   }
-  // Token hors pump.fun (Bonk.fun, Raydium…) : prix et capitalisation lus sur DEX Screener (gratuit).
+  // Token hors pump.fun (Raydium, Meteora…) : prix et capitalisation lus sur DEX Screener (gratuit).
   // Il est traité comme un token « hors courbe » : pas de devis exact, achats et ventes routés par PumpPortal (pool auto).
   async function dexMarket(mint) {
     try {
@@ -1811,7 +1795,7 @@ Message: ${r}.
       if (!(price > 0)) return null;
       const cap = +p.marketCap || +p.fdv || 0, supplyTok = cap && +p.priceUsd ? cap / +p.priceUsd : 1e9, realSol = p.quoteToken.address === WSOL_MINT ? +((p.liquidity || {}).quote || 0) : 0;
       return { curve: { pda: null, exists: true, ext: true, complete: true, dex: p.dexId || '', pair: p.pairAddress || '', supply: supplyTok * 1e6 },
-        stats: { price, mcapSol: price * supplyTok, mcapUsd: S.solUsd ? price * supplyTok * S.solUsd : null, progress: p.dexId === 'launchlab' ? clamp(realSol / 85 * 100, 0, 100) : 100, realSol, supplyTok, liqUsd: liq(p) },  // LaunchLab (Bonk.fun) : migration vers Raydium à ~85 SOL
+        stats: { price, mcapSol: price * supplyTok, mcapUsd: S.solUsd ? price * supplyTok * S.solUsd : null, progress: p.dexId === 'launchlab' ? clamp(realSol / 85 * 100, 0, 100) : 100, realSol, supplyTok, liqUsd: liq(p) },  // Raydium LaunchLab : migration vers Raydium à ~85 SOL
         meta: { name: p.baseToken.name || '', symbol: p.baseToken.symbol || '', image: (p.info || {}).imageUrl || '' } };
     } catch (e) { return null; }
   }
@@ -2522,20 +2506,8 @@ Message: ${r}.
         const j = await r.json(); return 'https://ipfs.io/ipfs/' + j.data.cid;
       };
       const img = await up(blob, 'logo.' + imgExt(blob));
-      const meta = { name: d.name, symbol: d.symbol, description: d.desc, image: img, showName: true, createdOn: d.platform === 'bonk' ? 'https://bonk.fun' : 'https://pump.fun', twitter: d.tw || undefined, telegram: d.tg || undefined, website: d.web || undefined };
+      const meta = { name: d.name, symbol: d.symbol, description: d.desc, image: img, showName: true, createdOn: 'https://pump.fun', twitter: d.tw || undefined, telegram: d.tg || undefined, website: d.web || undefined };
       return up(new Blob([JSON.stringify(meta)], { type: 'application/json' }), 'metadata.json');
-    }
-    if (d.platform === 'bonk') {
-      // stockage utilisé par le site Bonk.fun ; en cas d'échec, repli sur l'IPFS de pump.fun (une adresse IPFS vaut pour toute plateforme)
-      try {
-        const fi = new FormData(); fi.append('image', blob, 'logo.' + imgExt(blob));
-        const ri = await fetch('https://nft-storage.letsbonk22.ws/upload/img', { method: 'POST', body: fi }), img = ri.ok ? (await ri.text()).trim().replace(/^"|"$/g, '') : '';
-        if (/^https?:\/\//.test(img)) {
-          const rm = await fetch('https://nft-storage.letsbonk22.ws/upload/meta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ createdOn: 'https://bonk.fun', description: d.desc, image: img, name: d.name, symbol: d.symbol, website: d.web || '', twitter: d.tw || '', telegram: d.tg || '' }) });
-          const uri = rm.ok ? (await rm.text()).trim().replace(/^"|"$/g, '') : '';
-          if (/^https?:\/\//.test(uri)) return uri;
-        }
-      } catch (e) {}
     }
     const fd = new FormData();
     fd.append('file', blob, 'logo.' + imgExt(blob)); fd.append('name', d.name); fd.append('symbol', d.symbol); fd.append('description', d.desc);
@@ -2552,14 +2524,13 @@ Message: ${r}.
     if (R.blocking.length) { toast('Pas encore prêt', R.blocking[0], 'a'); return; }
     if (!S.wallet) return walletMenu();
     if (!cfg.sim && !(await ensureSigner())) return;
-    const d = S.draft, bonk = d.platform === 'bonk', PL = PLATFORMS[d.platform] || PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 && !bonk ? quoteBuy(INIT_CURVE, dev) : null;
+    const d = S.draft, PL = PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null;
     const recap = '<div class="recap"><div class="kv">' +
       '<span>Token</span><span>' + esc(d.name) + ' · $' + esc(d.symbol) + '</span>' +
-      '<span>Plateforme</span><span>' + PL.n + ' <small class="dim">' + PL.tag + '</small></span>' +
-      '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : ' · tokens selon la courbe') : 'aucun') + '</span>' +
+      '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
       '<span>Frais de réseau et comptes</span><span>≈ ' + fr(PL.fee, 2) + ' SOL</span>' +
-      '<span>Coût total estimé</span><span>' + fSol(dev + PL.fee + (bonk ? dev * cfg.portalFeePct / 100 : 0)) + '</span>' +
-      '<span>Métadonnées</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : bonk ? 'Bonk.fun (repli IPFS pump.fun)' : 'pump.fun (IPFS)') + '</span>' +
+      '<span>Coût total estimé</span><span>' + fSol(dev + PL.fee) + '</span>' +
+      '<span>Métadonnées</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS)') + '</span>' +
       '<span>Mode</span><span>' + (cfg.sim ? '<span class="badge v">simulation</span>' : '<span class="badge r">réel</span>') + '</span></div></div>' +
       (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? (d.slMode === 'trail' ? ' · stop suiveur −' : ' · stop −') + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente te sera présentée à signer.') + '</div>' : '') +
       (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur ' + PL.n + ' et visible par tous. Ton wallet va te présenter la transaction : vérifie avant de signer. Une création ne s\'annule pas.</p>');
@@ -2568,8 +2539,8 @@ Message: ${r}.
     const mintKp = W3().Keypair.generate(), mint = mintKp.publicKey.toBase58();
     const steps = [
       { label: cfg.sim ? 'Métadonnées (non envoyées en simulation)' : 'Envoi du logo et des métadonnées (IPFS)', run: async (x) => { x.uri = cfg.sim ? 'https://ipfs.io/ipfs/simulation' : await uploadMeta(d); return cfg.sim ? 'ignoré' : 'ok'; } },
-      { label: bonk ? 'Préparation de la création (Bonk.fun via PumpPortal)' : cfg.engine === 'portal' ? 'Préparation de la création (PumpPortal)' : 'Préparation de la création (programme pump.fun)', run: async (x) => {
-        x.tx = bonk || cfg.engine === 'portal' ? await portalTx({ publicKey: S.wallet.pk, action: 'create', tokenMetadata: { name: d.name, symbol: d.symbol, uri: x.uri }, mint, denominatedInSol: 'true', amount: dev, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: bonk ? 'bonk' : 'pump' })
+      { label: cfg.engine === 'portal' ? 'Préparation de la création (PumpPortal)' : 'Préparation de la création (programme pump.fun)', run: async (x) => {
+        x.tx = cfg.engine === 'portal' ? await portalTx({ publicKey: S.wallet.pk, action: 'create', tokenMetadata: { name: d.name, symbol: d.symbol, uri: x.uri }, mint, denominatedInSol: 'true', amount: dev, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: 'pump' })
           : await directCreate(mintKp, d, x.uri, dev);
       } },
       { label: 'Vérification par simulation', run: async (x) => { const v = await simulate(x.tx); x.logs = (v.logs || []).slice(-12).join('\n'); if (v.err) throw new Error(simError(v)); x.logs = ''; return 'acceptée'; } },
@@ -2589,7 +2560,7 @@ Message: ${r}.
       }
       const real = await actualDeltas(ctx.sig, mint);
       const thumb = await thumbnail(d.image);
-      S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: thumb, createdAt: Date.now(), sig: ctx.sig, dev, platform: d.platform || 'pump', desc: d.desc, tw: d.tw, tg: d.tg, web: d.web });
+      S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: thumb, createdAt: Date.now(), sig: ctx.sig, dev, platform: 'pump', desc: d.desc, tw: d.tw, tg: d.tg, web: d.web });
       save(LS.tokens, S.tokens);
       journalAdd({ type: 'create', mint, symbol: d.symbol, sim: false, status: 'ok', sig: ctx.sig, sol: -(real ? real.sol : dev), tokens: real ? real.tokens : (q ? q.tokens : 0), est: !real });
       $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est en ligne. <a href="' + PL.url(mint) + '" target="_blank" rel="noopener">' + PL.n + '</a> · <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Solscan</a></div>');
@@ -3604,7 +3575,7 @@ Message: ${r}.
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { dash: ['Tableau de bord', 'Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun ou Bonk.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { dash: ['Tableau de bord', 'Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
@@ -3966,32 +3937,13 @@ Message: ${r}.
     const cnt = (id, v, max) => { const el = $(id); el.textContent = (v || '').length + ' / ' + max; el.classList.toggle('over', (v || '').length > max); };
     cnt('cName', S.draft.name, 32); cnt('cSymbol', S.draft.symbol, 10); cnt('cDesc', S.draft.desc, 1000);
   }
-  const PLAT_ART = {
-    pump: '<svg viewBox="0 0 40 40"><rect x="7" y="13" width="26" height="14" rx="7" transform="rotate(-38 20 20)" fill="#5fd38d"/><path d="M20 20l7.6-5.9a7 7 0 01-8.6 11z" transform="rotate(0)" fill="#f4f1e8" opacity=".92"/></svg>',
-    bonk: '<svg viewBox="0 0 40 40"><circle cx="20" cy="21" r="12" fill="#f5a524"/><path d="M9 14l3-7 5 6M31 14l-3-7-5 6" fill="#f5a524"/><circle cx="15.5" cy="19" r="1.8" fill="#2a1a05"/><circle cx="24.5" cy="19" r="1.8" fill="#2a1a05"/><ellipse cx="20" cy="25" rx="3.2" ry="2.2" fill="#2a1a05"/><path d="M17 29q3 2 6 0" stroke="#2a1a05" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>',
-  };
-  function renderPlatPick() {
-    const el = $('platPick'); if (!el) return;
-    el.innerHTML = Object.keys(PLATFORMS).map((k) => { const P = PLATFORMS[k], on = S.draft.platform === k; return '<button type="button" class="plat-card' + (on ? ' on' : '') + '" data-plat="' + k + '" role="radio" aria-checked="' + on + '"><span class="plat-art">' + PLAT_ART[k] + '</span><span class="plat-t"><b>' + P.n + '</b><small>' + P.tag + '</small><em>' + P.d + '</em></span><span class="plat-ck" aria-hidden="true"></span></button>'; }).join('');
-  }
   function renderDevQuote() {
-    renderPlatPick();
-    if (S.draft.platform === 'bonk') {
-      const dev = num(S.draft.dev) || 0;
-      $('devQuote').innerHTML = '<div class="kv"><span>Achat du créateur</span><span>' + (dev ? fSol(dev) : 'aucun') + '</span><span>Tokens reçus</span><span>' + (dev ? 'selon la courbe LaunchLab' : '—') + '</span><span>Migration</span><span>vers Raydium à ~85 SOL</span><span>Frais PumpPortal</span><span>' + fPct(cfg.portalFeePct, 1) + ' de l\'achat</span></div>';
-      $('launchNote').innerHTML = 'Bonk.fun est créé via PumpPortal (gratuit, sans clé). En simulation, la transaction est construite puis vérifiée par la blockchain : tu sais avant de signer si le lancement passerait. Ensuite le prix est suivi via DEX Screener.';
-      const R = readiness();
-      $('launchBtn').textContent = cfg.sim ? 'Simuler le lancement sur Bonk.fun' : 'Lancer sur Bonk.fun';
-      $('launchBtn').className = 'btn ' + (cfg.sim ? 'primary' : 'danger'); $('launchBtn').disabled = S.busy;
-      $('launchHint').textContent = R.blocking.length ? 'À compléter : ' + R.blocking[0] : cfg.sim ? 'Prêt pour une simulation complète.' : 'Prêt. Le token sera publié sur Bonk.fun après ta signature.';
-      return;
-    }
     const dev = num(S.draft.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null, st = curveStats(INIT_CURVE);
     $('devQuote').innerHTML = '<div class="kv">' + (q ? '<span>Tu reçois</span><span>' + fTok(q.tokens) + ' tokens</span><span>Part de l\'offre</span><span class="' + (q.supplyPct > cfg.devMaxPct ? 'neg' : q.supplyPct > 5 ? 'warn' : 'pos') + '">' + fPct(q.supplyPct, 2) + '</span><span>Capitalisation après</span><span>' + (S.solUsd ? fUsd(q.mcapAfterSol * S.solUsd) : fSol(q.mcapAfterSol, 1)) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span>'
       : '<span>Achat du créateur</span><span>aucun</span><span>Capitalisation de départ</span><span>' + (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) + '</span>') + '</div>';
     $('launchNote').innerHTML = q && q.supplyPct > 5 ? 'Un créateur qui détient plus de 5 % de l\'offre fait fuir les acheteurs prudents : les outils d\'analyse l\'affichent en rouge.' : 'L\'achat du créateur est visible publiquement. Une petite part rassure : tu montres que tu crois au projet sans contrôler le prix.';
     const R = readiness();
-    $('launchBtn').textContent = cfg.sim ? 'Simuler le lancement' : 'Lancer sur pump.fun';
+    $('launchBtn').textContent = cfg.sim ? 'Simuler le lancement' : 'Lancer le token';
     $('launchBtn').className = 'btn ' + (cfg.sim ? 'primary' : 'danger');
     $('launchBtn').disabled = S.busy;
     $('launchHint').textContent = R.blocking.length ? 'À compléter : ' + R.blocking[0] : cfg.sim ? 'Prêt pour une simulation complète.' : 'Prêt. Le token sera publié après ta signature.';
@@ -4483,7 +4435,6 @@ Message: ${r}.
     if (d.page) return setPage(d.page);
     if (d.dtok) { setPage('mine'); return typeof showToken === 'function' ? showToken('mine', d.dtok) : null; }
     if (d.dist || d.distmark || d.distcp) return distAction(b);
-    if (d.plat && PLATFORMS[d.plat]) { S.draft.platform = d.plat; saveDraft(); renderDevQuote(); renderLaunchSide(); return; }
     if (d.dact === 'radar') { setPage('launch'); return setLaunchTab('radar'); }
     if (d.dmode) { DASH.mode = d.dmode; try { localStorage.setItem('pstudio_dash_mode', d.dmode); } catch (x) {} return renderDash(); }
     if (d.drange) { DASH.range = d.drange; renderDash(); return solHist(true); }
