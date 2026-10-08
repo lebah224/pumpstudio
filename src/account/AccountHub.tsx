@@ -249,9 +249,9 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
 
   return (
     <div className={'ts-hub' + (mobile ? ' m' : '')}>
-      <button ref={btn} type="button" className={'ts-hub-btn' + (!w && !user ? ' primary' : '') + (!st.sim ? ' real' : '') + (open ? ' on' : '')}
+      <button ref={btn} type="button" className={'ts-hub-btn' + (!w && !user ? ' primary' : '') + (st.sim ? ' demo' : '') + (open ? ' on' : '')}
         aria-haspopup="dialog" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-        {!st.sim && <span className="ts-hub-real">Réel</span>}
+        {st.sim && <span className="ts-hub-demo">Démo</span>}
         {trigger}
         {user && w && <span className="ts-hub-av xs" aria-hidden="true">{label.slice(0, 1).toUpperCase()}</span>}
         {I.chev}

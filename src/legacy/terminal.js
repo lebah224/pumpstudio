@@ -241,7 +241,7 @@ function renderWallet() {
     : !authed ? '<span class="badge a">compte requis</span> Connecte-toi pour utiliser le bot en réel.'
     : !cur ? '<span class="badge a">wallet à choisir</span> Choisis le wallet du bot : il n\'entre dans aucune position sans lui.'
     : !cur.ready ? '<span class="badge a">en attente</span> ' + esc(cur.note) + '. Le bot n\'entre dans aucune position en attendant.'
-    : '<span class="badge r">réel</span> Chaque entrée achète vraiment, chaque sortie vend vraiment, avec ' + esc(cur.name) + ' (' + esc((cur.pk || '').slice(0, 4) + '…' + (cur.pk || '').slice(-4)) + ').';
+    : 'Chaque entrée achète vraiment, chaque sortie vend vraiment, avec ' + esc(cur.name) + ' (' + esc((cur.pk || '').slice(0, 4) + '…' + (cur.pk || '').slice(-4)) + ').';
   el.innerHTML = '<div class="pb-wal-h"><b>Wallet du bot</b><span>' + state + '</span></div>' + (sim ? '' : '<div class="pb-wal-o">' +
     ws.map((w) => opt(w.id, w.name, w.note, authed && (w.ready || w.armable), w.id === 'srv')).join('') + '</div>');
   // flux de démonstration (tokens inventés) : réservé à la démo

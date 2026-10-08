@@ -10,6 +10,12 @@ export type HubState = {
   hasSession: boolean; bal: number | null; solUsd: number | null; sim: boolean; rpcOk: boolean | null; theme: string; depth: string;
   demo: { bal: number; positions: number };
 };
+/** Wallet démo : solde fictif, tokens détenus (démo ou vrais tokens à prix réel) et activité */
+export type DemoInfo = {
+  addr: string; bal: number; solUsd: number | null;
+  hold: { mint: string; symbol: string; image: string; amount: number; sol: number | null; demo: boolean }[];
+  acts: { t: number; type: string; symbol: string; sol: number; tokens: number }[];
+};
 type Keypair = { publicKey: { toBase58: () => string }; secretKey: Uint8Array };
 
 // Accès typé au studio historique (window.PumpStudio), le temps de migrer ses pages vers React.
@@ -38,6 +44,8 @@ type LegacyStudio = {
     setAuth: (on: boolean) => void;
     authed: () => boolean;
     demoReset: () => void;
+    demoInfo: () => DemoInfo;
+    demoMove: (kind: 'deposit' | 'withdraw') => Promise<void>;
     rpc: <T = any>(method: string, params: unknown[]) => Promise<T>;
     page: () => string;
     copyAddress: () => void;

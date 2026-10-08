@@ -74,11 +74,11 @@
 .ts-hub-btn:focus-visible{outline:none;box-shadow:var(--focus)}
 .ts-hub-btn.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 92%,#fff),var(--accent));color:var(--on-accent);border-color:transparent;padding:0 14px}
 .ts-hub-btn.primary svg.i{color:var(--on-accent)}
-.ts-hub-btn.real{border-color:var(--red-line)}
+.ts-hub-btn.demo{border-color:color-mix(in oklab,var(--violet) 40%,var(--line2))}
 .ts-hub-btn svg.i{width:17px;height:17px}
 .ts-hub-chev{color:var(--dim);transition:transform .15s}
 .ts-hub-btn.on .ts-hub-chev{transform:rotate(180deg)}
-.ts-hub-real{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--red-bg);border:1px solid var(--red-line);color:var(--red-ink)}
+.ts-hub-demo{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:color-mix(in oklab,var(--violet) 14%,var(--panel));border:1px solid color-mix(in oklab,var(--violet) 40%,var(--panel));color:var(--violet)}
 .ts-hub-wav{display:inline-flex}
 .ts-hub-wav .wav{width:28px;height:28px}
 .ts-hub-wav .wav.sm{width:26px;height:26px}
@@ -170,7 +170,7 @@
 /* mobile : bouton compact dans la barre du haut, menu en panneau du bas */
 .ts-hub.m .ts-hub-btn{height:40px;padding:0 8px 0 6px;gap:7px}
 .ts-hub.m .ts-hub-btn.primary{padding:0 12px}
-.ts-hub.m .ts-hub-real{display:none}
+.ts-hub.m .ts-hub-demo{display:none}
 .ts-hub-scrim{position:fixed;inset:0;z-index:119;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
 .ts-hub-panel.sheet{position:fixed;top:auto;left:0;right:0;bottom:0;width:auto;max-height:86vh;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom,0px);animation:tsHubUp .18s ease-out}
 @keyframes tsHubUp{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
@@ -403,3 +403,8 @@
 .pb-wopt.on{border-color:var(--accent-line);background:color-mix(in oklab,var(--accent) 8%,var(--bg))}
 .pb-wopt.off{opacity:.55}
 @media (max-width:900px){.pb-wal-o{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Portefeuille en démo */
+.ts-wp-row{display:flex;align-items:center;gap:12px;padding:10px 6px}
+.ts-wp-demo{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
+.ts-wp-demo small{color:var(--dim);font-size:12px}

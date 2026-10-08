@@ -6,6 +6,7 @@ import { walletById } from '../wallets/catalog';
 import { AreaChart, Donut, QrCode, type Slice } from './charts';
 import { useServerWallet } from '../serverWallet/api';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
+import { DemoWallet } from './DemoWallet';
 import { activity, balanceOf, balanceSeries, forget, holdings, solHistory, type Holding, type Pt, type Range, type Tx } from './walletData';
 
 // Couleurs de répartition (palette catégorielle validée pour fond sombre, ordre fixe) et « Autres » en neutre
@@ -107,6 +108,8 @@ export function WalletPage() {
   }, [solVal, hold, bal]);
 
   if (!st) return null;
+  // démo : wallet fictif de 10 SOL, rien n'est lu sur la blockchain
+  if (st.sim) return <DemoWallet visible={visible} />;
   if (!pk) return (
     <div className="card ts-wp-empty">
       <div className="ts-wp-empty-ic" aria-hidden="true"><svg className="i" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2" /><path d="M22 11h-6a2 2 0 000 4h6v-4z" /></svg></div>
