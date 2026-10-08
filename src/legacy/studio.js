@@ -1203,8 +1203,12 @@
       steps.push({ label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) });
     }
     try {
-      const ctx = await runFlow((dry ? 'Simulation · ' : 'Lancement · ') + d.name, steps);
-      if (ctx.error) { journalAdd({ type: 'create', mint, symbol: d.symbol, sim: dry, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 }); return; }
+      const ctx = await runFlow((dry ? 'Test · ' : 'Lancement · ') + d.name, steps);
+      if (ctx.error) {
+        journalAdd({ type: 'create', mint, symbol: d.symbol, sim: dry, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 });
+        if (/pump\.fun n'accepte pas|refusé les métadonnées|Pinata/.test(ctx.error.message || '')) $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">L\'envoi du logo a échoué. Un jeton Pinata gratuit règle le problème. <button class="btn sm primary" data-act="keyhelp" data-k="pinata" type="button">Ajouter un jeton Pinata</button></div>');
+        return;
+      }
       if (dry) {
         journalAdd({ type: 'create', mint, symbol: d.symbol, sim: true, status: 'ok', sol: -dev, tokens: q ? q.tokens : 0, est: true });
         $('mBody').insertAdjacentHTML('beforeend', dryNote(how));
@@ -2566,8 +2570,9 @@
   }
   const DTYPE = { buy: 'Achat', sell: 'Vente', create: 'Lancement', fees: 'Frais créateur' };
   function dashOps() {
-    const m = DASH.mode || (S.journal.some((j) => !j.sim) ? 'real' : 'sim');
-    return { m, L: S.journal.filter((j) => m === 'all' || (m === 'sim' ? j.sim : !j.sim)) };
+    // opérations du mode en cours seulement (démo ou réel), comme le journal
+    const m = cfg.sim ? 'sim' : 'real';
+    return { m, L: S.journal.filter((j) => (m === 'sim' ? !!j.sim : !j.sim)) };
   }
   function dashTokens() {
     if (Date.now() - DASH.tokAt < 60000) return; DASH.tokAt = Date.now();
@@ -2579,6 +2584,8 @@
     $('dHello').textContent = hr < 5 || hr >= 18 ? 'Bonsoir' : 'Bonjour';
     $('dDate').textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const { m, L } = dashOps();
+    { const dm = $('dMode'); if (dm) dm.hidden = true; }
+    renderKeysCard();
     document.querySelectorAll('#dMode [data-dmode]').forEach((b) => { b.classList.toggle('on', b.dataset.dmode === m); b.setAttribute('aria-pressed', b.dataset.dmode === m); });
     document.querySelectorAll('#dRange [data-drange]').forEach((b) => b.classList.toggle('on', b.dataset.drange === DASH.range));
     const ppl = ppLabel(); $('dLive').innerHTML = '<span class="dot ' + ppl[0] + '"></span>Flux direct · ' + esc(ppl[1]) + '<i></i><span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait') + '"></span>RPC ' + (S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé');
@@ -3155,8 +3162,8 @@
   /* ---------- réglages : formulaires avec Valider / Annuler */
   const FORMS = [
     { id: 'engine', title: 'Moteur de transaction', fields: [['engine', 'Construction des transactions', 'sel', 'Direct : programme pump.fun, sans intermédiaire ni frais en plus. PumpPortal : secours. Les tokens migrés passent automatiquement par PumpPortal, quel que soit ce choix.', [['direct', 'Direct (pump.fun)'], ['portal', 'PumpPortal (+0,5 %)']]]] },
-    { id: 'conn', title: 'Connexion à Solana', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct PumpPortal', 'bool', 'Prix et transactions pump.fun en temps réel : les ordres se déclenchent en moins d\'une seconde. Gratuit, sans clé.']] },
-    { id: 'meta', title: 'Métadonnées du token', fields: [['metaMethod', 'Envoi du logo', 'sel', 'pump.fun direct, ou Pinata si le navigateur bloque', [['pump', 'pump.fun (IPFS)'], ['pinata', 'Pinata (IPFS)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
+    { id: 'conn', title: 'Connexion à Solana', help: 'helius', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct PumpPortal', 'bool', 'Prix et transactions pump.fun en temps réel : les ordres se déclenchent en moins d\'une seconde. Gratuit, sans clé.']] },
+    { id: 'meta', title: 'Métadonnées du token', help: 'pinata', fields: [['metaMethod', 'Envoi du logo', 'sel', 'pump.fun direct, ou Pinata si le navigateur bloque', [['pump', 'pump.fun (IPFS)'], ['pinata', 'Pinata (IPFS)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
     { id: 'speed', title: 'Vitesse d\'exécution', fields: [['speed', 'Priorité des transactions', 'sel', 'Calculée sur les frais réellement payés sur pump.fun ces dernières secondes', [['eco', 'Économique'], ['fast', 'Rapide (conseillé)'], ['turbo', 'Turbo'], ['manual', 'Manuelle']]], ['maxPriority', 'Plafond des frais de priorité', 'num', 'Jamais plus que ce montant par transaction', 'SOL'], ['priorityFee', 'Frais de priorité manuels', 'num', 'Utilisés seulement en mode Manuelle', 'SOL']] },
     { id: 'fast', title: 'Wallet rapide et envoi', fields: [['autoExec', 'Ventes automatiques', 'bool', 'Le wallet rapide exécute seul les paliers et le stop'], ['slSlippage', 'Slippage du stop', 'num', 'Plus large : mieux vaut vendre un peu moins cher que pas du tout', '%'], ['autoRetry', 'Nouveaux essais', 'num', 'Si le prix a trop bougé (0 à 3)', 'fois'], ['sender', 'Envoi direct aux validateurs', 'sel', 'Helius Sender, en plus de ton RPC. Pourboire inclus dans la transaction.', [['swqos', 'Rapide · 0,000005 SOL (conseillé)'], ['max', 'Maximum · 0,001 SOL'], ['off', 'Désactivé']]]] },
     { id: 'trade', title: 'Trading', fields: [['slippage', 'Slippage maximum', 'num', 'Écart de prix accepté', '%'], ['maxSol', 'Limite par achat', 'num', 'Garde-fou contre une erreur de saisie', 'SOL'], ['feePct', 'Frais pump.fun estimés', 'num', 'Pour les devis', '%'], ['portalFeePct', 'Frais PumpPortal', 'num', 'Seulement avec le moteur PumpPortal', '%']] },
@@ -3164,7 +3171,7 @@
     { id: 'alerts', title: 'Alertes', fields: [['notify', 'Notifications du navigateur', 'bool', 'Quand un ordre préparé se déclenche'], ['sound', 'Son', 'bool', '']] },
   ];
   function setFormsHtml() {
-    $('setForms').innerHTML = FORMS.map((F) => '<fieldset data-form="' + F.id + '"><legend>' + esc(F.title) + '</legend>' + F.fields.map(([k, label, type, help, extra]) => {
+    $('setForms').innerHTML = FORMS.map((F) => '<fieldset data-form="' + F.id + '"><legend>' + esc(F.title) + '</legend>' + (F.help ? '<button class="btn sm ghost kp-help" data-act="keyhelp" data-k="' + F.help + '" type="button">' + (F.help === 'helius' ? 'Comment obtenir une clé Helius ?' : 'Comment obtenir un jeton Pinata ?') + '</button>' : '') + F.fields.map(([k, label, type, help, extra]) => {
       const id = 'set-' + k, lab = '<label for="' + id + '">' + esc(label) + (help ? '<small>' + esc(help) + '</small>' : '') + '</label>';
       if (type === 'bool') return '<div class="f">' + lab + '<span class="switch"><input type="checkbox" id="' + id + '" data-k="' + k + '"' + (cfg[k] ? ' checked' : '') + '><i></i></span></div>';
       if (type === 'sel') return '<div class="f">' + lab + '<select class="sel" id="' + id + '" data-k="' + k + '">' + extra.map((o) => '<option value="' + o[0] + '"' + (cfg[k] === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>';
@@ -3278,6 +3285,62 @@
     return keep;
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.ppLive && PP.want.size && !PP.ws) ppConnect(); });
+  /* ---------- clés API (mode réel) : petit panneau en 3 étapes, vérifié avant d'enregistrer */
+  const KEYS = {
+    helius: { title: 'Ajouter ta clé Helius', label: 'Clé Helius', ph: 'ex. 1a2b3c4d-5e6f-…',
+      why: '<b>Gratuite, conseillée.</b> Prix en temps réel, envois plus rapides et pas de blocage. Sans elle, l\'outil passe par le RPC TokenStudio, plus lent.',
+      steps: ['Crée un compte gratuit sur <a href="https://dashboard.helius.dev/" target="_blank" rel="noopener">helius.dev</a>.', 'Dans ton tableau de bord, copie ta clé <b>API Key</b>.', 'Colle-la ci-dessous, puis clique sur « Vérifier ».'] },
+    pinata: { title: 'Ajouter ton jeton Pinata', label: 'Jeton Pinata (JWT)', ph: 'eyJhbGciOi…',
+      why: '<b>Gratuit.</b> Sert à envoyer le logo et la fiche du token quand pump.fun refuse l\'envoi depuis le navigateur.',
+      steps: ['Crée un compte gratuit sur <a href="https://app.pinata.cloud/developers/api-keys" target="_blank" rel="noopener">pinata.cloud</a>.', 'Dans <b>API Keys</b>, crée une clé avec le droit d\'envoi de fichiers, puis copie son <b>JWT</b>.', 'Colle-le ci-dessous, puis clique sur « Vérifier ».'] },
+  };
+  const heliusUrl = (v) => (/^https:\/\//i.test(v) ? v : 'https://mainnet.helius-rpc.com/?api-key=' + v);
+  async function checkKey(kind, raw) {
+    const v = (raw || '').trim(); if (!v) throw new Error('Colle d\'abord la clé.');
+    const go = (url, o) => fetch(url, Object.assign({ signal: AbortSignal.timeout(10000) }, o)).catch(() => { throw new Error((kind === 'helius' ? 'Helius' : 'Pinata') + ' ne répond pas. Vérifie ta connexion et réessaie.'); });
+    if (kind === 'helius') {
+      if (!/^https:\/\//i.test(v) && !/^[A-Za-z0-9-]{20,}$/.test(v)) throw new Error('Cela ne ressemble pas à une clé Helius (lettres, chiffres et tirets).');
+      const url = heliusUrl(v), r = await go(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getSlot' }) });
+      if (r.status === 401 || r.status === 403) throw new Error('Clé refusée par Helius. Recopie-la depuis ton tableau de bord.');
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.error || typeof j.result !== 'number') throw new Error('Helius a répondu une erreur (' + r.status + '). Vérifie la clé.');
+      return url;
+    }
+    if (v.split('.').length !== 3) throw new Error('Ce n\'est pas un JWT : il commence par « eyJ » et contient deux points.');
+    const r = await go('https://api.pinata.cloud/data/testAuthentication', { headers: { Authorization: 'Bearer ' + v } });
+    if (!r.ok) throw new Error('Jeton refusé par Pinata (' + r.status + '). Vérifie qu\'il a le droit d\'envoi de fichiers.');
+    return v;
+  }
+  async function keyPanel(kind, intro) {
+    const K = KEYS[kind]; let val = '', err = '';
+    for (;;) {
+      const html = (intro ? '<div class="notice">' + intro + '</div>' : '') + '<p class="kp-why">' + K.why + '</p><ol class="kp-steps">' + K.steps.map((t) => '<li><span>' + t + '</span></li>').join('') + '</ol>' +
+        '<label class="kp-f" for="kpIn">' + esc(K.label) + '</label><input class="kp-in" id="kpIn" type="password" autocomplete="off" spellcheck="false" placeholder="' + esc(K.ph) + '" value="' + esc(val) + '">' +
+        (err ? '<div class="notice bad kp-err">' + esc(err) + '</div>' : '') + '<p class="kp-note">La clé reste dans ce navigateur. Tu la retrouves dans Réglages.</p>';
+      const i = await modal(K.title, html, [{ label: 'Plus tard' }, { label: 'Vérifier', cls: 'primary', keep: true }]);
+      if (i !== 1) return false;
+      val = ($('kpIn') || {}).value || '';
+      const btn = document.querySelector('#mRow [data-mb="1"]'); if (btn) { btn.disabled = true; btn.textContent = 'Vérification…'; }
+      try {
+        const ok = await checkKey(kind, val);
+        if (kind === 'helius') cfg.rpc = ok; else { cfg.pinataJwt = ok; cfg.metaMethod = 'pinata'; }
+        save(LS.cfg, cfg); closeModal();
+        toast(kind === 'helius' ? 'Clé Helius enregistrée' : 'Jeton Pinata enregistré', kind === 'helius' ? 'Temps réel et envois rapides actifs.' : 'Le logo partira par Pinata.', 'g');
+        if (kind === 'helius') testRpc(true);
+        if ($('setForms')) setFormsHtml();
+        renderAll(); return true;
+      } catch (e) { err = e.message || String(e); }
+    }
+  }
+  // carte du tableau de bord : en réel seulement, tant que la clé Helius manque et qu'on ne l'a pas remise à plus tard
+  function renderKeysCard() {
+    const kc = $('keysCard'); if (!kc) return;
+    const show = !cfg.sim && AUTH === true && !cfg.rpc && !cfg.keysLater;
+    kc.hidden = !show; if (!show) { kc.innerHTML = ''; return; }
+    kc.innerHTML = '<svg class="i" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg><span><b>Ajoute ta clé Helius gratuite.</b> Prix en temps réel et envois plus rapides, en 2 minutes.</span>' +
+      '<button class="btn sm" data-act="keylater" type="button">Plus tard</button><button class="btn sm primary" data-act="keyhelp" data-k="helius" type="button">Ajouter</button>';
+  }
+
   async function testRpc(quiet) {
     try { const v = await rpc('getVersion', []); const slot = await rpc('getSlot', []); if (!quiet) toast('RPC opérationnel', 'Solana ' + (v['solana-core'] || '') + ' · bloc ' + slot.toLocaleString('fr-FR'), 'g'); }
     catch (e) { if (!quiet) toast('RPC en erreur', e.message, 'r'); }
@@ -3434,6 +3497,8 @@
     if (d.act === 'needacct') { try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'demo' })); } catch (e) {} return; }
     if (d.act === 'simon') return goSim();
     if (d.act === 'testrpc') return testRpc(false);
+    if (d.act === 'keyhelp') return keyPanel(d.k === 'pinata' ? 'pinata' : 'helius');
+    if (d.act === 'keylater') { cfg.keysLater = true; save(LS.cfg, cfg); renderKeysCard(); toast('Rappel masqué', 'Tu peux ajouter la clé à tout moment dans Réglages.', ''); return; }
     if (d.step) { S.step = +d.step; renderLaunch(); return; }
     if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; S.draft.logo.theme = d.theme; S.draft.logo.motif = ''; saveDraft(); genIdeas(); renderLaunch(); const el = $('ideas'); if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 30); return; }
     if (d.tone) { S.draft.tone = d.tone; saveDraft(); renderLaunch(); return; }

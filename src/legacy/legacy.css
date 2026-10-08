@@ -1193,3 +1193,21 @@ textarea{font:inherit;color:inherit}
 .cr-go{width:100%;min-height:46px;font-size:15px}
 @media (max-width:1000px){.cr-grid{grid-template-columns:1fr}.cr-side{position:static}}
 @media (max-width:560px){.cr-logo{grid-template-columns:1fr}.cr-lp{width:100%;height:auto;aspect-ratio:1;max-width:220px;margin:0 auto}}
+
+/* clés API : carte du tableau de bord et petit panneau en 3 étapes */
+.keyscard{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;margin:14px 0 2px;padding:11px 14px;border:1px solid var(--accent-line);background:var(--accent-bg);color:var(--accent-ink);border-radius:var(--r-sm);font-size:14px}
+.keyscard>.i{width:18px;height:18px;flex:none}
+.keyscard>span{flex:1 1 260px;min-width:0}
+.keyscard>span b{color:var(--text)}
+.kp-why{margin:0 0 12px;color:var(--muted);font-size:14.5px;line-height:1.5}
+.kp-why b{color:var(--text)}
+.kp-steps{margin:0 0 14px;padding:0;list-style:none;counter-reset:kp;display:flex;flex-direction:column;gap:8px}
+.kp-steps li{counter-increment:kp;display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;font-size:14.5px;line-height:1.45}
+.kp-steps li::before{content:counter(kp);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--accent-line);color:var(--accent);font:600 12.5px var(--mono)}
+.kp-steps a{color:var(--accent-ink)}
+.kp-f{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+.kp-in{width:100%;min-height:42px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px}
+.kp-in:focus{outline:none;border-color:var(--accent);box-shadow:var(--focus)}
+.kp-err{margin:10px 0 0}
+.kp-note{margin:10px 0 0;font-size:12.5px;color:var(--dim)}
+.kp-help{float:right;margin:-4px 0 6px 10px}
