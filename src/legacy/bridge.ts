@@ -5,6 +5,20 @@ type LegacyStudio = {
   setPage: (p: string) => void;
   toast: (title: string, text?: string, kind?: 'g' | 'a' | 'r' | '') => void;
   prefs?: { get: () => PrefsPatch; apply: (p: PrefsPatch) => void };
+  hub?: {
+    state: () => {
+      wallet: { name: string; pk: string; session: boolean; locked: boolean } | null;
+      hasSession: boolean; bal: number | null; solUsd: number | null; sim: boolean; rpcOk: boolean | null; theme: string; depth: string;
+    };
+    avatar: (pk: string, cls?: string) => string;
+    walletMenu: () => void;
+    walletPanel: () => void;
+    disconnect: () => void;
+    copyAddress: () => void;
+    appearance: () => void;
+    goReal: () => void;
+    goSim: () => void;
+  };
 };
 
 declare global {

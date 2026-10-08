@@ -1,18 +1,5 @@
 /* Compte, connexion et préférences : mêmes jetons de design que le studio */
 
-/* carte de compte (barre latérale) */
-.ts-chip{display:flex;align-items:center;gap:10px;width:calc(100% - 24px);margin:0 12px 8px;padding:9px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);cursor:pointer;text-align:left;color:var(--text);transition:border-color .15s,background .15s}
-.ts-chip:hover{border-color:var(--accent-line);background:var(--panel2)}
-.ts-chip.guest{border-style:dashed;border-color:var(--accent-line)}
-.ts-chip-av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:700;font-size:13px;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent-ink)}
-.ts-chip-t{display:flex;flex-direction:column;min-width:0;flex:1}
-.ts-chip-t b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ts-chip-t small{font-size:12px;color:var(--dim)}
-.ts-chip-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;box-shadow:0 0 0 3px var(--green-bg)}
-.ts-chip-dot.warn{background:var(--amber);box-shadow:0 0 0 3px var(--amber-bg)}
-.app.side-min .ts-chip-t,.app.side-min .ts-chip-dot{display:none}
-.app.side-min .ts-chip{justify-content:center;padding:8px}
-
 /* fenêtres */
 .ts-modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px}
 .ts-modal-box{position:relative;width:min(440px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r);padding:22px;box-shadow:0 30px 80px -30px rgba(0,0,0,.9)}
@@ -75,3 +62,91 @@
 .ts-prefs .seg{display:flex;flex-wrap:wrap;max-width:100%}
 .ts-account .ltabs{max-width:100%}
 @media (max-width:900px){.ts-account-guest,.ts-grid2{grid-template-columns:minmax(0,1fr)}.ts-mfa-enroll{grid-template-columns:1fr;justify-items:start}.ts-log>div{grid-template-columns:1fr;gap:2px}}
+
+/* ---------- menu de compte unique (en haut à droite) ---------- */
+.ts-hub-slot{display:flex;align-items:center}
+.ts-hub-slot.m{display:none}
+@media (max-width:900px){#ts-hub{display:none}.ts-hub-slot.m{display:flex}}
+.ts-hub{position:relative}
+.ts-hub-btn{display:inline-flex;align-items:center;gap:9px;height:42px;padding:0 10px 0 8px;border-radius:999px;background:var(--panel);border:1px solid var(--line2);color:var(--text);cursor:pointer;font:inherit;font-weight:600;font-size:14px;transition:border-color .15s,background .15s,box-shadow .15s;max-width:340px}
+.ts-hub-btn:hover,.ts-hub-btn.on{border-color:var(--accent-line);background:var(--panel2)}
+.ts-hub-btn:focus-visible{outline:none;box-shadow:var(--focus)}
+.ts-hub-btn.primary{background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 92%,#fff),var(--accent));color:var(--on-accent);border-color:transparent;padding:0 14px}
+.ts-hub-btn.primary svg.i{color:var(--on-accent)}
+.ts-hub-btn.real{border-color:var(--red-line)}
+.ts-hub-btn svg.i{width:17px;height:17px}
+.ts-hub-chev{color:var(--dim);transition:transform .15s}
+.ts-hub-btn.on .ts-hub-chev{transform:rotate(180deg)}
+.ts-hub-real{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--red-bg);border:1px solid var(--red-line);color:var(--red-ink)}
+.ts-hub-wav{display:inline-flex}
+.ts-hub-wav .wav{width:28px;height:28px}
+.ts-hub-wav .wav.sm{width:26px;height:26px}
+.ts-hub-bal{font-size:14px;white-space:nowrap}
+.ts-hub-bal small{font-size:11.5px;color:var(--muted);font-weight:500}
+.ts-hub-lock{color:var(--amber);font-size:10px}
+.ts-hub-name{max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ts-hub-av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:700;font-size:13px;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent-ink)}
+.ts-hub-av.xs{width:22px;height:22px;font-size:11px;margin-left:-4px}
+.ts-hub-av.lg{width:42px;height:42px;font-size:17px;font-family:var(--display)}
+
+.ts-hub-panel{position:absolute;top:calc(100% + 8px);right:0;z-index:120;width:360px;max-height:min(80vh,720px);overflow-y:auto;overscroll-behavior:contain;background:var(--panel);border:1px solid var(--line2);border-radius:16px;box-shadow:0 24px 60px -18px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.02) inset;animation:tsHubIn .14s ease-out}
+@keyframes tsHubIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.ts-hub-sec{padding:14px 16px;border-top:1px solid var(--line)}
+.ts-hub-sec:first-child{border-top:none}
+.ts-hub-h{font-size:11.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600;margin-bottom:10px}
+.ts-hub-id,.ts-hub-w{display:flex;align-items:center;gap:12px}
+.ts-hub-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.ts-hub-t b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.ts-hub-t small{font-size:12.5px;color:var(--dim)}
+.ts-hub-shield{color:var(--green);display:grid}
+.ts-hub-shield svg.i{width:20px;height:20px}
+.ts-hub-guest{display:flex;flex-direction:column;gap:6px}
+.ts-hub-guest b{font-family:var(--display);font-size:16px}
+.ts-hub-guest small{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:4px}
+.ts-hub-addr{display:inline-flex;align-items:center;gap:5px;background:none;border:none;padding:0;color:var(--muted);font-size:12.5px;cursor:pointer;width:max-content}
+.ts-hub-addr:hover{color:var(--text)}
+.ts-hub-addr svg.i{width:13px;height:13px}
+.ts-hub-wb{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.ts-hub-wb b{font-size:16px;font-weight:500}
+.ts-hub-wb small{font-size:12px;color:var(--dim)}
+.ts-hub-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.ts-hub-acc .ts-hub-row,.ts-hub-sec>.ts-hub-row:first-of-type{margin-top:0}
+.ts-hub-row .btn{flex:1 1 auto}
+.ts-hub-row .btn svg.i{width:15px;height:15px}
+.ts-hub-note{margin:10px 0 0;font-size:12px;color:var(--dim);line-height:1.45}
+.ts-hub-mode{display:flex;width:100%}
+.ts-hub-mode button{flex:1;justify-content:center}
+.ts-hub-mode button.on.real{background:var(--red-bg);color:var(--red-ink);box-shadow:inset 0 0 0 1px var(--red-line)}
+.ts-hub-menu{display:flex;flex-direction:column;gap:2px;padding:8px}
+.ts-hub-menu button,.ts-hub-out{display:flex;align-items:center;gap:11px;width:100%;background:none;border:none;border-radius:10px;padding:10px;color:var(--text);cursor:pointer;font:inherit;font-size:14px;text-align:left}
+.ts-hub-menu button:hover,.ts-hub-menu button:focus-visible,.ts-hub-out:hover,.ts-hub-out:focus-visible{background:var(--panel2);outline:none}
+.ts-hub-menu svg.i{color:var(--muted);width:18px;height:18px}
+.ts-hub-menu span{flex:1}
+.ts-hub-menu em{font-style:normal;font-size:12px;color:var(--dim);white-space:nowrap}
+.ts-hub-menu kbd{font-size:11px}
+.ts-hub-foot{padding:8px}
+.ts-hub-out{color:var(--red-ink)}
+.ts-hub-out svg.i{width:18px;height:18px}
+
+/* mobile : bouton compact dans la barre du haut, menu en panneau du bas */
+.ts-hub.m .ts-hub-btn{height:40px;padding:0 8px 0 6px;gap:7px}
+.ts-hub.m .ts-hub-btn.primary{padding:0 12px}
+.ts-hub.m .ts-hub-real{display:none}
+.ts-hub-scrim{position:fixed;inset:0;z-index:119;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.ts-hub-panel.sheet{position:fixed;top:auto;left:0;right:0;bottom:0;width:auto;max-height:86vh;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom,0px);animation:tsHubUp .18s ease-out}
+@keyframes tsHubUp{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+
+/* ---------- barre latérale : défilement à la demande ---------- */
+.side{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:transparent transparent;scrollbar-gutter:stable}
+.side:hover,.side:focus-within{scrollbar-color:var(--line2) transparent}
+.side::-webkit-scrollbar{width:6px}
+.side::-webkit-scrollbar-thumb{background:transparent;border:none;border-radius:6px}
+.side:hover::-webkit-scrollbar-thumb{background:var(--line2)}
+.side-foot{flex:none}
+.ts-hub.m .ts-hub-av.xs,.ts-hub.m .ts-hub-chev,.ts-hub.m .ts-hub-bal small{display:none}
+.ts-hub.m .ts-hub-btn{max-width:44vw;overflow:hidden}
+@media (max-width:380px){.mbar .mlogo span{display:none}}
+/* le panneau mobile passe au-dessus de la barre de navigation du bas */
+.ts-hub-scrim{z-index:190}
+.ts-hub-panel.sheet{z-index:191}
+.ts-hub.m .ts-hub-btn.primary svg.i{display:none}

@@ -17,8 +17,6 @@
     <button class="icon-btn side-x" id="sideClose" type="button" aria-label="Fermer le menu"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div class="logo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Token<b>Studio</b></span></div>
     <button class="cmdk" id="cmdkBtn" type="button" aria-label="Ouvrir la palette de commandes"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Rechercher</span><kbd>Ctrl K</kbd></button>
-    <div id="ts-account-chip"></div>
-    <div id="sideWallet"></div>
     <nav class="menu" id="menu">
       <div class="menu-label">Vue d'ensemble</div>
       <button data-page="dash" type="button" class="active"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/></svg>Tableau de bord</button>
@@ -32,23 +30,19 @@
       <button data-page="bot" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg>Bot de trading</button>
       <button data-page="orders" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Ordres préparés<span class="count" id="cOrders">0</span></button>
       <button data-page="journal" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Journal<span class="count" id="cJournal">0</span></button>
-      <div class="menu-label">Outil</div>
-      <button data-page="account" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Mon compte</button>
-      <button data-page="settings" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Réglages</button>
     </nav>
-    <button class="side-col side-theme" id="sideTheme" type="button" title="Personnaliser les couleurs"><span class="sw-dots" id="sideThemeDots"><i style="background:#d6b26e"></i><i style="background:#211f1b"></i><i style="background:#f3efe6"></i></span><span>Personnaliser</span></button>
     <button class="side-col" id="sideCol" type="button" title="Réduire le menu"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg><span>Réduire le menu</span></button>
     <div class="side-foot"><div class="mode" id="footMode">● Simulation</div><div class="sc-title">État du studio</div><div class="sc-list" id="sideCheck"></div><div class="sc-note">Ta clé privée ne quitte jamais ton wallet.</div></div>
   </aside>
 
   <div>
-    <div class="mbar"><button class="icon-btn" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-controls="side"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="mlogo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Token<b>Studio</b></span></div><div class="spacer"></div><button class="mwallet" id="mWallet" type="button" aria-label="Wallet"></button><button class="icon-btn" id="mSearch" type="button" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
+    <div class="mbar"><button class="icon-btn" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-controls="side"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="mlogo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Token<b>Studio</b></span></div><div class="spacer"></div><div class="ts-hub-slot m" id="ts-hub-m"></div><button class="icon-btn" id="mSearch" type="button" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
     <header class="top">
       <div class="topbar">
         <div><div class="page-eyebrow" id="pageEyebrow">Créer</div><div class="page-title" id="pageTitle">Lancer un token</div><div class="page-sub" id="pageSub">Du concept à la publication sur pump.fun</div></div>
         <div class="spacer"></div>
         <div class="status" id="rpcStatus"><span class="dot"></span><span>RPC non testé</span></div>
-        <button class="btn wallet-btn" id="walletBtn" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2"/><path d="M22 11h-6a2 2 0 000 4h6v-4z"/></svg><span id="walletTxt">Connecter le wallet</span></button>
+        <div class="ts-hub-slot" id="ts-hub"></div>
       </div>
       <div class="simbar" id="simbar"></div>
       <div class="simbar live" id="filebar" hidden></div>

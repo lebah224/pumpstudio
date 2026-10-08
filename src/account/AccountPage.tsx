@@ -15,6 +15,11 @@ export function AccountPage() {
   const { user, ready, needsMfa } = useAuth();
   const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('ts-account-tab') as Tab) || 'profile');
   useEffect(() => { try { sessionStorage.setItem('ts-account-tab', tab); } catch { /* navigation privée */ } }, [tab]);
+  // ouverture d'un onglet précis depuis le menu de compte
+  useEffect(() => {
+    const on = (e: Event) => { const t = (e as CustomEvent).detail as Tab; if (TABS.some(([k]) => k === t)) setTab(t); };
+    window.addEventListener('ts-account-tab', on); return () => window.removeEventListener('ts-account-tab', on);
+  }, []);
 
   if (!ready) return <div className="card"><div className="empty"><b>Chargement…</b></div></div>;
   if (!user) return (

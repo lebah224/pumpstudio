@@ -2204,8 +2204,9 @@
   const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres, bot et activité en un coup d\'œil'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
-    $('walletTxt').innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
-    $('walletBtn').classList.toggle('primary', !S.wallet);
+    // le bouton wallet historique est remplacé par le menu de compte (React) ; on le met à jour s'il existe encore
+    const wt = $('walletTxt'); if (wt) wt.innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
+    const wb = $('walletBtn'); if (wb) wb.classList.toggle('primary', !S.wallet);
     const rs = $('rpcStatus');
     rs.innerHTML = '<span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? '' : 'wait') + '"></span><span>' + (S.rpcOk ? (cfg.rpc ? 'RPC privé connecté' : 'RPC public connecté') : S.rpcOk === false ? 'RPC en erreur' : 'RPC non testé') + '</span>';
     const sb = $('simbar');
@@ -2222,7 +2223,14 @@
       sc(cfg.sim ? 'data-act="simoff"' : 'data-act="simon"', cfg.sim ? 'demo' : 'bad', 'Mode', cfg.sim ? 'simulation' : 'réel');
     ppStatus(); renderWalletCard();
     $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length;
+    try { window.dispatchEvent(new CustomEvent('pstudio-state')); } catch (e) {}
   }
+  // Bascule simulation / réel : le passage en réel demande toujours une confirmation explicite
+  async function goReal() {
+    if (!cfg.sim) return;
+    if (await confirmBox('Passer en mode réel ?', '<p>Les transactions que tu signes partiront réellement sur la blockchain et engageront ton SOL. Un lancement ou un trade confirmé ne s\'annule pas.</p><p>Vérifie d\'abord tes réglages : limite par achat ' + fSol(cfg.maxSol, 2) + ', slippage ' + cfg.slippage + ' %.</p>', 'Passer en réel', true)) { cfg.sim = false; save(LS.cfg, cfg); toast('Mode réel activé', 'Chaque transaction demandera ta signature.', 'a'); renderAll(); }
+  }
+  function goSim() { if (cfg.sim) return; cfg.sim = true; save(LS.cfg, cfg); toast('Mode simulation', 'Plus rien n\'est envoyé.', 'g'); renderAll(); }
   function openSettings() {
     const sec = $('p-settings'); if (!sec) return;
     let body = $('setBody');
@@ -3188,11 +3196,8 @@
     if (b.id === 'walletBtn' || b.id === 'fileHelp') return walletMenu();
     if (d.sw) return swAction(d.sw);
     if (d.sk) { const el = $('skTxt'); if (!el) return; if (d.sk === 'show') { el.dataset.blur = el.dataset.blur === '1' ? '0' : '1'; b.textContent = el.dataset.blur === '1' ? 'Afficher' : 'Masquer'; } else { try { await navigator.clipboard.writeText(el.textContent); toast('Clé copiée', 'Colle-la dans un endroit sûr, puis efface le presse-papiers.', 'a'); } catch (e2) {} } return; }
-    if (d.act === 'simoff') {
-      if (await confirmBox('Passer en mode réel ?', '<p>Les transactions que tu signes partiront réellement sur la blockchain et engageront ton SOL. Un lancement ou un trade confirmé ne s\'annule pas.</p><p>Vérifie d\'abord tes réglages : limite par achat ' + fSol(cfg.maxSol, 2) + ', slippage ' + cfg.slippage + ' %.</p>', 'Passer en réel', true)) { cfg.sim = false; save(LS.cfg, cfg); toast('Mode réel activé', 'Chaque transaction demandera ta signature.', 'a'); renderAll(); }
-      return;
-    }
-    if (d.act === 'simon') { cfg.sim = true; save(LS.cfg, cfg); toast('Mode simulation', 'Plus rien n\'est envoyé.', 'g'); renderAll(); return; }
+    if (d.act === 'simoff') return goReal();
+    if (d.act === 'simon') return goSim();
     if (d.act === 'testrpc') return testRpc(false);
     if (d.step) { S.step = +d.step; renderLaunch(); return; }
     if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; S.draft.logo.theme = d.theme; S.draft.logo.motif = ''; saveDraft(); genIdeas(); renderLaunch(); const el = $('ideas'); if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 30); return; }
@@ -3494,7 +3499,7 @@
         '<div class="sw-bal"><b class="mono">' + (S.bal == null ? '—' : fr(S.bal, S.bal >= 100 ? 2 : 4)) + '</b><em>SOL</em></div><div class="sw-usd">' + (usd(S.bal) || (S.bal == null ? 'solde en cours de lecture' : '&nbsp;')) + '</div>' +
         '<div class="sw-act">' + (ses ? wAct('fund', 'fund', 'Dépôt') + wAct('withdraw', 'withdraw', 'Retrait') + (locked ? wAct('unlock', 'unlock', 'Ouvrir', 'primary') : wAct('lock', 'lock', 'Bloquer')) : wAct('copyaddr', 'copy', 'Copier')) + wAct('panel', 'gear', 'Gérer') + '</div></div>';
     }
-    const mw = $('mWallet');
+    const mw = $('mWallet'); // ancien bouton mobile, remplacé par le menu de compte
     if (mw) mw.innerHTML = w ? wAv(w.pk, 'sm') + '<span class="mono">' + (S.bal == null ? '—' : fr(S.bal, S.bal >= 100 ? 1 : 3)) + '</span>' : WI.plug + '<span>Wallet</span>';
   }
 
@@ -3517,7 +3522,7 @@
   $('sideClose').addEventListener('click', () => navOpen(false));
   $('scrim').addEventListener('click', () => navOpen(false));
   $('mSearch').addEventListener('click', () => $('cmdkBtn').click());
-  $('mWallet').addEventListener('click', () => navOpen(true));
+  { const mw = $('mWallet'); if (mw) mw.addEventListener('click', () => navOpen(true)); }
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && APP.classList.contains('nav-open')) navOpen(false); });
   document.addEventListener('click', (e) => { if (e.target.closest('#side [data-sc], #side [data-sw], #side .cmdk')) navOpen(false); });
   // balayage vers la gauche pour fermer le tiroir
@@ -3551,7 +3556,7 @@
       { g: 'Actions', ic: IC.pulse, label: 'Ouvrir le Radar des tendances', hint: 'tokens qui prennent de l\'élan', kw: 'radar tendance trend dexscreener', run: () => { setPage('launch'); setLaunchTab('radar'); } },
       { g: 'Actions', ic: IC.spark, label: 'Tout générer automatiquement', hint: 'nom, ticker, logo, description', kw: 'auto concept idee', run: () => { setPage('launch'); setLaunchTab('studio'); clickWhenReady('autoGo'); } },
       { g: 'Actions', ic: IC.spark, label: 'Générer de nouvelles idées', hint: 'étape Concept', kw: 'idee nom ticker', run: () => { S.step = 1; setPage('launch'); clickWhenReady('genGo'); } },
-      { g: 'Actions', ic: IC.wallet, label: S.wallet ? 'Gérer le wallet' : 'Connecter le wallet', hint: S.wallet ? short(S.wallet.pk) : 'Phantom, Solflare, Backpack, wallet rapide', kw: 'phantom compte', run: () => clickWhenReady('walletBtn') },
+      { g: 'Actions', ic: IC.wallet, label: S.wallet ? 'Gérer le wallet' : 'Connecter le wallet', hint: S.wallet ? short(S.wallet.pk) : 'Phantom, Solflare, Backpack, wallet rapide', kw: 'phantom compte', run: () => walletMenu() },
       { g: 'Actions', ic: IC.plus, label: 'Ajouter un token existant', hint: 'Mes tokens', kw: 'suivre mint', run: () => { setPage('mine'); clickWhenReady('mineAdd'); } },
       { g: 'Actions', ic: IC.down, label: 'Exporter le journal en CSV', hint: 'Journal', kw: 'export historique', run: () => { setPage('journal'); clickWhenReady('jExport'); } },
       { g: 'Actions', ic: IC.pulse, label: 'Tester la connexion RPC', hint: S.rpcOk ? 'connecté' : S.rpcOk === false ? 'en erreur' : 'non testé', kw: 'solana helius reseau', run: () => testRpc(false) },
@@ -3581,7 +3586,7 @@
   $('palList').addEventListener('mousemove', (e) => { const b = e.target.closest('[data-pal-i]'); if (b && +b.dataset.palI !== PAL.sel) { PAL.sel = +b.dataset.palI; palRender(); } });
   $('pal').addEventListener('mousedown', (e) => { if (e.target === $('pal')) palClose(); });
   $('cmdkBtn').addEventListener('click', palOpen);
-  document.addEventListener('click', (e) => { const b = e.target.closest('[data-sc="wallet"]'); if (b) $('walletBtn').click(); });
+  document.addEventListener('click', (e) => { const b = e.target.closest('[data-sc="wallet"]'); if (b) walletMenu(); });
   document.addEventListener('keydown', (e) => {
     const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
     if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); PAL.open ? palClose() : palOpen(); return; }
@@ -3633,6 +3638,21 @@
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
     pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => PP.state },
     SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
+    // Menu de compte (React) : état du wallet et du mode, et actions associées
+    hub: {
+      state: () => {
+        const w = S.wallet, ses = !!(w && w.id === 'session');
+        return { wallet: w ? { name: ses ? 'Wallet rapide' : w.name, pk: w.pk, session: ses, locked: ses && !SESSW.kp } : null,
+          hasSession: !!SESSREC, bal: S.bal, solUsd: S.solUsd, sim: !!cfg.sim, rpcOk: S.rpcOk, theme: uiTheme, depth: uiDepth };
+      },
+      avatar: (pk, cls) => wAv(pk, cls),
+      walletMenu: () => walletMenu(),
+      walletPanel: () => walletPanel(),
+      disconnect: () => disconnectWallet(false),
+      copyAddress: async () => { const pk = S.wallet && S.wallet.pk; if (!pk) return; try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk, 6), 'g'); } catch (e) {} },
+      appearance: () => themePicker(),
+      goReal, goSim,
+    },
     // Préférences du compte : lecture de l'état local, et application de celles du serveur
     prefs: {
       get: () => ({ ui_theme: uiTheme, ui_depth: uiDepth, sim_mode: !!cfg.sim, slippage_pct: cfg.slippage, max_buy_sol: cfg.maxSol, priority: cfg.speed, dev_max_pct: cfg.devMaxPct,
