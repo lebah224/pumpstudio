@@ -48,25 +48,33 @@
   const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
   // Réglages appliqués depuis le compte (synchronisation) : on ne les renvoie pas au serveur
   let REMOTE_APPLY = false;
-  // Démo et réel ont chacun leurs données : en démo, tokens, ordres, journal et diffusion vont dans des clés « démo »,
-  // jamais synchronisées avec le compte. Rien de fictif ne se mélange aux données réelles.
+  // Où vivent les données :
+  // - réel (compte connecté) : uniquement dans la base de données. Le studio les garde en mémoire (REAL) et chaque
+  //   écriture part vers le compte (CLOUD, branché par l'application) ; rien n'est copié dans le navigateur ;
+  // - démo : dans le navigateur, sous des clés « démo », jamais envoyées au compte ;
+  // - invité : seul le brouillon reste dans le navigateur (il n'y a pas de compte où l'enregistrer).
   const DEMO_KEYS = { pstudio_tokens_v1: 'pstudio_demo_tokens_v1', pstudio_orders_v1: 'pstudio_demo_orders_v1', pstudio_journal_v1: 'pstudio_demo_journal_v1', pstudio_dist_v1: 'pstudio_demo_dist_v1' };
+  const REAL_KIND = { pstudio_tokens_v1: 'tokens', pstudio_orders_v1: 'orders', pstudio_journal_v1: 'journal', pstudio_dist_v1: 'dist' };
+  const REAL = { tokens: [], journal: [], orders: [], dist: {} };
+  let CLOUD = null;   // { write(kind, value) } quand un compte est connecté
   const dk = (k) => (cfg.sim && DEMO_KEYS[k]) || k;
   const save = (k0, v) => {
-    const k = dk(k0); if (k !== k0) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return; }
-    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { if (k === LS.draft) { try { const c = Object.assign({}, v, { image: null }); localStorage.setItem(k, JSON.stringify(c)); } catch (e2) {} } }
-    if (k === LS.cfg && !REMOTE_APPLY) { try { window.dispatchEvent(new CustomEvent('pstudio-cfg', { detail: { cfg: v } })); } catch (e) {} }
-    // données synchronisées avec le compte : tokens, journal, ordres, brouillon, diffusion
-    if (!REMOTE_APPLY && (k === LS.tokens || k === LS.journal || k === LS.orders || k === LS.draft || k === 'pstudio_dist_v1')) { try { window.dispatchEvent(new CustomEvent('pstudio-data', { detail: { key: k } })); } catch (e) {} }
+    if (cfg.sim && DEMO_KEYS[k0]) { try { localStorage.setItem(DEMO_KEYS[k0], JSON.stringify(v)); } catch (e) {} return; }
+    if (REAL_KIND[k0]) { REAL[REAL_KIND[k0]] = v; if (CLOUD && !REMOTE_APPLY) CLOUD.write(REAL_KIND[k0], v); return; }
+    if (k0 === LS.draft && CLOUD) { if (!REMOTE_APPLY) CLOUD.write('draft', v); return; }
+    try { localStorage.setItem(k0, JSON.stringify(v)); } catch (e) { if (k0 === LS.draft) { try { localStorage.setItem(k0, JSON.stringify(Object.assign({}, v, { image: null }))); } catch (e2) {} } }
+    if (k0 === LS.cfg && !REMOTE_APPLY) { try { window.dispatchEvent(new CustomEvent('pstudio-cfg', { detail: { cfg: v } })); } catch (e) {} }
   };
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
   // un seul wallet rapide : celui du compte, sur le serveur. L'ancien wallet rapide du navigateur ne signe plus
   // (il reste seulement le temps d'en transférer les fonds vers le compte).
   cfg.useSess = false;
+  // brouillon vide (nouveau compte, déconnexion)
+  function draftDefaults() { return { name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'meme', tone: 'luxe', lang: 'en', word: '', logo: { style: 'meme', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }; }
   const S = {
     page: 'dash', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
-    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'meme', tone: 'luxe', lang: 'en', word: '', logo: { style: 'meme', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
-    tokens: load(dk(LS.tokens), []), journal: load(dk(LS.journal), []), orders: load(dk(LS.orders), []),
+    draft: Object.assign(draftDefaults(), load(LS.draft, {})),
+    tokens: cfg.sim ? load(dk(LS.tokens), []) : REAL.tokens, journal: cfg.sim ? load(dk(LS.journal), []) : REAL.journal, orders: cfg.sim ? load(dk(LS.orders), []) : REAL.orders,
     ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, jf: 'real', busy: false, imgBlob: null,
   };
   const saveDraft = () => save(LS.draft, S.draft);
@@ -1433,7 +1441,7 @@
   function thumbnail(src) {
     return new Promise((res) => {
       if (!src) return res('');
-      const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = c.height = 96; c.getContext('2d').drawImage(im, 0, 0, 96, 96); try { res(c.toDataURL('image/png')); } catch (e) { res(''); } }; im.onerror = () => res(''); im.src = src;
+      const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = c.height = 96; c.getContext('2d').drawImage(im, 0, 0, 96, 96); try { res(c.toDataURL('image/webp', 0.85));   /* vignette légère, gardée avec le token sur le compte */ } catch (e) { res(''); } }; im.onerror = () => res(''); im.src = src;
     });
   }
 
@@ -2876,7 +2884,7 @@
     { id: 'rugcheck', n: 'RugCheck', k: 'Confiance', cost: 'auto', costL: 'Automatique', note: 'Rapport de risque automatique, utilisé par l\'explorateur Solana et de nombreux traders avant d\'acheter.', page: (m) => 'https://rugcheck.xyz/tokens/' + m, form: '', formL: '' },
   ];
   const LSD = 'pstudio_dist_v1';
-  const DS = { mint: '', sel: null, cache: {}, rec: load(dk(LSD), {}) };
+  const DS = { mint: '', sel: null, cache: {}, rec: cfg.sim ? load(dk(LSD), {}) : REAL.dist };
   try { DS.sel = new Set(JSON.parse(localStorage.getItem('pstudio_dist_sel') || 'null') || ['jupiter', 'coingecko', 'coinmarketcap', 'solscan']); } catch (e) { DS.sel = new Set(['jupiter', 'coingecko', 'coinmarketcap', 'solscan']); }
   const saveSel = () => { try { localStorage.setItem('pstudio_dist_sel', JSON.stringify([...DS.sel])); } catch (e) {} };
   const tfetch = (u, ms) => Promise.race([fetch(u), new Promise((_, r) => setTimeout(() => r(new Error('délai')), ms || 8000))]);
@@ -3718,8 +3726,13 @@
   let MODE_SIM = !!cfg.sim;
   function syncModeData() {
     if (!!cfg.sim === MODE_SIM) return; MODE_SIM = !!cfg.sim;
-    S.tokens = load(dk(LS.tokens), []); S.orders = load(dk(LS.orders), []); S.journal = load(dk(LS.journal), []); DS.rec = load(dk(LSD), {});
+    showModeData();
     S.view.mine = null; S.view.trade = null; DS.mint = '';
+  }
+  // données affichées : celles de la démo (navigateur) ou celles du compte (mémoire, chargées depuis la base)
+  function showModeData() {
+    if (cfg.sim) { S.tokens = load(dk(LS.tokens), []); S.orders = load(dk(LS.orders), []); S.journal = load(dk(LS.journal), []); DS.rec = load(dk(LSD), {}); }
+    else { S.tokens = REAL.tokens; S.orders = REAL.orders; S.journal = REAL.journal; DS.rec = REAL.dist; }
   }
   function renderAll() { syncModeData(); renderPage(); }
   function refreshView() { if (S.page === 'mine' && S.view.mine) showToken('mine', S.view.mine); if (S.page === 'trade' && S.view.trade) showToken('trade', S.view.trade); }
@@ -4186,9 +4199,6 @@
     window.addEventListener('resize', () => { if (S.page === 'dash') renderDash(); }); window.addEventListener('pstudio-theme', () => { if (S.page === 'dash') renderDash(); });
     window.addEventListener('resize', () => { ['mine', 'trade'].forEach((c) => { document.querySelectorAll('#' + (c === 'mine' ? 'mineDetail' : 'tradeDetail') + ' canvas.pchart').forEach((cv) => drawPriceChart(cv, S.cache[cv.dataset.mint] || {})); }); });
   }
-  // données réelles, même quand la démo est affichée (synchronisation avec le compte)
-  function realData() { return cfg.sim ? { tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []), dist: load(LSD, {}) } : { tokens: S.tokens, journal: S.journal, orders: S.orders, dist: DS.rec }; }
-  function saveReal(k, v) { if (cfg.sim) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } else save(k, v); }
   window.PumpStudio = { PP, S, cfg, setPage, openPanel, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
     pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => PP.state },
@@ -4257,41 +4267,29 @@
       goReal, goSim,
     },
     // Données synchronisées avec le compte : export de l'état local, et fusion de celles du serveur
+    // Données du compte : chargées depuis la base par l'application, écrites dans la base à chaque changement
     data: {
-      // déconnexion : les données réelles quittent ce navigateur (elles restent sur le compte)
-      clearReal: () => {
-        [LS.tokens, LS.journal, LS.orders, LSD].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
-        if (!cfg.sim) { S.tokens = []; S.journal = []; S.orders = []; DS.rec = {}; S.view.mine = null; S.view.trade = null; }
+      setCloud: (h) => { CLOUD = h || null; },
+      // données du compte chargées : elles remplacent l'affichage réel (sans être renvoyées au compte)
+      loadReal: (x) => {
+        REAL.tokens = x.tokens || []; REAL.journal = x.journal || []; REAL.orders = x.orders || []; REAL.dist = x.dist || {};
+        if (!cfg.sim) { showModeData(); S.view.mine = null; S.view.trade = null; }
+        if (x.draft) { REMOTE_APPLY = true; try { S.draft = Object.assign(draftDefaults(), x.draft); } finally { REMOTE_APPLY = false; } }
         renderAll();
       },
-      export: () => {
-        const d = Object.assign({}, S.draft); delete d.image; delete d.imgSrc;
-        const R = realData();
-        return { tokens: R.tokens.slice(), journal: R.journal.slice().filter((j) => !j.demo), orders: R.orders.slice(), dist: JSON.parse(JSON.stringify(R.dist)), draft: d };
+      // une table modifiée ailleurs (autre appareil) : remplacée sans être renvoyée
+      replaceReal: (kind, v) => { if (!(kind in REAL)) return; REAL[kind] = v; if (!cfg.sim) showModeData(); renderAll(); },
+      // déconnexion : plus aucune donnée du compte dans l'outil
+      clearReal: () => {
+        REAL.tokens = []; REAL.journal = []; REAL.orders = []; REAL.dist = {};
+        if (!cfg.sim) { showModeData(); S.view.mine = null; S.view.trade = null; }
+        S.draft = draftDefaults(); try { localStorage.removeItem(LS.draft); } catch (e) {}
+        renderAll();
       },
-      merge(x) {
-        if (!x) return { tokens: 0, journal: 0, orders: 0 };
-        const n = { tokens: 0, journal: 0, orders: 0 };
-        REMOTE_APPLY = true;
-        const R = realData();
-        try {
-          (x.tokens || []).forEach((t) => {
-            const cur = R.tokens.find((y) => y.mint === t.mint);
-            if (!cur) { R.tokens.push(t); n.tokens++; } else Object.keys(t).forEach((k) => { if (cur[k] == null || cur[k] === '') cur[k] = t[k]; });
-          });
-          R.tokens.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); saveReal(LS.tokens, R.tokens);
-          const ids = new Set(R.journal.map((j) => j.id));
-          (x.journal || []).forEach((j) => { if (!ids.has(j.id)) { R.journal.push(j); ids.add(j.id); n.journal++; } });
-          R.journal.sort((a, b) => (b.t || 0) - (a.t || 0)); if (R.journal.length > 2000) R.journal.length = 2000; saveReal(LS.journal, R.journal);
-          const oids = new Set(R.orders.map((o) => o.id));
-          (x.orders || []).forEach((o) => { if (!oids.has(o.id)) { R.orders.push(o); n.orders++; } });   // l'état local des ordres en cours prime
-          saveReal(LS.orders, R.orders);
-          Object.keys(x.dist || {}).forEach((m) => { R.dist[m] = Object.assign({}, x.dist[m], R.dist[m] || {}); }); saveReal(LSD, R.dist);
-          if (x.draft && x.draft.name && !S.draft.name) { Object.assign(S.draft, x.draft); saveDraft(); }
-          renderAll();
-        } finally { REMOTE_APPLY = false; }
-        return n;
-      },
+      draft: () => S.draft,
+      // anciennes données gardées dans ce navigateur (avant la base) : reprises une fois sur le compte, puis effacées
+      legacyLocal: () => ({ tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []), dist: load(LSD, {}), draft: load(LS.draft, null) }),
+      dropLegacyLocal: () => { [LS.tokens, LS.journal, LS.orders, LSD, LS.draft].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} }); },
     },
     // Préférences du compte : lecture de l'état local, et application de celles du serveur
     prefs: {

@@ -7,7 +7,8 @@ import { AccountHub } from './account/AccountHub';
 import { AccountPage } from './account/AccountPage';
 import { WalletPage } from './wallet/WalletPage';
 import { usePrefsSync } from './account/usePrefsSync';
-import { useDataSync } from './sync/useDataSync';
+import { useCloud } from './data/cloud';
+import { CloudNotice } from './data/CloudNotice';
 import { studio } from './legacy/bridge';
 import { clearServerWallet, refreshServerWallet } from './serverWallet/api';
 import { ServerWalletDialog } from './serverWallet/ServerWalletDialog';
@@ -47,7 +48,7 @@ function useConnectBridge() {
 function Mounts() {
   usePrefsSync();
   useConnectBridge();
-  const syncPrompt = useDataSync();
+  useCloud();
   const hub = document.getElementById('ts-hub');
   const hubMobile = document.getElementById('ts-hub-m');
   const page = document.getElementById('ts-account-page');
@@ -61,7 +62,7 @@ function Mounts() {
       <SignInDialog />
       <ServerWalletDialog />
       <MfaChallenge />
-      {syncPrompt}
+      <CloudNotice />
     </>
   );
 }

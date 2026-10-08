@@ -2,24 +2,24 @@ import { useEffect, useState } from 'react';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { useAuth } from '../auth/AuthContext';
 import { supabase } from '../lib/supabase';
-import { cloudCounts, exportCloud, releaseBrowser, setStatus, syncNow } from './dataSync';
-import { syncLabel, useSyncStatus } from './useDataSync';
+import { cloudCounts, detachCloud, exportCloud, flushAll, useCloudStatus } from '../data/cloud';
 import { toast } from '../legacy/bridge';
 import { disablePush } from '../notify/push';
 import { leaveDemoGuest } from '../lib/guest';
 
 const ORDER = ['tokens', 'operations', 'orders', 'distributions', 'bot_trades'];
+const LABELS: Record<string, string> = { tokens: 'tokens', operations: 'opérations du journal', orders: 'ordres', distributions: 'demandes de référencement', bot_trades: 'trades du bot' };
 
 /** Onglet Données de Mon compte : sauvegarde automatique, export et suppression du compte */
 export function DataTab() {
   const { user, aal, signOut } = useAuth();
-  const s = useSyncStatus();
+  const s = useCloudStatus();
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [delErr, setDelErr] = useState<string | null>(null);
   const uid = user?.id;
 
-  useEffect(() => { if (uid) cloudCounts(uid).then((c) => setStatus({ cloud: c })).catch(() => {}); }, [uid, s.lastSync]);
+  useEffect(() => { if (uid) cloudCounts(uid).catch(() => {}); }, [uid, s.lastSaved]);
   if (!uid) return null;
 
   async function download() {
@@ -43,7 +43,7 @@ export function DataTab() {
         throw new Error(msg);
       }
       // compte supprimé : plus rien de ce compte dans ce navigateur
-      await releaseBrowser(null);
+      await detachCloud();
       await signOut().catch(() => {});
       leaveDemoGuest();
       try { sessionStorage.setItem('ts-account-deleted', '1'); } catch { /* navigation privée */ }
@@ -54,17 +54,17 @@ export function DataTab() {
   return (
     <div className="ts-grid2">
       <div className="card">
-        <div className="card-h"><h3>Sauvegarde automatique</h3><p>Tout est enregistré sur ton compte dès que tu le modifies, et tu le retrouves sur chacun de tes appareils.</p></div>
+        <div className="card-h"><h3>Enregistrées sur ton compte</h3><p>Tes données vivent dans la base de TokenStudio : chaque changement y est écrit aussitôt, et tu les retrouves sur chacun de tes appareils. Rien n'est gardé dans ce navigateur.</p></div>
         <div className="ts-row spread">
-          <div><span className={'badge ' + (s.error ? 'a' : 'g')}>{s.error ? 'À réessayer' : 'Active'}</span> <span className="muted ts-small">{s.syncing ? 'enregistrement…' : s.lastSync ? 'dernier enregistrement : ' + new Date(s.lastSync).toLocaleTimeString('fr-FR') : 'en cours…'}</span></div>
-          {s.error && <button type="button" className="btn sm" disabled={s.syncing} onClick={() => syncNow(uid)}>Réessayer</button>}
+          <div><span className={'badge ' + (s.error ? 'a' : 'g')}>{s.error ? 'En attente' : 'À jour'}</span> <span className="muted ts-small">{s.loading ? 'chargement…' : s.saving || s.pending ? 'enregistrement…' : s.lastSaved ? 'dernier enregistrement : ' + new Date(s.lastSaved).toLocaleTimeString('fr-FR') : ''}</span></div>
+          {s.error && <button type="button" className="btn sm" disabled={s.saving} onClick={() => flushAll()}>Réessayer</button>}
         </div>
         {s.error && <div className="ts-note bad" style={{ marginTop: 10 }}>{s.error}</div>}
         <table className="ts-sync-table">
           <thead><tr><th>Donnée</th><th>Sur ton compte</th></tr></thead>
-          <tbody>{ORDER.map((k) => <tr key={k}><td>{syncLabel(k)}</td><td className="mono">{s.cloud ? s.cloud[k] ?? 0 : '…'}</td></tr>)}</tbody>
+          <tbody>{ORDER.map((k) => <tr key={k}><td>{LABELS[k] ?? k}</td><td className="mono">{s.cloud ? s.cloud[k] ?? 0 : '…'}</td></tr>)}</tbody>
         </table>
-        <p className="muted ts-small">Jamais enregistrés : les clés privées de tes wallets et les opérations de la démo. À la déconnexion, tes données quittent ce navigateur et restent sur ton compte.</p>
+        <p className="muted ts-small">Jamais enregistrés : les clés privées de tes wallets (sauf celle du wallet rapide, chiffrée) et les opérations de la démo.</p>
       </div>
       <div className="card">
         <div className="card-h"><h3>Tes données</h3><p>Elles t'appartiennent : tu peux les récupérer ou supprimer ton compte quand tu veux.</p></div>

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth, userLabel } from '../auth/AuthContext';
 import { WalletMark, readable } from '../auth/SignIn';
 import { goTo, studio, toast, type HubState } from '../legacy/bridge';
-import { useSyncStatus } from '../sync/useDataSync';
+import { useCloudStatus } from '../data/cloud';
 import { detect, walletById } from '../wallets/catalog';
 import { linkWallet } from '../wallets/walletAuth';
 import { useAccountStatus, useLinkedWallets } from '../wallets/useWallets';
@@ -56,7 +56,7 @@ const I = {
 export function AccountHub({ mobile }: { mobile?: boolean }) {
   const { ready, user, needsMfa, aal, openSignIn, signOut } = useAuth();
   const st = useHubState();
-  const sync = useSyncStatus();
+  const sync = useCloudStatus();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -191,7 +191,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         <button type="button" data-hub-item onClick={act(() => openTab('prefs'))}>{I.sliders}<span>Préférences</span><em>trading, studio, notifications</em></button>
         <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}<span>Apparence</span><em>{(THEME_NAMES[st.theme] ?? st.theme) + ' · ' + (DEPTH_NAMES[st.depth] ?? st.depth)}</em></button>
         <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}<span>Réglages avancés</span><em>RPC, vitesse, frais</em></button>
-        <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.syncing ? 'enregistrement…' : sync.error ? 'à réessayer' : 'enregistrées sur le compte'}</em></button>
+        <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.loading ? 'chargement…' : sync.error ? 'enregistrement en attente' : sync.saving || sync.pending ? 'enregistrement…' : 'à jour sur ton compte'}</em></button>
         <button type="button" data-hub-item onClick={act(() => openTab('security'))}>{I.shield}<span>Sécurité</span><em>{aal.current === 'aal2' ? '2FA active' : 'activer la 2FA'}</em></button>
         <button type="button" data-hub-item onClick={act(() => document.getElementById('cmdkBtn')?.click())}>{I.search}<span>Rechercher</span><kbd>Ctrl K</kbd></button>
       </nav>

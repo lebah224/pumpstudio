@@ -6,7 +6,7 @@ import { SignInPanel, readable } from '../auth/SignIn';
 import { MfaSettings } from '../auth/Mfa';
 import { savePrefs } from './usePrefsSync';
 import { studio, toast } from '../legacy/bridge';
-import { DataTab } from '../sync/DataTab';
+import { DataTab } from './DataTab';
 import { PushCard } from '../notify/PushCard';
 import { logoutEverywhere } from './logout';
 
