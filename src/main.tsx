@@ -8,12 +8,16 @@ import './wallets/catalog';
 import './legacy/studio.js';
 import './legacy/terminal.js';
 import { App } from './App';
+import { installSelectMenus } from './ui/selectMenu';
 
 // Images distantes cassées (logos de tokens) : retirées sans gestionnaire en ligne, compatible avec la CSP
 document.addEventListener('error', (e) => {
   const t = e.target as HTMLElement | null;
   if (t && t.tagName === 'IMG' && t.dataset.rmOnError) t.remove();
 }, true);
+
+// listes de choix aux couleurs du studio, pour tout l'outil
+installSelectMenus();
 
 const root = document.getElementById('ts-root');
 if (root) createRoot(root).render(<StrictMode><App /></StrictMode>);
