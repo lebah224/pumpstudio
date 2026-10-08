@@ -1625,6 +1625,12 @@ window.PumpBotUI = {
       STRATS.forEach((s) => { if (S.port[s.id]) S.port[s.id].closed = S.port[s.id].closed.filter((c) => !c.live); });
       this.refresh();
     },
+    // trades réels arrivés d'un autre appareil
+    addTrades(list) {
+      const known = new Set(); STRATS.forEach((s) => S.port[s.id] && S.port[s.id].closed.forEach((c) => known.add(c.id)));
+      let n = 0; (list || []).forEach((c) => { if (!known.has(c.id) && c.sid && S.port[c.sid]) { known.add(c.id); S.port[c.sid].closed.push(c); n++; } });
+      if (n) { STRATS.forEach((s) => S.port[s.id] && S.port[s.id].closed.sort((a, b) => a.closedAt - b.closedAt)); markAll(); render(true); }
+    },
     refresh() { try { buildSettings(); buildStratCards(); buildStratSel(); buildViewSelect(); renderWallet(); markAll(); render(true); } catch (e) {} },
   },
   summary: () => ({

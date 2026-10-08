@@ -13,7 +13,7 @@ type WriteKind = Kind | 'cfg' | 'botCfg';
 type Studio = { data?: { setCloud: (h: { write: (k: WriteKind, v: unknown) => void } | null) => void; cfg: () => Obj; loadCfg: (c: Obj) => void; guestCfg: () => void; dropLocalKeys: () => void; loadReal: (x: Obj) => void; replaceReal: (k: string, v: unknown) => void;
   clearReal: () => void; draft: () => Obj; legacyLocal: () => Obj; dropLegacyLocal: () => void } };
 const st = () => studio() as unknown as Studio | undefined;
-type Bot = { account?: { attach: (h: { write: (k: WriteKind, v: unknown) => void } | null, x: Obj) => Obj; detach: () => void } };
+type Bot = { account?: { attach: (h: { write: (k: WriteKind, v: unknown) => void } | null, x: Obj) => Obj; detach: () => void; addTrades: (l: Obj[]) => void } };
 const bot = () => (window as unknown as { PumpBotUI?: Bot }).PumpBotUI;
 
 /* ---------- état visible par l'interface ---------- */
@@ -45,6 +45,7 @@ let draftImg = '';                                          // empreinte du logo
 let prefExtra: Obj = {};                                    // préférences.extra du compte (réglages du studio et du bot)
 let keysHash = '';                                          // empreinte des clés API déjà enregistrées
 const tradeQueue: Obj[] = [];                               // trades réels du bot à écrire
+const inflight = new Set<Kind>();                           // écritures en cours d'envoi
 let retry = 0;
 
 function countPending() { set({ pending: Object.keys(latest).length }); }
@@ -135,6 +136,7 @@ async function flushDraft(value: unknown) {
 async function flush(kind: Kind) {
   if (!uid || !ready || !(kind in latest)) return;
   const value = latest[kind]; delete latest[kind];
+  inflight.add(kind);
   set({ saving: true });
   try {
     if (kind === 'draft') await flushDraft(value);
@@ -147,7 +149,7 @@ async function flush(kind: Kind) {
     retry = Math.min(retry + 1, 6);
     set({ error: 'Enregistrement en attente : ' + ((e as Error).message || 'réseau indisponible').slice(0, 140) });
     schedule(kind, 2000 * 2 ** (retry - 1));
-  } finally { set({ saving: false }); countPending(); }
+  } finally { inflight.delete(kind); set({ saving: inflight.size > 0 }); countPending(); }
 }
 /** Tout ce qui attend part maintenant (déconnexion, fermeture) */
 export async function flushAll() {
@@ -231,6 +233,7 @@ export async function attachCloud(userId: string) {
     }
     Object.keys(latest).forEach((k) => schedule(k as Kind, 50));
     set({ loading: false, lastSaved: Date.now() });
+    listen(userId);
   } catch (e) {
     set({ loading: false, error: 'Chargement du compte impossible : ' + (e as Error).message.slice(0, 140) });
     // nouvel essai dans quelques secondes (réseau)
@@ -241,6 +244,7 @@ export async function attachCloud(userId: string) {
 export async function detachCloud() {
   if (!uid) return;   // aucun compte branché : rien à faire (le brouillon d'un invité reste intact)
   if (ready) await flushAll();
+  if (channel) { supabase.removeChannel(channel); channel = null; }
   st()?.data?.setCloud(null);
   st()?.data?.clearReal();
   st()?.data?.guestCfg();
@@ -251,6 +255,39 @@ export async function detachCloud() {
 }
 // fermeture de l'onglet avec des changements pas encore enregistrés : on prévient
 window.addEventListener('beforeunload', (e) => { if (ready && Object.keys(latest).length) { flushAll(); e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- direct entre appareils ---------- */
+// Une table du compte change (autre appareil, autre onglet) : elle est relue et remplace l'affichage.
+// Nos propres écritures reviennent aussi : identiques à ce que l'on sait déjà, elles sont ignorées.
+let channel: ReturnType<typeof supabase.channel> | null = null;
+const TABLES: Record<string, 'tokens' | 'journal' | 'orders' | 'dist' | 'bot'> = { tokens: 'tokens', operations: 'journal', orders: 'orders', distributions: 'dist', bot_trades: 'bot' };
+const liveTimers: Record<string, number> = {};
+function listen(userId: string) {
+  channel = supabase.channel('compte-' + userId);
+  Object.keys(TABLES).forEach((t) => channel!.on('postgres_changes', { event: '*', schema: 'public', table: t, filter: 'user_id=eq.' + userId }, () => {
+    window.clearTimeout(liveTimers[t]); liveTimers[t] = window.setTimeout(() => { refetch(t).catch(() => {}); }, 700);
+  }));
+  channel.subscribe();
+}
+async function refetch(table: string) {
+  if (!uid || !ready) return;
+  const kind = TABLES[table]!;
+  if (kind === 'bot') { const rows = await fetchAll('bot_trades', 'closed_at', 2000); bot()?.account?.addTrades(rows.filter((r) => r.data?.live).map(fromRow.trade)); return; }
+  if (kind in latest) return;   // changements faits ici en attente : ils partent d'abord, puis l'écho sera reçu
+  // envoi en cours : relu après, pour ne jamais remplacer un changement local par un état plus ancien
+  if (inflight.has(kind)) { window.clearTimeout(liveTimers[table]); liveTimers[table] = window.setTimeout(() => { refetch(table).catch(() => {}); }, 1000); return; }
+  let value: unknown;
+  if (kind === 'tokens') value = (await fetchAll('tokens', 'created_at')).map(fromRow.token);
+  else if (kind === 'orders') value = (await fetchAll('orders', 'created_at')).map(fromRow.order);
+  else if (kind === 'journal') value = (await fetchAll('operations', 'at', 2000)).map(fromRow.op);
+  else { const d: Obj = {}; (await fetchAll('distributions', 'sent_at')).forEach((r) => { (d[r.mint] ||= {})[r.platform] = { at: Date.parse(r.sent_at), done: r.status === 'accepted' || undefined }; }); value = d; }
+  if (kind in latest || inflight.has(kind) || !uid) return;
+  const s = SPECS[kind], m: Record<string, string> = {}; s.rows(value).forEach((r) => { m[s.key(r)] = hash(r); });
+  const prev = base[kind] ?? {}, same = Object.keys(m).length === Object.keys(prev).length && Object.keys(m).every((k) => prev[k] === m[k]);
+  if (same) return;
+  base[kind] = m;
+  st()?.data?.replaceReal(kind, value);
+}
 
 /* ---------- compteurs et export (onglet Données) ---------- */
 export async function cloudCounts(userId: string) {
