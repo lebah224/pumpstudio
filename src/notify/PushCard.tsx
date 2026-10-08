@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
-import { goTo, toast } from '../legacy/bridge';
-import { useSyncStatus } from '../sync/useDataSync';
+import { toast } from '../legacy/bridge';
 import { disablePush, enablePush, listDevices, pushState, removeDevice, testPush, type PushState } from './push';
 
 const STATE: Record<PushState, [string, string]> = {
@@ -15,7 +14,6 @@ const STATE: Record<PushState, [string, string]> = {
 /** Alertes push : abonnement de cet appareil, test, liste des appareils du compte */
 export function PushCard({ enabled }: { enabled: boolean }) {
   const { user } = useAuth();
-  const sync = useSyncStatus();
   const [st, setSt] = useState<PushState | null>(null);
   const [devices, setDevices] = useState<Awaited<ReturnType<typeof listDevices>>>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -40,7 +38,6 @@ export function PushCard({ enabled }: { enabled: boolean }) {
       </div>
       {st === 'ios-install' && <div className="ts-note warn">Sur iPhone, les notifications marchent dans l'appli installée : touche <b>Partager</b> puis <b>Sur l'écran d'accueil</b>, et ouvre TokenStudio depuis son icône.</div>}
       {st === 'denied' && <div className="ts-note warn">Les notifications sont bloquées pour ce site. Autorise-les dans les réglages du navigateur (icône à gauche de l'adresse), puis réessaie.</div>}
-      {enabled && sync.enabled === false && <div className="ts-note warn">La synchronisation est arrêtée : le serveur ne voit pas tes ordres. <button type="button" className="ts-link" onClick={() => { try { sessionStorage.setItem('ts-account-tab', 'data'); } catch { /* navigation privée */ } window.dispatchEvent(new CustomEvent('ts-account-tab', { detail: 'data' })); goTo('account'); }}>Activer la synchronisation</button></div>}
       {!enabled && <div className="ts-note">Coche « M'alerter quand un ordre se déclenche » pour recevoir les alertes.</div>}
       <div className="ts-row">
         {st === 'on'

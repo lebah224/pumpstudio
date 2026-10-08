@@ -1,9 +1,9 @@
 import { supabase } from '../lib/supabase';
 import { studio } from '../legacy/bridge';
 
-/* Synchronisation des données du studio avec le compte.
-   Le navigateur reste la source de travail (le studio fonctionne hors ligne et sans compte) ;
-   le compte en garde une copie et la redistribue sur les autres appareils.
+/* Sauvegarde automatique des données du studio sur le compte.
+   Dès qu'un compte est connecté, tout est enregistré sur le serveur et rechargé à la connexion, sur tous les appareils.
+   À la déconnexion, les données réelles quittent ce navigateur (elles restent sur le compte).
    Chaque ligne est validée ici ET par les contraintes de la base ; seules les lignes modifiées sont envoyées. */
 
 type Obj = Record<string, any>;
@@ -168,31 +168,38 @@ export async function cloudCounts(uid: string) {
 export async function syncNow(uid: string) {
   if (status.syncing) return;
   set({ syncing: true, error: null });
-  try { await pull(uid); await push(uid); set({ lastSync: Date.now(), cloud: await cloudCounts(uid) }); }
+  try { await pull(uid); await push(uid); set({ lastSync: Date.now() }); }
   catch (e) { set({ error: (e as Error).message.slice(0, 200) }); }
   finally { set({ syncing: false }); }
 }
 export async function pushSoon(uid: string) {
-  if (status.syncing || !status.enabled) return;
+  if (status.syncing) { setTimeout(() => pushSoon(uid), 3000); return; }
   set({ syncing: true, error: null });
   try { await push(uid); set({ lastSync: Date.now() }); }
   catch (e) { set({ error: (e as Error).message.slice(0, 200) }); }
   finally { set({ syncing: false }); }
 }
 
-export async function setSyncEnabled(uid: string, on: boolean) {
-  const { data } = await supabase.from('preferences').select('extra').eq('user_id', uid).single();
-  const extra = { ...((data?.extra as Obj) ?? {}), sync: on };
-  const { error } = await supabase.from('preferences').update({ extra }).eq('user_id', uid);
-  if (error) throw error;
-  set({ enabled: on });
-}
-export async function readSyncEnabled(uid: string) {
-  const { data } = await supabase.from('preferences').select('extra').eq('user_id', uid).single();
-  const on = (data?.extra as Obj | undefined)?.sync;
-  return on === true ? true : on === false ? false : null;   // null : jamais choisi
-}
 export function setStatus(p: Partial<SyncStatus>) { set(p); }
+
+/* ---------- propriétaire des données de ce navigateur ---------- */
+const OWNER = 'pstudio_owner';
+const owner = () => { try { return localStorage.getItem(OWNER); } catch { return null; } };
+/** Données réelles du studio vidées de ce navigateur (le compte les garde) */
+function clearLocal() { (studio() as Obj | undefined)?.data?.clearReal?.(); }
+/** À la connexion : les données d'un autre compte présentes ici sont retirées avant de charger celles du compte */
+export function claimBrowser(uid: string) {
+  const o = owner();
+  if (o && o !== uid) { clearLocal(); try { localStorage.removeItem(HKEY(o)); } catch { /* rien */ } }
+  try { localStorage.setItem(OWNER, uid); } catch { /* navigation privée */ }
+}
+/** À la déconnexion : dernière sauvegarde, puis les données réelles quittent ce navigateur */
+export async function releaseBrowser(uid: string | null) {
+  if (uid) { try { await push(uid); } catch { /* déjà enregistré au fil de l'eau */ } }
+  clearLocal();
+  try { if (uid) localStorage.removeItem(HKEY(uid)); localStorage.removeItem(OWNER); } catch { /* rien */ }
+  set({ userId: null, enabled: null, lastSync: null, error: null, cloud: null });
+}
 
 /** Supprime toutes les données de travail du compte (les données de ce navigateur restent) */
 export async function wipeCloud(uid: string) {

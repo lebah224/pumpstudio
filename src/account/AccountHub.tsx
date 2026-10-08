@@ -8,6 +8,7 @@ import { detect, walletById } from '../wallets/catalog';
 import { linkWallet } from '../wallets/walletAuth';
 import { useAccountStatus, useLinkedWallets } from '../wallets/useWallets';
 import { logoutEverywhere } from './logout';
+import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 
 const THEME_NAMES: Record<string, string> = { or: 'Or', platine: 'Platine', saphir: 'Saphir', jade: 'Jade', cuivre: 'Cuivre', iris: 'Iris' };
 const DEPTH_NAMES: Record<string, string> = { nuit: 'Nuit', profond: 'Profond', doux: 'Doux' };
@@ -137,13 +138,13 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   const walletRow = (kind: 'ext' | 'quick' | 'srv') => {
     const x = kind === 'ext' ? ext! : kind === 'quick' ? quick! : srv!;
     const activeW = signer === kind;
-    const mark = kind === 'srv' ? <span className="ts-wmark srv" aria-hidden="true">{I.cloud}</span> : kind === 'quick' ? <span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span> : <WalletMark w={walletById(ext!.id) ?? { name: ext!.name, color: '#7c8595' }} />;
+    const mark = kind === 'srv' ? <span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span> : kind === 'quick' ? <span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span> : <WalletMark w={walletById(ext!.id) ?? { name: ext!.name, color: '#7c8595' }} />;
     const isLinked = kind === 'srv' || !signed || !linked ? true : linked.includes(x.pk);
     return (
       <div className={'ts-hub-wr' + (activeW ? ' on' : '')}>
         {mark}
         <span className="ts-hub-t">
-          <b>{kind === 'srv' ? 'Wallet rapide serveur' : kind === 'quick' ? 'Wallet rapide' : ext!.name}{kind === 'quick' && !quick!.unlocked && <em className="badge a">verrouillé</em>}</b>
+          <b>{kind === 'srv' ? 'Wallet rapide' : kind === 'quick' ? 'Wallet rapide' : ext!.name}{kind === 'quick' && !quick!.unlocked && <em className="badge a">verrouillé</em>}</b>
           <button type="button" className="ts-hub-addr mono" data-hub-item onClick={() => copy(x.pk)} title="Copier l'adresse">{short(x.pk)} {I.copy}</button>
         </span>
         <span className="ts-hub-wb"><b className="mono">{bal(x.bal)}</b><small>{usd(x.bal)}</small></span>
@@ -176,7 +177,9 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         {quick && walletRow('quick')}
         {ext && walletRow('ext')}
         {!ext && !quick && !srv && <p className="ts-hub-note">Aucun wallet connecté.</p>}
+        {st.quickSaved && <div className="ts-hub-legacy"><small>Ton ancien wallet rapide <span className="mono">{short(st.quickSaved.pk)}</span> est encore dans ce navigateur.</small><button type="button" className="ts-hub-pill warn" data-hub-item onClick={act(() => hub?.legacyMigrate())}>Transférer sur mon compte</button></div>}
         <div className="ts-hub-row">
+          {!srv && <button type="button" className="btn sm primary" data-hub-item onClick={act(() => openServerWallet('create'))}>{I.bolt}Créer mon wallet rapide</button>}
           <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'add' }))}>{I.plus}Ajouter un wallet</button>
           {(ext || quick || srv) && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}Portefeuille</button>}
         </div>
@@ -188,7 +191,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         <button type="button" data-hub-item onClick={act(() => openTab('prefs'))}>{I.sliders}<span>Préférences</span><em>trading, studio, notifications</em></button>
         <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}<span>Apparence</span><em>{(THEME_NAMES[st.theme] ?? st.theme) + ' · ' + (DEPTH_NAMES[st.depth] ?? st.depth)}</em></button>
         <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}<span>Réglages avancés</span><em>RPC, vitesse, frais</em></button>
-        <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.syncing ? 'synchronisation…' : sync.enabled ? 'synchronisées' : 'non synchronisées'}</em></button>
+        <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.syncing ? 'enregistrement…' : sync.error ? 'à réessayer' : 'enregistrées sur le compte'}</em></button>
         <button type="button" data-hub-item onClick={act(() => openTab('security'))}>{I.shield}<span>Sécurité</span><em>{aal.current === 'aal2' ? '2FA active' : 'activer la 2FA'}</em></button>
         <button type="button" data-hub-item onClick={act(() => document.getElementById('cmdkBtn')?.click())}>{I.search}<span>Rechercher</span><kbd>Ctrl K</kbd></button>
       </nav>
@@ -215,7 +218,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         {status === null ? <small>Recherche d'un compte pour ce wallet…</small>
           : status === 'none' ? (<>
             <b>Aucun compte pour ce wallet</b>
-            <small>Crée ton compte pour synchroniser tes données et passer en mode réel. Rien n'est créé sans ton accord.</small>
+            <small>Crée ton compte pour enregistrer tes données et passer en mode réel. Rien n'est créé sans ton accord.</small>
             <div className="ts-hub-row">
               <button type="button" className="btn primary sm" data-hub-item onClick={signIn(src)}>Créer mon compte</button>
               <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'email' }))}>{I.mail}J'ai un compte e-mail</button>
@@ -234,10 +237,10 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     body = (<>
       <section className="ts-hub-sec ts-hub-guest">
         <b>Connexion à TokenStudio</b>
-        <small>Avec ton wallet, ton wallet rapide ou ton e-mail. Aucun compte n'est créé sans ton accord.</small>
+        <small>Avec ton wallet ou ton e-mail. Aucun compte n'est créé sans ton accord.</small>
         <div className="ts-hub-opts">
           {found.map((x) => <button key={x.id} type="button" className="ts-si-opt" data-hub-item onClick={signIn(x.id)}><WalletMark w={x} /><span className="ts-si-n">{x.name}</span><em className="ts-si-tag ok">Détecté</em></button>)}
-          <button type="button" className="ts-si-opt" data-hub-item onClick={act(() => openSignIn({ start: 'quick' }))}><span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span><span className="ts-si-n">Wallet rapide<small>{quick ? short(quick.pk) : 'Créer ou restaurer'}</small></span></button>
+          {st.quickSaved && <button type="button" className="ts-si-opt" data-hub-item onClick={act(() => openSignIn({ start: 'quick' }))}><span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span><span className="ts-si-n">Ancien wallet rapide<small>{short(st.quickSaved.pk)} · dans ce navigateur</small></span></button>}
           <button type="button" className="ts-si-opt" data-hub-item onClick={signIn()}><span className="ts-wmark ghost" aria-hidden="true">{I.wallet}</span><span className="ts-si-n">{found.length ? 'Autres wallets' : 'Phantom, Solflare et autres'}</span></button>
           <button type="button" className="ts-si-opt" data-hub-item onClick={act(() => openSignIn({ start: 'email' }))}><span className="ts-wmark ghost" aria-hidden="true">{I.mail}</span><span className="ts-si-n">E-mail</span></button>
         </div>

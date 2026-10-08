@@ -60,6 +60,9 @@
     if (!REMOTE_APPLY && (k === LS.tokens || k === LS.journal || k === LS.orders || k === LS.draft || k === 'pstudio_dist_v1')) { try { window.dispatchEvent(new CustomEvent('pstudio-data', { detail: { key: k } })); } catch (e) {} }
   };
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
+  // un seul wallet rapide : celui du compte, sur le serveur. L'ancien wallet rapide du navigateur ne signe plus
+  // (il reste seulement le temps d'en transférer les fonds vers le compte).
+  cfg.useSess = false;
   const S = {
     page: 'dash', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
     draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'meme', tone: 'luxe', lang: 'en', word: '', logo: { style: 'meme', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
@@ -74,7 +77,7 @@
   let SESSREC = load(LS.sess, null);
   const SESSW = { id: 'session', name: 'Wallet rapide', pk: null, kp: null, prov: null };
   // Wallet rapide serveur : sa clé reste sur le serveur, qui signe selon sa politique (trading seulement, plafonds)
-  const SRVW = { id: 'server', name: 'Wallet rapide serveur', pk: null, prov: null };
+  const SRVW = { id: 'server', name: 'Wallet rapide', pk: null, prov: null };
   let SRVPK = null;
   Object.defineProperty(S, 'wallet', {
     get() {
@@ -363,7 +366,7 @@
   async function walletMenu() {
     // sans wallet, la connexion passe par le menu de compte (choix du wallet, compte, simulation)
     if (!S.wallet && window.__tsConnectUI && location.protocol !== 'file:') { window.dispatchEvent(new CustomEvent('ts-connect')); return; }
-    if (SESSREC || (S.wallet && S.wallet.id === 'session')) return walletPanel();
+    if (S.wallet && S.wallet.id === 'session') return walletPanel();
     if (S.wallet) {
       const i = await modal('Wallet connecté', '<div class="recap"><div class="kv"><span>Wallet</span><span>' + esc(S.wallet.name) + '</span><span>Adresse</span><span>' + short(S.wallet.pk, 6) + '</span><span>Solde</span><span>' + fSol(S.bal) + '</span></div></div><p>L\'adresse publique sert à préparer les transactions. Chaque transaction réelle te sera présentée par ton wallet pour signature.</p>',
         [{ label: 'Fermer' }, { label: 'Copier l\'adresse' }, { label: 'Déconnecter', cls: 'danger' }, { label: 'Wallet rapide', cls: 'primary' }]);
@@ -443,7 +446,7 @@
     const w = S.wallet; if (!w || w.id !== 'session' || SESSW.kp) return true;   // wallet serveur : rien à déverrouiller
     return sessUnlock(true);
   }
-  const signLabel = () => S.wallet && S.wallet.id === 'server' ? 'Signature par le wallet rapide serveur' : S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans ton wallet';
+  const signLabel = () => S.wallet && S.wallet.id === 'server' ? 'Signature par le wallet rapide' : S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans ton wallet';
 
   async function sessCreate(noPanel) {
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
@@ -614,9 +617,34 @@
     ]);
     if (!ctx.error) { toast('Wallet rapide alimenté', '+' + fSol(amt, 3), 'g'); refreshBal(); }
   }
-  async function sessWithdraw() {
+  // Ancien wallet rapide du navigateur → wallet rapide du compte (même adresse, mêmes fonds), puis retiré d'ici
+  async function legacyMigrate() {
+    if (!SESSREC) return;
+    if (SRVPK && SRVPK !== SESSREC.pk) return sessWithdraw(SRVPK);   // le compte a déjà un wallet rapide : on y vire les SOL
+    const i = await modal('Transférer ton ancien wallet rapide', '<p>Ton wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> était gardé dans ce navigateur. Il devient le wallet rapide de ton compte : <b>même adresse, mêmes fonds</b>. Il signera ensuite seul, même navigateur fermé.</p>' +
+      PASS_FIELD('lgPw', 'Mot de passe de ce wallet rapide', 'current-password'), [{ label: 'Annuler' }, { label: 'Transférer', cls: 'primary', keep: true }], true);
+    if (i !== 1) return;
+    const pass = $('lgPw').value;
+    let kp; try { kp = W3().Keypair.fromSecretKey(await openSecret(SESSREC, pass)); if (kp.publicKey.toBase58() !== SESSREC.pk) throw new Error(); }
+    catch (e) { toast('Mot de passe incorrect', 'Le wallet rapide n\'a pas pu être ouvert.', 'r'); return; }
+    let pw = pass;
+    if (pass.length < 10) {
+      const j = await modal('Nouveau mot de passe', '<p>Sur ton compte, le wallet rapide demande un mot de passe d\'au moins 10 caractères.</p>' + PASS_FIELD('lgPw2', 'Nouveau mot de passe (10 caractères minimum)', 'new-password'), [{ label: 'Annuler' }, { label: 'Valider', cls: 'primary', keep: true }], true);
+      if (j !== 1) return;
+      pw = $('lgPw2').value; if (pw.length < 10) { toast('Mot de passe trop court', '10 caractères minimum.', 'a'); return; }
+    }
+    closeModal();
+    if (!window.TSServerWalletImport) { toast('Compte requis', 'Connecte-toi à ton compte pour transférer le wallet.', 'a'); return; }
+    try { await window.TSServerWalletImport(pw, b58(kp.secretKey)); }
+    catch (e) { toast('Transfert impossible', e.message, 'r'); return; }
+    try { localStorage.removeItem(LS.sess); } catch (e) {}
+    SESSREC = null; SESSW.kp = null; cfg.useSess = false; cfg.useSrv = true; save(LS.cfg, cfg);
+    toast('Wallet rapide transféré', short(kp.publicKey.toBase58(), 4) + ' est maintenant le wallet rapide de ton compte.', 'g');
+    renderAll();
+  }
+  async function sessWithdraw(destTo) {
     if (!SESSW.kp && !(await sessUnlock(true))) return;
-    const dest0 = S.ext ? S.ext.pk : '';
+    const dest0 = typeof destTo === 'string' ? destTo : S.ext ? S.ext.pk : '';
     let bal = 0; try { bal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value; } catch (e) { return toast('RPC en erreur', e.message, 'r'); }
     const i = await modal('Retirer vers ton wallet', '<p>Solde du wallet rapide : <b>' + fSol(bal / 1e9, 4) + '</b>. Les tokens ne sont pas déplacés : vends-les d\'abord si tu veux tout récupérer en SOL.</p>' +
       '<div class="field"><label for="wdDest">Adresse de destination</label><input id="wdDest" class="mono" value="' + esc(dest0) + '" autocomplete="off" spellcheck="false"></div>' +
@@ -638,7 +666,9 @@
     ]);
     if (!ctx.error) { toast('Retrait confirmé', fSol(lam / 1e9, 4) + ' → ' + short(dest), 'g'); refreshBal(); }
   }
-  async function walletPanel() {
+  // l'ancien panneau du wallet rapide du navigateur laisse place à la page Portefeuille
+  async function walletPanel() { setPage('wallet'); }
+  async function walletPanelOld() {
     await refreshBal().catch(() => {});
     const ses = !!SESSREC, act = S.wallet && S.wallet.id === 'session';
     let sesBal = null; if (ses) { if (act) sesBal = S.bal; else { try { sesBal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {} } }
@@ -660,12 +690,12 @@
   async function swAction(a) {
     closeModal();
     if (a === 'panel') return walletPanel();
-    if (a === 'create') return sessCreate();
-    if (a === 'import') return sessImport();
+    if (a === 'create' || a === 'import') { try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return; }
     if (a === 'backup') return sessBackupCode();
     if (a === 'unlock') { await sessUnlock(); return; }
     if (a === 'lock') { SESSW.kp = null; toast('Wallet rapide verrouillé', 'Ventes automatiques en pause.', ''); renderAll(); return walletPanel(); }
-    if (a === 'use') { cfg.useSess = true; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); toast('Wallet rapide sélectionné', SESSW.kp ? 'Il signe tes transactions.' : 'Déverrouille-le pour signer.', 'g'); return walletPanel(); }
+    if (a === 'use') { if (SRVPK) { cfg.useSrv = true; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); } return; }
+    if (a === 'useOld') { cfg.useSess = true; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); toast('Wallet rapide sélectionné', SESSW.kp ? 'Il signe tes transactions.' : 'Déverrouille-le pour signer.', 'g'); return walletPanel(); }
     if (a === 'useext') { cfg.useSess = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); toast(S.ext.name + ' sélectionné', 'Chaque transaction demandera ta signature.', 'g'); return walletPanel(); }
     if (a === 'fund') return sessFund();
     if (a === 'withdraw') return sessWithdraw();
@@ -771,12 +801,9 @@
   // Wallets que le bot peut utiliser : le wallet rapide serveur d'abord (signe seul, même studio fermé)
   // ready : utilisable tout de suite ; armable : activable en un clic (mot de passe du wallet rapide au besoin)
   function botWallets() {
-    const q = SESSREC ? short(SESSREC.pk, 4) : '';
     return [
-      { id: 'srv', name: 'Wallet rapide serveur', pk: SRVPK || (SESSREC && SESSREC.pk), ready: !!(SRVPK && window.TSServerWallet), armable: true,
-        note: SRVPK ? 'signe seul, même studio fermé' : SESSREC ? 'ton wallet rapide ' + q + ' sur le serveur · mot de passe seulement' : 'créé en une minute' },
-      { id: 'quick', name: 'Wallet rapide', pk: SESSREC && SESSREC.pk, ready: !!(SESSREC && SESSW.kp), armable: true,
-        note: !SESSREC ? 'créé en une minute' : SESSW.kp ? q + ' · prêt, tant que l\'onglet reste ouvert' : q + ' · mot de passe demandé' },
+      { id: 'srv', name: 'Wallet rapide', pk: SRVPK || (SESSREC && SESSREC.pk), ready: !!(SRVPK && window.TSServerWallet), armable: true,
+        note: SRVPK ? 'signe seul, même studio fermé' : SESSREC ? 'ton ancien wallet rapide ' + short(SESSREC.pk, 4) + ' passe sur ton compte · mot de passe seulement' : 'créé en une minute' },
       { id: 'ext', name: S.ext ? S.ext.name : 'Wallet connecté', pk: S.ext && S.ext.pk, ready: !!S.ext, armable: !!S.ext, note: S.ext ? 'chaque trade à signer dans ' + S.ext.name : 'aucun wallet connecté' },
     ];
   }
@@ -785,14 +812,11 @@
     const risk = '<p>Le bot achètera réellement <b>' + o.size + ' SOL</b> par entrée (ta limite par achat de ' + fSol(cfg.maxSol, 2) + ' s\'applique), jusqu\'à ' + o.max + ' positions, et vendra selon la stratégie.</p><div class="notice">Les memecoins peuvent perdre toute leur valeur en quelques secondes : n\'engage que ce que tu acceptes de perdre.</div>';
     const title = 'Trader en réel avec le bot ?';
     if (id === 'ext') return S.ext ? confirmBox(title, '<p>Le bot utilisera <b>' + esc(S.ext.name) + '</b> : chaque trade te sera présenté à signer.</p>' + risk, 'Activer le trading réel', true) : false;
-    if (id === 'srv' && SRVPK) return confirmBox(title, '<p>Le bot utilisera ton <b>wallet rapide serveur</b> (' + short(SRVPK, 4) + ') : il signe seul, dans la limite de tes plafonds, même studio fermé.</p>' + risk, 'Activer le trading réel', true);
-    if (!SESSREC) {
-      if (id === 'srv') { try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return false; }
-      await sessCreate(true); return !!(SESSREC && SESSW.kp);
-    }
+    if (id === 'srv' && SRVPK) return confirmBox(title, '<p>Le bot utilisera ton <b>wallet rapide</b> (' + short(SRVPK, 4) + ') : il signe seul, dans la limite de tes plafonds, même studio fermé.</p>' + risk, 'Activer le trading réel', true);
+    if (!SESSREC || id !== 'srv') { try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return false; }
     const toSrv = id === 'srv', needPw = toSrv || !SESSW.kp;
     const intro = toSrv
-      ? '<p>Ton wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> va être utilisé par le serveur : <b>même adresse, mêmes fonds, même mot de passe</b>. Le bot pourra trader même studio fermé. La copie de ce navigateur reste en secours.</p>'
+      ? '<p>Ton ancien wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> devient le wallet rapide de ton compte : <b>même adresse, mêmes fonds, même mot de passe</b>. Le bot pourra trader même studio fermé.</p>'
       : '<p>Le bot va utiliser ton wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> tant que cet onglet reste ouvert.</p>';
     const i = await modal(title, intro + risk + (needPw ? PASS_FIELD('botPw', 'Mot de passe de ton wallet rapide', 'current-password') : ''), [{ label: 'Annuler' }, { label: 'Activer le trading réel', cls: 'danger', keep: true }], true);
     if (i !== 1) return false;
@@ -809,7 +833,10 @@
       if (!window.TSServerWalletImport) { toast('Compte requis', 'Connecte-toi pour utiliser le serveur.', 'a'); return false; }
       try { await window.TSServerWalletImport(pass.length >= 10 ? pass : null, b58(kp.secretKey)); }
       catch (e) { toast('Placement sur le serveur impossible', e.message, 'r'); return false; }
-      toast('Wallet rapide sur le serveur', short(SESSREC.pk, 4) + ' trade maintenant même studio fermé.', 'g');
+      toast('Wallet rapide transféré', short(SESSREC.pk, 4) + ' est le wallet rapide de ton compte : il trade même studio fermé.', 'g');
+      // un seul wallet rapide : la copie de ce navigateur est retirée
+      try { localStorage.removeItem(LS.sess); } catch (e) {}
+      SESSREC = null; SESSW.kp = null; cfg.useSess = false; save(LS.cfg, cfg);
     } else toast('Wallet rapide prêt', 'Le bot signe seul tant que l\'onglet reste ouvert.', 'g');
     renderAll(); return true;
   }
@@ -4173,15 +4200,19 @@
         return { wallet: w ? { name: ses ? 'Wallet rapide' : w.name, pk: w.pk, session: ses, locked: ses && !SESSW.kp } : null,
           ext: S.ext ? { id: S.ext.id, name: S.ext.name, pk: S.ext.pk, bal: ses ? S.extBal : S.bal } : null,
           // après une déconnexion, le wallet rapide reste chiffré dans ce navigateur mais n'est plus affiché ni utilisé
-          quick: SESSREC && !cfg.quickOff ? { pk: SESSREC.pk, active: ses, unlocked: !!SESSW.kp, bal: ses ? S.bal : null } : null,
+          quick: null,   // l'ancien wallet rapide du navigateur n'est plus utilisé (voir quickSaved pour le transférer)
           quickSaved: SESSREC ? { pk: SESSREC.pk, unlocked: !!SESSW.kp } : null,
           srv: SRVPK ? { pk: SRVPK, active: !!(w && w.id === 'server'), bal: w && w.id === 'server' ? S.bal : null } : null,
           hasSession: !!SESSREC, bal: S.bal, solUsd: S.solUsd, sim: !!cfg.sim, rpcOk: S.rpcOk, theme: uiTheme, depth: uiDepth,
           demo: { bal: DEMO.bal, positions: Object.values(DEMO.pos).filter((x) => x > 0).length } };
       },
       connect: async (id) => { const pv = providers().find((x) => x.id === id); return pv ? connectWallet(pv) : null; },
-      quickCreate: () => sessCreate(true),
-      quickRestore: () => sessImport(true),
+      quickCreate: async () => { try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return undefined; },
+      quickRestore: async () => { try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return undefined; },
+      legacyMigrate: () => legacyMigrate(),
+      legacyExport: () => sessExport(),
+      legacyForget: () => sessDelete(),
+      legacyDrop: () => { try { localStorage.removeItem(LS.sess); } catch (e) {} SESSREC = null; SESSW.kp = null; cfg.useSess = false; save(LS.cfg, cfg); renderAll(); },
       quickUnlock: () => sessUnlock(),
       quickLock: () => { if (!SESSW.kp) return; SESSW.kp = null; toast('Wallet rapide verrouillé', 'Ventes automatiques en pause.', ''); renderAll(); },
       quickKeypair: () => SESSW.kp,
@@ -4227,6 +4258,12 @@
     },
     // Données synchronisées avec le compte : export de l'état local, et fusion de celles du serveur
     data: {
+      // déconnexion : les données réelles quittent ce navigateur (elles restent sur le compte)
+      clearReal: () => {
+        [LS.tokens, LS.journal, LS.orders, LSD].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+        if (!cfg.sim) { S.tokens = []; S.journal = []; S.orders = []; DS.rec = {}; S.view.mine = null; S.view.trade = null; }
+        renderAll();
+      },
       export: () => {
         const d = Object.assign({}, S.draft); delete d.image; delete d.imgSrc;
         const R = realData();

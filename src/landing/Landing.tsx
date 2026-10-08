@@ -97,16 +97,18 @@ const FEATURES: { ic: ReactNode; t: string; d: string; unit: string }[] = [
 
 const FAQ: [string, string][] = [
   ['Combien coûte TokenStudio ?', 'L\'outil est gratuit. Vous ne payez que les frais du réseau Solana et de pump.fun lors d\'un lancement ou d\'un trade, environ 0,02 SOL pour une création.'],
-  ['TokenStudio peut-il toucher à mes fonds ?', 'Non. Vos clés restent dans votre wallet, qui vous présente chaque transaction à signer. Seul le wallet rapide serveur, si vous l\'activez, signe pour vous, et uniquement des opérations de trading dans la limite de vos plafonds.'],
+  ['TokenStudio peut-il toucher à mes fonds ?', 'Non. Vos clés restent dans votre wallet, qui vous présente chaque transaction à signer. Seul le wallet rapide, si vous l\'activez, signe pour vous, et uniquement des opérations de trading dans la limite de vos plafonds.'],
   ['Sous quel nom mon token apparaît-il sur pump.fun ?', 'Sous l\'adresse de votre wallet, ou sous votre pseudo pump.fun si ce wallet a un profil. Votre compte TokenStudio et votre e-mail ne sont jamais publiés.'],
   ['À quoi sert la démo ?', 'À tout découvrir sans compte, avec un wallet démo de 10 SOL fictifs. Pour vérifier une opération sur la blockchain comme en réel, il faut un compte gratuit.'],
   ['Quels sont les risques ?', 'Les memecoins sont extrêmement volatils : leur valeur peut tomber à zéro en quelques minutes. N\'engagez que ce que vous acceptez de perdre. TokenStudio ne promet aucun gain.'],
-  ['Où sont mes données ?', 'Dans votre navigateur, et sur votre compte si vous activez la synchronisation. Vous pouvez les exporter ou les effacer à tout moment.'],
+  ['Où sont mes données ?', 'Sur votre compte : tout est enregistré automatiquement et vous suit sur chaque appareil. Vous pouvez les exporter ou supprimer votre compte à tout moment.'],
 ];
 
 export function Landing() {
   const { ready, session } = useAuth();
   const [scrolled, setScrolled] = useState(false);
+  // retour après une suppression de compte : confirmation affichée une fois
+  const [deleted] = useState(() => { try { const v = sessionStorage.getItem('ts-account-deleted'); sessionStorage.removeItem('ts-account-deleted'); return v === '1'; } catch { return false; } });
   useEffect(() => {
     const f = () => setScrolled(window.scrollY > 8);
     f(); window.addEventListener('scroll', f, { passive: true }); return () => window.removeEventListener('scroll', f);
@@ -120,6 +122,7 @@ export function Landing() {
   if ((!ready && maybeSignedIn()) || signed) return null;
   return (
     <div className="lp">
+      {deleted && <div className="lp-flash" role="status">Votre compte et toutes ses données ont été supprimés.</div>}
       <header className={'lp-nav' + (scrolled ? ' on' : '')}>
         <div className="lp-wrap lp-nav-in">
           <a className="lp-brand" href="/" aria-label="TokenStudio, accueil">
@@ -218,7 +221,7 @@ export function Landing() {
           <ul className="lp-sec-list">
             <li>{IC.key}<div><b>Non-custodial</b><span>Vos clés ne quittent jamais votre wallet. L'outil ne voit que votre adresse publique.</span></div></li>
             <li>{IC.eye}<div><b>Vérifié avant signature</b><span>Chaque transaction est simulée sur la blockchain : si elle doit échouer, vous ne payez rien.</span></div></li>
-            <li>{IC.gauge}<div><b>Plafonds</b><span>Limite par achat et plafond journalier pour le bot et le wallet rapide serveur.</span></div></li>
+            <li>{IC.gauge}<div><b>Plafonds</b><span>Limite par achat et plafond journalier pour le bot et le wallet rapide.</span></div></li>
             <li>{IC.lock}<div><b>Compte protégé</b><span>Connexion par wallet ou e-mail sans mot de passe, double authentification, journal de sécurité.</span></div></li>
             <li>{IC.bell}<div><b>Alertes, jamais d'exécution cachée</b><span>Le serveur vous prévient quand un ordre se déclenche. Il ne vend jamais sans votre réglage.</span></div></li>
           </ul>

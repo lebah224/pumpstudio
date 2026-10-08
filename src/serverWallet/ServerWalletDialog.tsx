@@ -23,7 +23,8 @@ export function ServerWalletDialog() {
   const [shown, setShown] = useState<string | null>(null);
   const [linked, setLinked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null);
-  const quick = studio()?.hub?.state().quick ?? null;
+  // ancien wallet rapide du navigateur : peut devenir le wallet rapide du compte (même adresse)
+  const quick = studio()?.hub?.state().quickSaved ?? null;
 
   useEffect(() => {
     const f = (e: Event) => {
@@ -53,12 +54,13 @@ export function ServerWalletDialog() {
           if (!kp) throw new Error('Déverrouille d\'abord ton wallet rapide.');
           const b58 = (window.PumpStudio as unknown as { b58: (u: Uint8Array) => string }).b58;
           addr = await importServerWallet(pw, b58(kp.secretKey));
+          h?.legacyDrop();   // un seul wallet rapide : la copie du navigateur est retirée
         } else addr = await importServerWallet(pw, secret.trim());
         await studio()?.hub?.useServer(true);
-        toast('Wallet rapide serveur prêt', short(addr) + ' signe maintenant tes transactions, même studio fermé.');
+        toast('Wallet rapide prêt', short(addr) + ' signe maintenant tes transactions, même navigateur fermé.');
         close(); return;
       }
-      if (!pw) throw new Error('Saisis le mot de passe du wallet serveur.');
+      if (!pw) throw new Error('Saisis le mot de passe du wallet rapide.');
       if (mode === 'withdraw') {
         if (!to) throw new Error('Choisis un wallet de destination.');
         const n = Number(amount.replace(',', '.'));
@@ -71,20 +73,20 @@ export function ServerWalletDialog() {
       } else if (mode === 'export') {
         setShown(await exportServerWallet(pw)); setPw('');
       } else if (mode === 'delete') {
-        await deleteServerWallet(pw, ack); toast('Wallet serveur supprimé', '', 'a'); close();
+        await deleteServerWallet(pw, ack); toast('Wallet rapide supprimé', '', 'a'); close();
       }
     } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
   }
 
-  const PW = (label = 'Mot de passe du wallet serveur', auto = 'current-password') => <label className="field"><span className="ts-lbl">{label}</span><input type="password" autoComplete={auto} value={pw} onChange={(e) => setPw(e.target.value)} autoFocus /></label>;
-  const TITLE: Record<SrvMode, string> = { create: 'Wallet rapide serveur', withdraw: 'Retirer vers ton wallet', limits: 'Plafonds du wallet serveur', export: 'Exporter la clé privée', delete: 'Supprimer le wallet serveur' };
+  const PW = (label = 'Mot de passe du wallet rapide', auto = 'current-password') => <label className="field"><span className="ts-lbl">{label}</span><input type="password" autoComplete={auto} value={pw} onChange={(e) => setPw(e.target.value)} autoFocus /></label>;
+  const TITLE: Record<SrvMode, string> = { create: 'Créer mon wallet rapide', withdraw: 'Retirer vers ton wallet', limits: 'Plafonds du wallet rapide', export: 'Exporter la clé privée', delete: 'Supprimer le wallet rapide' };
 
   return (
     <div className="ts-modal" role="dialog" aria-modal="true" aria-label={TITLE[mode]} onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
       <form className="ts-modal-box ts-srv" onSubmit={submit}>
         <button type="button" className="ts-x" aria-label="Fermer" onClick={close}>×</button>
         <div className="ts-si-h"><b>{TITLE[mode]}</b>
-          <span>{mode === 'create' ? 'Un wallet de trading dont le serveur garde la clé, chiffrée. Il signe seul, même studio fermé : ventes automatiques, ordres et bot.'
+          <span>{mode === 'create' ? 'Un wallet de trading rattaché à ton compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, même navigateur fermé : ventes automatiques, ordres et bot.'
             : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à ton compte.'
             : mode === 'limits' ? 'Le serveur refuse toute dépense au-delà du plafond du jour.'
             : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Garde-la hors ligne et ne la partage avec personne.'
@@ -92,13 +94,13 @@ export function ServerWalletDialog() {
 
         {mode === 'create' && (<>
           <div className="seg sm ts-srv-how" role="group" aria-label="Origine du wallet">
-            {quick && <button type="button" className={how === 'move' ? 'on' : ''} onClick={() => setHow('move')}>Mon wallet rapide</button>}
+            {quick && <button type="button" className={how === 'move' ? 'on' : ''} onClick={() => setHow('move')}>Mon ancien wallet rapide</button>}
             <button type="button" className={how === 'new' ? 'on' : ''} onClick={() => setHow('new')}>Nouveau wallet</button>
             <button type="button" className={how === 'key' ? 'on' : ''} onClick={() => setHow('key')}>Clé privée</button>
           </div>
-          {how === 'move' && quick && <p className="muted ts-small">Ton wallet rapide <b className="mono">{short(quick.pk)}</b> et ses fonds passent sur le serveur, à la même adresse. Rien n'est transféré sur la blockchain.</p>}
+          {how === 'move' && quick && <p className="muted ts-small">Ton ancien wallet rapide <b className="mono">{short(quick.pk)}</b> devient le wallet rapide de ton compte, à la même adresse et avec ses fonds. Rien n'est transféré sur la blockchain.</p>}
           {how === 'key' && <label className="field"><span className="ts-lbl">Clé privée (base58 ou tableau de 64 nombres)</span><input value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="off" spellCheck={false} /></label>}
-          {PW('Mot de passe du wallet serveur (10 caractères minimum)', 'new-password')}
+          {PW('Mot de passe du wallet rapide (10 caractères minimum)', 'new-password')}
           <label className="field"><span className="ts-lbl">Confirme le mot de passe</span><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
           <ul className="ts-srv-rules">
             <li>Il ne signe que des achats, ventes, lancements et récupérations de frais : jamais de virement ni de transfert de tokens.</li>

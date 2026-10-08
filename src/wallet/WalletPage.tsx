@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../auth/AuthContext';
 import { WalletMark } from '../auth/SignIn';
 import { goTo, studio, toast, type HubState } from '../legacy/bridge';
 import { walletById } from '../wallets/catalog';
@@ -49,7 +48,6 @@ const KIND: Record<Tx['kind'], { l: string; ic: string; c: string }> = {
 export function WalletPage() {
   const st = useHub();
   const visible = useVisible();
-  const { openSignIn } = useAuth();
   const [pick, setPick] = useState<'ext' | 'quick' | 'srv' | null>(null);
   const srvSt = useServerWallet();
   const [range, setRange] = useState<Range>('7d');
@@ -117,7 +115,7 @@ export function WalletPage() {
       <p>Connecte ton wallet ou crée un wallet rapide pour voir ton solde, tes tokens, ton activité, et déposer ou retirer des SOL.</p>
       <div className="ts-row center">
         <button type="button" className="btn primary" onClick={() => window.dispatchEvent(new CustomEvent('ts-connect'))}>Connecter un wallet</button>
-        <button type="button" className="btn" onClick={() => openSignIn({ start: 'quick' })}>Wallet rapide</button>
+        <button type="button" className="btn" onClick={() => openServerWallet('create')}>Créer mon wallet rapide</button>
       </div>
     </div>
   );
@@ -146,7 +144,7 @@ export function WalletPage() {
   const isQuick = which === 'quick', isSrv = which === 'srv';
   const signer = srv?.active ? 'srv' : quick?.active ? 'quick' : 'ext';
   const signs = signer === which;
-  const name = isSrv ? 'Wallet rapide serveur' : isQuick ? 'Wallet rapide' : ext!.name;
+  const name = isSrv ? 'Wallet rapide' : isQuick ? 'Wallet rapide' : ext!.name;
   const useIt = () => (isSrv ? hub?.useServer(true) : isQuick ? hub?.useQuick(true) : hub?.useExt());
   const capPct = srvSt?.daily_cap_sol ? Math.min(100, ((srvSt.spent_today ?? 0) / srvSt.daily_cap_sol) * 100) : 0;
   const hub = studio()?.hub;
@@ -156,7 +154,7 @@ export function WalletPage() {
       {/* choix du wallet affiché */}
       <div className="ts-wp-bar">
         <div className="ts-wp-tabs" role="tablist" aria-label="Wallet affiché">
-          {srv && <button type="button" role="tab" aria-selected={which === 'srv'} className={which === 'srv' ? 'on' : ''} onClick={() => setPick('srv')}><span className="ts-wmark srv" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18a5 5 0 01-.6-9.96A6 6 0 0118 9a4.5 4.5 0 01-.5 9H7z" /></svg></span><span><b>Wallet serveur</b><small className="mono">{short(srv.pk)}</small></span></button>}
+          {srv && <button type="button" role="tab" aria-selected={which === 'srv'} className={which === 'srv' ? 'on' : ''} onClick={() => setPick('srv')}><span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span><span><b>Wallet rapide</b><small className="mono">{short(srv.pk)}</small></span></button>}
           {ext && <button type="button" role="tab" aria-selected={which === 'ext'} className={which === 'ext' ? 'on' : ''} onClick={() => setPick('ext')}><WalletMark w={walletById(ext.id) ?? { name: ext.name, color: '#7c8595' }} /><span><b>{ext.name}</b><small className="mono">{short(ext.pk)}</small></span></button>}
           {quick && <button type="button" role="tab" aria-selected={which === 'quick'} className={which === 'quick' ? 'on' : ''} onClick={() => setPick('quick')}><span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span><span><b>Wallet rapide</b><small className="mono">{short(quick.pk)}</small></span></button>}
         </div>
@@ -187,8 +185,8 @@ export function WalletPage() {
             {isSrv ? <button type="button" className="ts-wp-act" onClick={() => openServerWallet('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
               : isQuick
               ? <button type="button" className="ts-wp-act" onClick={() => hub?.walletAction('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
-              : quick ? <button type="button" className="ts-wp-act" title={'Envoyer des SOL de ' + name + ' vers ton wallet rapide'} onClick={() => hub?.walletAction('fund')}><span className="ts-wp-aic">⇄</span>Vers le rapide</button>
-              : <button type="button" className="ts-wp-act" title="Wallet du studio qui signe seul : ventes automatiques instantanées" onClick={() => hub?.walletAction('create')}><span className="ts-wp-aic">ϟ</span>Wallet rapide</button>}
+              : srv ? <button type="button" className="ts-wp-act" title={'Envoyer des SOL de ' + name + ' vers ton wallet rapide'} onClick={() => { setPick('srv'); setReceive(true); }}><span className="ts-wp-aic">⇄</span>Vers le rapide</button>
+              : <button type="button" className="ts-wp-act" title="Wallet de ton compte qui signe seul : ventes automatiques et bot, même navigateur fermé" onClick={() => openServerWallet('create')}><span className="ts-wp-aic">ϟ</span>Wallet rapide</button>}
             <button type="button" className="ts-wp-act" onClick={() => copy(pk)}><span className="ts-wp-aic">⧉</span>Copier</button>
             <a className="ts-wp-act" href={'https://solscan.io/account/' + pk} target="_blank" rel="noopener noreferrer"><span className="ts-wp-aic">↗</span>Solscan</a>
           </div>
@@ -242,7 +240,7 @@ export function WalletPage() {
         {/* gestion du wallet serveur */}
         {isSrv && srvSt?.address && (
           <section className="card ts-wp-sec">
-            <div className="card-h"><h3>Wallet rapide serveur</h3><p>Clé chiffrée sur le serveur. Il signe seul, uniquement des opérations de trading, dans la limite de tes plafonds.</p></div>
+            <div className="card-h"><h3>Wallet rapide</h3><p>Clé chiffrée sur ton compte. Il signe seul, uniquement des opérations de trading, dans la limite de tes plafonds.</p></div>
             <div className="ts-cap">
               <div className="ts-cap-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(capPct)} aria-label="Plafond du jour utilisé"><i className={capPct > 80 ? 'hot' : ''} style={{ width: capPct + '%' }} /></div>
               <div className="ts-cap-t"><span>Dépensé aujourd'hui : <b className="mono">{nf(srvSt.spent_today ?? 0, 3)} SOL</b></span><span>plafond {nf(srvSt.daily_cap_sol ?? 10, 2)} SOL</span></div>
@@ -255,16 +253,14 @@ export function WalletPage() {
             </div>
           </section>
         )}
-        {/* gestion du wallet rapide */}
-        {isQuick && (
+        {/* ancien wallet rapide gardé dans ce navigateur : à transférer sur le compte */}
+        {st.quickSaved && (
           <section className="card ts-wp-sec">
-            <div className="card-h"><h3>Wallet rapide</h3><p>Chiffré par ton mot de passe dans ce navigateur, jamais envoyé au serveur.</p></div>
+            <div className="card-h"><h3>Ancien wallet rapide</h3><p>L'adresse <span className="mono">{short(st.quickSaved.pk)}</span> est encore gardée dans ce navigateur. Transfère-la sur ton compte pour la retrouver partout : même adresse, mêmes fonds.</p></div>
             <div className="ts-wp-secb">
-              {quick!.unlocked ? <button type="button" className="btn sm" onClick={() => hub?.quickLock()}>Verrouiller</button> : <button type="button" className="btn sm primary" onClick={() => hub?.quickUnlock()}>Déverrouiller</button>}
-              <button type="button" className="btn sm" onClick={() => hub?.walletAction('backup')}>Code de sauvegarde</button>
-              <button type="button" className="btn sm ghost" onClick={() => hub?.walletAction('export')}>Clé privée</button>
-              <button type="button" className="btn sm ghost" onClick={() => hub?.walletAction('import')}>Restaurer un autre</button>
-              <button type="button" className="btn sm ghost danger" onClick={() => hub?.walletAction('delete')}>Supprimer</button>
+              <button type="button" className="btn sm primary" onClick={() => hub?.legacyMigrate()}>{srv ? 'Transférer les SOL vers mon wallet rapide' : 'Transférer sur mon compte'}</button>
+              <button type="button" className="btn sm ghost" onClick={() => hub?.legacyExport()}>Clé privée</button>
+              <button type="button" className="btn sm ghost danger" onClick={() => hub?.legacyForget()}>Retirer de ce navigateur</button>
             </div>
           </section>
         )}

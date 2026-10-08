@@ -36,6 +36,8 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
   const hub = studio()?.hub;
   // wallet rapide de ce navigateur, même mis de côté après une déconnexion
   const quick = hub?.state().quickSaved ?? null;
+  // ancien wallet rapide gardé dans ce navigateur : il sert encore à se connecter (le temps de le transférer sur le compte)
+  const legacyQuick = !!quick || (!!standalone && (() => { try { return !!localStorage.getItem('pstudio_sess_v1'); } catch { return false; } })());
   const { found, others } = walletChoices();
   const adding = step === 'add';
   const srv = useServerWallet();
@@ -77,7 +79,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     const pk = how === 'use' ? ((await legacy(() => hub!.quickUnlock())) ? quick?.pk : undefined)
       : await legacy(() => (how === 'create' ? hub!.quickCreate() : hub!.quickRestore()));
     if (!pk) return;
-    await hub?.useQuick(true);
+    // l'ancien wallet rapide sert seulement à se connecter : il ne signe plus de transactions
     await afterConnect({ kind: 'quick' }, pk);
   });
   const create = () => run('create', async () => { if (src) await createAccountWithWallet(src); });
@@ -126,10 +128,12 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
             <em className="ts-si-tag ok">{busy === x.id ? 'Validation…' : 'Détecté'}</em>
           </button>
         ))}
-        <button type="button" role="listitem" className="ts-si-opt" disabled={!!busy} onClick={() => { setErr(null); if (standalone) { location.href = '/app?signin=quick'; return; } setStep('quick'); }}>
-          <QuickMark /><span className="ts-si-n">Wallet rapide<small>{quick ? short(quick.pk) + ' · dans ce navigateur' : 'Créer ou restaurer, sans extension'}</small></span>
-          <em className="ts-si-tag">{quick ? (quick.unlocked ? 'Déverrouillé' : 'Verrouillé') : 'Studio'}</em>
-        </button>
+        {legacyQuick && !adding && (
+          <button type="button" role="listitem" className="ts-si-opt" disabled={!!busy} onClick={() => { setErr(null); if (standalone) { location.href = '/app?signin=quick'; return; } setStep('quick'); }}>
+            <QuickMark /><span className="ts-si-n">Ancien wallet rapide<small>{quick ? short(quick.pk) + ' · ' : ''}dans ce navigateur</small></span>
+            <em className="ts-si-tag">Mot de passe</em>
+          </button>
+        )}
         {(more || !found.length ? others : others.slice(0, 2)).map((x) => {
           const link = isMobile() && x.mobile ? x.mobile(here, ref) : x.install;
           return (
@@ -160,30 +164,23 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         {head('Ajouter un wallet', 'Connecte un wallet puis signe un message gratuit : il est ajouté à ton compte. Aucune transaction n\'est autorisée.')}
         {srv && !srv.address && (
           <button type="button" className="ts-si-opt ts-si-srv" onClick={() => { close(); setTimeout(() => openServerWallet('create'), 0); }}>
-            <span className="ts-wmark srv" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18a5 5 0 01-.6-9.96A6 6 0 0118 9a4.5 4.5 0 01-.5 9H7z" /></svg></span>
-            <span className="ts-si-n">Wallet rapide serveur<small>Signe seul, même studio fermé · recommandé pour le bot</small></span><em className="ts-si-tag ok">Nouveau</em>
+            <QuickMark />
+            <span className="ts-si-n">Wallet rapide<small>Créé sur ton compte : il signe seul, même navigateur fermé · recommandé pour le bot</small></span><em className="ts-si-tag ok">Conseillé</em>
           </button>
         )}
         {walletList}
       </>)}
 
       {step === 'quick' && (<>
-        {head('Wallet rapide', 'Un wallet propre au studio, chiffré par ton mot de passe dans ce navigateur. Il signe seul, sans fenêtre : idéal pour les ventes automatiques.')}
+        {head('Ancien wallet rapide', 'Ce navigateur garde encore ton ancien wallet rapide. Connecte-toi avec lui, puis transfère-le sur ton compte depuis le menu : tu le retrouveras partout.')}
         <div className="ts-si-list">
           {quick && (
             <button type="button" className="ts-si-opt" disabled={!!busy} onClick={() => pickQuick('use')}>
-              <QuickMark /><span className="ts-si-n">Utiliser mon wallet rapide<small className="mono">{short(quick.pk)}</small></span>
+              <QuickMark /><span className="ts-si-n">Utiliser mon ancien wallet rapide<small className="mono">{short(quick.pk)}</small></span>
               <em className="ts-si-tag ok">{busy === 'quick-use' ? 'Validation…' : quick.unlocked ? 'Prêt' : 'Mot de passe'}</em>
             </button>
           )}
-          {!quick && (
-            <button type="button" className="ts-si-opt" disabled={!!busy} onClick={() => pickQuick('create')}>
-              <QuickMark /><span className="ts-si-n">Créer un wallet rapide<small>Nouveau wallet, sauvegarde guidée</small></span><em className="ts-si-tag">Nouveau</em>
-            </button>
-          )}
-          <button type="button" className="ts-si-opt" disabled={!!busy} onClick={() => pickQuick('restore')}>
-            <span className="ts-wmark ghost" aria-hidden="true">↺</span><span className="ts-si-n">{quick ? 'Restaurer un autre wallet rapide' : 'Restaurer un wallet rapide'}<small>Code de sauvegarde + mot de passe, ou clé privée</small></span>
-          </button>
+          {!quick && <p className="muted ts-small">Aucun ancien wallet rapide dans ce navigateur.</p>}
         </div>
         <div className="ts-row">{back(adding || session ? 'add' : 'choose')}</div>
       </>)}
