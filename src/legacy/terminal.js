@@ -150,7 +150,7 @@ function loadStrats() {
     return { id: d.id, color: d.color, name: (s && s.name) || d.name, enabled: s ? s.enabled !== false : true, P: Object.assign({}, d.P, s ? s.P : {}) };
   });
 }
-function saveStrats() { try { localStorage.setItem('pstudio_pb_strats', JSON.stringify(STRATS.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, P: s.P })))); } catch (e) {} }
+function saveStrats() { try { localStorage.setItem('pstudio_pb_strats', JSON.stringify(STRATS.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, P: s.P })))); } catch (e) {} try { window.dispatchEvent(new CustomEvent('pstudio-bot')); } catch (e) {} }
 const stratById = (id) => STRATS.find((s) => s.id === id);
 const isFlash = (s) => s && s.P.mode === 'flash';
 const secsOf = (s) => isFlash(s) ? FLASH_SECTIONS : STRAT_SECTIONS;
@@ -688,6 +688,7 @@ function closePosition(p, s, mc, why, now) {
   };
   S.port[s.id].closed.push(rec);
   IDB.put('closed', rec);
+  if (!S.demo) { try { window.dispatchEvent(new CustomEvent('pstudio-bot')); } catch (e) {} }
   const t = S.tokens.get(p.mint);
   if (t) { const st = stOf(t, s.id); st.status = 'closed'; st.reason = why + ' (' + pct(rec.pnlPct) + ')'; t.ver++; }
   if (cfg.toastTrades) toast('Sortie · ' + s.name, (p.symbol || '?') + ' · ' + why + ' · ' + pct(rec.pnlPct), rec.pnl > 0 ? 'g' : 'r');
@@ -1514,6 +1515,11 @@ window.PumpBotUI = {
   running: () => S.wantConn || S.demo,
   toggle() { if (S.wantConn) disconnect(); else connect(); },
   stats: () => ({ tokens: S.tokens.size, positions: allPositions().length, closed: allClosed().length }),
+  // sauvegarde sur le compte : stratégies et trades fermés (hors démo)
+  data: () => ({
+    strategies: STRATS.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, P: s.P })),
+    closed: allClosed().filter((c) => !c.demo),
+  }),
   summary: () => ({
     running: S.wantConn || S.demo, connected: S.connected, demo: S.demo, rate: S.createTimes.length, migrations: S.migrations, watched: countWatched(),
     strats: STRATS.map((s) => {

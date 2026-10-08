@@ -51,6 +51,8 @@
   const save = (k, v) => {
     try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { if (k === LS.draft) { try { const c = Object.assign({}, v, { image: null }); localStorage.setItem(k, JSON.stringify(c)); } catch (e2) {} } }
     if (k === LS.cfg && !REMOTE_APPLY) { try { window.dispatchEvent(new CustomEvent('pstudio-cfg', { detail: { cfg: v } })); } catch (e) {} }
+    // données synchronisées avec le compte : tokens, journal, ordres, brouillon, diffusion
+    if (!REMOTE_APPLY && (k === LS.tokens || k === LS.journal || k === LS.orders || k === LS.draft || k === 'pstudio_dist_v1')) { try { window.dispatchEvent(new CustomEvent('pstudio-data', { detail: { key: k } })); } catch (e) {} }
   };
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
   const S = {
@@ -3652,6 +3654,35 @@
       copyAddress: async () => { const pk = S.wallet && S.wallet.pk; if (!pk) return; try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk, 6), 'g'); } catch (e) {} },
       appearance: () => themePicker(),
       goReal, goSim,
+    },
+    // Données synchronisées avec le compte : export de l'état local, et fusion de celles du serveur
+    data: {
+      export: () => {
+        const d = Object.assign({}, S.draft); delete d.image; delete d.imgSrc;
+        return { tokens: S.tokens.slice(), journal: S.journal.slice(), orders: S.orders.slice(), dist: JSON.parse(JSON.stringify(DS.rec)), draft: d };
+      },
+      merge(x) {
+        if (!x) return { tokens: 0, journal: 0, orders: 0 };
+        const n = { tokens: 0, journal: 0, orders: 0 };
+        REMOTE_APPLY = true;
+        try {
+          (x.tokens || []).forEach((t) => {
+            const cur = S.tokens.find((y) => y.mint === t.mint);
+            if (!cur) { S.tokens.push(t); n.tokens++; } else Object.keys(t).forEach((k) => { if (cur[k] == null || cur[k] === '') cur[k] = t[k]; });
+          });
+          S.tokens.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); save(LS.tokens, S.tokens);
+          const ids = new Set(S.journal.map((j) => j.id));
+          (x.journal || []).forEach((j) => { if (!ids.has(j.id)) { S.journal.push(j); ids.add(j.id); n.journal++; } });
+          S.journal.sort((a, b) => (b.t || 0) - (a.t || 0)); if (S.journal.length > 2000) S.journal.length = 2000; save(LS.journal, S.journal);
+          const oids = new Set(S.orders.map((o) => o.id));
+          (x.orders || []).forEach((o) => { if (!oids.has(o.id)) { S.orders.push(o); n.orders++; } });   // l'état local des ordres en cours prime
+          save(LS.orders, S.orders);
+          Object.keys(x.dist || {}).forEach((m) => { DS.rec[m] = Object.assign({}, x.dist[m], DS.rec[m] || {}); }); save(LSD, DS.rec);
+          if (x.draft && x.draft.name && !S.draft.name) { Object.assign(S.draft, x.draft); saveDraft(); }
+          renderAll();
+        } finally { REMOTE_APPLY = false; }
+        return n;
+      },
     },
     // Préférences du compte : lecture de l'état local, et application de celles du serveur
     prefs: {

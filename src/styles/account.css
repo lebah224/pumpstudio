@@ -2,14 +2,14 @@
 
 /* fenêtres */
 .ts-modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px}
-.ts-modal-box{position:relative;width:min(440px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r);padding:22px;box-shadow:0 30px 80px -30px rgba(0,0,0,.9)}
+.ts-modal-box{position:relative;width:min(480px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r);padding:22px;box-shadow:0 30px 80px -30px rgba(0,0,0,.9)}
 .ts-x{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;border:none;background:none;color:var(--dim);font-size:22px;cursor:pointer}
 .ts-x:hover{background:var(--panel2);color:var(--text)}
 
 /* connexion */
 .ts-signin{display:flex;flex-direction:column;gap:12px}
 .ts-si-h{display:flex;flex-direction:column;gap:4px;margin-bottom:4px}
-.ts-si-h b{font-family:var(--display);font-size:18px}
+.ts-si-h b{font-family:var(--display);font-size:18px;text-wrap:balance}
 .ts-si-h span{font-size:13.5px;color:var(--muted);line-height:1.5}
 .ts-si-sec{font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600}
 .ts-si-wallets{display:flex;flex-direction:column;gap:8px}
@@ -150,3 +150,18 @@
 .ts-hub-scrim{z-index:190}
 .ts-hub-panel.sheet{z-index:191}
 .ts-hub.m .ts-hub-btn.primary svg.i{display:none}
+
+/* ---------- synchronisation des données ---------- */
+.ts-sync-list{margin:12px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.ts-sync-list li{display:flex;gap:8px;align-items:baseline;font-size:14px;color:var(--muted);padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel2)}
+.ts-sync-list b{font-family:var(--mono);color:var(--text);min-width:36px}
+.ts-sync-table{width:100%;border-collapse:collapse;margin:14px 0 10px;font-size:13.5px}
+.ts-sync-table th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.ts-sync-table td{padding:8px;border-bottom:1px solid var(--line)}
+.ts-sync-table td:not(:first-child),.ts-sync-table th:not(:first-child){text-align:right}
+.ts-data-act{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.ts-data-act:first-of-type{border-top:none;padding-top:0}
+.ts-data-act>div{display:flex;flex-direction:column;gap:3px}
+.ts-data-act b{font-size:14px}
+.ts-data-act span{font-size:12.5px;color:var(--dim);line-height:1.45}
+.ts-data-act.danger b{color:var(--red-ink)}

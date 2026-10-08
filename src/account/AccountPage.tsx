@@ -7,9 +7,10 @@ import { MfaSettings } from '../auth/Mfa';
 import { savePrefs } from './usePrefsSync';
 import { studio, toast } from '../legacy/bridge';
 import { linkWallet } from './linkWallet';
+import { DataTab } from '../sync/DataTab';
 
-type Tab = 'profile' | 'prefs' | 'wallets' | 'security';
-const TABS: [Tab, string][] = [['profile', 'Profil'], ['prefs', 'Préférences'], ['wallets', 'Wallets'], ['security', 'Sécurité']];
+type Tab = 'profile' | 'prefs' | 'wallets' | 'data' | 'security';
+const TABS: [Tab, string][] = [['profile', 'Profil'], ['prefs', 'Préférences'], ['wallets', 'Wallets'], ['data', 'Données'], ['security', 'Sécurité']];
 
 export function AccountPage() {
   const { user, ready, needsMfa } = useAuth();
@@ -46,6 +47,7 @@ export function AccountPage() {
       {tab === 'profile' && <ProfileTab />}
       {tab === 'prefs' && <PrefsTab />}
       {tab === 'wallets' && <WalletsTab />}
+      {tab === 'data' && <DataTab />}
       {tab === 'security' && <SecurityTab />}
     </div>
   );

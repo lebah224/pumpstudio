@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { createPortal } from 'react-dom';
 import { useAuth, userLabel } from '../auth/AuthContext';
 import { goTo, studio } from '../legacy/bridge';
+import { useSyncStatus } from '../sync/useDataSync';
 
 type HubState = {
   wallet: { name: string; pk: string; session: boolean; locked: boolean } | null;
@@ -37,12 +38,14 @@ const I = {
   copy: <svg className="i" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 012-2h10" /></svg>,
   chev: <svg className="i ts-hub-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>,
   shield: <svg className="i" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" /></svg>,
+  cloud: <svg className="i" viewBox="0 0 24 24"><path d="M7 18a5 5 0 01-.6-9.96A6 6 0 0118 9a4.5 4.5 0 01-.5 9H7z" /><path d="M12 12v5M9.5 14.5L12 12l2.5 2.5" /></svg>,
 };
 
 /** Menu unique en haut à droite : compte, wallet de trading, mode, préférences, apparence et réglages */
 export function AccountHub({ mobile }: { mobile?: boolean }) {
   const { ready, user, needsMfa, aal, openSignIn, signOut } = useAuth();
   const st = useHubState();
+  const sync = useSyncStatus();
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -153,6 +156,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
               <button type="button" data-hub-item onClick={act(() => (user ? openTab('prefs') : hub?.appearance()))}>{I.sliders}<span>Préférences</span><em>{user ? 'trading, studio, notifications' : 'apparence'}</em></button>
               <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}<span>Apparence</span><em>{(THEME_NAMES[st.theme] ?? st.theme) + ' · ' + (DEPTH_NAMES[st.depth] ?? st.depth)}</em></button>
               <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}<span>Réglages avancés</span><em>RPC, vitesse, frais</em></button>
+              {user && <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.syncing ? 'synchronisation…' : sync.enabled ? 'synchronisées' : 'non synchronisées'}</em></button>}
               {user && <button type="button" data-hub-item onClick={act(() => openTab('security'))}>{I.shield}<span>Sécurité</span><em>{aal.current === 'aal2' ? '2FA active' : 'activer la 2FA'}</em></button>}
               <button type="button" data-hub-item onClick={act(() => document.getElementById('cmdkBtn')?.click())}>{I.search}<span>Rechercher</span><kbd>Ctrl K</kbd></button>
             </nav>
