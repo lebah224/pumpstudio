@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './legacy/legacy.css';
 import './styles/account.css';
+// Catalogue des wallets (Phantom, Solflare…) partagé avec le studio historique
+import './wallets/catalog';
 // Studio historique : s'exécute après le chargement du kit Solana (public/vendor/pumpkit.js)
 import './legacy/studio.js';
 import './legacy/terminal.js';

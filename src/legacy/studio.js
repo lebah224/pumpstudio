@@ -281,6 +281,8 @@
 
   /* ================================================================ wallet */
   function providers() {
+    // catalogue partagé avec le menu de compte (src/wallets/catalog.ts) : Phantom, Solflare, Backpack, Coinbase…
+    if (window.TSWallets) return window.TSWallets.detect().map((x) => ({ id: x.id, name: x.name, p: x.p }));
     const out = [];
     const ph = window.phantom && window.phantom.solana; if (ph && ph.isPhantom) out.push({ id: 'phantom', name: 'Phantom', p: ph });
     if (window.solflare && window.solflare.isSolflare) out.push({ id: 'solflare', name: 'Solflare', p: window.solflare });
@@ -302,7 +304,8 @@
       }
       if (!silent) toast('Wallet connecté', pv.name + ' · ' + short(pk), 'g');
       await refreshBal(); renderAll();
-    } catch (e) { if (!silent) toast('Connexion refusée', e.message || 'Le wallet a refusé la connexion.', 'r'); }
+      return pk;
+    } catch (e) { if (!silent) toast('Connexion refusée', e.message || 'Le wallet a refusé la connexion.', 'r'); return null; }
   }
   async function disconnectWallet(external) {
     try { if (!external && S.ext && S.ext.prov.disconnect) await S.ext.prov.disconnect(); } catch (e) {}
@@ -317,6 +320,8 @@
     renderTop();
   }
   async function walletMenu() {
+    // sans wallet, la connexion passe par le menu de compte (choix du wallet, compte, simulation)
+    if (!S.wallet && window.__tsConnectUI && location.protocol !== 'file:') { window.dispatchEvent(new CustomEvent('ts-connect')); return; }
     if (SESSREC || (S.wallet && S.wallet.id === 'session')) return walletPanel();
     if (S.wallet) {
       const i = await modal('Wallet connecté', '<div class="recap"><div class="kv"><span>Wallet</span><span>' + esc(S.wallet.name) + '</span><span>Adresse</span><span>' + short(S.wallet.pk, 6) + '</span><span>Solde</span><span>' + fSol(S.bal) + '</span></div></div><p>L\'adresse publique sert à préparer les transactions. Chaque transaction réelle te sera présentée par ton wallet pour signature.</p>',
@@ -398,7 +403,7 @@
   }
   const signLabel = () => S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans ton wallet';
 
-  async function sessCreate() {
+  async function sessCreate(noPanel) {
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
     const html = '<p>Le studio crée un wallet Solana qui lui est propre. Sa clé est <b>chiffrée avec ton mot de passe</b> et rangée dans ce navigateur. Il signe seul, en quelques millisecondes : les paliers de prise de profit et le stop partent à l\'instant où le prix les atteint.</p>' +
       '<div class="notice">Ce wallet est un « portefeuille de poche ». Si cet appareil ou ce navigateur est compromis, son contenu peut être volé. N\'y mets que ce que tu acceptes de risquer, et retire les gains vers Phantom.</div>' +
@@ -418,6 +423,7 @@
     S.bal = 0; renderAll();
     await sessBackup(kp.secretKey, true);
     await sessBackupCode();
+    if (noPanel) return rec.pk;
     walletPanel();
   }
   function b58dec(s) {
@@ -468,7 +474,7 @@
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([code + '\n'], { type: 'text/plain' })); a.download = 'wallet-rapide-' + SESSREC.pk.slice(0, 6) + '.txt'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   });
   // Restaurer un wallet rapide créé par le studio : code de sauvegarde (+ mot de passe du wallet) ou clé notée à la création
-  async function sessImport() {
+  async function sessImport(noPanel) {
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
     let curBal = null; if (SESSREC) { try { curBal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {} }
     const html = '<p>Récupère un wallet rapide créé par le studio, par exemple sur un autre navigateur ou après l\'avoir supprimé. Colle son <b>code de sauvegarde</b> (Wallets → Sauvegarde), ou la <b>clé privée notée à sa création</b>.</p>' +
@@ -514,12 +520,13 @@
       }
     } catch (e) { return toast('Restauration impossible', e.message, 'r'); }
     if (S.ext && rec.pk === S.ext.pk) return toast('Wallet principal refusé', 'Le wallet rapide doit rester distinct de ton wallet Phantom.', 'r');
-    if (SESSREC && rec.pk === SESSREC.pk) { $('impKey').value = ''; closeModal(); SESSW.kp = kp; renderAll(); toast('Déjà en place', 'C\'est ton wallet rapide actuel. Il est déverrouillé.', 'g'); return walletPanel(); }
+    if (SESSREC && rec.pk === SESSREC.pk) { $('impKey').value = ''; closeModal(); SESSW.kp = kp; renderAll(); toast('Déjà en place', 'C\'est ton wallet rapide actuel. Il est déverrouillé.', 'g'); return noPanel ? rec.pk : walletPanel(); }
     $('impKey').value = ''; closeModal();
     save(LS.sess, rec); SESSREC = rec; SESSW.kp = kp;
     cfg.useSess = true; save(LS.cfg, cfg);
     S.bal = null; await refreshBal().catch(() => {}); renderAll();
     toast('Wallet rapide restauré', short(rec.pk, 6) + ' est prêt et déverrouillé.', 'g');
+    if (noPanel) return rec.pk;
     walletPanel();
   }
   async function sessBackup(sk, first) {
@@ -2228,8 +2235,15 @@
     try { window.dispatchEvent(new CustomEvent('pstudio-state')); } catch (e) {}
   }
   // Bascule simulation / réel : le passage en réel demande toujours une confirmation explicite
+  // Le mode réel demande un compte connecté (le menu de compte transmet l'état de connexion)
+  let AUTH = null;
+  function setAuth(on) {
+    AUTH = !!on;
+    if (!AUTH && !cfg.sim) { cfg.sim = true; save(LS.cfg, cfg); toast('Mode simulation', 'Connecte-toi à ton compte pour trader en réel.', 'a'); renderAll(); }
+  }
   async function goReal() {
     if (!cfg.sim) return;
+    if (!AUTH) { try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'real' })); } catch (e) {} if (AUTH === false) toast('Compte requis', 'Connecte-toi pour passer en mode réel. La simulation reste ouverte à tous.', 'a'); return; }
     if (await confirmBox('Passer en mode réel ?', '<p>Les transactions que tu signes partiront réellement sur la blockchain et engageront ton SOL. Un lancement ou un trade confirmé ne s\'annule pas.</p><p>Vérifie d\'abord tes réglages : limite par achat ' + fSol(cfg.maxSol, 2) + ', slippage ' + cfg.slippage + ' %.</p>', 'Passer en réel', true)) { cfg.sim = false; save(LS.cfg, cfg); toast('Mode réel activé', 'Chaque transaction demandera ta signature.', 'a'); renderAll(); }
   }
   function goSim() { if (cfg.sim) return; cfg.sim = true; save(LS.cfg, cfg); toast('Mode simulation', 'Plus rien n\'est envoyé.', 'g'); renderAll(); }
@@ -3645,12 +3659,23 @@
       state: () => {
         const w = S.wallet, ses = !!(w && w.id === 'session');
         return { wallet: w ? { name: ses ? 'Wallet rapide' : w.name, pk: w.pk, session: ses, locked: ses && !SESSW.kp } : null,
+          ext: S.ext ? { id: S.ext.id, name: S.ext.name, pk: S.ext.pk, bal: ses ? S.extBal : S.bal } : null,
+          quick: SESSREC ? { pk: SESSREC.pk, active: ses, unlocked: !!SESSW.kp, bal: ses ? S.bal : null } : null,
           hasSession: !!SESSREC, bal: S.bal, solUsd: S.solUsd, sim: !!cfg.sim, rpcOk: S.rpcOk, theme: uiTheme, depth: uiDepth };
       },
+      connect: async (id) => { const pv = providers().find((x) => x.id === id); return pv ? connectWallet(pv) : null; },
+      quickCreate: () => sessCreate(true),
+      quickRestore: () => sessImport(true),
+      quickUnlock: () => sessUnlock(),
+      quickLock: () => { if (!SESSW.kp) return; SESSW.kp = null; toast('Wallet rapide verrouillé', 'Ventes automatiques en pause.', ''); renderAll(); },
+      quickKeypair: () => SESSW.kp,
+      useQuick: async (on) => { if (on && !SESSREC) return; if (!on && !S.ext) return; cfg.useSess = !!on; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
+      setAuth,
       avatar: (pk, cls) => wAv(pk, cls),
       walletMenu: () => walletMenu(),
       walletPanel: () => walletPanel(),
       disconnect: () => disconnectWallet(false),
+      walletAction: (a) => swAction(a),
       copyAddress: async () => { const pk = S.wallet && S.wallet.pk; if (!pk) return; try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk, 6), 'g'); } catch (e) {} },
       appearance: () => themePicker(),
       goReal, goSim,

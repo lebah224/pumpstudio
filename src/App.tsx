@@ -1,15 +1,33 @@
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { AuthProvider } from './auth/AuthContext';
+import { AuthProvider, useAuth } from './auth/AuthContext';
 import { SignInDialog } from './auth/SignIn';
 import { MfaChallenge } from './auth/Mfa';
 import { AccountHub } from './account/AccountHub';
 import { AccountPage } from './account/AccountPage';
 import { usePrefsSync } from './account/usePrefsSync';
 import { useDataSync } from './sync/useDataSync';
+import { studio } from './legacy/bridge';
+
+/** Le studio demande une connexion (wallet manquant, passage en réel) : on ouvre la fenêtre de connexion du compte */
+function useConnectBridge() {
+  const { ready, user, needsMfa, openSignIn } = useAuth();
+  const signed = !!user && !needsMfa;
+  useEffect(() => {
+    (window as unknown as { __tsConnectUI?: boolean }).__tsConnectUI = true;
+    const onConnect = () => openSignIn(signed ? { start: 'add' } : { start: 'choose' });
+    const onNeed = () => openSignIn({ start: 'choose', reason: 'real' });
+    window.addEventListener('ts-connect', onConnect); window.addEventListener('ts-need-account', onNeed);
+    return () => { window.removeEventListener('ts-connect', onConnect); window.removeEventListener('ts-need-account', onNeed); };
+  }, [signed, openSignIn]);
+  // mode réel réservé aux comptes connectés : le studio repasse en simulation sinon
+  useEffect(() => { if (ready) studio()?.hub?.setAuth(signed); }, [ready, signed]);
+}
 
 /** Les écrans React s'insèrent dans le studio historique par des portails, le temps de migrer page par page */
 function Mounts() {
   usePrefsSync();
+  useConnectBridge();
   const syncPrompt = useDataSync();
   const hub = document.getElementById('ts-hub');
   const hubMobile = document.getElementById('ts-hub-m');

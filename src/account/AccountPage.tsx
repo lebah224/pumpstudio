@@ -6,9 +6,9 @@ import { SignInPanel, readable } from '../auth/SignIn';
 import { MfaSettings } from '../auth/Mfa';
 import { savePrefs } from './usePrefsSync';
 import { studio, toast } from '../legacy/bridge';
-import { linkWallet } from './linkWallet';
 import { DataTab } from '../sync/DataTab';
 
+const GUEST = { start: 'choose' as const };
 type Tab = 'profile' | 'prefs' | 'wallets' | 'data' | 'security';
 const TABS: [Tab, string][] = [['profile', 'Profil'], ['prefs', 'Préférences'], ['wallets', 'Wallets'], ['data', 'Données'], ['security', 'Sécurité']];
 
@@ -25,7 +25,7 @@ export function AccountPage() {
   if (!ready) return <div className="card"><div className="empty"><b>Chargement…</b></div></div>;
   if (!user) return (
     <div className="ts-account-guest">
-      <div className="card"><SignInPanel /></div>
+      <div className="card"><SignInPanel intent={GUEST} onHide={() => {}} /></div>
       <div className="card ts-why">
         <h3>Pourquoi un compte ?</h3>
         <ul>
@@ -195,7 +195,7 @@ function PrefsTab() {
 
 /* ---------------- Wallets ---------------- */
 function WalletsTab() {
-  const { user } = useAuth();
+  const { user, openSignIn } = useAuth();
   const [list, setList] = useState<Wallet[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -204,7 +204,7 @@ function WalletsTab() {
     const { data } = await supabase.from('wallets').select('*').eq('user_id', user.id).order('created_at');
     setList((data as Wallet[]) ?? []);
   }, [user]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); window.addEventListener('ts-wallets-changed', load); return () => window.removeEventListener('ts-wallets-changed', load); }, [load]);
 
   async function rename(w: Wallet) {
     const label = window.prompt('Nom du wallet (32 caractères max)', w.label ?? '');
@@ -224,11 +224,6 @@ function WalletsTab() {
     const { error } = await supabase.from('wallets').delete().eq('id', w.id);
     if (error) setErr(readable(error)); else { toast('Wallet retiré', '', 'a'); load(); }
   }
-  async function link() {
-    setErr(null); setBusy('link');
-    try { const w = await linkWallet(); toast('Wallet lié', w.address.slice(0, 4) + '…' + w.address.slice(-4)); load(); }
-    catch (e) { setErr(readable(e)); } finally { setBusy(null); }
-  }
 
   return (
     <div className="card">
@@ -247,7 +242,7 @@ function WalletsTab() {
         ))}</div>
       )}
       {err && <div className="ts-note bad" role="alert">{err}</div>}
-      <div className="toolbar"><button className="btn primary" type="button" disabled={busy === 'link'} onClick={link}>{busy === 'link' ? 'Signature en attente…' : 'Lier un wallet'}</button><span className="muted ts-small">Ouvre Phantom, Solflare ou Backpack sur le wallet à lier, puis signe le message.</span></div>
+      <div className="toolbar"><button className="btn primary" type="button" onClick={() => openSignIn({ start: 'add' })}>Ajouter un wallet</button><span className="muted ts-small">Phantom, Solflare, Backpack, Coinbase, OKX, Trust… ou ton wallet rapide. Une signature gratuite prouve qu'il t'appartient.</span></div>
     </div>
   );
 }

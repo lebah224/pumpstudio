@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth, userLabel } from '../auth/AuthContext';
-import { goTo, studio } from '../legacy/bridge';
+import { WalletMark, readable } from '../auth/SignIn';
+import { goTo, studio, toast, type HubState } from '../legacy/bridge';
 import { useSyncStatus } from '../sync/useDataSync';
+import { detect, walletById } from '../wallets/catalog';
+import { linkWallet } from '../wallets/walletAuth';
+import { useAccountStatus, useLinkedWallets } from '../wallets/useWallets';
 
-type HubState = {
-  wallet: { name: string; pk: string; session: boolean; locked: boolean } | null;
-  hasSession: boolean; bal: number | null; solUsd: number | null; sim: boolean; rpcOk: boolean | null; theme: string; depth: string;
-};
 const THEME_NAMES: Record<string, string> = { or: 'Or', platine: 'Platine', saphir: 'Saphir', jade: 'Jade', cuivre: 'Cuivre', iris: 'Iris' };
 const DEPTH_NAMES: Record<string, string> = { nuit: 'Nuit', profond: 'Profond', doux: 'Doux' };
 const fmt = (n: number, d: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const short = (a: string) => a.slice(0, 4) + '…' + a.slice(-4);
+const copy = async (pk: string) => { try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk)); } catch { /* presse-papiers refusé */ } };
 
 /** Lit l'état du studio historique et se met à jour à chaque changement (wallet, solde, mode, palette) */
 function useHubState(): HubState | null {
@@ -39,17 +40,30 @@ const I = {
   chev: <svg className="i ts-hub-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>,
   shield: <svg className="i" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" /></svg>,
   cloud: <svg className="i" viewBox="0 0 24 24"><path d="M7 18a5 5 0 01-.6-9.96A6 6 0 0118 9a4.5 4.5 0 01-.5 9H7z" /><path d="M12 12v5M9.5 14.5L12 12l2.5 2.5" /></svg>,
+  plus: <svg className="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>,
+  lock: <svg className="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" /></svg>,
+  mail: <svg className="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>,
 };
 
-/** Menu unique en haut à droite : compte, wallet de trading, mode, préférences, apparence et réglages */
+/**
+ * Menu unique en haut à droite. Trois états :
+ * - invité : choix de connexion (wallets, wallet rapide, e-mail) ou simulation sans compte ;
+ * - wallet connecté sans compte : se connecter au compte de ce wallet, ou le créer (jamais automatiquement) ;
+ * - connecté : wallets du compte (ajout, choix du signataire), mode, préférences, sécurité, déconnexion.
+ */
 export function AccountHub({ mobile }: { mobile?: boolean }) {
   const { ready, user, needsMfa, aal, openSignIn, signOut } = useAuth();
   const st = useHubState();
   const sync = useSyncStatus();
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const id = useId();
+  const signed = !!user && !needsMfa;
+  const w = st?.wallet ?? null;
+  const linked = useLinkedWallets(signed ? user!.id : null, open);
+  const status = useAccountStatus(!user && w ? w.pk : null, open);
 
   const close = useCallback((focus = true) => { setOpen(false); if (focus) btn.current?.focus(); }, []);
   useEffect(() => {
@@ -70,11 +84,24 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
 
   const act = (fn: () => void) => () => { close(false); setTimeout(fn, 0); };
   const hub = studio()?.hub;
-  const w = st?.wallet ?? null;
   const label = user ? userLabel(user) : '';
-  const usd = w && st?.bal != null && st.solUsd ? '≈ ' + fmt(st.bal * st.solUsd, 2) + ' $' : '';
   const openTab = (tab: string) => { try { sessionStorage.setItem('ts-account-tab', tab); } catch { /* navigation privée */ } window.dispatchEvent(new CustomEvent('ts-account-tab', { detail: tab })); goTo('account'); };
   if (!ready || !st) return null;
+
+  const ext = st.ext, quick = st.quick;
+  const usd = (b: number | null) => (b != null && st.solUsd ? '≈ ' + fmt(b * st.solUsd, 2) + ' $' : 'SOL');
+  const bal = (b: number | null) => (b == null ? '—' : fmt(b, b >= 100 ? 2 : 4));
+  const signIn = (wallet?: string) => act(() => openSignIn({ start: 'choose', wallet }));
+  async function link(src: 'ext' | 'quick') {
+    setBusy('link-' + src);
+    try { const r = await linkWallet(src === 'quick' ? { kind: 'quick' } : { kind: 'ext', id: ext!.id }); toast('Wallet ajouté à ton compte', short(r.address)); }
+    catch (e) { toast('Ajout impossible', readable(e), 'r'); } finally { setBusy(null); }
+  }
+  async function logout() {
+    await signOut();
+    await hub?.disconnect(); hub?.quickLock();
+    toast('Déconnecté', 'Compte et wallet déconnectés. Le wallet rapide reste chiffré dans ce navigateur.', '');
+  }
 
   // bouton déclencheur
   const trigger = w ? (
@@ -84,6 +111,138 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   ) : (
     <>{I.wallet}<span>{mobile ? 'Connexion' : 'Se connecter'}</span></>
   );
+
+  const modeSec = (
+    <section className="ts-hub-sec">
+      <div className="ts-hub-h">Mode</div>
+      <div className="seg ts-hub-mode" role="group" aria-label="Mode de trading">
+        <button type="button" className={st.sim ? 'on' : ''} aria-pressed={st.sim} data-hub-item onClick={act(() => hub?.goSim())}>Simulation</button>
+        {signed
+          ? <button type="button" className={!st.sim ? 'on real' : ''} aria-pressed={!st.sim} data-hub-item onClick={act(() => hub?.goReal())}>Réel</button>
+          : <button type="button" className="locked" data-hub-item title="Le mode réel demande un compte" onClick={act(() => openSignIn({ start: 'choose', reason: 'real' }))}>{I.lock}Réel</button>}
+      </div>
+      {!signed && <p className="ts-hub-note">Le mode réel demande un compte. La simulation est ouverte à tous.</p>}
+    </section>
+  );
+  const quickLinks = (
+    <nav className="ts-hub-sec ts-hub-links" aria-label="Réglages">
+      <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}Apparence</button>
+      <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}Réglages</button>
+      <button type="button" data-hub-item onClick={act(() => document.getElementById('cmdkBtn')?.click())}>{I.search}Rechercher</button>
+    </nav>
+  );
+
+  // ligne d'un wallet : identité, solde, rôle (signe ou non) et actions
+  const walletRow = (kind: 'ext' | 'quick') => {
+    const x = kind === 'ext' ? ext! : quick!;
+    const activeW = kind === 'quick' ? quick!.active : !quick?.active;
+    const mark = kind === 'quick' ? <span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span> : <WalletMark w={walletById(ext!.id) ?? { name: ext!.name, color: '#7c8595' }} />;
+    const isLinked = !signed || !linked ? true : linked.includes(x.pk);
+    return (
+      <div className={'ts-hub-wr' + (activeW ? ' on' : '')}>
+        {mark}
+        <span className="ts-hub-t">
+          <b>{kind === 'quick' ? 'Wallet rapide' : ext!.name}{kind === 'quick' && !quick!.unlocked && <em className="badge a">verrouillé</em>}</b>
+          <button type="button" className="ts-hub-addr mono" data-hub-item onClick={() => copy(x.pk)} title="Copier l'adresse">{short(x.pk)} {I.copy}</button>
+        </span>
+        <span className="ts-hub-wb"><b className="mono">{bal(x.bal)}</b><small>{usd(x.bal)}</small></span>
+        <div className="ts-hub-wa">
+          {activeW ? <span className="ts-hub-pill ok" title="Ce wallet signe tes transactions">Signe</span>
+            : <button type="button" className="ts-hub-pill" data-hub-item onClick={() => hub?.useQuick(kind === 'quick')}>Utiliser</button>}
+          {kind === 'quick' && (quick!.unlocked
+            ? <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={() => hub?.quickLock()}>Verrouiller</button>
+            : <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={act(() => hub?.quickUnlock())}>Déverrouiller</button>)}
+          {signed && !isLinked && <button type="button" className="ts-hub-pill warn" data-hub-item disabled={!!busy} title="Ajouter ce wallet à ton compte (signature gratuite)" onClick={() => link(kind)}>{busy === 'link-' + kind ? 'Signature…' : 'Lier au compte'}</button>}
+          {kind === 'ext' && <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={() => hub?.disconnect()}>Déconnecter</button>}
+        </div>
+      </div>
+    );
+  };
+
+  let body: ReactNode;
+  if (signed) {
+    body = (<>
+      <section className="ts-hub-sec ts-hub-acc">
+        <div className="ts-hub-id">
+          <span className="ts-hub-av lg">{label.slice(0, 1).toUpperCase()}</span>
+          <span className="ts-hub-t"><b>{label}</b><small>{aal.current === 'aal2' ? 'Compte protégé · double authentification' : 'Compte TokenStudio'}</small></span>
+          {aal.current === 'aal2' && <span className="ts-hub-shield" title="Double authentification active">{I.shield}</span>}
+        </div>
+      </section>
+      <section className="ts-hub-sec">
+        <div className="ts-hub-h">Wallets{linked && <em>{linked.length} lié{linked.length > 1 ? 's' : ''} au compte</em>}</div>
+        {ext && walletRow('ext')}
+        {quick && walletRow('quick')}
+        {!ext && !quick && <p className="ts-hub-note">Aucun wallet connecté dans ce navigateur.</p>}
+        <div className="ts-hub-row">
+          <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'add' }))}>{I.plus}Ajouter un wallet</button>
+          {(ext || quick) && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => hub?.walletPanel())}>Fonds et sauvegarde</button>}
+        </div>
+      </section>
+      {modeSec}
+      <nav className="ts-hub-sec ts-hub-menu" aria-label="Compte">
+        <button type="button" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}<span>Mon compte</span><em>profil, wallets</em></button>
+        <button type="button" data-hub-item onClick={act(() => openTab('prefs'))}>{I.sliders}<span>Préférences</span><em>trading, studio, notifications</em></button>
+        <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}<span>Apparence</span><em>{(THEME_NAMES[st.theme] ?? st.theme) + ' · ' + (DEPTH_NAMES[st.depth] ?? st.depth)}</em></button>
+        <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}<span>Réglages avancés</span><em>RPC, vitesse, frais</em></button>
+        <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.syncing ? 'synchronisation…' : sync.enabled ? 'synchronisées' : 'non synchronisées'}</em></button>
+        <button type="button" data-hub-item onClick={act(() => openTab('security'))}>{I.shield}<span>Sécurité</span><em>{aal.current === 'aal2' ? '2FA active' : 'activer la 2FA'}</em></button>
+        <button type="button" data-hub-item onClick={act(() => document.getElementById('cmdkBtn')?.click())}>{I.search}<span>Rechercher</span><kbd>Ctrl K</kbd></button>
+      </nav>
+      <section className="ts-hub-sec ts-hub-foot">
+        <button type="button" className="ts-hub-out" data-hub-item onClick={act(logout)}>{I.out}<span>Se déconnecter</span></button>
+      </section>
+    </>);
+  } else if (user && needsMfa) {
+    body = (<>
+      <section className="ts-hub-sec ts-hub-guest">
+        <b>Code de sécurité requis</b>
+        <small>Valide ta double authentification pour ouvrir ton compte.</small>
+      </section>
+      <section className="ts-hub-sec ts-hub-foot"><button type="button" className="ts-hub-out" data-hub-item onClick={act(logout)}>{I.out}<span>Se déconnecter</span></button></section>
+    </>);
+  } else if (w) {
+    const src = w.session ? 'quick' : ext?.id;
+    body = (<>
+      <section className="ts-hub-sec">
+        <div className="ts-hub-h">Wallet connecté · sans compte</div>
+        {w.session ? quick && walletRow('quick') : ext && walletRow('ext')}
+      </section>
+      <section className="ts-hub-sec ts-hub-guest">
+        {status === null ? <small>Recherche d'un compte pour ce wallet…</small>
+          : status === 'none' ? (<>
+            <b>Aucun compte pour ce wallet</b>
+            <small>Crée ton compte pour synchroniser tes données et passer en mode réel. Rien n'est créé sans ton accord.</small>
+            <div className="ts-hub-row">
+              <button type="button" className="btn primary sm" data-hub-item onClick={signIn(src)}>Créer mon compte</button>
+              <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'email' }))}>{I.mail}J'ai un compte e-mail</button>
+            </div>
+          </>) : (<>
+            <b>Un compte est lié à ce wallet</b>
+            <small>Signe un message gratuit pour l'ouvrir : aucune transaction n'est autorisée.</small>
+            <button type="button" className="btn primary sm" data-hub-item onClick={signIn(src)}>Se connecter au compte</button>
+          </>)}
+      </section>
+      {modeSec}
+      {quickLinks}
+    </>);
+  } else {
+    const found = detect().slice(0, 3);
+    body = (<>
+      <section className="ts-hub-sec ts-hub-guest">
+        <b>Connexion à TokenStudio</b>
+        <small>Avec ton wallet, ton wallet rapide ou ton e-mail. Aucun compte n'est créé sans ton accord.</small>
+        <div className="ts-hub-opts">
+          {found.map((x) => <button key={x.id} type="button" className="ts-si-opt" data-hub-item onClick={signIn(x.id)}><WalletMark w={x} /><span className="ts-si-n">{x.name}</span><em className="ts-si-tag ok">Détecté</em></button>)}
+          <button type="button" className="ts-si-opt" data-hub-item onClick={act(() => openSignIn({ start: 'quick' }))}><span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span><span className="ts-si-n">Wallet rapide<small>{quick ? short(quick.pk) : 'Créer ou restaurer'}</small></span></button>
+          <button type="button" className="ts-si-opt" data-hub-item onClick={signIn()}><span className="ts-wmark ghost" aria-hidden="true">{I.wallet}</span><span className="ts-si-n">{found.length ? 'Autres wallets' : 'Phantom, Solflare et autres'}</span></button>
+          <button type="button" className="ts-si-opt" data-hub-item onClick={act(() => openSignIn({ start: 'email' }))}><span className="ts-wmark ghost" aria-hidden="true">{I.mail}</span><span className="ts-si-n">E-mail</span></button>
+        </div>
+        <button type="button" className="ts-si-sim" data-hub-item onClick={act(() => { hub?.goSim(); })}>Continuer sans compte · simulation</button>
+      </section>
+      {quickLinks}
+    </>);
+  }
 
   return (
     <div className={'ts-hub' + (mobile ? ' m' : '')}>
@@ -97,75 +256,8 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
       {open && sheet(mobile, (
         <>
           {mobile && <div className="ts-hub-scrim" onClick={() => close(false)} />}
-          <div ref={panel} id={id} className={'ts-hub-panel' + (mobile ? ' sheet' : '')} role="dialog" aria-label="Compte et wallet">
-            {/* compte */}
-            <section className="ts-hub-sec ts-hub-acc">
-              {user ? (
-                <div className="ts-hub-id">
-                  <span className="ts-hub-av lg">{label.slice(0, 1).toUpperCase()}</span>
-                  <span className="ts-hub-t"><b>{label}</b><small>{needsMfa ? 'Code de sécurité requis' : aal.current === 'aal2' ? 'Compte protégé · double authentification' : 'Compte TokenStudio'}</small></span>
-                  {aal.current === 'aal2' && <span className="ts-hub-shield" title="Double authentification active">{I.shield}</span>}
-                </div>
-              ) : (
-                <div className="ts-hub-guest">
-                  <b>Compte TokenStudio</b>
-                  <small>Retrouve tes préférences, tes wallets et ton historique sur tous tes appareils.</small>
-                  <button type="button" className="btn primary sm" data-hub-item onClick={act(() => openSignIn())}>Se connecter ou créer un compte</button>
-                </div>
-              )}
-            </section>
-
-            {/* wallet de trading */}
-            <section className="ts-hub-sec">
-              <div className="ts-hub-h">Wallet de trading</div>
-              {w ? (
-                <>
-                  <div className="ts-hub-w">
-                    <Avatar pk={w.pk} />
-                    <span className="ts-hub-t"><b>{w.name}{w.locked && <em className="badge a">verrouillé</em>}</b>
-                      <button type="button" className="ts-hub-addr mono" data-hub-item onClick={() => hub?.copyAddress()} title="Copier l'adresse">{short(w.pk)} {I.copy}</button></span>
-                    <span className="ts-hub-wb"><b className="mono">{st.bal == null ? '—' : fmt(st.bal, 4)}</b><small>{usd || 'SOL'}</small></span>
-                  </div>
-                  <div className="ts-hub-row">
-                    <button type="button" className="btn sm" data-hub-item onClick={act(() => hub?.walletMenu())}>Gérer</button>
-                    <button type="button" className="btn sm" data-hub-item onClick={act(() => hub?.walletPanel())}>{I.bolt}Wallet rapide</button>
-                    {!w.session && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => hub?.disconnect())}>Déconnecter</button>}
-                  </div>
-                </>
-              ) : (
-                <div className="ts-hub-row">
-                  <button type="button" className="btn primary sm" data-hub-item onClick={act(() => hub?.walletMenu())}>{I.wallet}Connecter un wallet</button>
-                  <button type="button" className="btn sm" data-hub-item onClick={act(() => hub?.walletPanel())}>{I.bolt}{st.hasSession ? 'Wallet rapide' : 'Créer un wallet rapide'}</button>
-                </div>
-              )}
-              <p className="ts-hub-note">Tes clés privées restent dans ton wallet : le studio ne fait que préparer les transactions.</p>
-            </section>
-
-            {/* mode */}
-            <section className="ts-hub-sec">
-              <div className="ts-hub-h">Mode</div>
-              <div className="seg ts-hub-mode" role="group" aria-label="Mode de trading">
-                <button type="button" className={st.sim ? 'on' : ''} aria-pressed={st.sim} data-hub-item onClick={act(() => hub?.goSim())}>Simulation</button>
-                <button type="button" className={!st.sim ? 'on real' : ''} aria-pressed={!st.sim} data-hub-item onClick={act(() => hub?.goReal())}>Réel</button>
-              </div>
-            </section>
-
-            {/* navigation */}
-            <nav className="ts-hub-sec ts-hub-menu" aria-label="Compte">
-              {user && <button type="button" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}<span>Mon compte</span></button>}
-              <button type="button" data-hub-item onClick={act(() => (user ? openTab('prefs') : hub?.appearance()))}>{I.sliders}<span>Préférences</span><em>{user ? 'trading, studio, notifications' : 'apparence'}</em></button>
-              <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}<span>Apparence</span><em>{(THEME_NAMES[st.theme] ?? st.theme) + ' · ' + (DEPTH_NAMES[st.depth] ?? st.depth)}</em></button>
-              <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}<span>Réglages avancés</span><em>RPC, vitesse, frais</em></button>
-              {user && <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.syncing ? 'synchronisation…' : sync.enabled ? 'synchronisées' : 'non synchronisées'}</em></button>}
-              {user && <button type="button" data-hub-item onClick={act(() => openTab('security'))}>{I.shield}<span>Sécurité</span><em>{aal.current === 'aal2' ? '2FA active' : 'activer la 2FA'}</em></button>}
-              <button type="button" data-hub-item onClick={act(() => document.getElementById('cmdkBtn')?.click())}>{I.search}<span>Rechercher</span><kbd>Ctrl K</kbd></button>
-            </nav>
-
-            {user && (
-              <section className="ts-hub-sec ts-hub-foot">
-                <button type="button" className="ts-hub-out" data-hub-item onClick={act(() => signOut())}>{I.out}<span>Se déconnecter du compte</span></button>
-              </section>
-            )}
+          <div ref={panel} id={id} className={'ts-hub-panel' + (mobile ? ' sheet' : '') + (signed ? '' : ' guest')} role="dialog" aria-label="Compte et wallet">
+            {body}
           </div>
         </>
       ))}
