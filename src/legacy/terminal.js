@@ -41,13 +41,19 @@ const CFG_SECTIONS = [
     ['toastConn', 'Notifier la connexion', 'bool', ''],
   ]},
 ];
+// Compte connecté : stratégies, réglages, wallet du bot et trades réels vivent dans la base (BOTCLOUD, branché par
+// l'application). Le navigateur ne garde que les réglages d'un invité, les trades fictifs de la démo et le cache du marché.
+let BOTCLOUD = null;
 let cfg = loadCfg();
 function loadCfg() {
   let c = {};
   try { c = JSON.parse(localStorage.getItem('pstudio_pb_cfg') || 'null') || {}; } catch (e) {}
   return Object.assign({}, CFG_DEFAULTS, c);
 }
-function saveCfg() { try { localStorage.setItem('pstudio_pb_cfg', JSON.stringify(cfg)); } catch (e) {} }
+function saveCfg() {
+  if (BOTCLOUD) { BOTCLOUD.write('botCfg', { cfg: Object.assign({}, cfg), exec: EXEC }); return; }
+  try { localStorage.setItem('pstudio_pb_cfg', JSON.stringify(cfg)); } catch (e) {}
+}
 
 /* --------------------------------------------------------------- stratégies */
 const FLASH_SECTIONS = [
@@ -142,15 +148,19 @@ const STRAT_DEFAULTS = [
   { id: 'flash', name: 'Flash', color: C.amber, enabled: true, P: Object.assign({}, PRESETS.flash) },
 ];
 let STRATS = loadStrats();
-function loadStrats() {
-  let saved = null;
-  try { saved = JSON.parse(localStorage.getItem('pstudio_pb_strats') || 'null'); } catch (e) {}
+function loadStrats(fromAccount) {
+  let saved = fromAccount || null;
+  if (!saved) { try { saved = JSON.parse(localStorage.getItem('pstudio_pb_strats') || 'null'); } catch (e) {} }
   return STRAT_DEFAULTS.map((d) => {
     const s = saved && saved.find((x) => x.id === d.id);
     return { id: d.id, color: d.color, name: (s && s.name) || d.name, enabled: s ? s.enabled !== false : true, P: Object.assign({}, d.P, s ? s.P : {}) };
   });
 }
-function saveStrats() { try { localStorage.setItem('pstudio_pb_strats', JSON.stringify(STRATS.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, P: s.P })))); } catch (e) {} try { window.dispatchEvent(new CustomEvent('pstudio-bot')); } catch (e) {} }
+const stratList = () => STRATS.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, P: s.P }));
+function saveStrats() {
+  if (BOTCLOUD) { BOTCLOUD.write('botStrats', stratList()); return; }
+  try { localStorage.setItem('pstudio_pb_strats', JSON.stringify(stratList())); } catch (e) {}
+}
 const stratById = (id) => STRATS.find((s) => s.id === id);
 const isFlash = (s) => s && s.P.mode === 'flash';
 const secsOf = (s) => isFlash(s) ? FLASH_SECTIONS : STRAT_SECTIONS;
@@ -262,7 +272,8 @@ document.addEventListener('click', async (e) => {
     const s0 = STRATS.find((x) => x.enabled) || STRATS[0];
     if (!(await PS.botArm(id, { size: s0.P.sizeSol, max: s0.P.maxPositions }))) return;
   }
-  EXEC = id; try { localStorage.setItem('pb-exec', id); } catch (e2) {}
+  EXEC = id;
+  if (BOTCLOUD) saveCfg(); else { try { localStorage.setItem('pb-exec', id); } catch (e2) {} }
   renderWallet();
 });
 window.addEventListener('pstudio-state', () => renderWallet());
@@ -309,6 +320,10 @@ const IDB = {
       const r = this.db.transaction(store).objectStore(store).count();
       r.onsuccess = () => res(r.result || 0); r.onerror = () => res(0);
     });
+  },
+  del(store, keys) {
+    if (!this.db || !keys.length) return;
+    try { const os = this.db.transaction(store, 'readwrite').objectStore(store); keys.forEach((k) => os.delete(k)); } catch (e) {}
   },
   each(store, fn) {
     return new Promise((res) => {
@@ -755,7 +770,8 @@ function closePosition(p, s, mc, why, now) {
     entryMc: p.entryMc, exitMc: mc, peakMc: p.peak, why, score: p.score, exits: p.exits, demo: S.demo, live: p.live === 'ok' ? p.wallet : undefined, buySig: p.buySig,
   };
   S.port[s.id].closed.push(rec);
-  IDB.put('closed', rec);
+  // trade réel : écrit sur le compte ; trade fictif : gardé dans ce navigateur (démo)
+  if (rec.live && BOTCLOUD) BOTCLOUD.write('botTrade', rec); else IDB.put('closed', rec);
   if (!S.demo) { try { window.dispatchEvent(new CustomEvent('pstudio-bot')); } catch (e) {} }
   const t = S.tokens.get(p.mint);
   if (t) { const st = stOf(t, s.id); st.status = 'closed'; st.reason = why + ' (' + pct(rec.pnlPct) + ')'; t.ver++; }
@@ -1448,7 +1464,7 @@ function stopDemo(silent) {
 function resetSession() {
   S.tokens.clear(); feedRows.forEach((r) => r.tr.remove()); feedRows.clear();
   S.devStats.clear(); S.createTimes = []; S.tradeTimes = []; S.selected = null;
-  STRATS.forEach((s) => { S.port[s.id].positions.clear(); S.port[s.id].closed = S.port[s.id].closed.filter((c) => !c.demo && !S.demo); });
+  STRATS.forEach((s) => { S.port[s.id].positions.clear(); S.port[s.id].closed = S.port[s.id].closed.filter((c) => c.live || (!c.demo && !S.demo)); });
   markAll();
 }
 
@@ -1565,12 +1581,15 @@ function render(force) {
   if (d.detail) { renderDetail(now); d.detail = false; }
   S.perf.render = performance.now() - t0;
 }
+let LEGACY_LIVE = [];
 async function loadFromDb() {
   S.devStats.clear();
   await IDB.each('tokens', (t) => { if (!t.creator) return; const d = devStat(t.creator); d.n++; if (t.migrated) d.migrated++; if (t.devSoldFast) d.fastSell++; });
   const closed = await IDB.all('closed');
   STRATS.forEach((s) => { S.port[s.id].closed = []; });
-  closed.filter((c) => !c.demo).sort((a, b) => a.closedAt - b.closedAt).forEach((c) => {
+  // anciens trades réels gardés ici (avant la base) : repris sur le compte à la connexion, puis effacés d'ici
+  LEGACY_LIVE = closed.filter((c) => c.live && !c.demo);
+  closed.filter((c) => !c.demo && !c.live).sort((a, b) => a.closedAt - b.closedAt).forEach((c) => {
     if (!c.sid || !S.port[c.sid]) return;               // stratégies retirées
     const sid = c.sid; if (c.score == null) c.score = c.scoreAtEntry;
     S.port[sid].closed.push(c);
@@ -1585,11 +1604,29 @@ window.PumpBotUI = {
   running: () => S.wantConn || S.demo,
   toggle() { if (S.wantConn) disconnect(); else connect(); },
   stats: () => ({ tokens: S.tokens.size, positions: allPositions().length, closed: allClosed().length }),
-  // sauvegarde sur le compte : stratégies et trades fermés (hors démo)
-  data: () => ({
-    strategies: STRATS.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, P: s.P })),
-    closed: allClosed().filter((c) => !c.demo),
-  }),
+  // Compte : le bot passe sur les données du compte, puis revient à celles de l'invité à la déconnexion
+  account: {
+    attach(h, x) {
+      BOTCLOUD = h || null; x = x || {};
+      if (x.strats && x.strats.length) STRATS = loadStrats(x.strats);
+      if (x.cfg) cfg = Object.assign({}, CFG_DEFAULTS, x.cfg);
+      if (x.exec && ['srv', 'ext', 'paper'].includes(x.exec)) EXEC = x.exec;
+      const known = new Set(); STRATS.forEach((s) => S.port[s.id] && S.port[s.id].closed.forEach((c) => known.add(c.id)));
+      const legacy = LEGACY_LIVE.filter((c) => !known.has(c.id)); LEGACY_LIVE = [];
+      (x.trades || []).concat(legacy).forEach((c) => { if (!known.has(c.id) && c.sid && S.port[c.sid]) { known.add(c.id); S.port[c.sid].closed.push(c); } });
+      STRATS.forEach((s) => S.port[s.id] && S.port[s.id].closed.sort((a, b) => a.closedAt - b.closedAt));
+      IDB.del('closed', legacy.map((c) => c.id));
+      this.refresh();
+      return { strats: stratList(), cfg: Object.assign({}, cfg), exec: EXEC, legacy };
+    },
+    detach() {
+      BOTCLOUD = null; STRATS = loadStrats(); cfg = loadCfg();
+      try { const e = localStorage.getItem('pb-exec'); EXEC = ['paper', 'srv', 'ext'].includes(e) ? e : 'paper'; } catch (e) { EXEC = 'paper'; }
+      STRATS.forEach((s) => { if (S.port[s.id]) S.port[s.id].closed = S.port[s.id].closed.filter((c) => !c.live); });
+      this.refresh();
+    },
+    refresh() { try { buildSettings(); buildStratCards(); buildStratSel(); buildViewSelect(); renderWallet(); markAll(); render(true); } catch (e) {} },
+  },
   summary: () => ({
     running: S.wantConn || S.demo, connected: S.connected, demo: S.demo, rate: S.createTimes.length, migrations: S.migrations, watched: countWatched(),
     strats: STRATS.map((s) => {

@@ -62,6 +62,8 @@
     if (cfg.sim && DEMO_KEYS[k0]) { try { localStorage.setItem(DEMO_KEYS[k0], JSON.stringify(v)); } catch (e) {} return; }
     if (REAL_KIND[k0]) { REAL[REAL_KIND[k0]] = v; if (CLOUD && !REMOTE_APPLY) CLOUD.write(REAL_KIND[k0], v); return; }
     if (k0 === LS.draft && CLOUD) { if (!REMOTE_APPLY) CLOUD.write('draft', v); return; }
+    // réglages : ceux du compte quand il est connecté (clés API chiffrées sur le serveur), sinon ceux de l'invité
+    if (k0 === LS.cfg && CLOUD) { if (!REMOTE_APPLY) { CLOUD.write('cfg', cfgForAccount()); try { window.dispatchEvent(new CustomEvent('pstudio-cfg', { detail: { cfg: v } })); } catch (e) {} } return; }
     try { localStorage.setItem(k0, JSON.stringify(v)); } catch (e) { if (k0 === LS.draft) { try { localStorage.setItem(k0, JSON.stringify(Object.assign({}, v, { image: null }))); } catch (e2) {} } }
     if (k0 === LS.cfg && !REMOTE_APPLY) { try { window.dispatchEvent(new CustomEvent('pstudio-cfg', { detail: { cfg: v } })); } catch (e) {} }
   };
@@ -69,6 +71,9 @@
   // un seul wallet rapide : celui du compte, sur le serveur. L'ancien wallet rapide du navigateur ne signe plus
   // (il reste seulement le temps d'en transférer les fonds vers le compte).
   cfg.useSess = false;
+  // réglages enregistrés sur le compte : tout sauf le mode (colonne des préférences) et l'ancien wallet rapide
+  const CFG_LOCAL_ONLY = ['sim', 'useSess', 'quickOff'];
+  function cfgForAccount() { const o = {}; Object.keys(cfg).forEach((k) => { if (!CFG_LOCAL_ONLY.includes(k)) o[k] = cfg[k]; }); return o; }
   // brouillon vide (nouveau compte, déconnexion)
   function draftDefaults() { return { name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'meme', tone: 'luxe', lang: 'en', word: '', logo: { style: 'meme', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }; }
   const S = {
@@ -4287,6 +4292,13 @@
         renderAll();
       },
       draft: () => S.draft,
+      cfg: () => cfgForAccount(),
+      // réglages du compte chargés : ils remplacent ceux de l'invité tant que le compte est ouvert
+      loadCfg: (c) => { REMOTE_APPLY = true; try { Object.keys(c || {}).forEach((k) => { if (!CFG_LOCAL_ONLY.includes(k)) cfg[k] = c[k]; }); cfg.useSess = false; } finally { REMOTE_APPLY = false; } renderAll(); },
+      // déconnexion : retour aux réglages de l'invité (sans clé API)
+      guestCfg: () => { const sim = cfg.sim; Object.keys(cfg).forEach((k) => { delete cfg[k]; }); Object.assign(cfg, DEF, load(LS.cfg, {}), { useSess: false, sim: sim || true, rpc: '', pinataJwt: '' }); renderAll(); },
+      // anciennes clés API gardées dans ce navigateur : passées sur le compte puis retirées d'ici
+      dropLocalKeys: () => { const c = load(LS.cfg, {}); if (c.rpc || c.pinataJwt) { delete c.rpc; delete c.pinataJwt; try { localStorage.setItem(LS.cfg, JSON.stringify(c)); } catch (e) {} } },
       // anciennes données gardées dans ce navigateur (avant la base) : reprises une fois sur le compte, puis effacées
       legacyLocal: () => ({ tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []), dist: load(LSD, {}), draft: load(LS.draft, null) }),
       dropLegacyLocal: () => { [LS.tokens, LS.journal, LS.orders, LSD, LS.draft].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} }); },

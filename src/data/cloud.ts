@@ -8,10 +8,13 @@ import { fromRow, hash, toRow, type Obj } from './rows';
    À la connexion, tout est chargé depuis la base et gardé en mémoire dans le studio ; chaque changement est écrit
    dans la base quelques instants après (seules les lignes modifiées partent). Rien n'est copié dans le navigateur. */
 
-type Kind = 'tokens' | 'journal' | 'orders' | 'dist' | 'draft';
-type Studio = { data?: { setCloud: (h: { write: (k: Kind, v: unknown) => void } | null) => void; loadReal: (x: Obj) => void; replaceReal: (k: string, v: unknown) => void;
+type Kind = 'tokens' | 'journal' | 'orders' | 'dist' | 'draft' | 'extra' | 'keys' | 'botStrats' | 'botTrade';
+type WriteKind = Kind | 'cfg' | 'botCfg';
+type Studio = { data?: { setCloud: (h: { write: (k: WriteKind, v: unknown) => void } | null) => void; cfg: () => Obj; loadCfg: (c: Obj) => void; guestCfg: () => void; dropLocalKeys: () => void; loadReal: (x: Obj) => void; replaceReal: (k: string, v: unknown) => void;
   clearReal: () => void; draft: () => Obj; legacyLocal: () => Obj; dropLegacyLocal: () => void } };
 const st = () => studio() as unknown as Studio | undefined;
+type Bot = { account?: { attach: (h: { write: (k: WriteKind, v: unknown) => void } | null, x: Obj) => Obj; detach: () => void } };
+const bot = () => (window as unknown as { PumpBotUI?: Bot }).PumpBotUI;
 
 /* ---------- état visible par l'interface ---------- */
 export type CloudStatus = { userId: string | null; loading: boolean; saving: boolean; pending: number; lastSaved: number | null; error: string | null; cloud: Record<string, number> | null };
@@ -23,7 +26,7 @@ export const useCloudStatus = () => useSyncExternalStore(cloudStore.subscribe, c
 
 /* ---------- tables ---------- */
 type Spec = { table: string; conflict: string; key: (r: Obj) => string; rows: (v: unknown) => Obj[]; deletes?: string };
-const SPECS: Record<Exclude<Kind, 'draft'>, Spec> = {
+const SPECS: Record<'tokens' | 'orders' | 'journal' | 'dist', Spec> = {
   tokens: { table: 'tokens', conflict: 'user_id,mint', key: (r) => r.mint, rows: (v) => ((v as Obj[]) ?? []).map(toRow.token).filter(Boolean) as Obj[], deletes: 'mint' },
   orders: { table: 'orders', conflict: 'user_id,client_id', key: (r) => r.client_id, rows: (v) => ((v as Obj[]) ?? []).map(toRow.order).filter(Boolean) as Obj[], deletes: 'client_id' },
   // le journal est un historique : jamais de suppression (le studio n'en garde que les 2 000 dernières lignes)
@@ -39,6 +42,9 @@ const base: Record<string, Record<string, string>> = {};   // empreinte de chaqu
 const latest: Partial<Record<Kind, unknown>> = {};         // dernière valeur à écrire, par type
 const timers: Partial<Record<Kind, number>> = {};
 let draftImg = '';                                          // empreinte du logo du brouillon déjà envoyé
+let prefExtra: Obj = {};                                    // préférences.extra du compte (réglages du studio et du bot)
+let keysHash = '';                                          // empreinte des clés API déjà enregistrées
+const tradeQueue: Obj[] = [];                               // trades réels du bot à écrire
 let retry = 0;
 
 function countPending() { set({ pending: Object.keys(latest).length }); }
@@ -46,12 +52,44 @@ function schedule(kind: Kind, delay = 600) {
   window.clearTimeout(timers[kind]);
   timers[kind] = window.setTimeout(() => { flush(kind).catch(() => {}); }, delay);
 }
-function write(kind: Kind, value: unknown) {
+function write(kind0: WriteKind, value: unknown) {
+  let kind: Kind;
+  if (kind0 === 'cfg') {
+    // réglages du studio : clés API chiffrées à part, le reste dans les préférences du compte
+    const { rpc = '', pinataJwt = '', ...rest } = (value ?? {}) as Obj;
+    prefExtra = { ...prefExtra, studio: rest };
+    if (hash({ rpc, pinataJwt }) !== keysHash) { latest.keys = { rpc, pinataJwt }; if (ready) schedule('keys', 600); }
+    kind = 'extra'; value = prefExtra;
+  } else if (kind0 === 'botCfg') { prefExtra = { ...prefExtra, bot: value }; kind = 'extra'; value = prefExtra; }
+  else if (kind0 === 'botTrade') { tradeQueue.push(value as Obj); kind = 'botTrade'; value = true; }
+  else kind = kind0;
   latest[kind] = value; countPending();
   if (ready) schedule(kind, kind === 'draft' ? 1200 : 600);
 }
+async function flushOther(kind: Kind, value: unknown) {
+  if (kind === 'extra') {
+    const { error } = await supabase.from('preferences').update({ extra: value }).eq('user_id', uid!);
+    if (error) throw new Error(error.message);
+  } else if (kind === 'keys') {
+    const k = value as Obj;
+    const { error } = await supabase.functions.invoke('account-keys', { body: { action: 'set', keys: k } });
+    if (error) throw new Error('clés API : ' + error.message);
+    keysHash = hash({ rpc: k.rpc || '', pinataJwt: k.pinataJwt || '' });
+  } else if (kind === 'botStrats') {
+    const rows = ((value as Obj[]) ?? []).map(toRow.strategy).filter(Boolean) as Obj[];
+    if (rows.length) { const { error } = await supabase.from('bot_strategies').upsert(rows.map((r) => ({ ...r, user_id: uid })), { onConflict: 'user_id,strategy_id' }); if (error) throw new Error(error.message); }
+  } else if (kind === 'botTrade') {
+    const batch = tradeQueue.splice(0, 200);
+    const rows = batch.map(toRow.trade).filter(Boolean) as Obj[];
+    if (rows.length) {
+      const { error } = await supabase.from('bot_trades').upsert(rows.map((r) => ({ ...r, user_id: uid })), { onConflict: 'user_id,client_id' });
+      if (error) { tradeQueue.unshift(...batch); throw new Error(error.message); }
+    }
+    if (tradeQueue.length) latest.botTrade = true;
+  }
+}
 
-async function flushTable(kind: Exclude<Kind, 'draft'>, value: unknown) {
+async function flushTable(kind: keyof typeof SPECS, value: unknown) {
   const s = SPECS[kind], prev = base[kind] ?? {}, next: Record<string, string> = {};
   const rows = s.rows(value);
   const changed = rows.filter((r) => { const k = s.key(r), h = hash(r); next[k] = h; return prev[k] !== h; });
@@ -99,7 +137,9 @@ async function flush(kind: Kind) {
   const value = latest[kind]; delete latest[kind];
   set({ saving: true });
   try {
-    if (kind === 'draft') await flushDraft(value); else await flushTable(kind, value);
+    if (kind === 'draft') await flushDraft(value);
+    else if (kind === 'tokens' || kind === 'orders' || kind === 'journal' || kind === 'dist') await flushTable(kind, value);
+    else await flushOther(kind, value);
     retry = 0; set({ lastSaved: Date.now(), error: Object.keys(latest).length ? status.error : null });
   } catch (e) {
     // réseau coupé ou refus : on garde la valeur et on réessaie, de plus en plus espacé
@@ -143,9 +183,13 @@ export async function attachCloud(userId: string) {
   const S = st();
   S?.data?.setCloud({ write });
   try {
-    const [tokens, ops, orders, dist, draft] = await Promise.all([
+    const [tokens, ops, orders, dist, draft, prefs, keys, strats, trades] = await Promise.all([
       fetchAll('tokens', 'created_at'), fetchAll('operations', 'at', 2000), fetchAll('orders', 'created_at'), fetchAll('distributions', 'sent_at'),
       supabase.from('drafts').select('*').eq('user_id', userId).eq('client_id', 'current').maybeSingle().then((r) => r.data as Obj | null),
+      supabase.from('preferences').select('extra').eq('user_id', userId).maybeSingle().then((r) => (r.data?.extra ?? {}) as Obj),
+      supabase.functions.invoke('account-keys', { body: { action: 'get' } }).then((r) => { if (r.error) throw new Error('clés API : ' + r.error.message); return ((r.data as Obj)?.keys ?? {}) as Obj; }),
+      supabase.from('bot_strategies').select('*').eq('user_id', userId).then((r) => (r.data ?? []) as Obj[]),
+      fetchAll('bot_trades', 'closed_at', 2000),
     ]);
     if (uid !== userId) return;
     const d: Obj = {}; dist.forEach((r) => { (d[r.mint] ||= {})[r.platform] = { at: Date.parse(r.sent_at), done: r.status === 'accepted' || undefined }; });
@@ -162,6 +206,16 @@ export async function attachCloud(userId: string) {
     Object.entries({ ...(old.dist ?? {}), ...((pend.dist as Obj) ?? {}) }).forEach(([m, ps]) => { x.dist[m] = { ...(ps as Obj), ...(x.dist[m] ?? {}) }; });
     if (!x.draft && (pend.draft || (old.draft && (old.draft as Obj).name))) x.draft = (pend.draft ?? old.draft) as Obj;
     S?.data?.loadReal(x);
+    // réglages du studio : ceux du compte ; au premier passage, ceux de ce navigateur (clés comprises) y sont versés
+    prefExtra = prefs; keysHash = hash({ rpc: keys.rpc || '', pinataJwt: keys.pinataJwt || '' });
+    const localCfg = S?.data?.cfg() ?? {};
+    const mergedKeys = { rpc: keys.rpc || localCfg.rpc || '', pinataJwt: keys.pinataJwt || localCfg.pinataJwt || '' };
+    S?.data?.loadCfg({ ...(prefs.studio ?? localCfg), ...mergedKeys });
+    const firstCfg = !prefs.studio, newKeys = hash(mergedKeys) !== keysHash;
+    S?.data?.dropLocalKeys();
+    // bot : stratégies, réglages et trades réels du compte
+    const botOut = bot()?.account?.attach({ write }, { strats: strats.map(fromRow.strategy), cfg: (prefs.bot as Obj | undefined)?.cfg, exec: (prefs.bot as Obj | undefined)?.exec,
+      trades: trades.filter((r) => r.data?.live).map(fromRow.trade) }) ?? null;
     S?.data?.dropLegacyLocal();
     // traces de l'ancienne synchronisation
     try { Object.keys(localStorage).filter((k) => k.startsWith('ts-sync-') || k === 'pstudio_owner').forEach((k) => localStorage.removeItem(k)); } catch { /* rien */ }
@@ -169,6 +223,13 @@ export async function attachCloud(userId: string) {
     // ce qui manque dans la base (anciennes données, changements pendant le chargement) part maintenant
     (['tokens', 'orders', 'journal', 'dist'] as const).forEach((k) => { latest[k] = x[k]; schedule(k, 50); });
     if (x.draft && !draft) { latest.draft = x.draft; schedule('draft', 50); }
+    if (firstCfg || newKeys) write('cfg', { ...(S?.data?.cfg() ?? {}) });
+    if (botOut) {
+      if (!strats.length) write('botStrats', botOut.strats);
+      if (!prefs.bot) write('botCfg', { cfg: botOut.cfg, exec: botOut.exec });
+      ((botOut.legacy ?? []) as Obj[]).forEach((t) => write('botTrade', t));
+    }
+    Object.keys(latest).forEach((k) => schedule(k as Kind, 50));
     set({ loading: false, lastSaved: Date.now() });
   } catch (e) {
     set({ loading: false, error: 'Chargement du compte impossible : ' + (e as Error).message.slice(0, 140) });
@@ -182,6 +243,9 @@ export async function detachCloud() {
   if (ready) await flushAll();
   st()?.data?.setCloud(null);
   st()?.data?.clearReal();
+  st()?.data?.guestCfg();
+  bot()?.account?.detach();
+  prefExtra = {}; keysHash = ''; tradeQueue.length = 0;
   uid = null; ready = false; Object.keys(latest).forEach((k) => delete latest[k as Kind]);
   set({ userId: null, loading: false, saving: false, pending: 0, lastSaved: null, error: null, cloud: null });
 }

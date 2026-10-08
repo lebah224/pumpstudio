@@ -53,12 +53,17 @@ export const toRow = {
     return { client_id: String(c.id).slice(0, 64), strategy_id: String(c.sid).slice(0, 32), mint: String(c.mint).slice(0, 44), symbol: str(c.symbol, 32),
       opened_at: iso(c.openedAt) || new Date().toISOString(), closed_at: iso(c.closedAt) || new Date().toISOString(),
       size_sol: Number(c.size), proceeds_sol: num(c.proceeds) ?? 0, pnl_sol: num(c.pnl) ?? 0, pnl_pct: num(c.pnlPct), reason: str(c.why, 120),
-      data: { entryMc: num(c.entryMc), exitMc: num(c.exitMc), peakMc: num(c.peakMc), score: num(c.score) } };
+      data: { entryMc: num(c.entryMc), exitMc: num(c.exitMc), peakMc: num(c.peakMc), score: num(c.score), live: typeof c.live === 'string' ? c.live.slice(0, 8) : undefined, buySig: str(c.buySig, 100) ?? undefined, name: str(c.name, 40) ?? undefined, exits: Array.isArray(c.exits) && JSON.stringify(c.exits).length < 3000 ? c.exits : undefined } };
   },
 };
 
 /* ---------- conversion base → navigateur ---------- */
 export const fromRow = {
+  strategy: (r: Obj) => ({ id: r.strategy_id, name: r.name, enabled: r.enabled !== false, P: r.params || {} }),
+  // seuls les trades réels du bot sont gardés sur le compte (data.live = wallet utilisé)
+  trade: (r: Obj) => ({ id: r.client_id, sid: r.strategy_id, mint: r.mint, symbol: r.symbol || '', name: r.data?.name || '', openedAt: ms(r.opened_at), closedAt: ms(r.closed_at),
+    size: Number(r.size_sol), proceeds: Number(r.proceeds_sol), pnl: Number(r.pnl_sol), pnlPct: r.pnl_pct != null ? Number(r.pnl_pct) : 0, why: r.reason || '',
+    entryMc: r.data?.entryMc, exitMc: r.data?.exitMc, peakMc: r.data?.peakMc, score: r.data?.score, exits: r.data?.exits || [], live: r.data?.live, buySig: r.data?.buySig }),
   token: (r: Obj) => ({ mint: r.mint, name: r.name, symbol: r.symbol, image: r.image_url || r.thumb || '', createdAt: ms(r.launched_at || r.created_at), sig: r.signature || '',
     dev: r.dev_sol != null ? Number(r.dev_sol) : undefined, desc: r.description || '', tw: r.twitter || '', tg: r.telegram || '', web: r.website || '', platform: r.platform, added: r.added_manually || undefined }),
   op: (r: Obj) => ({ id: r.client_id || r.id, t: ms(r.at), type: r.type, mint: r.mint || '', symbol: r.symbol || '', sim: r.sim, status: r.status,
