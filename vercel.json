@@ -4,6 +4,12 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/connexion", "destination": "/index.html" },
+    { "source": "/inscription", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -103,7 +103,7 @@ async function watch() {
     if (!hit) continue;
     if (o.kind !== 'trail') save.push({ user_id: o.user_id, order_id: o.order_id, peak, armed, alerted: true, price: q.price });
     const list = notes.get(o.user_id) ?? []; notes.set(o.user_id, list);
-    list.push({ title: 'Ordre déclenché · ' + sym, body: why[0]!.toUpperCase() + why.slice(1) + '. Ouvre TokenStudio pour vendre ' + pctTxt(Number(o.pct)) + ' % : rien n\'est vendu sans toi.', url: '/?page=orders', tag: 'order-' + o.order_id });
+    list.push({ title: 'Ordre déclenché · ' + sym, body: why[0]!.toUpperCase() + why.slice(1) + '. Ouvre TokenStudio pour vendre ' + pctTxt(Number(o.pct)) + ' % : rien n\'est vendu sans toi.', url: '/app?page=orders', tag: 'order-' + o.order_id });
   }
   const r = await notify([...notes.keys()], notes);
   // une alerte n'est marquée envoyée que si au moins un appareil l'a reçue ; sinon on réessaie à la minute suivante
@@ -130,6 +130,6 @@ Deno.serve(async (req) => {
   const auth = req.headers.get('Authorization') ?? '';
   const { data: { user } } = await admin.auth.getUser(auth.replace(/^Bearer /, ''));
   if (!user) return json(401, { error: 'Connexion requise.' }, h);
-  const r = await notify([user.id], new Map([[user.id, [{ title: 'TokenStudio', body: 'Les alertes d\'ordres fonctionnent sur cet appareil.', url: '/?page=orders', tag: 'test' }]]]));
+  const r = await notify([user.id], new Map([[user.id, [{ title: 'TokenStudio', body: 'Les alertes d\'ordres fonctionnent sur cet appareil.', url: '/app?page=orders', tag: 'test' }]]]));
   return json(200, { sent: r.sent, gone: r.gone }, h);
 });

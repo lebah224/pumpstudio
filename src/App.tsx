@@ -27,6 +27,17 @@ function useConnectBridge() {
   useEffect(() => { if (ready) studio()?.hub?.setAuth(signed); }, [ready, signed]);
   // wallet rapide serveur du compte (s'il existe)
   useEffect(() => { if (!ready) return; if (signed) refreshServerWallet(); else clearServerWallet(); }, [ready, signed, user?.id]);
+  // arrivée depuis l'accueil : ?demo=1 (essayer la démo) ou ?signin=quick (wallet rapide), puis adresse nettoyée
+  useEffect(() => {
+    if (!ready) return;
+    const q = new URLSearchParams(location.search);
+    const demo = q.get('demo') === '1', quick = q.get('signin') === 'quick';
+    if (!demo && !quick) return;
+    if (demo) studio()?.hub?.goSim();
+    if (quick && !signed) openSignIn({ start: 'quick' });
+    q.delete('demo'); q.delete('signin');
+    history.replaceState(null, '', location.pathname + (q.size ? '?' + q : '') + location.hash);
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /** Les écrans React s'insèrent dans le studio historique par des portails, le temps de migrer page par page */

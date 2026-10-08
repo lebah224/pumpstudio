@@ -19,7 +19,11 @@ const QuickMark = () => <span className="ts-wmark quick" aria-hidden="true"><svg
  * si le wallet ou l'e-mail n'a pas de compte, on propose de le créer ou de continuer en démo.
  * Connecté (écran « add ») : ajoute un wallet au compte après une signature gratuite.
  */
-export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: (hidden: boolean) => void }) {
+/**
+ * standalone : page de connexion hors de l'outil (le code Solana du studio n'y est pas chargé) ;
+ * signup : l'utilisateur a choisi « Créer un compte », un compte est donc créé s'il n'existe pas.
+ */
+export function SignInPanel({ intent, onHide, standalone, signup }: { intent: SignInIntent; onHide: (hidden: boolean) => void; standalone?: boolean; signup?: boolean }) {
   const { session, openSignIn } = useAuth();
   const [step, setStep] = useState<Step>(intent.start ?? (session ? 'add' : 'choose'));
   const [src, setSrc] = useState<Source | null>(null);
@@ -48,7 +52,7 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
       toast('Wallet ajouté à ton compte', short(address));
       close(); return;
     }
-    if ((await signInWithWallet(s)) === 'none') setStep('none');
+    if ((await signInWithWallet(s)) === 'none') { if (signup) await createAccountWithWallet(s); else setStep('none'); }
   }
   // Les fenêtres du studio (mot de passe, sauvegarde) passent au premier plan pendant qu'on masque celle-ci
   async function legacy<T>(fn: () => Promise<T>): Promise<T> {
@@ -56,9 +60,16 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
     try { return await fn(); } finally { onHide(false); }
   }
   const pickWallet = (id: string) => run(id, async () => {
-    const pk = await hub?.connect(id);
+    let pk: string | null | undefined;
+    if (standalone) {
+      // page de connexion : on connecte l'extension directement ; l'outil la reconnectera à l'ouverture
+      const p = walletChoices().found.find((x) => x.id === id)?.p;
+      if (!p) throw new Error('Wallet non détecté.');
+      await p.connect();
+      pk = p.publicKey?.toString();
+      try { localStorage.setItem('pstudio_wallet_v1', JSON.stringify(id)); } catch { /* navigation privée */ }
+    } else { pk = await hub?.connect(id); if (pk) await hub?.useExt(); }
     if (!pk) return;
-    await hub?.useExt();
     await afterConnect({ kind: 'ext', id }, pk);
   });
   const pickQuick = (how: 'use' | 'create' | 'restore') => run('quick-' + how, async () => {
@@ -77,14 +88,14 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
     else if (intent.wallet) pickWallet(intent.wallet);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const simulate = () => { close(); hub?.goSim(); toast('Mode démo', 'Explore l\'outil avec un wallet démo de 10 SOL fictifs. Rien n\'est envoyé ; crée ton compte pour vérifier sur la blockchain.', 'g'); };
+  const simulate = () => { if (standalone) { location.href = '/app?demo=1'; return; } close(); hub?.goSim(); toast('Mode démo', 'Explore l\'outil avec un wallet démo de 10 SOL fictifs. Rien n\'est envoyé ; crée ton compte pour vérifier sur la blockchain.', 'g'); };
 
   async function sendEmail(ev: FormEvent | null, createUser: boolean) {
     ev?.preventDefault(); setErr(null);
     const v = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { setErr('Adresse e-mail invalide.'); return; }
     setBusy('email');
-    const { error } = await supabase.auth.signInWithOtp({ email: v, options: { shouldCreateUser: createUser, emailRedirectTo: location.origin + location.pathname } });
+    const { error } = await supabase.auth.signInWithOtp({ email: v, options: { shouldCreateUser: createUser || !!signup, emailRedirectTo: location.origin + (standalone ? '/connexion' : location.pathname) } });
     setBusy(null);
     if (error && /signups? not allowed|user not found/i.test(error.message)) { setEmail(v); setStep('email-none'); return; }
     if (error) { setErr(readable(error)); return; }
@@ -114,7 +125,7 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
             <em className="ts-si-tag ok">{busy === x.id ? 'Validation…' : 'Détecté'}</em>
           </button>
         ))}
-        <button type="button" role="listitem" className="ts-si-opt" disabled={!!busy} onClick={() => { setErr(null); setStep('quick'); }}>
+        <button type="button" role="listitem" className="ts-si-opt" disabled={!!busy} onClick={() => { setErr(null); if (standalone) { location.href = '/app?signin=quick'; return; } setStep('quick'); }}>
           <QuickMark /><span className="ts-si-n">Wallet rapide<small>{quick ? short(quick.pk) + ' · dans ce navigateur' : 'Créer ou restaurer, sans extension'}</small></span>
           <em className="ts-si-tag">{quick ? (quick.unlocked ? 'Déverrouillé' : 'Verrouillé') : 'Studio'}</em>
         </button>
@@ -135,7 +146,8 @@ export function SignInPanel({ intent, onHide }: { intent: SignInIntent; onHide: 
   return (
     <div className="ts-signin">
       {step === 'choose' && (<>
-        {head('Connexion à TokenStudio', 'Choisis comment te connecter. Tes clés privées ne quittent jamais ton wallet.')}
+        {signup ? head('Créer ton compte', 'Avec ton wallet ou ton e-mail. Une signature gratuite suffit : aucune transaction, aucun frais.')
+          : head('Connexion à TokenStudio', 'Choisis comment te connecter. Tes clés privées ne quittent jamais ton wallet.')}
         {intent.reason === 'real' && <div className="ts-note warn">Le mode réel demande un compte. La démo reste ouverte sans compte.</div>}
         {walletList}
         <div className="ts-si-or"><span>ou</span></div>

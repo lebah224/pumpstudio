@@ -8,6 +8,8 @@ export default defineConfig({
     sourcemap: false,
     // le studio historique est volumineux : on le garde dans son propre fichier
     chunkSizeWarningLimit: 1200,
+    // deux pages : la landing (légère, sans le code Solana) et l'outil
+    rollupOptions: { input: { landing: 'index.html', app: 'app.html' } },
   },
   server: { port: 5173 },
 });

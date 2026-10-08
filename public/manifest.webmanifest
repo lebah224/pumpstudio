@@ -3,7 +3,7 @@
   "short_name": "TokenStudio",
   "description": "Création, lancement et suivi de tokens Solana, non-custodial.",
   "lang": "fr",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0b0a09",
