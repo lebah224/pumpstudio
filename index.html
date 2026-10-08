@@ -1145,6 +1145,8 @@ textarea{font:inherit;color:inherit}
 .fee-v small{font-size:12px;color:var(--muted)}
 .fee-v em{font-style:normal;font-size:11.5px;color:var(--dim)}
 @media (max-width:700px){.fee-r{width:100%;justify-content:flex-end}}
+.meme-opts[hidden]{display:none}
+.meme-opts .chips .chip{min-height:30px;padding:4px 11px;font-size:13px}
 </style>
 </head>
 <body>
@@ -1290,6 +1292,11 @@ textarea{font:inherit;color:inherit}
                   <div class="logo-prev" id="logoPrev"></div></div>
                 <div class="logo-opts">
                   <div class="field"><label>Style</label><div class="chips" id="logoStyles"></div></div>
+                  <div id="logoMeme" class="meme-opts">
+                    <div class="field"><label>Personnage</label><div class="chips" id="logoChar"></div></div>
+                    <div class="field"><label>Expression</label><div class="chips" id="logoExpr"></div></div>
+                    <div class="field"><label>Accessoire</label><div class="chips" id="logoAcc"></div></div>
+                  </div>
                   <div class="field"><label>Couleurs</label><div class="swatches" id="logoPal"></div></div>
                   <div class="row2">
                     <div class="field"><label for="logoEmoji">Symbole <small>style Mascotte</small></label><input id="logoEmoji" maxlength="4" placeholder="🦦"></div>
@@ -1635,7 +1642,7 @@ Message: ${r}.
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
   const S = {
     page: 'dash', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
-    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'illus', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
+    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'meme', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
     tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []),
     ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, jf: 'real', busy: false, imgBlob: null,
   };
@@ -1651,7 +1658,7 @@ Message: ${r}.
     set(v) { S.ext = v; }, enumerable: true,
   });
   // brouillons des versions précédentes : univers, ton et style de logo d'avant
-  (function migrate() { const d = S.draft; d.platform = 'pump'; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'ocean', 'food', 'gaming', 'nature', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
+  (function migrate() { const d = S.draft; d.platform = 'pump'; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'ocean', 'food', 'gaming', 'nature', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['meme', 'illus', 'mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
 
   /* ================================================================ outils binaires */
   function b64ToBytes(b64) { const s = atob(b64), out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
@@ -2765,12 +2772,15 @@ Message: ${r}.
       if (reject && reject(name, ticker)) continue;
       seen.add(name.toLowerCase()); tick.add(ticker);
       const sc = scoreIdea(name, ticker, word);
-      out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: (th.pal + out.length * 3) % PALS.length, style: 'illus', theme: thKey, motif: pickMotif(thKey, name, out.length) });
+      out.push({ name, ticker, emo: rnd(th.mascot), tag: descFor(name, ticker, name.split(' ').pop(), true, out.length), score: sc.score, parts: sc.parts, pal: Math.floor(Math.random() * MEME.bg.length), style: 'meme', seed: nameSeed(name), theme: thKey, motif: pickMotif(thKey, name, out.length) });
     }
     out.sort((a, b) => b.score - a.score);
     // une fois triées, les idées sans motif lié à leur nom reçoivent les motifs de l'univers à tour de rôle
     const list = MOTIFS[thKey] || MOTIFS.luxe; let rot = Math.floor(Math.random() * list.length);
     out.forEach((x) => { if (!MOTIF_WORDS.some(([re, m]) => re.test(x.name) && list.includes(m))) x.motif = list[rot++ % list.length]; });
+    // personnages du style Mème : celui que le nom évoque, sinon tous ceux de l'univers à tour de rôle
+    const mc = MEME.theme[thKey] || MEME.theme.meme; let mr = Math.floor(Math.random() * mc.length);
+    out.forEach((x) => { x.mchar = (MEME_WORDS.find(([re]) => re.test(x.name)) || [])[1] || mc[mr++ % mc.length]; });
     return out;
   }
   function descFor(name, ticker, n1, short, idx) {
@@ -2784,7 +2794,7 @@ Message: ${r}.
   function pickIdea(i, silent) {
     const x = S.ideas[i]; if (!x) return;
     Object.assign(S.draft, { name: x.name, symbol: x.ticker, desc: (() => { const lang = DESC[S.draft.lang] ? S.draft.lang : 'en', ex = (DESC2[lang] || {})[S.draft.tone]; return x.tag + (ex ? '\n\n' + ex : ''); })(), idea: i });
-    S.draft.logo = Object.assign({}, S.draft.logo, { emoji: x.emo, text: x.ticker, pal: x.pal, style: 'illus', theme: x.theme || S.draft.theme, motif: x.motif || '', textCustom: false, seed: Math.floor(Math.random() * 1e6) });
+    S.draft.logo = Object.assign({}, S.draft.logo, { emoji: x.emo, text: x.ticker, pal: x.pal, style: x.style || 'meme', theme: x.theme || S.draft.theme, motif: x.motif || '', mchar: x.mchar || '', mexpr: '', macc: null, name: x.name, textCustom: false, seed: x.seed || Math.floor(Math.random() * 1e6) });
     S.imgBlob = null; S.draft.imgSrc = 'gen';
     saveDraft(); drawLogo(); fillFields(); renderIdeas(); renderLaunchSide();
     if (!silent) toast('Idée reprise', x.name + ' · $' + x.ticker + '. Ajuste le logo à l\'étape 2.', 'g');
@@ -2804,7 +2814,7 @@ Message: ${r}.
     { n: 'Pétrole et cuivre', bg: ['#03141a', '#0c363e'], m: ['#ffe3c8', '#e3925a', '#a65524', '#572a0f'], fg: '#e3925a', ac: '#ffe3c8' },
     { n: 'Champagne', bg: ['#e6d5b4', '#f9f2e4'], m: ['#fff3cf', '#b8892e', '#7d5a17', '#3f2c08'], fg: '#9c7322', ac: '#3f2c08', light: true },
   ];
-  const STYLES = { illus: 'Illustration', mono: 'Monogramme', coin: 'Pièce frappée', orb: 'Sphère', shield: 'Écusson', hex: 'Insigne', seal: 'Sceau de cire', glass: 'Cristal', geo: 'Emblème', word: 'Logotype', mascot: 'Médaillon' };
+  const STYLES = { meme: 'Mème', illus: 'Illustration', mono: 'Monogramme', coin: 'Pièce frappée', orb: 'Sphère', shield: 'Écusson', hex: 'Insigne', seal: 'Sceau de cire', glass: 'Cristal', geo: 'Emblème', word: 'Logotype', mascot: 'Médaillon' };
   const LOGO_FONTS = { serif: '"Cormorant Garamond","DM Serif Display",Georgia,serif', caps: '"Cinzel","Cormorant Garamond",Georgia,serif', display: '"Syne","Inter Tight",system-ui,sans-serif', grotesk: '"Space Grotesk","Inter Tight",system-ui,sans-serif' };
   let fontsReady = false;
   function loadFonts() {
@@ -3146,13 +3156,178 @@ Message: ${r}.
     g.restore();
   }
   // Dessine un logo complet sur un canvas de taille W (256 à 1024)
+  /* ---------- style « Mème » : personnage cartoon plein cadre, contour épais, couleurs vives ---------- */
+  const MEME = {
+    bg: ['#ffd23f', '#4cc9f0', '#ff6b9d', '#7ae582', '#ff9f1c', '#a685e2', '#00c2a8', '#ff5d5d', '#5d9cec', '#f7a8d8', '#c3f584', '#ffb86b'],
+    chars: { frog: 'Grenouille', shiba: 'Chien', cat: 'Chat', penguin: 'Pingouin', panda: 'Panda', duck: 'Canard', hamster: 'Hamster', monkey: 'Singe', alien: 'Alien', robot: 'Robot', blob: 'Smiley', ghost: 'Fantôme' },
+    exprs: { happy: 'Content', smug: 'Malin', cool: 'Lunettes', laugh: 'Mort de rire', shocked: 'Choqué', derp: 'Débile' },
+    accs: { '': 'Aucun', crown: 'Couronne', chain: 'Chaîne en or', party: 'Chapeau de fête', beanie: 'Bonnet', cap: 'Casquette', headset: 'Casque', helmet: 'Casque spatial', horns: 'Cornes', halo: 'Auréole' },
+    theme: { meme: ['frog', 'shiba', 'cat', 'penguin', 'panda', 'duck', 'hamster', 'monkey'], luxe: ['cat', 'shiba', 'frog', 'panda', 'monkey'], internet: ['blob', 'frog', 'monkey', 'cat', 'shiba'], space: ['alien', 'penguin', 'shiba', 'robot', 'frog'],
+      tech: ['robot', 'alien', 'cat', 'hamster'], prestige: ['cat', 'shiba', 'panda', 'monkey', 'frog'], myth: ['ghost', 'frog', 'monkey', 'cat'], brand: ['blob', 'robot', 'frog', 'shiba'], ocean: ['penguin', 'duck', 'frog', 'cat'],
+      food: ['hamster', 'blob', 'panda', 'duck', 'monkey'], gaming: ['ghost', 'robot', 'alien', 'frog', 'monkey'], nature: ['frog', 'hamster', 'monkey', 'panda', 'duck'] },
+    acc: { meme: ['party', 'beanie', 'cap', 'chain'], luxe: ['crown', 'chain'], prestige: ['crown', 'chain', 'halo'], internet: ['cap', 'chain', 'beanie'], space: ['helmet'], tech: ['headset', 'cap'], myth: ['horns', 'halo'],
+      brand: ['chain', 'cap'], ocean: ['cap', 'beanie'], food: ['party', 'beanie'], gaming: ['headset', 'cap'], nature: ['beanie', 'party'] },
+    col: { frog: '#69c95d', shiba: '#f2a541', cat: '#ff9f43', penguin: '#2f3550', panda: '#f7f5ef', duck: '#ffd23f', hamster: '#f4c27a', monkey: '#9a6240', alien: '#a3e46b', robot: '#c9d3dd', blob: '#ffd23f', ghost: '#f4f4f8' },
+  };
+  const MEME_WORDS = [[/frog|toad|ribbit|gecko|axolotl|lizard/i, 'frog'], [/doge|shib|dog|inu|pup|pug|corgi|\bwif\b|bonk/i, 'shiba'], [/cat|kit|meow|lynx|neko|mog/i, 'cat'], [/pengu|pingu|frost|\bice/i, 'penguin'],
+    [/panda|bear|koala/i, 'panda'], [/duck|goose|quack/i, 'duck'], [/hamster|capy|quokka|otter|mouse|raccoon/i, 'hamster'], [/monkey|ape|chimp|gorilla|banana/i, 'monkey'], [/alien|ufo|zorp|martian|astro/i, 'alien'],
+    [/robot|\bbot\b|\bai\b|cyber|neuron|synth|droid/i, 'robot'], [/ghost|spook|\bboo\b|phantom/i, 'ghost'], [/smile|happy|vibe|blob|\bgm\b/i, 'blob']];
+  const MEME_EXPR_WORDS = [[/cool|based|rich|chad|sigma|alpha|boss|king/i, 'cool'], [/chill|sleepy|smug|lazy|comfy|cozy|zen/i, 'smug'], [/wtf|omg|shock|panic|scared|cope|rekt|sad/i, 'shocked'],
+    [/lol|lmao|haha|laugh|joy|funny/i, 'laugh'], [/derp|dumb|smol|silly|goofy|tiny|lil/i, 'derp']];
+  const hexRgb = (h) => { const n = parseInt(String(h).slice(1, 7), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+  const nearCol = (a, b) => { const x = hexRgb(a), y = hexRgb(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) < 95; };
+  const nameSeed = (s) => [...String(s || '')].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
+  function memePick(L, name) {
+    const R = seeded((L.seed || 7) + 17), th = MEME.theme[L.theme] ? L.theme : 'meme', list = MEME.theme[th];
+    let ch = MEME.chars[L.mchar] ? L.mchar : null;
+    if (!ch) for (const [re, c] of MEME_WORDS) if (re.test(name || '')) { ch = c; break; }
+    if (!ch) ch = list[Math.floor(R() * list.length)];
+    let ex = MEME.exprs[L.mexpr] ? L.mexpr : null;
+    if (!ex) for (const [re, e] of MEME_EXPR_WORDS) if (re.test(name || '')) { ex = e; break; }
+    const ek = Object.keys(MEME.exprs); if (!ex) ex = ek[Math.floor(R() * ek.length)];
+    let acc = L.macc != null && MEME.accs[L.macc] != null ? L.macc : (R() < 0.65 ? (MEME.acc[th] || MEME.acc.meme)[Math.floor(R() * (MEME.acc[th] || MEME.acc.meme).length)] : '');
+    if ((acc === 'beanie' || acc === 'cap') && ['frog', 'alien', 'robot'].includes(ch)) acc = 'party';  // les yeux sont trop hauts : le chapeau les cacherait
+    let bi = ((L.pal || 0) % MEME.bg.length + MEME.bg.length) % MEME.bg.length;
+    for (let t = 0; t < MEME.bg.length && nearCol(MEME.bg[bi], MEME.col[ch]); t++) bi = (bi + 1) % MEME.bg.length;
+    let si = (bi + 4 + Math.floor(R() * 4)) % MEME.bg.length; if (nearCol(MEME.bg[si], MEME.col[ch])) si = (si + 1) % MEME.bg.length;
+    return { ch, ex, acc, bg: MEME.bg[bi], shirt: MEME.bg[si], fx: Math.floor(R() * 3), R };
+  }
+  function drawMeme(g, W, L, name, letter) {
+    const M = memePick(L, name), OL = '#161616', s = W / 100, R = M.R, C = MEME.col[M.ch];
+    g.save(); g.scale(s, s); g.lineJoin = 'round'; g.lineCap = 'round';
+    // fond : aplat vif + rayons, trame ou étincelles
+    g.fillStyle = M.bg; g.fillRect(0, 0, 100, 100);
+    if (M.fx === 0) { g.save(); g.translate(50, 56); g.fillStyle = 'rgba(255,255,255,.2)'; for (let i = 0; i < 14; i++) { g.rotate(Math.PI * 2 / 14); g.beginPath(); g.moveTo(0, 0); g.lineTo(-11, -95); g.lineTo(11, -95); g.closePath(); g.fill(); } g.restore(); }
+    else if (M.fx === 1) { g.fillStyle = 'rgba(0,0,0,.08)'; for (let y = 3; y < 100; y += 6) for (let x = (y % 12 ? 3 : 0) + 1; x < 100; x += 6) { g.beginPath(); g.arc(x, y, 0.5 + (x + y) / 200 * 1.7, 0, Math.PI * 2); g.fill(); } }
+    else { g.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 7; i++) { const x = 6 + R() * 88, y = 5 + R() * 40, r = 1.2 + R() * 2.2; g.beginPath(); g.moveTo(x, y - r * 2); g.quadraticCurveTo(x, y, x + r * 2, y); g.quadraticCurveTo(x, y, x, y + r * 2); g.quadraticCurveTo(x, y, x - r * 2, y); g.quadraticCurveTo(x, y, x, y - r * 2); g.fill(); } }
+    const P = (d) => new Path2D(d);
+    const circle = (x, y, r) => { const p = new Path2D(); p.arc(x, y, r, 0, Math.PI * 2); return p; };
+    const oval = (x, y, rx, ry, rot) => { const p = new Path2D(); p.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2); return p; };
+    const rrect = (x, y, w, h, r) => { const p = new Path2D(); if (p.roundRect) p.roundRect(x, y, w, h, r); else p.rect(x, y, w, h); return p; };
+    // silhouette unie : tous les contours d'abord, puis tous les aplats par-dessus
+    const sil = (parts) => { g.strokeStyle = OL; g.lineWidth = 5.4; parts.forEach((p) => g.stroke(p[0])); parts.forEach((p) => { g.fillStyle = p[1]; g.fill(p[0]); }); };
+    const fo = (p, c) => { g.fillStyle = c; g.fill(p); };
+    const fs = (p, c, w) => { g.fillStyle = c; g.fill(p); g.strokeStyle = OL; g.lineWidth = w || 2; g.stroke(p); };
+    const ln = (d, w, c) => { g.strokeStyle = c || OL; g.lineWidth = w || 2.2; g.stroke(P(d)); };
+    const blush = (x1, x2, y) => { fo(oval(x1, y, 4.5, 2.6), 'rgba(255,105,140,.45)'); fo(oval(x2, y, 4.5, 2.6), 'rgba(255,105,140,.45)'); };
+    // corps (épaules) : sweat de couleur
+    const shirt = () => { if (M.ch === 'ghost') return; sil([[P('M6 104 C8 88 26 81 50 81 C74 81 92 88 94 104 Z'), M.ch === 'robot' ? '#9fb0c2' : M.ch === 'penguin' ? C : M.shirt]]); if (M.ch === 'penguin') fo(P('M34 104 C36 90 42 86 50 86 C58 86 64 90 66 104 Z'), '#ffffff'); };
+    shirt();
+    let A = { ay: 28, hw: 26, ey: 52, ex1: 39, ex2: 61, er: 5.5, my: 68, mw: 14, skin: C, mouth: true };
+    const ch = M.ch;
+    if (ch === 'frog') {
+      sil([[circle(34, 37, 12.5), C], [circle(66, 37, 12.5), C], [oval(50, 59, 37, 24), C]]);
+      fo(oval(50, 68, 24, 9), 'rgba(255,255,255,.18)'); blush(26, 74, 63);
+      A = { ay: 26, hw: 30, ey: 36, ex1: 34, ex2: 66, er: 7.5, my: 63, mw: 34, skin: C, mouth: true };
+    } else if (ch === 'shiba') {
+      sil([[P('M23 46 L25 13 L45 30 Z'), C], [P('M77 46 L75 13 L55 30 Z'), C], [oval(50, 58, 31, 27), C]]);
+      fo(P('M28 38 L29 20 L40 31 Z'), '#fff3dc'); fo(P('M72 38 L71 20 L60 31 Z'), '#fff3dc');
+      fo(oval(50, 69, 21, 13), '#fff3dc'); fo(oval(31, 64, 7, 6), '#fff3dc'); fo(oval(69, 64, 7, 6), '#fff3dc');
+      fo(oval(40, 44, 3, 2, -0.3), '#fff3dc'); fo(oval(60, 44, 3, 2, 0.3), '#fff3dc');
+      fs(oval(50, 62, 4.6, 3.2), OL, 1);
+      A = { ay: 31, hw: 25, ey: 52, ex1: 39, ex2: 61, er: 5, my: 67, mw: 13, skin: C, mouth: true };
+    } else if (ch === 'cat') {
+      const cc = ['#ff9f43', '#bfc5cc', '#3d3d45', '#f7f2ea'][Math.floor(R() * 4)]; A.skin = cc;
+      sil([[P('M21 47 L21 11 L43 30 Z'), cc], [P('M79 47 L79 11 L57 30 Z'), cc], [oval(50, 59, 31, 26), cc]]);
+      fo(P('M25 38 L25 19 L37 30 Z'), '#ffb3c7'); fo(P('M75 38 L75 19 L63 30 Z'), '#ffb3c7');
+      fs(P('M46.5 61 L53.5 61 L50 65 Z'), '#ff8fab', 1.2);
+      const wc = cc === '#3d3d45' ? '#f2f2f2' : OL; ln('M18 60 L33 62 M18 66 L33 65 M82 60 L67 62 M82 66 L67 65', 1.2, wc);
+      A = { ay: 31, hw: 26, ey: 53, ex1: 39, ex2: 61, er: 6, my: 68, mw: 12, skin: cc, mouth: true, dark: cc === '#3d3d45' };
+    } else if (ch === 'penguin') {
+      sil([[oval(50, 55, 31, 30), C]]);
+      const face = new Path2D(); face.addPath(circle(40, 57, 13)); face.addPath(circle(60, 57, 13)); face.addPath(oval(50, 66, 19, 12)); fo(face, '#ffffff');
+      fs(P('M42 61 L58 61 L50 71 Z'), '#ffb238', 1.8); blush(29, 71, 64);
+      A = { ay: 26, hw: 26, ey: 54, ex1: 40, ex2: 60, er: 5.5, my: 74, mw: 10, skin: '#ffffff', mouth: false };
+    } else if (ch === 'panda') {
+      sil([[circle(26, 33, 9.5), OL], [circle(74, 33, 9.5), OL], [oval(50, 57, 32, 28), C]]);
+      fo(oval(38, 53, 9, 11.5, -0.55), OL); fo(oval(62, 53, 9, 11.5, 0.55), OL);
+      fs(oval(50, 63, 4.4, 3), OL, 1); blush(30, 70, 65);
+      A = { ay: 29, hw: 27, ey: 53, ex1: 38, ex2: 62, er: 4.8, my: 69, mw: 12, skin: OL, mouth: true, patch: true };
+    } else if (ch === 'duck') {
+      sil([[circle(50, 55, 29), C]]); ln('M47 27 Q50 14 60 18 M50 26 Q46 16 39 19', 2.6);
+      fs(oval(50, 67, 17, 7.5), '#ff9f1c', 2); ln('M36 67 L64 67', 1.4);
+      A = { ay: 27, hw: 24, ey: 50, ex1: 39, ex2: 61, er: 5.5, my: 76, mw: 10, skin: C, mouth: false };
+    } else if (ch === 'hamster') {
+      sil([[circle(28, 33, 8.5), C], [circle(72, 33, 8.5), C], [circle(26, 64, 12), C], [circle(74, 64, 12), C], [oval(50, 57, 31, 27), C]]);
+      fo(circle(28, 33, 4.5), '#ffb3c7'); fo(circle(72, 33, 4.5), '#ffb3c7');
+      fo(oval(50, 66, 17, 12), '#fff1dc'); blush(27, 73, 63);
+      fs(oval(50, 60, 2.8, 2), '#ff8fab', 1); fs(rrect(46.4, 64, 3.4, 4.6, 0.8), '#fff', 1.1); fs(rrect(50.2, 64, 3.4, 4.6, 0.8), '#fff', 1.1);
+      A = { ay: 30, hw: 27, ey: 51, ex1: 40, ex2: 60, er: 4.4, my: 71, mw: 10, skin: C, mouth: true };
+    } else if (ch === 'monkey') {
+      sil([[circle(21, 55, 10), C], [circle(79, 55, 10), C], [circle(50, 53, 28), C]]);
+      fo(circle(21, 55, 5.5), '#f3cfa4'); fo(circle(79, 55, 5.5), '#f3cfa4');
+      const face = new Path2D(); face.addPath(circle(41, 50, 11)); face.addPath(circle(59, 50, 11)); face.addPath(oval(50, 64, 18, 12)); fo(face, '#f3cfa4');
+      fo(circle(47.5, 60.5, 1.1), OL); fo(circle(52.5, 60.5, 1.1), OL);
+      A = { ay: 25, hw: 24, ey: 50, ex1: 41, ex2: 59, er: 5, my: 66, mw: 16, skin: '#f3cfa4', mouth: true };
+    } else if (ch === 'alien') {
+      ln('M40 28 L33 13 M60 28 L67 13', 2.4); sil([[circle(33, 12, 3.6), C], [circle(67, 12, 3.6), C], [P('M50 22 C78 22 84 44 78 60 C72 76 60 86 50 86 C40 86 28 76 22 60 C16 44 22 22 50 22 Z'), C]]);
+      A = { ay: 24, hw: 26, ey: 51, ex1: 38, ex2: 62, er: 6.5, my: 72, mw: 10, skin: C, mouth: true, alien: true };
+    } else if (ch === 'robot') {
+      ln('M50 24 L50 13', 2.4); sil([[circle(50, 11, 3.8), '#ff5d5d'], [rrect(14, 42, 7, 16, 2), '#9fb0c2'], [rrect(79, 42, 7, 16, 2), '#9fb0c2'], [rrect(21, 23, 58, 54, 11), C]]);
+      fs(rrect(28, 33, 44, 29, 7), '#1d2633', 2);
+      ln('M38 70 L62 70 M42 67 L42 73 M50 67 L50 73 M58 67 L58 73', 1.6);
+      A = { ay: 24, hw: 28, ey: 47, ex1: 40, ex2: 60, er: 5, my: 57, mw: 12, skin: '#1d2633', mouth: false, robot: true };
+    } else if (ch === 'blob') {
+      sil([[circle(50, 54, 32), C]]);
+      A = { ay: 23, hw: 26, ey: 47, ex1: 39, ex2: 61, er: 6, my: 64, mw: 26, skin: C, mouth: true };
+    } else if (ch === 'ghost') {
+      sil([[P('M21 96 L21 50 C21 29 35 18 50 18 C65 18 79 29 79 50 L79 96 L71.5 89 L64 96 L57 89 L50 96 L43 89 L36 96 L28.5 89 Z'), C]]); blush(31, 69, 60);
+      A = { ay: 20, hw: 25, ey: 47, ex1: 40, ex2: 60, er: 6, my: 62, mw: 14, skin: C, mouth: true };
+    }
+    // yeux
+    const ex = M.ex, glow = A.robot ? '#5cf2ff' : null;
+    const eye = (x, y, r, side) => {
+      if (glow) { g.shadowColor = glow; g.shadowBlur = 4; if (ex === 'laugh') ln('M' + (x - r) + ' ' + (y + 2) + ' Q' + x + ' ' + (y - r) + ' ' + (x + r) + ' ' + (y + 2), 2.4, glow); else if (ex === 'smug') ln('M' + (x - r) + ' ' + y + ' L' + (x + r) + ' ' + y, 2.6, glow); else fo(circle(x, y, ex === 'shocked' ? r * 1.2 : ex === 'derp' && side > 0 ? r * 0.7 : r * 0.9), glow); g.shadowBlur = 0; g.shadowColor = 'transparent'; return; }
+      if (A.alien && ex !== 'laugh') { fs(oval(x, y, r * 1.35 * (ex === 'shocked' ? 1.15 : 1), r * 0.95 * (ex === 'shocked' ? 1.15 : 1), side * -0.45), OL, 1.5); fo(circle(x - side * 1.5, y - 1.8, 1.5), '#fff'); if (ex === 'smug') fo(P('M' + (x - r * 1.5) + ' ' + (y - r * 1.2) + ' L' + (x + r * 1.5) + ' ' + (y - r * 1.2) + ' L' + (x + r * 1.5) + ' ' + y + ' L' + (x - r * 1.5) + ' ' + y + ' Z'), A.skin); return; }
+      if (ex === 'laugh') { ln('M' + (x - r) + ' ' + (y + r * 0.35) + ' Q' + x + ' ' + (y - r * 0.95) + ' ' + (x + r) + ' ' + (y + r * 0.35), 2.4, A.dark || A.patch ? '#fff' : OL); fs(P('M' + (x + side * r * 1.1) + ' ' + (y + r * 0.6) + ' q' + side * 2.5 + ' 4 0 6.5 q' + -side * 2.5 + ' -2.5 0 -6.5 Z'), '#7fd3ff', 1.2); return; }
+      const rr = ex === 'shocked' ? r * 1.18 : ex === 'derp' ? (side < 0 ? r * 1.18 : r * 0.82) : r;
+      fs(circle(x, y, rr), '#ffffff', 1.6);
+      const px = ex === 'smug' ? x + side * 0.35 * rr : ex === 'derp' ? x - side * 0.35 * rr : x + 0.12 * rr, py = ex === 'derp' ? y + (side < 0 ? -0.3 : 0.3) * rr : y + 0.12 * rr, pr = ex === 'shocked' ? rr * 0.24 : rr * 0.56;
+      fo(circle(px, py, pr), OL); if (ex !== 'shocked') fo(circle(px + pr * 0.35, py - pr * 0.4, pr * 0.32), '#fff');
+      if (ex === 'smug') { g.beginPath(); g.arc(x, y, rr + 1.2, Math.PI, 0); g.closePath(); g.fillStyle = A.skin; g.fill(); ln('M' + (x - rr - 0.5) + ' ' + y + ' L' + (x + rr + 0.5) + ' ' + y, 2, A.dark || A.patch ? '#fff' : OL); }
+    };
+    if (ex === 'cool') {
+      const r = A.er, y = A.ey;
+      const lens = (x) => rrect(x - r * 1.7, y - r * 1.05, r * 3.4, r * 2.1, r * 0.8);
+      ln('M' + (A.ex1 + r * 1.6) + ' ' + (y - r * 0.4) + ' L' + (A.ex2 - r * 1.6) + ' ' + (y - r * 0.4), 2.4, '#111');
+      fs(lens(A.ex1), '#111', 1.4); fs(lens(A.ex2), '#111', 1.4);
+      ln('M' + (A.ex1 - r * 1.1) + ' ' + (y - r * 0.4) + ' L' + (A.ex1 - r * 0.3) + ' ' + (y - r * 0.4) + ' M' + (A.ex2 - r * 1.1) + ' ' + (y - r * 0.4) + ' L' + (A.ex2 - r * 0.3) + ' ' + (y - r * 0.4), 1.4, 'rgba(255,255,255,.75)');
+    } else { eye(A.ex1, A.ey, A.er, -1); eye(A.ex2, A.ey, A.er, 1); }
+    // bouche
+    if (A.mouth) {
+      const x = 50, y = A.my, w = A.mw, mc = A.robot ? '#5cf2ff' : OL;
+      if (A.robot) { /* grille déjà dessinée */ }
+      else if (ex === 'happy' || ex === 'laugh') {
+        const h = ex === 'laugh' ? w * 0.72 : w * 0.55;
+        const m = P('M' + (x - w / 2) + ' ' + y + ' L' + (x + w / 2) + ' ' + y + ' Q' + (x + w / 2) + ' ' + (y + h) + ' ' + x + ' ' + (y + h) + ' Q' + (x - w / 2) + ' ' + (y + h) + ' ' + (x - w / 2) + ' ' + y + ' Z');
+        fs(m, '#5a1420', 2); g.save(); g.clip(m); fo(oval(x, y + h * 0.95, w * 0.28, h * 0.42), '#ff6b81'); if (ex === 'laugh') g.fillStyle = '#fff', g.fillRect(x - w / 2, y - 1, w, h * 0.22); g.restore(); g.strokeStyle = OL; g.lineWidth = 2; g.stroke(m);
+      } else if (ex === 'smug') ln('M' + (x - w * 0.38) + ' ' + (y + 1.5) + ' Q' + (x + w * 0.05) + ' ' + (y + w * 0.22) + ' ' + (x + w * 0.45) + ' ' + (y - w * 0.12), 2.4, mc);
+      else if (ex === 'shocked') fs(oval(x, y + 2.5, Math.max(3, w * 0.17), Math.max(4, w * 0.24)), '#5a1420', 2);
+      else if (ex === 'cool') ln('M' + (x - w * 0.4) + ' ' + y + ' Q' + x + ' ' + (y + w * 0.32) + ' ' + (x + w * 0.42) + ' ' + (y - w * 0.06), 2.4, mc);
+      else if (ex === 'derp') { ln('M' + (x - w * 0.42) + ' ' + y + ' q' + w * 0.2 + ' ' + 3 + ' ' + w * 0.42 + ' 0 q' + w * 0.2 + ' -3 ' + w * 0.42 + ' 0', 2.2, mc); fs(oval(x + w * 0.12, y + 4, Math.max(2.6, w * 0.13), Math.max(3.4, w * 0.18)), '#ff6b81', 1.6); }
+    }
+    // accessoire
+    const ax = 50, ay = A.ay, hw = A.hw;
+    if (M.acc === 'crown') { fs(P('M' + (ax - 15) + ' ' + (ay + 3) + ' L' + (ax - 17) + ' ' + (ay - 13) + ' L' + (ax - 7.5) + ' ' + (ay - 4) + ' L' + ax + ' ' + (ay - 17) + ' L' + (ax + 7.5) + ' ' + (ay - 4) + ' L' + (ax + 17) + ' ' + (ay - 13) + ' L' + (ax + 15) + ' ' + (ay + 3) + ' Z'), '#ffd23f', 2.4); fs(circle(ax, ay - 2, 2.4), '#ff5d5d', 1.2); fs(circle(ax - 9, ay - 1, 1.8), '#4cc9f0', 1.1); fs(circle(ax + 9, ay - 1, 1.8), '#4cc9f0', 1.1); }
+    else if (M.acc === 'party') { g.save(); g.translate(ax + 4, ay); g.rotate(0.2); const cone = P('M-11 3 L1 -25 L12 3 Z'); fs(cone, '#ff5d8f', 2.4); g.save(); g.clip(cone); g.strokeStyle = '#ffd23f'; g.lineWidth = 3; for (let i = -30; i < 10; i += 8) { g.beginPath(); g.moveTo(-14, i + 14); g.lineTo(14, i); g.stroke(); } g.restore(); g.strokeStyle = OL; g.lineWidth = 2.4; g.stroke(cone); fs(circle(1, -26, 3.8), '#7ae582', 2); g.restore(); }
+    else if (M.acc === 'beanie') { const bc = M.shirt; fs(P('M' + (ax - hw - 2) + ' ' + (ay + 13) + ' Q' + (ax - hw - 2) + ' ' + (ay - 13) + ' ' + ax + ' ' + (ay - 13) + ' Q' + (ax + hw + 2) + ' ' + (ay - 13) + ' ' + (ax + hw + 2) + ' ' + (ay + 13) + ' Z'), bc, 2.4); fs(rrect(ax - hw - 4, ay + 7, 2 * hw + 8, 9, 3), shade(bc, -0.18), 2.2); fs(circle(ax, ay - 15, 5), '#ffffff', 2.2); }
+    else if (M.acc === 'cap') { const bc = M.shirt; fs(P('M' + (ax - hw + 2) + ' ' + (ay + 9) + ' Q' + (ax - hw + 2) + ' ' + (ay - 12) + ' ' + ax + ' ' + (ay - 12) + ' Q' + (ax + hw - 2) + ' ' + (ay - 12) + ' ' + (ax + hw - 2) + ' ' + (ay + 9) + ' Z'), bc, 2.4); fs(oval(ax + hw * 0.55, ay + 9, hw * 0.75, 4, -0.08), shade(bc, -0.2), 2.2); fs(circle(ax, ay - 12, 2), shade(bc, -0.3), 1.2); }
+    else if (M.acc === 'headset') { g.strokeStyle = OL; g.lineWidth = 6; g.beginPath(); g.arc(ax, ay + 26, hw + 5, Math.PI * 1.05, Math.PI * 1.95); g.stroke(); g.strokeStyle = '#3a3f4b'; g.lineWidth = 3; g.stroke(); fs(rrect(ax - hw - 10, ay + 18, 10, 17, 4), '#3a3f4b', 2.2); fs(rrect(ax + hw, ay + 18, 10, 17, 4), '#3a3f4b', 2.2); fs(rrect(ax - hw - 8, ay + 21, 4, 11, 2), M.shirt, 1); fs(rrect(ax + hw + 4, ay + 21, 4, 11, 2), M.shirt, 1); }
+    else if (M.acc === 'horns') { fs(P('M' + (ax - hw * 0.7) + ' ' + (ay + 7) + ' Q' + (ax - hw * 0.95) + ' ' + (ay - 8) + ' ' + (ax - hw * 1.05) + ' ' + (ay - 12) + ' Q' + (ax - hw * 0.45) + ' ' + (ay - 5) + ' ' + (ax - hw * 0.35) + ' ' + (ay + 5) + ' Z'), '#ff4d4d', 2.2); fs(P('M' + (ax + hw * 0.7) + ' ' + (ay + 7) + ' Q' + (ax + hw * 0.95) + ' ' + (ay - 8) + ' ' + (ax + hw * 1.05) + ' ' + (ay - 12) + ' Q' + (ax + hw * 0.45) + ' ' + (ay - 5) + ' ' + (ax + hw * 0.35) + ' ' + (ay + 5) + ' Z'), '#ff4d4d', 2.2); }
+    else if (M.acc === 'halo') { g.strokeStyle = OL; g.lineWidth = 6; g.beginPath(); g.ellipse(ax, ay - 9, 15, 4.2, 0, 0, Math.PI * 2); g.stroke(); g.strokeStyle = '#ffe680'; g.lineWidth = 3; g.stroke(); }
+    else if (M.acc === 'helmet') { const hp = circle(50, 54, 41); fo(hp, 'rgba(255,255,255,.16)'); g.strokeStyle = OL; g.lineWidth = 5; g.stroke(hp); g.strokeStyle = '#ffffff'; g.lineWidth = 2.4; g.stroke(hp); ln('M24 38 Q30 22 46 17', 3, 'rgba(255,255,255,.85)'); }
+    if (M.acc === 'chain' && M.ch !== 'ghost') { g.strokeStyle = OL; g.lineWidth = 5; g.beginPath(); g.arc(50, 70, 22, Math.PI * 0.22, Math.PI * 0.78); g.stroke(); g.strokeStyle = '#ffd23f'; g.lineWidth = 2.6; g.setLineDash([2.2, 1.2]); g.stroke(); g.setLineDash([]); fs(circle(50, 91, 7), '#ffd23f', 2.4); g.fillStyle = OL; g.font = '800 9px "Inter Tight",system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(letter || '$', 50, 91.5); }
+    g.restore();
+  }
   function paintLogo(cv, L, sym) {
     const W = cv.width, g = cv.getContext('2d'), P = PALS[(L.pal || 0) % PALS.length], R = seeded(L.seed || 7);
     const txt = (L.text || sym || 'COIN').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7) || 'COIN', letter = txt[0];
     const u = W / 1024;
     g.save(); g.clearRect(0, 0, W, W); g.textAlign = 'center'; g.textBaseline = 'alphabetic';
     background(g, W, P);
-    if (L.style === 'illus') {
+    if (L.style === 'meme') {
+      drawMeme(g, W, L, L.name || S.draft.name || txt, letter);
+    } else if (L.style === 'illus') {
       drawIllus(g, W, P, L.motif || L.theme || S.draft.theme || 'luxe', letter, u);
     } else if (L.style === 'coin') {
       const cx = W / 2, cy = W / 2, r = W * 0.41, f = r * 0.9;
@@ -3308,7 +3483,8 @@ Message: ${r}.
       serifLetter(g, P, letter, cx, cy + 4 * u, r * 1.15, Math.round(r * 1.5), u);
       caption(g, W, P, txt, W * 0.8, u);
     }
-    if (L.style === 'illus') { try { g.save(); g.globalAlpha = 0.03; g.globalCompositeOperation = 'overlay'; g.drawImage(grain(W), 0, 0); g.restore(); } catch (e) {} }
+    if (L.style === 'meme') { /* aplat net, sans grain */ }
+    else if (L.style === 'illus') { try { g.save(); g.globalAlpha = 0.03; g.globalCompositeOperation = 'overlay'; g.drawImage(grain(W), 0, 0); g.restore(); } catch (e) {} }
     else finish(g, W, P);
     g.restore();
   }
@@ -3330,7 +3506,7 @@ Message: ${r}.
   }
   function ideaLogo(x) {
     const c = document.createElement('canvas'); c.width = c.height = 256;
-    paintLogo(c, { style: 'illus', pal: x.pal, theme: x.theme, motif: x.motif, text: x.ticker, emoji: x.emo, seed: [...x.name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261) }, x.ticker);
+    paintLogo(c, { style: x.style || 'meme', pal: x.pal, theme: x.theme, motif: x.motif, mchar: x.mchar, name: x.name, text: x.ticker, emoji: x.emo, seed: x.seed || nameSeed(x.name) }, x.ticker);
     try { return c.toDataURL('image/png'); } catch (e) { return ''; }
   }
 
@@ -3348,11 +3524,12 @@ Message: ${r}.
     const d = S.draft, txt = logoTicker();
     if (!txt) { toast('Nom du token manquant', 'Choisis une idée à l\'étape 1, ou saisis un nom et un ticker à l\'étape 3.', 'a'); return; }
     const th = THEMES[d.theme] || THEMES.luxe;
-    const styles = ['illus', 'illus'].concat(shuffled(Object.keys(STYLES).filter((k) => k !== 'mascot' && k !== 'illus')).slice(0, 3), 'mascot');
+    const styles = ['meme', 'meme', 'meme', 'illus'].concat(shuffled(Object.keys(STYLES).filter((k) => !['mascot', 'illus', 'meme'].includes(k))).slice(0, 2));
     const pals = shuffled(PALS.map((_, i) => i).filter((i) => i !== th.pal)); pals.unshift(th.pal);
     const emoji = d.logo.emoji || rnd(th.mascot || ['✨']);
     const mot = MOTIFS[d.theme] || MOTIFS.luxe, m0 = d.logo.motif && mot.includes(d.logo.motif) ? d.logo.motif : pickMotif(d.theme, d.name, 0), m1 = mot.find((m) => m !== m0) || m0;
-    S.logoVars = styles.map((st, i) => ({ style: st, pal: pals[i % pals.length], seed: Math.floor(Math.random() * 1e6), emoji, text: txt, theme: d.theme, motif: i === 1 ? m1 : m0 }));
+    const mcl = MEME.theme[d.theme] || MEME.theme.meme, c0 = MEME.chars[d.logo.mchar] ? d.logo.mchar : ((MEME_WORDS.find(([re]) => re.test(d.name)) || [])[1] || mcl[0]), c1 = shuffled(mcl.filter((c) => c !== c0))[0] || c0;
+    S.logoVars = styles.map((st, i) => ({ style: st, pal: st === 'meme' ? Math.floor(Math.random() * MEME.bg.length) : pals[i % pals.length], seed: Math.floor(Math.random() * 1e6), emoji, text: txt, theme: d.theme, motif: i === 3 ? m1 : m0, mchar: st === 'meme' ? (i === 2 ? c1 : c0) : '', name: d.name }));
     S.logoVars.forEach((v) => { v.img = logoThumb(v, txt); });
     renderLogoVars();
     if (!fontsReady) loadFonts().then(() => { if (S.logoVars) { S.logoVars.forEach((v) => { v.img = logoThumb(v, v.text); }); renderLogoVars(); } });
@@ -3368,7 +3545,7 @@ Message: ${r}.
   }
   function applyLogoVar(i) {
     const v = S.logoVars && S.logoVars[i]; if (!v) return;
-    S.draft.logo = Object.assign({}, S.draft.logo, { style: v.style, pal: v.pal, seed: v.seed, emoji: v.emoji, text: v.text, theme: v.theme, motif: v.motif, textCustom: false });
+    S.draft.logo = Object.assign({}, S.draft.logo, { style: v.style, pal: v.pal, seed: v.seed, emoji: v.emoji, text: v.text, theme: v.theme, motif: v.motif, mchar: v.mchar || '', mexpr: '', macc: null, name: v.name, textCustom: false });
     S.draft.imgSrc = 'gen'; S.imgBlob = null; S.uploadWarn = [];
     saveDraft(); renderLaunch();
   }
@@ -3988,7 +4165,12 @@ Message: ${r}.
     if ($('genWord') !== document.activeElement) $('genWord').value = S.draft.word || '';
     renderIdeas();
     $('logoStyles').innerHTML = Object.keys(STYLES).map((k) => '<button class="chip ' + (S.draft.logo.style === k ? 'on' : '') + '" data-lstyle="' + k + '" type="button">' + STYLES[k] + '</button>').join('');
-    $('logoPal').innerHTML = PALS.map((p, i) => '<button type="button" data-pal="' + i + '" class="' + (S.draft.logo.pal === i ? 'on' : '') + '" style="background:linear-gradient(135deg,' + p.bg[1] + ' 0 55%,' + p.fg + ' 55% 100%)" title="' + esc(p.n) + '" aria-label="' + esc(p.n) + '"></button>').join('');
+    { const L = S.draft.logo, on = L.style === 'meme', box = $('logoMeme'); if (box) { box.hidden = !on; if (on) { const M = memePick(L, L.name || S.draft.name);
+      $('logoChar').innerHTML = Object.keys(MEME.chars).map((k) => '<button class="chip ' + (M.ch === k ? 'on' : '') + '" data-mchar="' + k + '" type="button">' + MEME.chars[k] + '</button>').join('');
+      $('logoExpr').innerHTML = Object.keys(MEME.exprs).map((k) => '<button class="chip ' + (M.ex === k ? 'on' : '') + '" data-mexpr="' + k + '" type="button">' + MEME.exprs[k] + '</button>').join('');
+      $('logoAcc').innerHTML = Object.keys(MEME.accs).map((k) => '<button class="chip ' + (M.acc === k ? 'on' : '') + '" data-macc="' + k + '" type="button">' + MEME.accs[k] + '</button>').join(''); } } }
+    if (S.draft.logo.style === 'meme') $('logoPal').innerHTML = MEME.bg.map((c, i) => '<button type="button" data-pal="' + i + '" class="' + (S.draft.logo.pal % MEME.bg.length === i ? 'on' : '') + '" style="background:' + c + '" title="Fond ' + (i + 1) + '" aria-label="Fond ' + (i + 1) + '"></button>').join('');
+    else $('logoPal').innerHTML = PALS.map((p, i) => '<button type="button" data-pal="' + i + '" class="' + (S.draft.logo.pal === i ? 'on' : '') + '" style="background:linear-gradient(135deg,' + p.bg[1] + ' 0 55%,' + p.fg + ' 55% 100%)" title="' + esc(p.n) + '" aria-label="' + esc(p.n) + '"></button>').join('');
     if ($('logoEmoji') !== document.activeElement) $('logoEmoji').value = S.draft.logo.emoji || '';
     if ($('logoText') !== document.activeElement) $('logoText').value = S.draft.logo.text || '';
     renderLogoSrc();
@@ -4531,6 +4713,7 @@ Message: ${r}.
     if (d.tpdel != null) { S.draft.tp.splice(+d.tpdel, 1); saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (d.tpdef) { S.draft.tp = TP_PRESETS.balanced.tp.map((l) => Object.assign({}, l)); S.draft.sl = TP_PRESETS.balanced.sl; S.draft.slMode = TP_PRESETS.balanced.slMode; saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (d.idea != null) { pickIdea(+d.idea); return; }
+    if (d.mchar != null || d.mexpr != null || d.macc != null) { const L = S.draft.logo; if (d.mchar != null) L.mchar = d.mchar; if (d.mexpr != null) L.mexpr = d.mexpr; if (d.macc != null) L.macc = d.macc; S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (d.lstyle) { S.draft.logo.style = d.lstyle; S.draft.logo.seed = Math.floor(Math.random() * 1e6); S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (d.pal != null) { S.draft.logo.pal = +d.pal; S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (b.id === 'logoDl') { const a = document.createElement('a'), src = S.draft.image || $('logoCv').toDataURL('image/jpeg', 0.92), ext = (/^data:image\/(\w+)/.exec(src) || [])[1] || 'png'; a.href = src; a.download = (S.draft.symbol || 'logo').toLowerCase() + '.' + (ext === 'jpeg' ? 'jpg' : ext); a.click(); return; }
