@@ -112,11 +112,31 @@
 
   /* ================================================================ RPC Solana */
   let rpcId = 0;
+  // RPC du compte (relais TokenStudio) quand un compte est connecté et qu'aucune clé personnelle n'est réglée.
+  // En cas de panne du relais, retour au RPC direct pendant une minute.
+  let RELAY_DOWN = 0;
+  const relay = () => (!cfg.rpc && window.TSRelay && Date.now() > RELAY_DOWN ? window.TSRelay : null);
+  const rpcKind = () => (cfg.rpc ? 'privé' : relay() ? 'TokenStudio' : 'public');
+  async function rpcPost(body) {
+    const R = relay();
+    if (R) {
+      try {
+        const h = await R.headers();
+        if (h) {
+          const r = await fetch(R.url, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, h), body });
+          if (r.ok || r.status === 400 || r.status === 403 || r.status === 429) return r;
+        }
+      } catch (e) {}
+      RELAY_DOWN = Date.now() + 60000;
+    }
+    return fetch(cfg.rpc || PUBLIC_RPC, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+  }
+  window.addEventListener('ts-relay', () => { RELAY_DOWN = 0; S.rpcOk = null; testRpc(true); renderTop(); });
   async function rpc(method, params) {
-    const url = cfg.rpc || PUBLIC_RPC;
     let r;
-    try { r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params }) }); }
+    try { r = await rpcPost(JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })); }
     catch (e) { setRpc(false); throw new Error(cfg.rpc ? 'RPC injoignable : vérifie l\'adresse dans Réglages.' : 'Le RPC public de Solana bloque cette page. Ajoute ta clé Helius gratuite dans Réglages (helius.dev).'); }
+    if ((r.status === 429 || r.status === 403) && r.url.includes('/functions/v1/')) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'RPC TokenStudio : requête refusée.'); }
     if (r.status === 429 || r.status === 403) { setRpc(false); throw new Error(cfg.rpc ? 'Ton RPC refuse ou limite les requêtes (' + r.status + '). Vérifie ta clé Helius.' : 'Le RPC public de Solana refuse les requêtes de cette page (' + r.status + '). Ajoute ta clé Helius gratuite dans Réglages.'); }
     if (!r.ok) { setRpc(false); throw new Error('RPC : erreur ' + r.status); }
     const j = await r.json();
@@ -644,8 +664,9 @@
   let PST = { url: null };
   let LAST_FEE = null;
   function pumpConn() {
-    const url = cfg.rpc || PUBLIC_RPC;
-    if (PST.url !== url) { const { web3, P } = KIT(); const conn = new web3.Connection(url, 'confirmed'); PST = { url, conn, online: new P.OnlinePumpSdk(conn), global: null, fee: null, at: 0 }; }
+    const R = relay(), url = R ? 'relais' : cfg.rpc || PUBLIC_RPC;
+    // via le relais, le kit passe par rpcPost (jeton du compte, repli automatique sur le RPC direct)
+    if (PST.url !== url) { const { web3, P } = KIT(); const conn = R ? new web3.Connection(R.url, { commitment: 'confirmed', fetch: (u, init) => rpcPost(init.body) }) : new web3.Connection(url, 'confirmed'); PST = { url, conn, online: new P.OnlinePumpSdk(conn), global: null, fee: null, at: 0 }; }
     return PST;
   }
   async function pumpGlobal() {
@@ -2067,7 +2088,7 @@
     add(!!S.wallet, 'Wallet connecté');
     if (S.wallet) add(S.bal != null && S.bal >= dev + 0.03, 'Solde suffisant (' + fSol(dev + 0.03, 2) + ' nécessaires)', cfg.sim ? 'rec' : 'req');
     add(!q || q.supplyPct <= cfg.devMaxPct, 'Achat du créateur ≤ ' + cfg.devMaxPct + ' % de l\'offre');
-    add(!!cfg.rpc, 'RPC privé configuré (Helius)', 'rec');
+    add(!!cfg.rpc || !!relay(), cfg.rpc ? 'RPC privé configuré (Helius)' : 'RPC TokenStudio (compte connecté) ou clé Helius', 'rec');
     if (d.tpOn && dev > 0) add(tpValid().ok, 'Plan de prise de profit cohérent');
     if (!cfg.sim && cfg.metaMethod === 'pinata') add(!!cfg.pinataJwt, 'Jeton Pinata renseigné');
     const urlOk = (u) => !u || /^https?:\/\/\S+\.\S+/.test(u);
@@ -2217,18 +2238,18 @@
     const wt = $('walletTxt'); if (wt) wt.innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
     const wb = $('walletBtn'); if (wb) wb.classList.toggle('primary', !S.wallet);
     const rs = $('rpcStatus');
-    rs.innerHTML = '<span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? '' : 'wait') + '"></span><span>' + (S.rpcOk ? (cfg.rpc ? 'RPC privé connecté' : 'RPC public connecté') : S.rpcOk === false ? 'RPC en erreur' : 'RPC non testé') + '</span>';
+    rs.innerHTML = '<span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? '' : 'wait') + '"></span><span>' + (S.rpcOk ? 'RPC ' + rpcKind() + ' connecté' : S.rpcOk === false ? 'RPC en erreur' : 'RPC non testé') + '</span>';
     const sb = $('simbar');
     sb.className = 'simbar' + (cfg.sim ? '' : ' live');
     sb.innerHTML = cfg.sim ? '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span><b>Mode simulation.</b> Tout est préparé et vérifié sur la blockchain, rien n\'est envoyé.</span><button class="btn sm" data-act="simoff" type="button">Passer en réel</button>'
       : '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg><span><b>Mode réel.</b> Les transactions signées partent sur la blockchain et engagent ton SOL.</span><button class="btn sm" data-act="simon" type="button">Revenir en simulation</button>';
     const fb = $('filebar'); if (fb) { fb.hidden = location.protocol !== 'file:'; fb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>Studio ouvert comme fichier.</b> Phantom ne peut pas s\'y connecter : ouvre la version en ligne (https) ou via localhost.</span><button class="btn sm" id="fileHelp" type="button">Comment faire</button>'; }
-    const rb = $('rpcbar'); if (rb) { rb.hidden = !(S.rpcOk === false); rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Ton RPC ne répond pas.</b> Vérifie l\'adresse dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Crée une clé gratuite sur helius.dev et colle l\'adresse dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
+    const rb = $('rpcbar'); if (rb) { rb.hidden = !(S.rpcOk === false); rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Ton RPC ne répond pas.</b> Vérifie l\'adresse dans Réglages.' : window.TSRelay ? '<b>Le RPC TokenStudio ne répond pas pour le moment.</b> Réessaie dans une minute, ou colle ta clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connecte-toi à ton compte pour utiliser le RPC TokenStudio, ou colle ta clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
     $('footMode').textContent = cfg.sim ? '● Simulation' : '● Réel';
     $('footMode').style.color = cfg.sim ? 'var(--violet)' : 'var(--red)';
     const sc = (attr, dot, label, val) => '<button class="sc-it" type="button" ' + attr + '><span class="dot ' + dot + '"></span>' + label + '<em>' + val + '</em></button>';
     $('sideCheck').innerHTML =       sc('data-sc="pp" data-page="settings"', 'wait', 'Flux direct', '…') +
-      sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'RPC Solana', S.rpcOk ? (cfg.rpc ? 'privé' : 'public') : S.rpcOk === false ? 'en erreur' : 'non testé') +
+      sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'RPC Solana', S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé') +
       sc(cfg.sim ? 'data-act="simoff"' : 'data-act="simon"', cfg.sim ? 'demo' : 'bad', 'Mode', cfg.sim ? 'simulation' : 'réel');
     ppStatus(); renderWalletCard();
     $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length;
@@ -2373,7 +2394,7 @@
     const { m, L } = dashOps();
     document.querySelectorAll('#dMode [data-dmode]').forEach((b) => { b.classList.toggle('on', b.dataset.dmode === m); b.setAttribute('aria-pressed', b.dataset.dmode === m); });
     document.querySelectorAll('#dRange [data-drange]').forEach((b) => b.classList.toggle('on', b.dataset.drange === DASH.range));
-    const ppl = ppLabel(); $('dLive').innerHTML = '<span class="dot ' + ppl[0] + '"></span>Flux direct · ' + esc(ppl[1]) + '<i></i><span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait') + '"></span>RPC ' + (S.rpcOk ? (cfg.rpc ? 'privé' : 'public') : S.rpcOk === false ? 'en erreur' : 'non testé');
+    const ppl = ppLabel(); $('dLive').innerHTML = '<span class="dot ' + ppl[0] + '"></span>Flux direct · ' + esc(ppl[1]) + '<i></i><span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait') + '"></span>RPC ' + (S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé');
     // portefeuille
     const w = S.wallet;
     $('dModeBadge').className = 'badge ' + (cfg.sim ? 'v' : 'r'); $('dModeBadge').textContent = cfg.sim ? 'Simulation' : 'Réel';

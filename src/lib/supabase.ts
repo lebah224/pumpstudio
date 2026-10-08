@@ -15,3 +15,4 @@ export const supabase = createClient(url, key, {
 });
 
 export const FUNCTIONS_URL = url.replace(/\/$/, '') + '/functions/v1';
+export const PUBLISHABLE_KEY = key;
