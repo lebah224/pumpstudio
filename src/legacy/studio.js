@@ -611,24 +611,34 @@
     SESSREC = null; SESSW.kp = null; cfg.useSess = false; save(LS.cfg, cfg); S.bal = null;
     toast('Wallet rapide supprimé', '', 'g'); refreshBal(); renderAll();
   }
+  // Alimenter le wallet rapide du compte depuis le wallet connecté (Phantom…) : un virement de SOL signé dans Phantom
   async function sessFund() {
-    if (!S.ext) { toast('Phantom non connecté', 'Connecte Phantom pour alimenter le wallet rapide, ou envoie des SOL à son adresse.', 'a'); return walletPanel(); }
-    const i = await modal('Alimenter le wallet rapide', '<p>Envoi de SOL depuis <b>' + esc(S.ext.name) + '</b> (' + short(S.ext.pk) + (S.extBal != null ? ' · ' + fSol(S.extBal, 3) : '') + ') vers le wallet rapide. Phantom te demandera de signer ce transfert.</p>' +
-      '<div class="field"><label for="fundAmt">Montant</label><span class="unit"><input id="fundAmt" type="number" min="0.01" step="any" value="0.3"><em>SOL</em></span></div>' +
-      '<p class="muted" style="font-size:13.5px">Conseil : juste de quoi couvrir tes achats et les frais (environ 0,03 SOL pour un lancement).</p>',
-      [{ label: 'Annuler' }, { label: 'Envoyer', cls: 'primary', keep: true }], true);
+    if (!S.ext) { toast('Wallet non connecté', 'Connecte Phantom (ou un autre wallet) pour alimenter ton wallet rapide.', 'a'); return; }
+    if (!SRVPK) { toast('Pas encore de wallet rapide', 'Crée d\'abord ton wallet rapide, puis alimente-le depuis ' + S.ext.name + '.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return; }
+    if (cfg.sim) return toast('Mode démo', 'Passe en réel pour alimenter ton wallet rapide.', 'a');
+    const ext = S.ext, to = SRVPK;
+    let have = S.extBal; try { have = (await rpc('getBalance', [ext.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {}
+    const max = have != null ? Math.max(0, have - 0.003) : null;   // garde de quoi payer les frais du wallet
+    const i = await modal('Alimenter le wallet rapide', '<p>Virement de SOL depuis <b>' + esc(ext.name) + '</b> <span class="mono">' + short(ext.pk) + '</span> vers ton wallet rapide <span class="mono">' + short(to) + '</span>. ' + esc(ext.name) + ' te demandera de signer.</p>' +
+      '<div class="field"><label for="fundAmt">Montant' + (max != null ? ' <small>disponible : ' + fSol(have, 4) + '</small>' : '') + '</label><span class="unit"><input id="fundAmt" type="number" min="0.001" step="any" value="' + (max != null ? Math.min(0.3, Math.floor(max * 1000) / 1000) : 0.3) + '"><em>SOL</em></span></div>' +
+      (max != null ? '<div class="row-btns">' + [0.1, 0.5, 1].filter((v) => v <= max).map((v) => '<button class="btn sm" type="button" data-fundset="' + v + '">' + fr(v, 1) + ' SOL</button>').join('') + '<button class="btn sm" type="button" data-fundset="' + Math.floor(max * 1e6) / 1e6 + '">Maximum</button></div>' : '') +
+      '<p class="muted" style="font-size:13.5px">Conseil : juste de quoi couvrir tes achats et les frais (environ 0,03 SOL pour un lancement). Les plafonds de ton wallet rapide s\'appliquent ensuite.</p>',
+      [{ label: 'Annuler' }, { label: 'Alimenter', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const amt = num($('fundAmt').value);
-    if (!(amt > 0) || amt > 100) return toast('Montant invalide', 'Entre 0,01 et 100 SOL.', 'r');
+    if (!(amt >= 0.001) || amt > 1000) return toast('Montant invalide', 'Entre 0,001 et 1 000 SOL.', 'r');
+    if (max != null && amt > max) return toast('Solde insuffisant', ext.name + ' a ' + fSol(have, 4) + ' (frais du virement compris).', 'r');
     closeModal();
-    if (cfg.sim) return toast('Mode démo', 'Le transfert n\'est pas envoyé en démo. Passe en réel pour alimenter le wallet.', 'a');
-    const { web3 } = KIT(), ext = S.ext;
+    const { web3 } = KIT();
     const ctx = await runFlow('Alimenter le wallet rapide', [
-      { label: 'Préparation du transfert', run: async (x) => { x.tx = await txFrom([web3.SystemProgram.transfer({ fromPubkey: new web3.PublicKey(ext.pk), toPubkey: new web3.PublicKey(SESSREC.pk), lamports: Math.round(amt * 1e9) })], 1000, { payer: ext.pk, tip: false }); } },
+      { label: 'Préparation du virement', run: async (x) => { x.tx = await txFrom([web3.SystemProgram.transfer({ fromPubkey: new web3.PublicKey(ext.pk), toPubkey: new web3.PublicKey(to), lamports: Math.round(amt * 1e9) })], 1000, { payer: ext.pk, tip: false }); return fSol(amt, 4); } },
       { label: 'Signature dans ' + ext.name, run: async (x) => { x.sig = await signAndSend(x.tx, null, ext); return short(x.sig, 6); } },
       { label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) },
     ]);
-    if (!ctx.error) { toast('Wallet rapide alimenté', '+' + fSol(amt, 3), 'g'); refreshBal(); }
+    if (!ctx.error) {
+      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSol(amt, 4) + ' envoyés sur ton wallet rapide. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
+      toast('Wallet rapide alimenté', '+' + fSol(amt, 4), 'g'); S.bal = null; refreshBal(); renderAll();
+    }
   }
   // Ancien wallet rapide du navigateur → wallet rapide du compte (même adresse, mêmes fonds), puis retiré d'ici
   async function legacyMigrate() {
@@ -3754,6 +3764,7 @@
     if (d.dtok) { setPage('mine'); return typeof showToken === 'function' ? showToken('mine', d.dtok) : null; }
     if (d.fees === 'claim') return claimFees();
     if (d.fees === 'refresh') return feesRead(true);
+    if (d.fundset) { const el = $('fundAmt'); if (el) el.value = d.fundset; return; }
     if (d.dist || d.distmark || d.distcp) return distAction(b);
     if (d.cr) return crAction(d.cr);
     if (d.dact === 'radar') { setPage('launch'); return setLaunchTab('radar'); }

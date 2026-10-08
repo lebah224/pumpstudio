@@ -185,7 +185,7 @@ export function WalletPage() {
             {isSrv ? <button type="button" className="ts-wp-act" onClick={() => openServerWallet('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
               : isQuick
               ? <button type="button" className="ts-wp-act" onClick={() => hub?.walletAction('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
-              : srv ? <button type="button" className="ts-wp-act" title={'Envoyer des SOL de ' + name + ' vers ton wallet rapide'} onClick={() => { setPick('srv'); setReceive(true); }}><span className="ts-wp-aic">⇄</span>Vers le rapide</button>
+              : srv ? <button type="button" className="ts-wp-act" title={'Envoyer des SOL de ' + name + ' vers ton wallet rapide (signé dans ' + name + ')'} onClick={() => hub?.walletAction('fund')}><span className="ts-wp-aic">⇢</span>Alimenter</button>
               : <button type="button" className="ts-wp-act" title="Wallet de ton compte qui signe seul : ventes automatiques et bot, même navigateur fermé" onClick={() => openServerWallet('create')}><span className="ts-wp-aic">ϟ</span>Wallet rapide</button>}
             <button type="button" className="ts-wp-act" onClick={() => copy(pk)}><span className="ts-wp-aic">⧉</span>Copier</button>
             <a className="ts-wp-act" href={'https://solscan.io/account/' + pk} target="_blank" rel="noopener noreferrer"><span className="ts-wp-aic">↗</span>Solscan</a>
@@ -267,7 +267,7 @@ export function WalletPage() {
         </div>
       </div>
 
-      {receive && <ReceiveDialog pk={pk} name={name} canFund={isQuick && !!ext} onClose={() => setReceive(false)} />}
+      {receive && <ReceiveDialog pk={pk} name={name} canFund={isSrv && !!ext} onClose={() => setReceive(false)} />}
     </div>
   );
 }
@@ -290,7 +290,7 @@ function ReceiveDialog({ pk, name, canFund, onClose }: { pk: string; name: strin
         {ok && <p className="muted ts-small">Le QR code contient maintenant une demande de {nf(n, n < 1 ? 4 : 2)} SOL (Solana Pay) : l'app du wallet pré-remplit le montant.</p>}
         <div className="ts-note warn">Réseau Solana uniquement. Un envoi depuis un autre réseau (Ethereum, BNB…) serait perdu.</div>
         <div className="ts-row">
-          {canFund && <button type="button" className="btn" onClick={() => { onClose(); studio()?.hub?.walletAction('fund'); }}>Depuis mon wallet connecté</button>}
+          {canFund && <button type="button" className="btn" onClick={() => { onClose(); studio()?.hub?.walletAction('fund'); }}>{'Alimenter depuis ' + (studio()?.hub?.state().ext?.name ?? 'mon wallet')}</button>}
           <button type="button" className="btn primary" onClick={() => copy(pk)}>Copier l'adresse</button>
         </div>
       </div>
