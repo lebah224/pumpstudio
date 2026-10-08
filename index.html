@@ -1147,6 +1147,64 @@ textarea{font:inherit;color:inherit}
 @media (max-width:700px){.fee-r{width:100%;justify-content:flex-end}}
 .meme-opts[hidden]{display:none}
 .meme-opts .chips .chip{min-height:30px;padding:4px 11px;font-size:13px}
+/* ---------- onglet Créer ---------- */
+.ltabs button svg.i{width:16px;height:16px}
+.cr-intro{display:flex;flex-direction:column;gap:3px;margin:0 0 16px;padding:14px 18px;border:1px solid var(--accent-line);border-radius:var(--r);background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 8%,var(--panel)),var(--panel))}
+.cr-intro b{font-family:var(--display);font-size:17px}
+.cr-intro span{font-size:13.5px;color:var(--muted)}
+.cr-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.cr-step{position:relative;transition:border-color .2s}
+.cr-step.done{border-color:color-mix(in oklab,var(--green) 35%,var(--line))}
+.cr-h{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.cr-h h3{margin:0;font-family:var(--display);font-size:16px}
+.cr-h h3 small{font-family:var(--sans);font-weight:500;font-size:12px;color:var(--dim);margin-left:6px}
+.cr-h p{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
+.cr-n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;font-family:var(--mono);font-weight:600;font-size:14px;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent-ink)}
+.cr-step.done .cr-n{background:var(--green-bg);border-color:var(--green-line);color:var(--green-ink)}
+.cr-ok{margin-left:auto;color:var(--green);display:grid;place-items:center}
+.cr-ok svg.i{width:22px;height:22px;stroke-width:2.4}
+.cr-help{font-size:12.5px;color:var(--dim);margin-top:5px}
+.cr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.cr-row .cr-help{margin:0}
+.cr-sym{display:flex;align-items:center;border:1px solid var(--line2);border-radius:var(--r-sm);background:var(--bg2);overflow:hidden}
+.cr-sym:focus-within{box-shadow:var(--focus);border-color:var(--accent-line)}
+.cr-sym span{padding:0 4px 0 12px;font-family:var(--mono);color:var(--accent);font-weight:600}
+.cr-sym input{border:none !important;background:none !important;box-shadow:none !important;font-family:var(--mono);text-transform:uppercase;padding-left:2px}
+.cr-logo{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:center}
+.cr-lp{width:150px;height:150px;border-radius:18px;border:1px dashed var(--line2);background:var(--bg2);display:grid;place-items:center;overflow:hidden;position:relative;color:var(--dim);font-size:12.5px;text-align:center;padding:8px}
+.cr-lp:has(img){border-style:solid;padding:0}
+.cr-lp img{width:100%;height:100%;object-fit:cover;display:block}
+.cr-lp em{position:absolute;left:8px;bottom:8px;font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff}
+.cr-la{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.cr-drop{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px;border:1.5px dashed var(--accent-line);border-radius:var(--r-sm);background:var(--accent-bg);cursor:pointer;text-align:center;transition:background .15s}
+.cr-drop:hover{background:color-mix(in oklab,var(--accent) 14%,var(--panel))}
+.cr-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.cr-drop svg.i{color:var(--accent);width:22px;height:22px}
+.cr-drop b{font-size:14px}
+.cr-drop span{font-size:12px;color:var(--muted)}
+.cr-or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12px}
+.cr-or::before,.cr-or::after{content:"";flex:1;height:1px;background:var(--line)}
+.cr-vars{margin-top:14px;grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width:760px){.cr-vars{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.cr-side{position:sticky;top:90px}
+.cr-prev{margin:0}
+.cr-pv-t{font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600;margin-bottom:10px}
+.cr-pv{display:flex;align-items:center;gap:12px}
+.cr-pv-img{width:56px;height:56px;border-radius:14px;overflow:hidden;background:var(--panel3);border:1px solid var(--line2);display:grid;place-items:center;font-weight:700;color:var(--accent);flex:none}
+.cr-pv-img img{width:100%;height:100%;object-fit:cover}
+.cr-pv b{display:block;font-size:16px;font-family:var(--display);word-break:break-word}
+.cr-pv small{font-family:var(--mono);color:var(--accent-ink);font-size:13px}
+.cr-pv-d{font-size:13px;color:var(--muted);margin:12px 0;line-height:1.5;max-height:6em;overflow:hidden}
+.cr-check{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--line);margin-bottom:12px}
+.cr-check>div{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--muted)}
+.cr-check i{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line2);display:grid;place-items:center;flex:none}
+.cr-check .ok{color:var(--text)}
+.cr-check .ok i{background:var(--green);border-color:var(--green);color:#06210f}
+.cr-check i svg.i{width:12px;height:12px;stroke-width:3}
+.cr-check .opt{color:var(--dim)}
+.cr-go{width:100%;min-height:46px;font-size:15px}
+@media (max-width:1000px){.cr-grid{grid-template-columns:1fr}.cr-side{position:static}}
+@media (max-width:560px){.cr-logo{grid-template-columns:1fr}.cr-lp{width:100%;height:auto;aspect-ratio:1;max-width:220px;margin:0 auto}}
 </style>
 </head>
 <body>
@@ -1252,7 +1310,54 @@ textarea{font:inherit;color:inherit}
 
       <!-- LANCER -->
       <section class="page" id="p-launch">
-        <div class="ltabs" id="launchTabs" role="tablist"><button class="on" data-ltab="studio" type="button" role="tab" aria-selected="true">Studio de création</button><button data-ltab="radar" type="button" role="tab" aria-selected="false">Radar des tendances<span class="new">nouveau</span></button></div>
+        <div class="ltabs" id="launchTabs" role="tablist"><button data-ltab="create" type="button" role="tab" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Créer</button><button class="on" data-ltab="studio" type="button" role="tab" aria-selected="true"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.1 4.9L19 10l-4.9 2.1L12 17l-2.1-4.9L5 10l4.9-2.1z"/></svg>Studio de création</button><button data-ltab="radar" type="button" role="tab" aria-selected="false">Radar des tendances<span class="new">nouveau</span></button></div>
+        <div id="lt-create" hidden>
+          <div class="cr-intro"><b>Crée ton token toi-même</b><span>Trois blocs, dans l'ordre. Rien n'est publié ici : à la fin, tu passes à l'écran de lancement pour vérifier et signer.</span></div>
+          <div class="cr-grid">
+            <div class="cr-main">
+              <section class="card cr-step" id="crS1">
+                <div class="cr-h"><span class="cr-n">1</span><div><h3>Ton token</h3><p>Le nom et le ticker que tout le monde verra sur pump.fun.</p></div><span class="cr-ok" id="crOk1"></span></div>
+                <div class="row2">
+                  <div class="field"><label for="crName">Nom</label><input id="crName" maxlength="32" placeholder="ex. Lucky Otter" autocomplete="off"><div class="cr-help">32 caractères max. Court et facile à retenir.</div></div>
+                  <div class="field"><label for="crSym">Ticker</label><div class="cr-sym"><span>$</span><input id="crSym" maxlength="10" placeholder="LOTTER" autocomplete="off"></div><div class="cr-help" id="crSymHelp">Rempli tout seul à partir du nom, modifiable.</div></div>
+                </div>
+                <div class="field"><label for="crDesc">Description</label><textarea id="crDesc" maxlength="1000" rows="3" placeholder="En une ou deux phrases : de quoi parle ton token ?"></textarea>
+                  <div class="cr-row"><button class="btn sm" data-cr="desc" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.1 4.9L19 10l-4.9 2.1L12 17l-2.1-4.9L5 10l4.9-2.1z"/></svg>Écrire pour moi</button><span class="cr-help" id="crDescCnt"></span></div></div>
+              </section>
+              <section class="card cr-step" id="crS2">
+                <div class="cr-h"><span class="cr-n">2</span><div><h3>Ton logo</h3><p>Importe ton image, ou laisse le studio t'en proposer six.</p></div><span class="cr-ok" id="crOk2"></span></div>
+                <div class="cr-logo">
+                  <div class="cr-lp" id="crLogo"></div>
+                  <div class="cr-la">
+                    <label class="cr-drop"><input type="file" id="crFile" accept="image/png,image/jpeg,image/gif,image/webp"><svg class="i" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg><b>Importer mon image</b><span>PNG, JPG, GIF ou WEBP · 4 Mo max · recadrée en carré</span></label>
+                    <div class="cr-or"><span>ou</span></div>
+                    <button class="btn" data-cr="gen" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.1 4.9L19 10l-4.9 2.1L12 17l-2.1-4.9L5 10l4.9-2.1z"/></svg>Proposer des logos</button>
+                    <button class="btn sm ghost" data-cr="edit" type="button">Personnaliser dans le studio</button>
+                  </div>
+                </div>
+                <div class="logo-vars cr-vars" id="crVars" hidden></div>
+              </section>
+              <section class="card cr-step" id="crS3">
+                <div class="cr-h"><span class="cr-n">3</span><div><h3>Tes liens <small>facultatif, mais conseillé</small></h3><p>Un token avec une communauté visible inspire plus confiance.</p></div><span class="cr-ok" id="crOk3"></span></div>
+                <div class="row3">
+                  <div class="field"><label for="crTw">X (Twitter)</label><input id="crTw" placeholder="https://x.com/…" autocomplete="off"></div>
+                  <div class="field"><label for="crTg">Telegram</label><input id="crTg" placeholder="https://t.me/…" autocomplete="off"></div>
+                  <div class="field"><label for="crWeb">Site web</label><input id="crWeb" placeholder="https://…" autocomplete="off"></div>
+                </div>
+              </section>
+            </div>
+            <aside class="cr-side">
+              <div class="card cr-prev">
+                <div class="cr-pv-t">Aperçu</div>
+                <div class="cr-pv"><div class="cr-pv-img" id="crPvImg"></div><div><b id="crPvName">Nom du token</b><small id="crPvSym">$TICKER</small></div></div>
+                <p class="cr-pv-d" id="crPvDesc">Ta description apparaîtra ici.</p>
+                <div class="cr-check" id="crCheck"></div>
+                <button class="btn primary cr-go" data-cr="launch" type="button">Continuer vers le lancement</button>
+                <div class="cr-help" style="text-align:center">Tu choisiras l'achat du créateur et ton plan de vente avant de signer.</div>
+              </div>
+            </aside>
+          </div>
+        </div>
         <div id="lt-studio">
         <div class="autogen" id="autogen">
           <div class="ag-ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z"/></svg></div>
@@ -1277,7 +1382,7 @@ textarea{font:inherit;color:inherit}
                 <div class="field"><label>Langue des textes</label><div class="chips" id="genLangs"></div></div>
                 <div class="field"><label for="genWord">Ton mot-clé <small>facultatif</small></label><input id="genWord" maxlength="20" placeholder="ex. Nova"></div>
               </div>
-              <div class="toolbar"><button class="btn primary" id="genGo" type="button">Générer des idées</button><span class="muted" style="font-size:13px">Clique sur une idée pour la reprendre, puis ajuste-la à l'étape 3.</span></div>
+              <div class="toolbar"><button class="btn" id="genGo" type="button">Autres idées</button><span class="muted" style="font-size:13px">Clique sur une idée : elle est reprise et tu passes au logo.</span></div>
               <div class="ideas" id="ideas"></div>
             </div>
             <!-- étape 2 -->
@@ -1642,7 +1747,7 @@ Message: ${r}.
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
   const S = {
     page: 'dash', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
-    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'luxe', tone: 'luxe', lang: 'en', word: '', logo: { style: 'meme', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
+    draft: Object.assign({ name: '', symbol: '', desc: '', tw: '', tg: '', web: '', dev: 0.1, image: null, imgSrc: '', theme: 'meme', tone: 'luxe', lang: 'en', word: '', logo: { style: 'meme', pal: 0, emoji: '', text: '', seed: 7 }, platform: 'pump', tpOn: true, tp: [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }], sl: 0 }, load(LS.draft, {})),
     tokens: load(LS.tokens, []), journal: load(LS.journal, []), orders: load(LS.orders, []),
     ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, jf: 'real', busy: false, imgBlob: null,
   };
@@ -1658,7 +1763,7 @@ Message: ${r}.
     set(v) { S.ext = v; }, enumerable: true,
   });
   // brouillons des versions précédentes : univers, ton et style de logo d'avant
-  (function migrate() { const d = S.draft; d.platform = 'pump'; if (!['luxe', 'meme', 'internet', 'space', 'tech', 'prestige', 'myth', 'ocean', 'food', 'gaming', 'nature', 'brand'].includes(d.theme)) d.theme = 'luxe'; if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['meme', 'illus', 'mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
+  (function migrate() { const d = S.draft; d.platform = 'pump'; d.theme = ({ prestige: 'luxe', myth: 'gaming', ocean: 'meme', food: 'meme', nature: 'meme', brand: 'tech' })[d.theme] || (['meme', 'internet', 'luxe', 'space', 'tech', 'gaming'].includes(d.theme) ? d.theme : 'meme'); if (!['luxe', 'minimal', 'witty', 'community'].includes(d.tone)) d.tone = 'luxe'; if (!['en', 'fr'].includes(d.lang)) d.lang = 'en'; if (!['meme', 'illus', 'mono', 'coin', 'orb', 'shield', 'hex', 'seal', 'glass', 'geo', 'word', 'mascot'].includes(d.logo.style)) { d.logo.style = 'mono'; d.logo.pal = 0; } })();
 
   /* ================================================================ outils binaires */
   function b64ToBytes(b64) { const s = atob(b64), out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
@@ -2658,6 +2763,10 @@ Message: ${r}.
     myth: ['Blade', 'Valhalla', 'Seer', 'Angel', 'Aether', 'Odin', 'Thor', 'Anubis', 'Zeus', 'Ember', 'Inferno', 'Saber'],
   };
   Object.keys(MORE_NOUNS).forEach((k) => { if (THEMES[k]) MORE_NOUNS[k].forEach((n) => { if (!THEMES[k].nouns.includes(n)) THEMES[k].nouns.push(n); }); });
+  // Six univers affichés ; les noms des anciens univers sont fusionnés dans le plus proche
+  const THEME_SHOWN = ['meme', 'internet', 'luxe', 'space', 'tech', 'gaming'];
+  const THEME_MERGE = { luxe: ['prestige'], meme: ['food', 'ocean', 'nature'], gaming: ['myth'] };
+  Object.keys(THEME_MERGE).forEach((k) => THEME_MERGE[k].forEach((src) => { const a = THEMES[k], b = THEMES[src]; if (!a || !b) return; b.nouns.forEach((n) => { if (!a.nouns.includes(n)) a.nouns.push(n); }); (b.adj || []).forEach((n) => { if (!a.adj.includes(n)) a.adj.push(n); }); }));
   // Illustrations des univers (SVG compacts, teinte propre à chaque univers via --th)
   const UNIV_ART = {
     luxe: '<svg viewBox="0 0 120 72" aria-hidden="true"><defs><linearGradient id="ua-l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6dc"/><stop offset=".55" stop-color="var(--th)"/><stop offset="1" stop-color="#6b4f1d"/></linearGradient></defs><path d="M44 22h32l10 12-26 28-26-28z" fill="url(#ua-l)"/><path d="M34 34h52M44 22l16 40 16-40M50 22l10 12 10-12" fill="none" stroke="#1b1407" stroke-opacity=".35" stroke-width="1.2"/><path d="M92 14l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="var(--th)"/><circle cx="26" cy="52" r="2" fill="var(--th)" opacity=".7"/></svg>',
@@ -2676,7 +2785,7 @@ Message: ${r}.
     nature: '<svg viewBox="0 0 120 72" aria-hidden="true"><path d="M50 40h20v18a6 6 0 0 1-6 6h-8a6 6 0 0 1-6-6z" fill="#f5ecdc"/><path d="M26 42C26 16 94 16 94 42Z" fill="var(--th)"/><circle cx="42" cy="30" r="4.4" fill="#fff5ee"/><circle cx="60" cy="24" r="5" fill="#fff5ee"/><circle cx="78" cy="32" r="3.8" fill="#fff5ee"/><ellipse cx="36" cy="64" rx="10" ry="2.4" fill="#6fcf7f"/><ellipse cx="86" cy="64" rx="8" ry="2" fill="#6fcf7f"/></svg>',
   });
   const UNIV_TINT = { luxe: '#d6b26e', meme: '#7fd18a', internet: '#7cc4ff', space: '#8fb4ff', tech: '#5fd4c4', prestige: '#e2c27a', myth: '#e8925a', brand: '#cfc6b4', ocean: '#5fb6ff', food: '#f59ac0', gaming: '#b59cff', nature: '#e0524f' };
-  const UNIV_HINT = { luxe: 'Aurelia · Velora', meme: 'Lil Otter · Capy', internet: 'Aura · Rizz', space: 'Nova · Orbit', tech: 'Neuron · Synth', prestige: 'Crown · Onyx', myth: 'Phoenix · Atlas', brand: 'Ton propre nom', ocean: 'Coral · Orca', food: 'Mochi · Latte', gaming: 'Loot · Respawn', nature: 'Fern · Lotus' };
+  const UNIV_HINT = { luxe: 'Aurelia · Monarch', meme: 'Capy · Donut · Koi', internet: 'Aura · Rizz', space: 'Nova · Orbit', tech: 'Neuron · Synth', prestige: 'Crown · Onyx', myth: 'Phoenix · Atlas', brand: 'Ton propre nom', ocean: 'Coral · Orca', food: 'Mochi · Latte', gaming: 'Loot · Phoenix', nature: 'Fern · Lotus' };
   const TONES = { luxe: 'Premium', minimal: 'Sobre', witty: 'Décalé', community: 'Communauté' };
   const LANGS = { en: 'Anglais', fr: 'Français' };
   // Descriptions : courtes, sans superlatifs creux ni formules « Bienvenue dans… », ni promesse de gains.
@@ -2781,6 +2890,9 @@ Message: ${r}.
     // personnages du style Mème : celui que le nom évoque, sinon tous ceux de l'univers à tour de rôle
     const mc = MEME.theme[thKey] || MEME.theme.meme; let mr = Math.floor(Math.random() * mc.length);
     out.forEach((x) => { x.mchar = (MEME_WORDS.find(([re]) => re.test(x.name)) || [])[1] || mc[mr++ % mc.length]; });
+    // tous les styles dans la liste : surtout des Mèmes, plus des Illustrations et des styles premium
+    const prem = shuffled(['coin', 'shield', 'hex', 'seal', 'glass', 'geo', 'orb', 'mono']), plan = ['meme', 'meme', 'illus', 'meme', 'P', 'meme', 'illus', 'P'];
+    out.forEach((x, i) => { const st = plan[i % plan.length]; x.style = st === 'P' ? prem.pop() : st; if (x.style !== 'meme') x.pal = (th.pal + i * 3) % PALS.length; });
     return out;
   }
   function descFor(name, ticker, n1, short, idx) {
@@ -2894,6 +3006,7 @@ Message: ${r}.
   const MOTIFS = { luxe: ['diamond', 'ring', 'pearl', 'gem', 'perfume'], meme: ['frog', 'cat', 'panda', 'dog', 'penguin', 'duck'], internet: ['browser', 'chat', 'smiley', 'heart'],
     space: ['planet', 'moon', 'rocket', 'comet', 'sun', 'ufo'], tech: ['chip', 'robot', 'bolt', 'atom', 'nodes'], prestige: ['crown', 'key', 'shield', 'laurel'], myth: ['trident', 'flame', 'sword', 'eye', 'wing'],
     brand: ['mono', 'squaremono', 'hexmono'], ocean: ['wave', 'fish', 'shell', 'anchor'], food: ['donut', 'cherry', 'cup', 'icecream'], gaming: ['gamepad', 'pcoin', 'ghost', 'heart'], nature: ['leaf', 'mushroom', 'flower', 'tree'] };
+  MOTIFS.luxe = MOTIFS.luxe.concat(MOTIFS.prestige); MOTIFS.meme = MOTIFS.meme.concat(MOTIFS.food, MOTIFS.ocean, MOTIFS.nature); MOTIFS.gaming = MOTIFS.gaming.concat(MOTIFS.myth.filter((m) => !MOTIFS.gaming.includes(m))); MOTIFS.tech = MOTIFS.tech.concat(MOTIFS.brand);
   const MOTIF_WORDS = [[/panda|koala|hippo|llama|walrus/i, 'panda'], [/lynx|raccoon|moose|cat|kit/i, 'cat'], [/doge|shib|dog|corgi|inu|pup|pug/i, 'dog'], [/penguin|pingu|frost/i, 'penguin'], [/duck|goose|quack/i, 'duck'],
     [/otter|toad|gecko|axolotl|capy|quokka|frog/i, 'frog'], [/comet|meteor/i, 'comet'], [/sun|solar|helio/i, 'sun'], [/ufo|alien/i, 'ufo'], [/nova|lumen|halo|eclipse|luna|lunar|moon/i, 'moon'],
     [/rocket|zenith|vega|astra|apollo/i, 'rocket'], [/orbit|nebula|quasar|pulsar|planet/i, 'planet'], [/quantum|atom|proton/i, 'atom'], [/net|mesh|node|proxy|chain/i, 'nodes'],
@@ -3497,6 +3610,12 @@ Message: ${r}.
     const cv = $('logoCv'); if (!cv) return;
     if (cv.width !== 1024) { cv.width = 1024; cv.height = 1024; }
     if (S.draft.imgSrc === 'upload') { renderLaunchSide(); return; }
+    const key = JSON.stringify([S.draft.logo, S.draft.symbol, S.draft.name, fontsReady]);
+    const visible = S.page === 'launch' && S.ltab === 'studio' && S.step === 2;
+    // à l'ouverture, l'image enregistrée suffit : le canevas 1024 px n'est dessiné qu'à l'étape Logo ou quand le logo change
+    if (drawLogo.key === undefined && !visible) { drawLogo.key = key; renderLaunchSide(); return; }
+    if (key === drawLogo.key && (drawLogo.painted || !visible)) { renderLaunchSide(); return; }
+    drawLogo.key = key; drawLogo.painted = true;
     paintLogo(cv, S.draft.logo, S.draft.symbol);
     try { S.draft.image = cv.toDataURL('image/jpeg', 0.92); } catch (e) {}
     if (cv.toBlob) cv.toBlob((b) => { if (b && S.draft.imgSrc !== 'upload') S.imgBlob = b; }, 'image/jpeg', 0.92);
@@ -3541,7 +3660,7 @@ Message: ${r}.
     if (!S.logoVars) { el.hidden = true; return; }
     el.hidden = false;
     const L = S.draft.logo, cur = S.draft.imgSrc !== 'upload';
-    el.innerHTML = S.logoVars.map((v, i) => '<button class="lvar' + (cur && L.style === v.style && L.pal === v.pal && L.seed === v.seed ? ' on' : '') + '" data-lvar="' + i + '" type="button"><img src="' + v.img + '" alt=""><span>' + esc(STYLES[v.style]) + '<small>' + esc(PALS[v.pal].n) + '</small></span></button>').join('');
+    el.innerHTML = S.logoVars.map((v, i) => '<button class="lvar' + (cur && L.style === v.style && L.pal === v.pal && L.seed === v.seed ? ' on' : '') + '" data-lvar="' + i + '" type="button"><img src="' + v.img + '" alt=""><span>' + esc(STYLES[v.style]) + '<small>' + esc(v.style === 'meme' ? (MEME.chars[v.mchar] || 'Personnage') : (PALS[v.pal % PALS.length] || PALS[0]).n) + '</small></span></button>').join('');
   }
   function applyLogoVar(i) {
     const v = S.logoVars && S.logoVars[i]; if (!v) return;
@@ -3583,15 +3702,19 @@ Message: ${r}.
         const type = alpha ? 'image/png' : 'image/jpeg';
         url = c.toDataURL(type, 0.92); blob = await new Promise((r) => c.toBlob(r, type, 0.92)) || f;
       }
-      S.draft.image = url; S.draft.imgSrc = 'upload'; S.imgBlob = blob; S.uploadWarn = warn; S.logoVars = null;
+      S.draft.image = url; S.draft.imgSrc = 'upload'; S.imgBlob = blob; S.uploadWarn = warn; S.logoVars = null; drawLogo.key = null;
       saveDraft(); renderLaunch();
       toast('Logo remplacé', f.name + (warn.length ? ' · ' + warn[0] : ''), warn.length ? 'a' : 'g');
     } catch (e) { toast('Import impossible', e.message, 'r'); }
   }
   // Aperçus aux tailles réelles des plateformes
   function renderLogoPrev() {
-    const el = $('logoPrev'); if (!el) return;
-    const img = S.draft.image, i = (cls) => img ? '<img class="' + cls + '" src="' + esc(img) + '" alt="">' : '<span class="' + cls + ' none"></span>';
+    const el = $('logoPrev'); if (!el || S.step !== 2 || S.ltab !== 'studio') return;   // visible seulement à l'étape Logo
+    const img = S.draft.image, k = img ? img.length + img.slice(-48) : '';
+    if (el.dataset.k === k && el.firstChild) return;   // même image : on n'insère pas à nouveau 4 copies d'une grosse image
+    el.dataset.k = k;
+    const src = img && /^data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+$/.test(img) ? img : esc(img || '');
+    const i = (cls) => img ? '<img class="' + cls + '" src="' + src + '" alt="">' : '<span class="' + cls + ' none"></span>';
     el.innerHTML = '<div class="lp-t">Aperçu sur les plateformes</div><div class="lp-row">' +
       '<figure>' + i('lp-card') + '<figcaption>pump.fun<br>fiche</figcaption></figure>' +
       '<figure>' + i('lp-list') + '<figcaption>pump.fun<br>liste</figcaption></figure>' +
@@ -4155,11 +4278,70 @@ Message: ${r}.
       CFEE.sol = 0; refreshBal();
     } finally { S.busy = false; setTimeout(() => feesRead(true), 1500); renderAll(); }
   }
+  /* ================================================================ onglet Créer : création manuelle guidée */
+  const CR_FIELDS = { crName: 'name', crSym: 'symbol', crDesc: 'desc', crTw: 'tw', crTg: 'tg', crWeb: 'web' };
+  const CHECK_SVG = '<svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  let crTimer = null;
+  function crLogoSoon() {
+    clearTimeout(crTimer);
+    crTimer = setTimeout(() => { if (S.draft.imgSrc !== 'upload') { if (!S.draft.logo.textCustom) S.draft.logo.text = S.draft.symbol; S.draft.logo.name = S.draft.name; drawLogo(); } renderCreate(); }, 450);
+  }
+  function crInput(t) {
+    const k = CR_FIELDS[t.id]; if (!k) return false;
+    const d = S.draft;
+    if (k === 'symbol') { const v = t.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (t.value !== v) t.value = v; d.symbol = v; d.symManual = !!v; crLogoSoon(); }
+    else if (k === 'name') { d.name = t.value; if (!d.symManual) { d.symbol = t.value.trim() ? tickerFor(t.value) : ''; const sy = $('crSym'); if (sy) sy.value = d.symbol; } d.idea = null; crLogoSoon(); }
+    else d[k] = t.value.trim() && k !== 'desc' ? t.value.trim() : t.value;
+    saveDraft(); renderCreate(); return true;
+  }
+  function crSteps() {
+    const d = S.draft, urlOk = (u) => !u || /^https?:\/\/\S+\.\S+/.test(u);
+    return {
+      s1: d.name.trim().length >= 1 && /^[A-Z0-9]{2,10}$/.test(d.symbol || '') && (d.desc || '').trim().length >= 10,
+      s2: !!d.image,
+      s3: !!(d.tw || d.tg || d.web) && urlOk(d.tw) && urlOk(d.tg) && urlOk(d.web),
+    };
+  }
+  function renderCreate() {
+    if (!$('lt-create') || S.ltab !== 'create') return;
+    const d = S.draft, set = (id, v) => { const el = $(id); if (el && el !== document.activeElement && el.value !== (v || '')) el.value = v || ''; };
+    Object.keys(CR_FIELDS).forEach((id) => set(id, d[CR_FIELDS[id]]));
+    $('crDescCnt').textContent = (d.desc || '').length + ' / 1000';
+    $('crSymHelp').textContent = d.symManual ? 'Ticker saisi à la main.' : 'Rempli tout seul à partir du nom, modifiable.';
+    $('crLogo').innerHTML = d.image ? '<img src="' + d.image + '" alt="Logo du token"><em>' + (d.imgSrc === 'upload' ? 'Ton image' : 'Logo généré') + '</em>' : '<span>Pas encore de logo</span>';
+    $('crPvImg').innerHTML = d.image ? '<img src="' + d.image + '" alt="">' : esc((d.symbol || '?').slice(0, 3));
+    $('crPvName').textContent = d.name.trim() || 'Nom du token'; $('crPvSym').textContent = '$' + (d.symbol || 'TICKER');
+    $('crPvDesc').textContent = (d.desc || '').trim() || 'Ta description apparaîtra ici.';
+    const st = crSteps();
+    [['crOk1', 'crS1', st.s1], ['crOk2', 'crS2', st.s2], ['crOk3', 'crS3', st.s3]].forEach(([o, sec, ok]) => { $(o).innerHTML = ok ? CHECK_SVG : ''; $(sec).classList.toggle('done', ok); });
+    const it = (ok, l, opt) => '<div class="' + (ok ? 'ok' : opt ? 'opt' : '') + '"><i>' + (ok ? CHECK_SVG : '') + '</i>' + l + '</div>';
+    $('crCheck').innerHTML = it(d.name.trim().length >= 1, 'Un nom') + it(/^[A-Z0-9]{2,10}$/.test(d.symbol || ''), 'Un ticker de 2 à 10 caractères') + it((d.desc || '').trim().length >= 10, 'Une description') + it(st.s2, 'Un logo') + it(st.s3, 'Au moins un lien', true);
+    const v = $('crVars');
+    if (v) { if (!S.logoVars || d.imgSrc === 'upload') { v.hidden = true; v.innerHTML = ''; } else { v.hidden = false; const L = d.logo; v.innerHTML = S.logoVars.map((x, i) => '<button class="lvar' + (L.style === x.style && L.pal === x.pal && L.seed === x.seed ? ' on' : '') + '" data-lvar="' + i + '" type="button"><img src="' + x.img + '" alt=""><span>' + esc(STYLES[x.style]) + '</span></button>').join(''); } }
+  }
+  function crAction(a) {
+    const d = S.draft;
+    if (a === 'desc') { if (!d.name.trim()) { toast('Nom manquant', 'Écris d\'abord le nom de ton token.', 'a'); $('crName').focus(); return; } d.desc = descFor(d.name, d.symbol || tickerFor(d.name), d.name.split(' ').pop()); saveDraft(); renderCreate(); return; }
+    if (a === 'gen') {
+      if (!d.symbol) { toast('Nom manquant', 'Écris d\'abord le nom de ton token : le logo s\'en inspire.', 'a'); $('crName').focus(); return; }
+      if (d.imgSrc === 'upload') { d.imgSrc = 'gen'; drawLogo.key = null; }
+      d.logo.name = d.name; if (!d.logo.textCustom) d.logo.text = d.symbol;
+      logoVariants(); if (S.logoVars) applyLogoVar(0); renderCreate(); return;
+    }
+    if (a === 'edit') { setLaunchTab('studio'); S.step = 2; renderLaunch(); window.scrollTo(0, 0); return; }
+    if (a === 'launch') {
+      const st = crSteps();
+      if (!st.s1) { toast('Bloc 1 à compléter', 'Il faut un nom, un ticker de 2 à 10 caractères et une description.', 'a'); $('crS1').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      if (!st.s2) { toast('Logo manquant', 'Importe ton image ou clique sur « Proposer des logos ».', 'a'); $('crS2').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      setLaunchTab('studio'); S.step = 4; renderLaunch(); window.scrollTo(0, 0);
+      toast('Prêt pour le lancement', d.name + ' · $' + d.symbol + '. Choisis l\'achat du créateur, puis lance.', 'g');
+    }
+  }
   /* ================================================================ rendu : lancer */
   function renderLaunch() {
     document.querySelectorAll('#stepper button').forEach((b) => { const n = +b.dataset.step; b.classList.toggle('on', n === S.step); b.classList.toggle('done', n < S.step); });
     document.querySelectorAll('[data-stepcard]').forEach((c) => { c.hidden = +c.dataset.stepcard !== S.step; });
-    $('genThemes').innerHTML = Object.keys(THEMES).map((k) => '<button class="univ-card' + (S.draft.theme === k ? ' on' : '') + '" data-theme="' + k + '" type="button" style="--th:' + (UNIV_TINT[k] || 'var(--accent)') + '" aria-pressed="' + (S.draft.theme === k) + '"><span class="univ-art">' + (UNIV_ART[k] || '') + '</span><span class="univ-t"><b>' + esc(THEMES[k].label) + '</b><small>' + esc(UNIV_HINT[k] || '') + '</small></span></button>').join('');
+    $('genThemes').innerHTML = THEME_SHOWN.map((k) => '<button class="univ-card' + (S.draft.theme === k ? ' on' : '') + '" data-theme="' + k + '" type="button" style="--th:' + (UNIV_TINT[k] || 'var(--accent)') + '" aria-pressed="' + (S.draft.theme === k) + '"><span class="univ-art">' + (UNIV_ART[k] || '') + '</span><span class="univ-t"><b>' + esc(THEMES[k].label) + '</b><small>' + esc(UNIV_HINT[k] || '') + '</small></span></button>').join('');
     $('genLangs').innerHTML = Object.keys(LANGS).map((k) => '<button class="chip ' + (S.draft.lang === k ? 'on' : '') + '" data-lang="' + k + '" type="button">' + LANGS[k] + '</button>').join('');
     $('genTones').innerHTML = Object.keys(TONES).map((k) => '<button class="chip ' + (S.draft.tone === k ? 'on' : '') + '" data-tone="' + k + '" type="button">' + TONES[k] + '</button>').join('');
     if ($('genWord') !== document.activeElement) $('genWord').value = S.draft.word || '';
@@ -4177,11 +4359,11 @@ Message: ${r}.
     if (S.draft.imgSrc === 'upload' && S.draft.image) drawUploaded();
     else drawLogo();
     renderLogoVars();
-    fillFields(); renderDevQuote(); renderLaunchSide(); renderTpPlan();
+    fillFields(); renderDevQuote(); renderLaunchSide(); renderTpPlan(); renderCreate();
   }
   function renderIdeas() {
     $('ideas').innerHTML = S.ideas.length ? S.ideas.map((x, i) => '<button class="idea ' + (S.draft.idea === i && S.draft.name === x.name ? 'on' : '') + '" data-idea="' + i + '" type="button"><div class="h"><img class="idea-logo" alt="" src="' + (x.logo || (x.logo = ideaLogo(x))) + '"><b>' + esc(x.name) + '</b><span class="sc ' + (x.score >= 80 ? 'pos' : x.score >= 60 ? 'warn' : 'neg') + '">' + x.score + '</span></div><span class="tk-l">$' + esc(x.ticker) + '</span><small>' + esc(x.tag) + '</small><div class="why-score">' + x.parts.map((p) => '<span class="' + (p.v >= 10 ? 'p' : p.v <= 3 ? 'm' : '') + '">' + esc(p.k) + '</span>').join('') + '</div></button>').join('')
-      : '<div class="empty"><b>Aucune idée pour l\'instant</b>Choisis un univers et clique sur « Générer des idées ».</div>';
+      : '<div class="empty"><b>Choisis un univers ci-dessus</b>Les idées apparaissent ici : nom, ticker et logo. Clique sur celle qui te plaît, le studio passe tout seul à l\'étape suivante.</div>';
   }
   function fillFields() {
     const set = (id, v) => { const el = $(id); if (el && el !== document.activeElement) el.value = v || ''; };
@@ -4204,7 +4386,7 @@ Message: ${r}.
   function ring(pct, color) { const r = 16, c = 2 * Math.PI * r; return '<svg viewBox="0 0 38 38"><circle cx="19" cy="19" r="' + r + '" fill="none" stroke="var(--line2)" stroke-width="4"/><circle cx="19" cy="19" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + (c * pct / 100) + ' ' + c + '"/></svg><span>' + Math.round(pct) + '</span>'; }
   function renderLaunchSide() {
     const d = S.draft;
-    $('pvImg').innerHTML = d.image ? '<img src="' + esc(d.image) + '" alt="">' : 'pas de logo';
+    { const pv = $('pvImg'), k = d.image ? d.image.length + d.image.slice(-48) : ''; if (pv.dataset.k !== k) { pv.dataset.k = k; pv.innerHTML = d.image ? '<img src="' + esc(d.image) + '" alt="">' : 'pas de logo'; } }
     renderLogoPrev();
     $('pvName').textContent = d.name || 'Nom du token'; $('pvSym').textContent = '$' + (d.symbol || 'TICKER');
     $('pvDesc').textContent = d.desc || 'La description apparaîtra ici.';
@@ -4691,6 +4873,7 @@ Message: ${r}.
     if (d.fees === 'claim') return claimFees();
     if (d.fees === 'refresh') return feesRead(true);
     if (d.dist || d.distmark || d.distcp) return distAction(b);
+    if (d.cr) return crAction(d.cr);
     if (d.dact === 'radar') { setPage('launch'); return setLaunchTab('radar'); }
     if (d.dmode) { DASH.mode = d.dmode; try { localStorage.setItem('pstudio_dash_mode', d.dmode); } catch (x) {} return renderDash(); }
     if (d.drange) { DASH.range = d.drange; renderDash(); return solHist(true); }
@@ -4704,7 +4887,7 @@ Message: ${r}.
     if (d.act === 'simon') { cfg.sim = true; save(LS.cfg, cfg); toast('Mode simulation', 'Plus rien n\'est envoyé.', 'g'); renderAll(); return; }
     if (d.act === 'testrpc') return testRpc(false);
     if (d.step) { S.step = +d.step; renderLaunch(); return; }
-    if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; S.draft.logo.theme = d.theme; S.draft.logo.motif = ''; saveDraft(); renderLaunch(); return; }
+    if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; S.draft.logo.theme = d.theme; S.draft.logo.motif = ''; saveDraft(); genIdeas(); renderLaunch(); const el = $('ideas'); if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 30); return; }
     if (d.tone) { S.draft.tone = d.tone; saveDraft(); renderLaunch(); return; }
     if (d.lang) { S.draft.lang = d.lang; saveDraft(); genIdeas(); renderLaunch(); return; }
     if (b.id === 'genGo') { genIdeas(); return; }
@@ -4712,7 +4895,7 @@ Message: ${r}.
     if (d.tpadd) { const last = S.draft.tp[S.draft.tp.length - 1]; S.draft.tp.push({ x: last ? Math.round((last.x * 2) * 10) / 10 : 2, pct: Math.max(1, Math.min(10, 100 - S.draft.tp.reduce((a, l) => a + (l.pct || 0), 0))) }); saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (d.tpdel != null) { S.draft.tp.splice(+d.tpdel, 1); saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
     if (d.tpdef) { S.draft.tp = TP_PRESETS.balanced.tp.map((l) => Object.assign({}, l)); S.draft.sl = TP_PRESETS.balanced.sl; S.draft.slMode = TP_PRESETS.balanced.slMode; saveDraft(); renderTpPlan(); renderLaunchSide(); return; }
-    if (d.idea != null) { pickIdea(+d.idea); return; }
+    if (d.idea != null) { pickIdea(+d.idea); S.step = 2; renderLaunch(); const st = $('stepper'); if (st) st.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (d.mchar != null || d.mexpr != null || d.macc != null) { const L = S.draft.logo; if (d.mchar != null) L.mchar = d.mchar; if (d.mexpr != null) L.mexpr = d.mexpr; if (d.macc != null) L.macc = d.macc; S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (d.lstyle) { S.draft.logo.style = d.lstyle; S.draft.logo.seed = Math.floor(Math.random() * 1e6); S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (d.pal != null) { S.draft.logo.pal = +d.pal; S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
@@ -4753,6 +4936,7 @@ Message: ${r}.
   });
   document.addEventListener('input', (e) => {
     const t = e.target;
+    if (crInput(t)) return;
     const map = { fName: 'name', fDesc: 'desc', fTw: 'tw', fTg: 'tg', fWeb: 'web', fDev: 'dev' };
     if (map[t.id]) { S.draft[map[t.id]] = t.id === 'fDev' ? (num(t.value) || 0) : t.value; saveDraft(); fillFields(); renderLaunchSide(); if (t.id === 'fDev') renderTpPlan(); return; }
     if (t.id === 'fSymbol') { const v = t.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (t.value !== v) t.value = v; S.draft.symbol = v; saveDraft(); fillFields(); renderLaunchSide(); if (S.draft.imgSrc !== 'upload' && !S.draft.logo.textCustom) { S.draft.logo.text = v; drawLogo(); } return; }
@@ -4767,7 +4951,7 @@ Message: ${r}.
   });
   document.addEventListener('change', (e) => {
     const t = e.target;
-    if (t.id === 'logoFile') {
+    if (t.id === 'logoFile' || t.id === 'crFile') {
       const f = t.files && t.files[0]; t.value = ''; if (f) importLogo(f);
       return;
     }
@@ -4949,11 +5133,12 @@ Message: ${r}.
     toast('Concept repris', x.name + ' · $' + x.ticker + '. Choisis le logo, puis vérifie la description.', 'g');
   }
   function setLaunchTab(tab) {
-    S.ltab = tab === 'radar' ? 'radar' : 'studio';
+    S.ltab = tab === 'radar' || tab === 'create' ? tab : 'studio';
     try { localStorage.setItem('pstudio_ltab', S.ltab); } catch (e) {}
-    $('lt-studio').hidden = S.ltab !== 'studio'; $('lt-radar').hidden = S.ltab !== 'radar';
+    $('lt-studio').hidden = S.ltab !== 'studio'; $('lt-radar').hidden = S.ltab !== 'radar'; $('lt-create').hidden = S.ltab !== 'create';
     document.querySelectorAll('#launchTabs [data-ltab]').forEach((b) => { b.classList.toggle('on', b.dataset.ltab === S.ltab); b.setAttribute('aria-selected', b.dataset.ltab === S.ltab); });
     if (S.ltab === 'radar') radarLoad(false);
+    if (S.ltab === 'create') renderCreate();
   }
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return; const d = b.dataset;
@@ -4966,7 +5151,7 @@ Message: ${r}.
     if (d.rclose) { RADAR.sel = null; RADAR.ideas = []; return renderRadar(); }
   });
   $('rSort').addEventListener('change', (e) => { RADAR.sort = e.target.value; renderRadar(); });
-  try { S.ltab = localStorage.getItem('pstudio_ltab') === 'radar' ? 'radar' : 'studio'; } catch (e) { S.ltab = 'studio'; }
+  try { const lt = localStorage.getItem('pstudio_ltab'); S.ltab = lt === 'radar' || lt === 'create' ? lt : 'studio'; } catch (e) { S.ltab = 'studio'; }
 
 
   /* ================================================================ carte wallet (barre latérale, menu mobile, puce mobile) */
@@ -5110,7 +5295,6 @@ Message: ${r}.
     setFormsHtml();
     const p = localStorage.getItem('pstudio_page'); if (p && PAGES[p] && p !== 'settings') S.page = p;
     setPage(S.page);
-    if (!S.ideas.length) genIdeas();
     await solPrice(); renderTop();
     testRpc(true);
     const last = load(LS.wallet, null), pv = providers().find((x) => x.id === last); if (pv) connectWallet(pv, true);
