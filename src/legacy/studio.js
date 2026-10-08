@@ -115,10 +115,10 @@
   }
   function closeModal() { $('modal').classList.remove('open'); if (PANEL.cur) panelRestore(); }
   const confirmBox = (title, html, ok, danger) => modal(title, html, [{ label: 'Annuler' }, { label: ok || 'Confirmer', cls: danger ? 'danger' : 'primary' }], true).then((i) => i === 1);
-  // En réel, chaque action importante propose aussi « Tester sans envoyer » : vérifiée sur la blockchain, jamais envoyée
-  async function confirmTest(title, html, ok, danger) {
+  // En réel, chaque action importante propose aussi « Tester » (« Tester avant de lancer » pour un lancement) : vérifiée sur la blockchain, jamais envoyée
+  async function confirmTest(title, html, ok, danger, testLabel) {
     if (cfg.sim) return (await modal(title, html, [{ label: 'Annuler' }, { label: ok, cls: 'primary' }], true)) === 1 ? 'demo' : null;
-    const i = await modal(title, html, [{ label: 'Annuler' }, { label: 'Tester sans envoyer' }, { label: ok, cls: danger ? 'danger' : 'primary' }], true);
+    const i = await modal(title, html, [{ label: 'Annuler' }, { label: testLabel || 'Tester' }, { label: ok, cls: danger ? 'danger' : 'primary' }], true);
     return i === 2 ? 'real' : i === 1 ? 'test' : null;
   }
   const dryNote = (how) => how === 'test' ? '<div class="notice info">Test réussi : la transaction passerait. Rien n\'a été envoyé ; relance pour l\'exécuter.</div>' : '<div class="notice info">Démo réussie : l\'opération est vérifiée sur la blockchain et passerait en réel. Rien n\'a été envoyé.</div>';
@@ -1183,7 +1183,7 @@
       (ses && ext && cfg.engine === 'portal' ? '<div class="notice">Avec PumpPortal, le créateur est forcément le wallet qui signe (wallet rapide). Choisis le moteur Direct dans Réglages pour afficher ' + esc(ext.name) + '.</div>' : '') +
       (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? (d.slMode === 'trail' ? ' · stop suiveur −' : ' · stop −') + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente te sera présentée à signer.') + '</div>' : '') +
       (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur ' + PL.n + ' et visible par tous. Ton wallet va te présenter la transaction : vérifie avant de signer. Une création ne s\'annule pas.</p>');
-    const how = await confirmTest(cfg.sim ? 'Lancer ' + d.name + ' en démo ?' : 'Lancer ' + d.name + ' ?', recap, cfg.sim ? 'Vérifier en démo' : 'Lancer le token', !cfg.sim);
+    const how = await confirmTest(cfg.sim ? 'Lancer ' + d.name + ' en démo ?' : 'Lancer ' + d.name + ' ?', recap, cfg.sim ? 'Vérifier en démo' : 'Lancer le token', !cfg.sim, 'Tester avant de lancer');
     if (!how) return;
     const dry = how !== 'real';
     const pick = document.querySelector('input[name="crWho"]:checked');
@@ -2416,7 +2416,7 @@
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres, bot et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de tes wallets'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle, mode papier sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres, bot et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de tes wallets'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     // le bouton wallet historique est remplacé par le menu de compte (React) ; on le met à jour s'il existe encore
@@ -2425,9 +2425,10 @@
     const rs = $('rpcStatus');
     rs.innerHTML = '<span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? '' : 'wait') + '"></span><span>' + (S.rpcOk ? 'RPC ' + rpcKind() + ' connecté' : S.rpcOk === false ? 'RPC en erreur' : 'RPC non testé') + '</span>';
     const sb = $('simbar');
-    sb.className = 'simbar' + (cfg.sim ? '' : ' live');
-    sb.innerHTML = cfg.sim ? '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span><b>Mode démo.</b> ' + (AUTH ? 'Chaque opération est vérifiée sur la blockchain, rien n\'est envoyé.' : 'Données simulées : rien n\'est vérifié ni envoyé. Crée ton compte pour vérifier chaque opération sur la blockchain.') + '</span>' + (AUTH ? '' : '<button class="btn sm" data-act="needacct" type="button">Créer mon compte</button>') + '<button class="btn sm primary" data-act="simoff" type="button">Passer en réel</button>'
-      : '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg><span><b>Mode réel.</b> Les transactions signées partent sur la blockchain et engagent ton SOL. Chaque action propose « Tester sans envoyer ».</span><button class="btn sm" data-act="simon" type="button">Revenir en démo</button>';
+    // bandeau en démo seulement : en réel, aucune mention de simulation (le mode se change dans le menu du compte)
+    sb.className = 'simbar'; sb.hidden = !cfg.sim;
+    sb.innerHTML = cfg.sim ? '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span><b>Mode démo.</b> Tout est simulé avec le wallet démo de 10 SOL fictifs : rien n\'est envoyé sur la blockchain.</span>' +
+      '<button class="btn sm primary" data-act="' + (AUTH ? 'simoff' : 'needacct') + '" type="button">Passer en réel</button>' : '';
     const fb = $('filebar'); if (fb) { fb.hidden = location.protocol !== 'file:'; fb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>Studio ouvert comme fichier.</b> Phantom ne peut pas s\'y connecter : ouvre la version en ligne (https) ou via localhost.</span><button class="btn sm" id="fileHelp" type="button">Comment faire</button>'; }
     const rb = $('rpcbar'); if (rb) { rb.hidden = !(S.rpcOk === false); rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Ton RPC ne répond pas.</b> Vérifie l\'adresse dans Réglages.' : window.TSRelay ? '<b>Le RPC TokenStudio ne répond pas pour le moment.</b> Réessaie dans une minute, ou colle ta clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connecte-toi à ton compte pour utiliser le RPC TokenStudio, ou colle ta clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
     $('footMode').textContent = cfg.sim ? '● Démo' : '● Réel';
@@ -2435,7 +2436,7 @@
     const sc = (attr, dot, label, val) => '<button class="sc-it" type="button" ' + attr + '><span class="dot ' + dot + '"></span>' + label + '<em>' + val + '</em></button>';
     $('sideCheck').innerHTML =       sc('data-sc="pp" data-page="settings"', 'wait', 'Flux direct', '…') +
       sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'RPC Solana', S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé') +
-      sc(cfg.sim ? 'data-act="simoff"' : 'data-act="simon"', cfg.sim ? 'demo' : 'bad', 'Mode', cfg.sim ? 'démo' : 'réel');
+      sc(cfg.sim ? 'data-act="simoff"' : '', cfg.sim ? 'demo' : 'bad', 'Mode', cfg.sim ? 'démo' : 'réel');
     ppStatus(); renderWalletCard();
     $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length;
     try { window.dispatchEvent(new CustomEvent('pstudio-state')); } catch (e) {}
@@ -2612,7 +2613,7 @@
       tile('dSpTok', IC.spark, 'Tokens lancés', String(S.tokens.length), S.tokens.filter((t) => Date.now() - t.createdAt < 6048e5).length + ' cette semaine') +
       tile('dSpOrd', IC.shield, 'Ordres actifs', String(act.length), act.length ? kinds.tp + ' objectifs · ' + kinds.sl + ' stops' + (kinds.trail ? ' · ' + kinds.trail + ' suiveurs' : '') : 'aucun ordre surveillé') +
       tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : '') + (m === 'all' ? '' : (m === 'real' ? ' réelle' : ' simulée') + (ok.length > 1 ? 's' : '')), cls(net)) +
-      tile('dSpBot', IC.wallet, 'Bot papier', botN || botOpen ? (botPnl > 0 ? '+' : '') + fr(botPnl, 3) + '<small> SOL</small>' : '—', bot ? botN + ' trades fermés · ' + botOpen + ' ouvertes' : 'terminal non chargé', cls(botPnl));
+      tile('dSpBot', IC.wallet, 'Bot de trading', botN || botOpen ? (botPnl > 0 ? '+' : '') + fr(botPnl, 3) + '<small> SOL</small>' : '—', bot ? botN + ' trades fermés · ' + botOpen + ' ouvertes' : 'terminal non chargé', cls(botPnl));
     sparkline($('dSpTok'), weeks, K.accent);
     { const el = $('dSpOrd'), parts = [[kinds.tp, K.green], [kinds.sl, K.red], [kinds.trail, K.blue]]; const bar = document.createElement('div'); bar.className = 'd-split'; bar.innerHTML = act.length ? parts.filter((x) => x[0]).map((x) => '<i style="flex:' + x[0] + ';background:' + x[1] + '"></i>').join('') : '<i style="flex:1;background:var(--panel3)"></i>'; el.replaceWith(bar); }
     sparkline($('dSpFlow'), flowVals.length > 1 ? flowVals : null, net >= 0 ? K.green : K.red);
@@ -2632,6 +2633,7 @@
     bars($('dActCv'), days, bk);
     $('dActLeg').innerHTML = bk.map((x) => '<div><i style="background:' + x.c + '"></i>' + x.l + '<b>' + days.reduce((a, d) => a + d[x.k], 0) + '</b></div>').join('');
     // bot
+    { const bs = $('dBotSrc'); if (bs) bs.textContent = cfg.sim ? 'démo' : 'réel'; }
     $('dBotNote').innerHTML = bot ? (bot.demo ? 'Mode démo · données simulées' : bot.running ? '<span class="dot on"></span>En marche · ' + bot.rate + ' tokens / min · ' + bot.watched + ' suivis' : '<span class="dot"></span>À l\'arrêt · lance le terminal pour suivre le flux') : 'Le terminal se charge…';
     $('dBot').innerHTML = bot ? '<div class="d-strats">' + bot.strats.map((s) => { const p = s.bal - s.start + s.unreal; return '<button class="d-strat" type="button" data-page="bot" style="--sc:' + s.color + '"><span class="d-sn"><i></i><b>' + esc(s.name) + '</b>' + (s.enabled ? '' : '<em>en pause</em>') + '</span><canvas data-eq="' + s.id + '" height="34"></canvas><span class="d-sv"><b class="' + cls(p) + '">' + (p > 0 ? '+' : '') + fr(p, 3) + ' SOL</b><small>' + fr(s.bal, 2) + ' / ' + fr(s.start, 2) + ' · ' + (s.winrate == null ? '—' : fr(s.winrate, 0) + ' % gagnants') + ' · ' + s.open + ' ouv.</small></span></button>'; }).join('') + '</div>' +
       (bot.recent.length ? '<div class="d-sub-h">Dernières sorties</div><div class="d-recent">' + bot.recent.slice(0, 4).map((r) => { const st = bot.strats.find((x) => x.id === r.sid); return '<div><i style="background:' + (st ? st.color : K.dim) + '"></i><b>' + esc(r.sym || '?') + '</b><span>' + esc(r.why || '') + '</span><em class="' + cls(r.pnl) + '">' + (r.pnlPct > 0 ? '+' : '') + fr(r.pnlPct, 1) + ' %</em></div>'; }).join('') + '</div>' : '') : '<div class="d-empty">Chargement du terminal…</div>';
@@ -3092,7 +3094,9 @@
   }
   function renderJournal() {
     document.querySelectorAll('#jFilter .chip').forEach((b) => b.classList.toggle('on', b.dataset.jf === S.jf));
-    const L = S.journal.filter((j) => S.jf === 'all' || (S.jf === 'sim' ? j.sim : !j.sim));
+    // chaque mode a son propre historique : réel seulement en réel, démo seulement en démo
+    const jf = $('jFilter'); if (jf) jf.hidden = true;
+    const L = S.journal.filter((j) => (cfg.sim ? !!j.sim : !j.sim));
     const ok = L.filter((j) => j.status === 'ok'), spent = -ok.filter((j) => j.sol < 0).reduce((s, j) => s + j.sol, 0), recv = ok.filter((j) => j.sol > 0).reduce((s, j) => s + j.sol, 0);
     $('jStats').innerHTML = '<div class="stat"><div class="l">Opérations</div><div class="v">' + L.length + '</div><div class="s">' + L.filter((j) => j.status === 'err').length + ' échouées</div></div>' +
       '<div class="stat"><div class="l">SOL dépensé</div><div class="v">' + fSol(spent, 3) + '</div></div><div class="stat"><div class="l">SOL reçu</div><div class="v">' + fSol(recv, 3) + '</div></div>' +
@@ -3791,7 +3795,8 @@
       { g: 'Actions', ic: IC.plus, label: 'Ajouter un token existant', hint: 'Mes tokens', kw: 'suivre mint', run: () => { setPage('mine'); clickWhenReady('mineAdd'); } },
       { g: 'Actions', ic: IC.down, label: 'Exporter le journal en CSV', hint: 'Journal', kw: 'export historique', run: () => { setPage('journal'); clickWhenReady('jExport'); } },
       { g: 'Actions', ic: IC.pulse, label: 'Tester la connexion RPC', hint: S.rpcOk ? 'connecté' : S.rpcOk === false ? 'en erreur' : 'non testé', kw: 'solana helius reseau', run: () => testRpc(false) },
-      { g: 'Actions', ic: IC.shield, label: cfg.sim ? 'Passer en mode réel' : 'Revenir en démo', hint: cfg.sim ? 'demande confirmation' : 'plus rien n\'est envoyé', kw: 'simulation reel mode', run: () => { const b = document.querySelector('#simbar [data-act]'); if (b) b.click(); } },
+      // le passage en réel est proposé en démo ; le retour en démo se fait depuis le menu du compte
+      ...(cfg.sim ? [{ g: 'Actions', ic: IC.shield, label: cfg.sim ? 'Passer en mode réel' : 'Revenir en démo', hint: cfg.sim ? 'demande confirmation' : 'plus rien n\'est envoyé', kw: 'simulation reel mode', run: () => { const b = document.querySelector('#simbar [data-act]'); if (b) b.click(); } }] : []),
     );
     const words = norm(raw).split(/\s+/).filter(Boolean);
     if (!words.length) return out;

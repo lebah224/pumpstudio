@@ -20,7 +20,11 @@ type AuthState = {
 
 const Ctx = createContext<AuthState | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+/**
+ * guestPages : dans l'outil, un invité (démo) qui veut se connecter va sur la page /connexion ;
+ * seul le wallet rapide, qui vit dans l'outil, garde sa fenêtre.
+ */
+export function AuthProvider({ children, guestPages }: { children: ReactNode; guestPages?: boolean }) {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [aal, setAal] = useState<{ current: Aal; next: Aal }>({ current: null, next: null });
@@ -48,8 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthState>(() => ({
     ready, session, user: session?.user ?? null, aal,
     needsMfa: !!session && aal.next === 'aal2' && aal.current !== 'aal2',
-    refreshAal, signOut, signInOpen, openSignIn: (open = true) => setSignInOpen(open === false ? null : open === true ? {} : open),
-  }), [ready, session, aal, refreshAal, signOut, signInOpen]);
+    refreshAal, signOut, signInOpen,
+    openSignIn: (open = true) => {
+      if (open !== false && guestPages && !session && (open === true || open.start !== 'quick')) { location.href = '/connexion'; return; }
+      setSignInOpen(open === false ? null : open === true ? {} : open);
+    },
+  }), [ready, session, aal, refreshAal, signOut, signInOpen, guestPages]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

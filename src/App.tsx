@@ -11,6 +11,7 @@ import { useDataSync } from './sync/useDataSync';
 import { studio } from './legacy/bridge';
 import { clearServerWallet, refreshServerWallet } from './serverWallet/api';
 import { ServerWalletDialog } from './serverWallet/ServerWalletDialog';
+import { isDemoGuest } from './lib/guest';
 
 /** Le studio demande une connexion (wallet manquant, passage en réel) : on ouvre la fenêtre de connexion du compte */
 function useConnectBridge() {
@@ -27,6 +28,8 @@ function useConnectBridge() {
   useEffect(() => { if (ready) studio()?.hub?.setAuth(signed); }, [ready, signed]);
   // wallet rapide serveur du compte (s'il existe)
   useEffect(() => { if (!ready) return; if (signed) refreshServerWallet(); else clearServerWallet(); }, [ready, signed, user?.id]);
+  // sans compte, l'outil n'est ouvert qu'en démo : sinon retour à l'accueil
+  useEffect(() => { if (ready && !user && !isDemoGuest()) location.replace('/'); }, [ready, user]);
   // arrivée depuis l'accueil : ?demo=1 (essayer la démo) ou ?signin=quick (wallet rapide), puis adresse nettoyée
   useEffect(() => {
     if (!ready) return;
@@ -64,5 +67,5 @@ function Mounts() {
 }
 
 export function App() {
-  return <AuthProvider><Mounts /></AuthProvider>;
+  return <AuthProvider guestPages><Mounts /></AuthProvider>;
 }

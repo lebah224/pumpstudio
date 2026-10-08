@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from '../auth/AuthContext';
+import { maybeSignedIn } from '../lib/guest';
 
 /* ---------- petites icônes au trait ---------- */
 const P = (d: ReactNode) => <svg className="lp-i" viewBox="0 0 24 24" aria-hidden="true">{d}</svg>;
@@ -111,8 +112,12 @@ export function Landing() {
     f(); window.addEventListener('scroll', f, { passive: true }); return () => window.removeEventListener('scroll', f);
   }, []);
   const signed = ready && !!session;
+  // connecté : l'accueil laisse place à l'outil
+  useEffect(() => { if (signed) location.replace('/app'); }, [signed]);
   const start = signed ? { href: '/app', label: 'Ouvrir l\'outil' } : { href: '/inscription', label: 'Commencer gratuitement' };
 
+  // session enregistrée en cours de vérification, ou redirection vers l'outil : rien à afficher
+  if ((!ready && maybeSignedIn()) || signed) return null;
   return (
     <div className="lp">
       <header className={'lp-nav' + (scrolled ? ' on' : '')}>
@@ -199,7 +204,7 @@ export function Landing() {
               <ul>
                 <li>Votre vrai wallet : Phantom, Solflare, Backpack…</li>
                 <li>Vérification sur la blockchain avant chaque signature</li>
-                <li>« Tester sans envoyer » sur chaque action</li>
+                <li>« Tester avant de lancer » sur chaque action</li>
                 <li>Ordres et bot avec plafonds, alertes sur vos appareils</li>
               </ul>
               <a className="lp-btn" href={start.href}>{start.label}</a>

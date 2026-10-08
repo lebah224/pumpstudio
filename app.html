@@ -91,7 +91,7 @@
               <div class="d-mix"><canvas id="dMixCv" height="168" width="168"></canvas><div class="d-legend" id="dMixLeg"></div></div>
             </article>
             <article class="dcard s7">
-              <div class="d-head"><div><div class="d-eye"><span>Bot de trading</span><span class="d-src">papier</span></div><div class="d-note" id="dBotNote">Portefeuilles simulés des stratégies</div></div><div class="spacer"></div><button class="btn sm" data-page="bot" type="button">Ouvrir le terminal</button></div>
+              <div class="d-head"><div><div class="d-eye"><span>Bot de trading</span><span class="d-src" id="dBotSrc">démo</span></div><div class="d-note" id="dBotNote">Portefeuilles simulés des stratégies</div></div><div class="spacer"></div><button class="btn sm" data-page="bot" type="button">Ouvrir le terminal</button></div>
               <div id="dBot"></div>
             </article>
             <article class="dcard s5">
@@ -292,7 +292,7 @@
         <div class="pb-head">
           <div class="pb-id">
             <div class="pb-mark"><svg class="i" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
-            <div><h1>Terminal de trading</h1><p>Trois stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : Équilibrée, Migration et Flash. Choisis le wallet du bot : papier pour s'entraîner, ou un wallet pour trader en réel.</p></div>
+            <div><h1>Terminal de trading</h1><p>Trois stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : Équilibrée, Migration et Flash. En démo, le bot trade avec le wallet démo ; en réel, avec le wallet que tu lui confies.</p></div>
           </div>
           <div class="pb-ctl">
             <label class="pb-view"><span>Vue</span><select class="sel" id="pb-viewStrat" aria-label="Stratégie affichée"></select></label>
@@ -392,7 +392,7 @@
             <!-- stratégies -->
             <div class="pb-pg" id="pb-p-strategies">
               <div class="card">
-                <div class="card-h"><h3>Comparaison</h3><p>Les stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille papier.</p></div>
+                <div class="card-h"><h3>Comparaison</h3><p>Les stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille.</p></div>
                 <div class="tablebox" style="margin-bottom:14px">
                   <table><thead><tr>
                     <th>Stratégie</th><th>État</th><th class="num">Trades</th><th class="num">Winrate</th><th class="num">P&amp;L</th><th class="num">Gain moy.</th><th class="num">Perte moy.</th><th class="num">Drawdown</th><th class="num">Ouvertes</th><th class="num">Solde</th>
@@ -441,7 +441,7 @@
 
       <!-- JOURNAL -->
       <section class="page" id="p-journal">
-        <div class="page-head"><div><h1>Journal</h1><p>Toutes les opérations, réelles et simulées, avec leur lien sur Solscan.</p></div><div class="spacer"></div>
+        <div class="page-head"><div><h1>Journal</h1><p>Toutes les opérations du mode en cours, avec leur lien sur Solscan.</p></div><div class="spacer"></div>
           <div class="chips" id="jFilter"><button class="chip on" data-jf="real" type="button">Réelles</button><button class="chip" data-jf="sim" type="button">Simulations</button><button class="chip" data-jf="all" type="button">Tout</button></div>
           <button class="btn sm" id="jExport" type="button">Exporter en CSV</button></div>
         <div class="grid-stats" id="jStats" style="margin-bottom:16px"></div>

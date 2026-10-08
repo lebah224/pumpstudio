@@ -11,6 +11,14 @@ import { App } from './App';
 import { installSelectMenus } from './ui/selectMenu';
 import { installRpcRelay } from './lib/rpcRelay';
 import { installPushRouting } from './notify/push';
+import { enterDemoGuest, isDemoGuest, maybeSignedIn } from './lib/guest';
+
+// Sans compte, l'outil s'ouvre seulement en démo (depuis l'accueil) ou pour se connecter avec le wallet rapide
+{
+  const q = new URLSearchParams(location.search);
+  if (q.get('demo') === '1' || q.get('signin') === 'quick') enterDemoGuest();
+  if (!maybeSignedIn() && !isDemoGuest()) location.replace('/');
+}
 
 // Images distantes cassées (logos de tokens) : retirées sans gestionnaire en ligne, compatible avec la CSP
 document.addEventListener('error', (e) => {

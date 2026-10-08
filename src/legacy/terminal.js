@@ -80,7 +80,7 @@ const FLASH_SECTIONS = [
     ['sizeSol', 'Mise par trade', 'num', '', 'SOL'],
     ['maxPositions', 'Positions simultanées', 'num', '', ''],
     ['feePct', 'Frais par transaction', 'num', 'pump.fun + réseau', '%'],
-    ['slipPct', 'Slippage simulé', 'num', 'Pénalité d\'entrée et de sortie (on arrive après les snipers)', '%'],
+    ['slipPct', 'Slippage estimé', 'num', 'Pénalité d\'entrée et de sortie (on arrive après les snipers)', '%'],
   ]},
 ];
 const STRAT_SECTIONS = [
@@ -111,7 +111,7 @@ const STRAT_SECTIONS = [
     ['sizeSol', 'Mise par trade', 'num', '', 'SOL'],
     ['maxPositions', 'Positions simultanées', 'num', '', ''],
     ['feePct', 'Frais par transaction', 'num', 'pump.fun + réseau', '%'],
-    ['slipPct', 'Slippage simulé', 'num', 'À l\'achat et à la vente', '%'],
+    ['slipPct', 'Slippage estimé', 'num', 'À l\'achat et à la vente', '%'],
   ]},
   { id: 'exits', title: 'Sorties', fields: [
     ['slPct', 'Stop loss', 'num', '', '%'],
@@ -226,7 +226,9 @@ const confirmBox = (title, text, ok, danger) => PS.confirm(title, text, ok, dang
 // puis le wallet rapide du navigateur, puis le wallet connecté (chaque trade à signer). Papier = simulation.
 let EXEC = 'paper';
 try { const e = localStorage.getItem('pb-exec'); if (['paper', 'srv', 'quick', 'ext'].includes(e)) EXEC = e; } catch (e) {}
-const execWallet = () => (EXEC === 'paper' ? null : (PS.botWallets() || []).find((w) => w.id === EXEC) || null);
+const execWallet = () => (EXEC === 'paper' || PS.isSim() ? null : (PS.botWallets() || []).find((w) => w.id === EXEC) || null);
+// mode réel du studio (compte connecté) : le bot n'y prend que des positions réelles, jamais simulées
+const realMode = () => !!(PS.hub && PS.hub.authed && PS.hub.authed()) && !PS.isSim();
 // réel seulement hors démo, studio en mode réel et wallet prêt
 const liveOn = () => { const w = execWallet(); return !!(w && w.ready && !S.demo && !PS.isSim()); };
 function renderWallet() {
@@ -234,14 +236,17 @@ function renderWallet() {
   const ws = PS.botWallets() || [], cur = execWallet(), live = liveOn();
   const opt = (id, name, note, ready, rec) => '<button type="button" class="pb-wopt' + (EXEC === id ? ' on' : '') + (ready ? '' : ' off') + '" data-exec="' + id + '"' + (EXEC === id ? ' aria-pressed="true"' : ' aria-pressed="false"') + '><b>' + esc(name) + (rec ? ' <em>recommandé</em>' : '') + '</b><small>' + esc(note) + '</small></button>';
   const authed = PS.hub && PS.hub.authed && PS.hub.authed();
-  const state = !authed ? '<span class="badge a">compte requis</span> Crée ton compte pour connecter le bot au flux réel. La démo (données simulées) reste ouverte.'
-    : EXEC === 'paper' ? '<span class="badge v">papier</span> Les positions sont simulées : aucun ordre réel.'
-    : !cur || !cur.ready ? '<span class="badge a">en attente</span> ' + esc(cur ? cur.note : 'Wallet indisponible') + '. Le bot reste en papier.'
-    : S.demo ? '<span class="badge v">démo</span> La démo utilise des données simulées : rien n\'est envoyé.'
-    : PS.isSim() ? '<span class="badge a">studio en simulation</span> Passe le studio en mode réel pour que le bot trade avec ce wallet.'
+  const sim = PS.isSim();
+  const state = sim ? '<span class="badge v">démo</span> Le bot trade avec le wallet démo : positions fictives, aucun SOL engagé. Passe en réel pour lui confier un wallet.'
+    : !authed ? '<span class="badge a">compte requis</span> Connecte-toi pour utiliser le bot en réel.'
+    : !cur ? '<span class="badge a">wallet à choisir</span> Choisis le wallet du bot : il n\'entre dans aucune position sans lui.'
+    : !cur.ready ? '<span class="badge a">en attente</span> ' + esc(cur.note) + '. Le bot n\'entre dans aucune position en attendant.'
     : '<span class="badge r">réel</span> Chaque entrée achète vraiment, chaque sortie vend vraiment, avec ' + esc(cur.name) + ' (' + esc((cur.pk || '').slice(0, 4) + '…' + (cur.pk || '').slice(-4)) + ').';
-  el.innerHTML = '<div class="pb-wal-h"><b>Wallet du bot</b><span>' + state + '</span></div><div class="pb-wal-o">' +
-    ws.map((w) => opt(w.id, w.name, w.note, authed && (w.ready || w.armable), w.id === 'srv')).join('') + opt('paper', 'Papier', 'simulation, aucun SOL engagé', true, false) + '</div>';
+  el.innerHTML = '<div class="pb-wal-h"><b>Wallet du bot</b><span>' + state + '</span></div>' + (sim ? '' : '<div class="pb-wal-o">' +
+    ws.map((w) => opt(w.id, w.name, w.note, authed && (w.ready || w.armable), w.id === 'srv')).join('') + '</div>');
+  // flux de démonstration (tokens inventés) : réservé à la démo
+  const bd = document.getElementById('pb-btnDemo'); if (bd) bd.hidden = !sim;
+  if (!sim && S.demo) stopDemo(true);
   el.classList.toggle('live', live);
 }
 document.addEventListener('click', async (e) => {
@@ -250,7 +255,8 @@ document.addEventListener('click', async (e) => {
   // jamais de bot sans compte (la démo reste disponible)
   if (!(PS.hub && PS.hub.authed && PS.hub.authed())) { toast('Compte requis', 'Crée ton compte ou connecte-toi pour utiliser le bot sur le flux réel.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'bot' })); } catch (e2) {} return; }
   if (id === EXEC && execWallet() && execWallet().ready) return;
-  if (id !== 'paper') {
+  if (id === 'paper' || PS.isSim()) return;
+  {
     const w = (PS.botWallets() || []).find((x) => x.id === id);
     if (!w || !(w.ready || w.armable)) { toast('Wallet indisponible', w ? w.note : '', 'a'); return; }
     const s0 = STRATS.find((x) => x.enabled) || STRATS[0];
@@ -698,6 +704,8 @@ function reject(st, why) { st.status = 'rejected'; st.reason = why; st.blockers 
 
 /* --------------------------------------------------------------- paper trading */
 function openPosition(t, s, now) {
+  // en réel, pas de position fictive : sans wallet prêt, le bot observe seulement
+  if (realMode() && !S.demo && !liveOn()) return;
   const P = s.P, slip = P.slipPct / 100, fee = P.feePct / 100;
   const p = {
     id: s.id + ':' + t.mint + ':' + now, sid: s.id, mint: t.mint, symbol: t.symbol, name: t.name,
@@ -709,7 +717,12 @@ function openPosition(t, s, now) {
     p.wallet = EXEC; p.live = 'pending';
     p.job = PS.botExec(t.mint, 'buy', { wallet: EXEC, sol: P.sizeSol, symbol: t.symbol, slip: P.slipPct })
       .then((r) => { p.live = 'ok'; p.buySig = r.sig; if (r.sol != null) p.realCost = -r.sol; toast('Achat réel · ' + s.name, (t.symbol || '?') + ' · ' + (r.sol != null ? (-r.sol).toFixed(3) + ' SOL' : 'confirmé'), 'g'); })
-      .catch((e) => { p.live = 'ko'; p.err = e.message; toast('Achat réel échoué', (t.symbol || '?') + ' : ' + e.message + ' Position suivie en papier.', 'r'); });
+      .catch((e) => {
+        p.live = 'ko'; p.err = e.message;
+        // achat non passé : la position est abandonnée, rien n'est suivi en fictif
+        S.port[s.id].positions.delete(t.mint); S.dirty.pos = S.dirty.header = S.dirty.strat = true;
+        toast('Achat réel échoué', (t.symbol || '?') + ' : ' + e.message + ' Aucune position ouverte.', 'r');
+      });
   }
   const st = stOf(t, s.id); st.status = 'entered'; st.reason = 'Entré à score ' + p.score; st.blockers = [];
   if (cfg.toastTrades) toast('Entrée · ' + s.name, (t.symbol || '?') + ' à ' + f1(t.mc) + ' SOL de MC, score ' + p.score, 'g');
@@ -771,7 +784,8 @@ function unrealized(p) {
   return p.proceeds + (t && s ? valueOf(p, s.P, t.mc, p.remaining) : 0) - p.size;
 }
 function allPositions() { const out = []; STRATS.forEach((s) => S.port[s.id].positions.forEach((p) => out.push(p))); return out; }
-function allClosed() { const out = []; STRATS.forEach((s) => out.push(...S.port[s.id].closed)); return out.sort((a, b) => a.closedAt - b.closedAt); }
+// historique du mode affiché : trades réels (passés avec un wallet) en réel, trades fictifs en démo
+function allClosed() { const sim = PS.isSim(), out = []; STRATS.forEach((s) => out.push(...S.port[s.id].closed.filter((c) => (sim ? !c.live : !!c.live)))); return out.sort((a, b) => a.closedAt - b.closedAt); }
 function statsOf(list, startBal) {
   const n = list.length, w = list.filter((x) => x.pnl > 0), l = list.filter((x) => x.pnl <= 0);
   let bal = startBal, peak = startBal, dd = 0;
@@ -1349,7 +1363,7 @@ async function renderData() {
   const st = (l, v, sub) => '<div class="stat"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (sub ? '<div class="s">' + sub + '</div>' : '') + '</div>';
   let migr = 0; S.devStats.forEach((d) => { migr += d.migrated; });
   $('dataStats').innerHTML = st('Tokens en base', nt, est) + st('Trades en base', ntr, cfg.recordTrades ? 'enregistrement actif' : 'enregistrement coupé') +
-    st('Trades papier en base', nc) + st('Tokens reçus (session)', S.totalTokens) + st('Trades reçus (session)', S.totalTrades) +
+    st('Trades en base', nc) + st('Tokens reçus (session)', S.totalTokens) + st('Trades reçus (session)', S.totalTrades) +
     st('Migrations vues', S.migrations) + st('Devs distincts', S.devStats.size, migr + ' tokens migrés au total');
   const p = S.perf;
   $('engineStats').innerHTML = st('Temps moyen par message', (p.n ? p.ms / p.n : 0).toFixed(3) + ' ms', 'depuis le démarrage') +
@@ -1453,7 +1467,7 @@ function selectToken(m) { S.selected = m; for (const t of S.tokens.values()) t.v
 $('menu').addEventListener('click', (e) => { const b = e.target.closest('button[data-pb]'); if (!b) return; if (b.dataset.pb === 'settings') return openTermSettings(); goPage(b.dataset.pb); });
 $('btnConn').addEventListener('click', async () => {
   if (!S.wantConn && !(PS.hub && PS.hub.authed && PS.hub.authed())) { toast('Compte requis', 'Le bot sur le flux réel demande un compte. Essaie la démo en attendant.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'bot' })); } catch (e) {} return; }
-  if (S.wantConn) { if (await confirmBox('Déconnecter le terminal ?', 'Il arrête de recevoir les tokens et les trades. Les positions papier ouvertes ne seront plus mises à jour.', 'Déconnecter')) disconnect(); }
+  if (S.wantConn) { if (await confirmBox('Déconnecter le terminal ?', 'Il arrête de recevoir les tokens et les trades. Les positions ouvertes ne seront plus suivies.', 'Déconnecter')) disconnect(); }
   else connect();
 });
 $('btnDemo').addEventListener('click', async () => {
@@ -1527,7 +1541,7 @@ document.getElementById('modal').addEventListener('change', (e) => { if (inPanel
 
 $('expTokens').addEventListener('click', async () => { const r = await IDB.all('tokens'); if (!r.length) return toast('Rien à exporter', 'Aucun token en base.', 'a'); download('tokenstudio-tokens-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' tokens', 'g'); });
 $('expTrades').addEventListener('click', async () => { const r = await IDB.all('trades'); if (!r.length) return toast('Rien à exporter', 'Aucun trade en base.', 'a'); download('tokenstudio-trades-' + stamp() + '.json', JSON.stringify(r), 'application/json'); toast('Export prêt', r.length + ' trades', 'g'); });
-$('expJournal').addEventListener('click', () => { const r = allClosed().filter((c) => !c.demo); if (!r.length) return toast('Rien à exporter', 'Aucun trade papier fermé.', 'a'); download('tokenstudio-journal-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' trades', 'g'); });
+$('expJournal').addEventListener('click', () => { const r = allClosed().filter((c) => !c.demo); if (!r.length) return toast('Rien à exporter', 'Aucun trade fermé.', 'a'); download('tokenstudio-journal-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' trades', 'g'); });
 $('wipe').addEventListener('click', async () => {
   if (!(await confirmBox('Effacer toutes les données ?', 'Tokens, trades bruts et journaux des stratégies seront supprimés de ce navigateur. Exporte-les avant si tu veux les garder.', 'Tout effacer', true))) return;
   await IDB.clear();
