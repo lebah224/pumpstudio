@@ -1,6 +1,6 @@
 import { studio } from '../legacy/bridge';
 import { disablePush } from '../notify/push';
-import { leaveDemoGuest } from '../lib/guest';
+import { leaveDemoGuest, markLeaving } from '../lib/guest';
 import { detachCloud } from '../data/cloud';
 
 /**
@@ -8,6 +8,7 @@ import { detachCloud } from '../data/cloud';
  * extension déconnectée et wallet rapide mis de côté (il reste chiffré ici), puis retour à la page de connexion.
  */
 export async function logoutEverywhere(signOut: (all?: boolean) => Promise<unknown>, all = false) {
+  markLeaving();
   // les alertes de ce compte ne doivent pas arriver sur un navigateur dont on se déconnecte
   await disablePush().catch(() => {});
   // derniers changements écrits dans la base, puis plus rien du compte ne reste dans l'outil

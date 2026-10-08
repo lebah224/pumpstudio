@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { cloudCounts, detachCloud, exportCloud, flushAll, useCloudStatus } from '../data/cloud';
 import { toast } from '../legacy/bridge';
 import { disablePush } from '../notify/push';
-import { leaveDemoGuest } from '../lib/guest';
+import { leaveDemoGuest, markLeaving } from '../lib/guest';
 
 const ORDER = ['tokens', 'operations', 'orders', 'distributions', 'bot_trades'];
 const LABELS: Record<string, string> = { tokens: 'tokens', operations: 'opérations du journal', orders: 'ordres', distributions: 'demandes de référencement', bot_trades: 'trades du bot' };
@@ -43,6 +43,7 @@ export function DataTab() {
         throw new Error(msg);
       }
       // compte supprimé : plus rien de ce compte dans ce navigateur
+      markLeaving();
       await detachCloud();
       await signOut().catch(() => {});
       leaveDemoGuest();

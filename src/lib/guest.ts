@@ -9,3 +9,7 @@ export function enterDemoGuest() { try { localStorage.setItem(KEY, '1'); } catch
 export function leaveDemoGuest() { try { localStorage.removeItem(KEY); } catch { /* navigation privée */ } }
 /** Une session est peut-être enregistrée (vérifiée ensuite par Supabase) : évite d'afficher une page pour rien */
 export const maybeSignedIn = () => !!get(AUTH_KEY);
+/** Déconnexion en cours : l'outil laisse la redirection vers /connexion se faire (pas de renvoi vers l'accueil) */
+let leaving = false;
+export const markLeaving = () => { leaving = true; };
+export const isLeaving = () => leaving;
