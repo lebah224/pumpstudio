@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b0a09">
 <meta name="color-scheme" content="dark">
-<title>PumpStudio</title>
+<title>TokenStudio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@500;600&family=Cormorant+Garamond:wght@600;700&family=Cinzel:wght@600;700&family=Syne:wght@700;800&family=Space+Grotesk:wght@600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
-/* PumpStudio · console de lancement pump.fun
+/* TokenStudio · console de lancement pump.fun
    Mise en page : rail de navigation fixe à gauche, bandeau d'instruments en haut, plan de travail fluide.
    Thème sombre assumé (terminal de trading, graphiques canvas calés sur cette palette). */
 :root{
@@ -315,7 +315,7 @@ fieldset.dirty .actions{display:flex}
 .danger-note{font-size:12.5px;color:var(--red-ink);background:var(--red-bg);border:1px solid var(--red-line);border-radius:8px;padding:8px 10px;margin-top:6px}
 @media (max-width:760px){.mv{grid-template-columns:1fr}}
 
-/* ═════════ PumpStudio ═════════ */
+/* ═════════ TokenStudio ═════════ */
 .simbar{display:flex;align-items:center;gap:10px;padding:8px 26px;background:var(--accent-bg);border-top:1px solid var(--accent-line);color:var(--accent-ink);font-size:14px;flex-wrap:wrap}
 .simbar.live{background:var(--red-bg);border-top-color:var(--red-line);color:var(--red-ink)}
 .simbar>span{flex:1 1 220px;min-width:0}
@@ -1129,13 +1129,29 @@ textarea{font:inherit;color:inherit}
 .dist-kit .miss b{color:var(--amber-ink);font-family:var(--sans);font-style:italic;font-weight:400}
 @media (max-width:900px){.dist-top{grid-template-columns:1fr}}
 @media (max-width:700px){.dist-sum{flex-wrap:wrap}.dist-sum .btn{width:100%}.dist-kit>div{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}.dist-kit span{grid-column:1/-1}.dist-grid{grid-template-columns:1fr}}
+/* ---------- frais de créateur ---------- */
+.fee-box{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+.fee-box:empty{display:none}
+.d-hero .fee-box{position:relative;z-index:1;margin:0 0 14px;padding:10px 12px;border:1px solid color-mix(in oklab,var(--accent) 26%,var(--line));border-radius:var(--r-sm);background:color-mix(in oklab,var(--accent) 6%,var(--panel))}
+.fee-card{margin-bottom:16px;padding:14px 18px}
+.fee-l{display:flex;align-items:center;gap:11px;min-width:0;flex:1 1 240px}
+.fee-l>span:last-child{display:flex;flex-direction:column;gap:1px;min-width:0}
+.fee-l b{font-size:14px;font-weight:600}
+.fee-l small{font-size:12.5px;color:var(--dim)}
+.fee-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent);flex:none}
+.fee-ic svg.i{width:16px;height:16px}
+.fee-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fee-v{font-family:var(--mono);font-size:18px;font-weight:500;display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;margin-right:4px}
+.fee-v small{font-size:12px;color:var(--muted)}
+.fee-v em{font-style:normal;font-size:11.5px;color:var(--dim)}
+@media (max-width:700px){.fee-r{width:100%;justify-content:flex-end}}
 </style>
 </head>
 <body>
 <div class="app">
   <aside class="side" id="side">
     <button class="icon-btn side-x" id="sideClose" type="button" aria-label="Fermer le menu"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    <div class="logo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Pump<b>Studio</b></span></div>
+    <div class="logo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Token<b>Studio</b></span></div>
     <button class="cmdk" id="cmdkBtn" type="button" aria-label="Ouvrir la palette de commandes"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Rechercher</span><kbd>Ctrl K</kbd></button>
     <div id="sideWallet"></div>
     <nav class="menu" id="menu">
@@ -1160,7 +1176,7 @@ textarea{font:inherit;color:inherit}
   </aside>
 
   <div>
-    <div class="mbar"><button class="icon-btn" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-controls="side"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="mlogo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Pump<b>Studio</b></span></div><div class="spacer"></div><button class="mwallet" id="mWallet" type="button" aria-label="Wallet"></button><button class="icon-btn" id="mSearch" type="button" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
+    <div class="mbar"><button class="icon-btn" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-controls="side"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="mlogo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Token<b>Studio</b></span></div><div class="spacer"></div><button class="mwallet" id="mWallet" type="button" aria-label="Wallet"></button><button class="icon-btn" id="mSearch" type="button" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
     <header class="top">
       <div class="topbar">
         <div><div class="page-eyebrow" id="pageEyebrow">Créer</div><div class="page-title" id="pageTitle">Lancer un token</div><div class="page-sub" id="pageSub">Du concept à la publication sur pump.fun</div></div>
@@ -1185,6 +1201,7 @@ textarea{font:inherit;color:inherit}
               <div class="d-big" id="dBal">—</div>
               <div class="d-sub" id="dBalS">wallet non connecté</div>
               <div class="d-hstats" id="dHero"></div>
+              <div class="fee-box" id="dFees"></div>
               <div class="d-actions">
                 <button class="btn primary" data-page="launch" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg>Lancer un token</button>
                 <button class="btn" data-page="trade" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Trader</button>
@@ -1339,6 +1356,7 @@ textarea{font:inherit;color:inherit}
       <section class="page" id="p-mine">
         <div class="page-head"><div><h1>Mes tokens</h1><p>Les tokens lancés depuis le studio, ou ajoutés à la main. Les données viennent directement de la blockchain.</p></div><div class="spacer"></div>
           <button class="btn" id="mineAdd" type="button">Ajouter un token existant</button></div>
+        <div class="card fee-box fee-card" id="mineFees"></div>
         <div class="tok-list" id="mineList"></div>
         <div id="mineDetail" style="margin-top:18px"></div>
       </section>
@@ -1887,7 +1905,7 @@ Message: ${r}.
       return;
     }
     if (location.protocol === 'file:') {
-      modal('Phantom ne fonctionne pas sur un fichier', '<p>Phantom accepte seulement les pages en <b>https</b> ou servies par ton ordinateur (<b>localhost</b>). Ouvert depuis Téléchargements, le studio ne peut pas s\'y connecter, même avec l\'autorisation des fichiers.</p><ol class="steps"><li><b>Le plus simple</b> : ouvre l\'adresse en ligne du studio (https), une fois mis en ligne.</li><li><b>Sur ton PC</b> : dans le dossier du fichier, lance <span class="mono">python -m http.server 8000</span>, puis ouvre <span class="mono">http://localhost:8000/PumpStudio.html</span>.</li></ol><p style="margin-top:12px">En attendant, tout le reste fonctionne : génération, logo, plan, devis.</p>', [{ label: 'Compris' }], true);
+      modal('Phantom ne fonctionne pas sur un fichier', '<p>Phantom accepte seulement les pages en <b>https</b> ou servies par ton ordinateur (<b>localhost</b>). Ouvert depuis Téléchargements, le studio ne peut pas s\'y connecter, même avec l\'autorisation des fichiers.</p><ol class="steps"><li><b>Le plus simple</b> : ouvre l\'adresse en ligne du studio (https), une fois mis en ligne.</li><li><b>Sur ton PC</b> : dans le dossier du fichier, lance <span class="mono">python -m http.server 8000</span>, puis ouvre <span class="mono">http://localhost:8000/TokenStudio.html</span>.</li></ol><p style="margin-top:12px">En attendant, tout le reste fonctionne : génération, logo, plan, devis.</p>', [{ label: 'Compris' }], true);
       return;
     }
     const list = providers();
@@ -3705,7 +3723,7 @@ Message: ${r}.
       if (i === 0 || i === days.length - 1 || i === Math.floor(days.length / 2)) { g.fillStyle = K.dim; g.textAlign = 'center'; g.fillText(fDay(d.t), x + ww / 2, h - 5); }
     });
   }
-  const DTYPE = { buy: 'Achat', sell: 'Vente', create: 'Lancement' };
+  const DTYPE = { buy: 'Achat', sell: 'Vente', create: 'Lancement', fees: 'Frais créateur' };
   function dashOps() {
     const m = DASH.mode || (S.journal.some((j) => !j.sim) ? 'real' : 'sim');
     return { m, L: S.journal.filter((j) => m === 'all' || (m === 'sim' ? j.sim : !j.sim)) };
@@ -3786,7 +3804,7 @@ Message: ${r}.
     }).join('') + (act.length > 6 ? '<div class="d-more">+ ' + (act.length - 6) + ' autres ordres</div>' : '') : '<div class="d-empty"><b>Aucun ordre actif</b>Ajoute un objectif ou un stop depuis un token.</div>';
     // dernières opérations
     const last6 = L.slice(0, 6);
-    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + ' · ' + esc(j.symbol || short(j.mint)) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Tes achats, ventes et lancements apparaîtront ici.</div>';
+    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' || j.type === 'fees' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : j.type === 'fees' ? 'F' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + (j.type === 'fees' ? '' : ' · ' + esc(j.symbol || short(j.mint))) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Tes achats, ventes et lancements apparaîtront ici.</div>';
     // tokens lancés
     $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.ext ? (PLATFORMS[t.platform] || PLATFORMS.pump).n + (C.curve.dex === 'launchlab' ? ' · ≈ ' + fr(st.progress, 0) + ' %' : ' · ' + dexName(C.curve)) : C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Crée ton premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
     solHist(false);
@@ -3907,6 +3925,59 @@ Message: ${r}.
     }
   }
   function distMark(id, on) { if (!DS.mint) return; const R = DS.rec[DS.mint] = DS.rec[DS.mint] || {}; if (on && !R[id]) R[id] = { at: Date.now() }; save(LSD, DS.rec); }
+  /* ================================================================ frais de créateur */
+  // pump.fun reverse au créateur une part des frais de chaque échange. Ils s'accumulent par wallet créateur
+  // (tous ses tokens confondus), sur la courbe pump.fun et sur PumpSwap après migration.
+  const CFEE = { pk: null, sol: null, at: 0, loading: false, err: null };
+  async function feesRead(force) {
+    const pk = S.wallet && S.wallet.pk; if (!pk) return;
+    if (!force && CFEE.pk === pk && (CFEE.loading || Date.now() - CFEE.at < 60000)) return;
+    if (CFEE.pk !== pk) { CFEE.sol = null; CFEE.err = null; }
+    CFEE.pk = pk; CFEE.loading = true; renderFees();
+    try { const { web3 } = KIT(), bn = await pumpConn().online.getCreatorVaultBalanceBothPrograms(new web3.PublicKey(pk)); CFEE.sol = Number(bn.toString()) / 1e9; CFEE.err = null; }
+    catch (e) { CFEE.err = 'Lecture impossible : ' + (/fetch|RPC|403|429/i.test(e.message || '') ? 'le RPC ne répond pas (ajoute ta clé Helius dans Réglages).' : (e.message || e)); }
+    CFEE.loading = false; CFEE.at = Date.now(); renderFees();
+  }
+  function feesHtml() {
+    const w = S.wallet;
+    if (!w) return '<div class="fee-l"><span class="fee-ic">' + IC.wallet + '</span><span><b>Frais de créateur</b><small>Connecte le wallet qui a créé tes tokens pour voir ce qu\'ils t\'ont rapporté.</small></span></div>';
+    const amt = CFEE.pk === w.pk ? CFEE.sol : null, has = amt > 0;
+    return '<div class="fee-l"><span class="fee-ic">' + IC.wallet + '</span><span><b>Frais de créateur à récupérer</b><small>' +
+      (CFEE.err && CFEE.pk === w.pk ? esc(CFEE.err) : 'Part des frais de chaque échange sur tes tokens · wallet ' + esc(w.id === 'session' ? 'rapide' : w.name) + ' ' + short(w.pk)) + '</small></span></div>' +
+      '<div class="fee-r"><span class="fee-v' + (has ? ' pos' : '') + '">' + (amt == null ? (CFEE.loading ? '…' : '—') : fr(amt, amt >= 1 ? 3 : 5) + '<small> SOL</small>') + (has && S.solUsd ? '<em>≈ ' + fUsd(amt * S.solUsd) + '</em>' : '') + '</span>' +
+      '<button class="btn sm ghost" data-fees="refresh" type="button" title="Relire">' + (CFEE.loading ? '…' : 'Actualiser') + '</button>' +
+      '<button class="btn sm ' + (has ? 'primary' : '') + '" data-fees="claim" type="button"' + (has && !S.busy ? '' : ' disabled') + '>' + (has ? 'Récupérer' : 'Rien à récupérer') + '</button></div>';
+  }
+  function renderFees() { ['dFees', 'mineFees'].forEach((id) => { const el = $(id); if (el) el.innerHTML = feesHtml(); }); }
+  async function claimFees() {
+    if (!S.wallet) return walletMenu();
+    if (!cfg.sim && !(await ensureSigner())) return;
+    if (S.busy) return;
+    await feesRead(true);
+    const amt = CFEE.sol || 0, pk = S.wallet.pk;
+    if (!(amt > 0)) { toast('Rien à récupérer', CFEE.err || 'Aucun frais de créateur en attente pour ce wallet.', 'a'); return; }
+    const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSol(amt, 5) + (S.solUsd ? ' · ≈ ' + fUsd(amt * S.solUsd) : '') + '</span><span>Wallet créateur</span><span>' + short(pk, 6) + '</span><span>Sources</span><span>courbe pump.fun + PumpSwap</span><span>Frais de réseau</span><span>≈ 0,0001 SOL</span><span>Mode</span><span>' + (cfg.sim ? '<span class="badge v">simulation</span>' : '<span class="badge r">réel</span>') + '</span></div></div>' +
+      (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : '<p>Les SOL arrivent directement sur ce wallet. ' + (S.wallet.id === 'session' ? 'Le wallet rapide signe dès que tu confirmes.' : 'Ton wallet va te présenter la transaction.') + '</p>');
+    if (!(await confirmBox(cfg.sim ? 'Simuler la récupération ?' : 'Récupérer ' + fSol(amt, 4) + ' ?', recap, cfg.sim ? 'Simuler' : 'Récupérer'))) return;
+    S.busy = true; renderFees();
+    try {
+      const steps = [
+        { label: 'Préparation (pump.fun et PumpSwap)', run: async (x) => { const { web3 } = KIT(), u = new web3.PublicKey(pk); const ixs = await pumpConn().online.collectCoinCreatorFeeInstructions(u, u); x.tx = await txFrom(ixs, 200000); } },
+        { label: 'Vérification par simulation', run: async (x) => { const v = await simulate(x.tx); x.logs = (v.logs || []).slice(-12).join('\n'); if (v.err) throw new Error(simError(v)); x.logs = ''; return 'acceptée'; } },
+      ];
+      if (!cfg.sim) {
+        steps.push({ label: signLabel(), run: async (x) => { x.sig = await signAndSend(x.tx); return short(x.sig, 6); } });
+        steps.push({ label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) });
+      }
+      const ctx = await runFlow((cfg.sim ? 'Simulation · ' : '') + 'Frais de créateur', steps);
+      if (ctx.error) { journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: cfg.sim, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 }); return; }
+      journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: cfg.sim, status: 'ok', sig: ctx.sig || '', sol: amt, tokens: 0, est: true });
+      if (cfg.sim) { $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">Simulation réussie : la récupération réelle passerait. Désactive le mode simulation pour recevoir les SOL.</div>'); return; }
+      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSol(amt, 5) + ' récupérés. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
+      toast('Frais récupérés', fSol(amt, 5), 'g');
+      CFEE.sol = 0; refreshBal();
+    } finally { S.busy = false; setTimeout(() => feesRead(true), 1500); renderAll(); }
+  }
   /* ================================================================ rendu : lancer */
   function renderLaunch() {
     document.querySelectorAll('#stepper button').forEach((b) => { const n = +b.dataset.step; b.classList.toggle('on', n === S.step); b.classList.toggle('done', n < S.step); });
@@ -4118,7 +4189,7 @@ Message: ${r}.
     $('jStats').innerHTML = '<div class="stat"><div class="l">Opérations</div><div class="v">' + L.length + '</div><div class="s">' + L.filter((j) => j.status === 'err').length + ' échouées</div></div>' +
       '<div class="stat"><div class="l">SOL dépensé</div><div class="v">' + fSol(spent, 3) + '</div></div><div class="stat"><div class="l">SOL reçu</div><div class="v">' + fSol(recv, 3) + '</div></div>' +
       '<div class="stat"><div class="l">Flux net</div><div class="v ' + cls(recv - spent) + '">' + fSol(recv - spent, 3) + '</div><div class="s">hors valeur des tokens détenus</div></div>';
-    const TY = { create: 'Création', buy: 'Achat', sell: 'Vente' };
+    const TY = { create: 'Création', buy: 'Achat', sell: 'Vente', fees: 'Frais créateur' };
     $('jBody').innerHTML = L.length ? '<div class="tablebox"><table><thead><tr><th>Date</th><th>Opération</th><th>Token</th><th class="num">SOL</th><th class="num">Tokens</th><th>Statut</th><th>Lien</th></tr></thead><tbody>' +
       L.slice(0, 400).map((j) => '<tr><td class="dim">' + fT(j.t) + '</td><td>' + TY[j.type] + (j.sim ? ' <span class="badge v">simulation</span>' : '') + '</td><td><b>' + esc(j.symbol || '') + '</b> <span class="dim mono">' + short(j.mint) + '</span></td><td class="num ' + cls(j.sol) + '">' + (j.sol ? fSol(j.sol, 4) : '—') + (j.est ? ' <span class="dim">≈</span>' : '') + '</td><td class="num">' + (j.tokens ? fTok(j.tokens) : '—') + '</td><td>' + (j.status === 'ok' ? '<span class="badge g">ok</span>' : '<span class="badge r" title="' + esc(j.err || '') + '">échec</span>') + '</td><td>' + (j.sig ? '<a href="' + solscan(j.sig) + '" target="_blank" rel="noopener">Solscan</a>' : '<span class="dim">—</span>') + '</td></tr>').join('') + '</tbody></table></div>'
       : '<div class="card"><div class="empty"><b>Aucune opération</b>Les lancements, achats et ventes (réels ou simulés) apparaîtront ici.</div></div>';
@@ -4344,7 +4415,7 @@ Message: ${r}.
     const msg = o.symbol + ' : condition atteinte, vente ' + (o.tokens ? 'de ' + fTok(o.tokens) : 'de ' + o.pct + ' %') + (auto ? ' en cours (automatique).' : ' prête à signer.');
     toast('Ordre déclenché', msg, 'a');
     if (cfg.sound) beep();
-    if (cfg.notify && window.Notification && Notification.permission === 'granted') { try { new Notification('PumpStudio · ordre déclenché', { body: msg }); } catch (e) {} }
+    if (cfg.notify && window.Notification && Notification.permission === 'granted') { try { new Notification('TokenStudio · ordre déclenché', { body: msg }); } catch (e) {} }
     if (auto) { o.auto = 'run'; AUTOQ = AUTOQ.then(() => autoSell(o)).catch(() => {}); }
     else if (!S.busy && !$('modal').classList.contains('open')) sellOrder(o);
     renderTop(); if (S.page === 'orders') renderOrders();
@@ -4411,6 +4482,7 @@ Message: ${r}.
   /* ================================================================ rendu global */
   function renderPage() {
     renderTop();
+    if (S.page === 'dash' || S.page === 'mine') { renderFees(); feesRead(false); }
     if (S.page === 'dash') renderDash();
     else if (S.page === 'launch') renderLaunch();
     else if (S.page === 'mine') renderMine();
@@ -4434,6 +4506,8 @@ Message: ${r}.
     if (b.id === 'sideTheme') { navOpen(false); return themePicker(); }
     if (d.page) return setPage(d.page);
     if (d.dtok) { setPage('mine'); return typeof showToken === 'function' ? showToken('mine', d.dtok) : null; }
+    if (d.fees === 'claim') return claimFees();
+    if (d.fees === 'refresh') return feesRead(true);
     if (d.dist || d.distmark || d.distcp) return distAction(b);
     if (d.dact === 'radar') { setPage('launch'); return setLaunchTab('radar'); }
     if (d.dmode) { DASH.mode = d.dmode; try { localStorage.setItem('pstudio_dash_mode', d.dmode); } catch (x) {} return renderDash(); }
@@ -4488,7 +4562,7 @@ Message: ${r}.
     if (b.id === 'jExport') {
       const rows = S.journal.map((j) => [new Date(j.t).toISOString(), j.type, j.sim ? 'simulation' : 'réel', j.symbol, j.mint, j.sol, j.tokens, j.status, j.sig || '', (j.err || '').replace(/[\n,]/g, ' ')]);
       const csv = 'date,operation,mode,symbole,mint,sol,tokens,statut,signature,erreur\n' + rows.map((r) => r.join(',')).join('\n');
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'pumpstudio-journal.csv'; a.click(); return;
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'tokenstudio-journal.csv'; a.click(); return;
     }
     if (d.sotone) { soTone = d.sotone; renderSocial(); return; }
     if (d.pcopy != null) { const ta = document.querySelector('[data-post="' + d.pcopy + '"]'); try { await navigator.clipboard.writeText(ta.value); toast('Message copié', '', 'g'); } catch (e2) { ta.select(); } return; }
@@ -6356,9 +6430,9 @@ document.getElementById('modal').addEventListener('click', (e) => { if (inPanel(
 document.getElementById('modal').addEventListener('input', (e) => { if (inPanel(e)) onFormInput(e); });
 document.getElementById('modal').addEventListener('change', (e) => { if (inPanel(e)) onFormInput(e); });
 
-$('expTokens').addEventListener('click', async () => { const r = await IDB.all('tokens'); if (!r.length) return toast('Rien à exporter', 'Aucun token en base.', 'a'); download('pumpstudio-tokens-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' tokens', 'g'); });
-$('expTrades').addEventListener('click', async () => { const r = await IDB.all('trades'); if (!r.length) return toast('Rien à exporter', 'Aucun trade en base.', 'a'); download('pumpstudio-trades-' + stamp() + '.json', JSON.stringify(r), 'application/json'); toast('Export prêt', r.length + ' trades', 'g'); });
-$('expJournal').addEventListener('click', () => { const r = allClosed().filter((c) => !c.demo); if (!r.length) return toast('Rien à exporter', 'Aucun trade papier fermé.', 'a'); download('pumpstudio-journal-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' trades', 'g'); });
+$('expTokens').addEventListener('click', async () => { const r = await IDB.all('tokens'); if (!r.length) return toast('Rien à exporter', 'Aucun token en base.', 'a'); download('tokenstudio-tokens-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' tokens', 'g'); });
+$('expTrades').addEventListener('click', async () => { const r = await IDB.all('trades'); if (!r.length) return toast('Rien à exporter', 'Aucun trade en base.', 'a'); download('tokenstudio-trades-' + stamp() + '.json', JSON.stringify(r), 'application/json'); toast('Export prêt', r.length + ' trades', 'g'); });
+$('expJournal').addEventListener('click', () => { const r = allClosed().filter((c) => !c.demo); if (!r.length) return toast('Rien à exporter', 'Aucun trade papier fermé.', 'a'); download('tokenstudio-journal-' + stamp() + '.csv', toCSV(r), 'text/csv'); toast('Export prêt', r.length + ' trades', 'g'); });
 $('wipe').addEventListener('click', async () => {
   if (!(await confirmBox('Effacer toutes les données ?', 'Tokens, trades bruts et journaux des stratégies seront supprimés de ce navigateur. Exporte-les avant si tu veux les garder.', 'Tout effacer', true))) return;
   await IDB.clear();
