@@ -1,0 +1,77 @@
+/* Compte, connexion et préférences : mêmes jetons de design que le studio */
+
+/* carte de compte (barre latérale) */
+.ts-chip{display:flex;align-items:center;gap:10px;width:calc(100% - 24px);margin:0 12px 8px;padding:9px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);cursor:pointer;text-align:left;color:var(--text);transition:border-color .15s,background .15s}
+.ts-chip:hover{border-color:var(--accent-line);background:var(--panel2)}
+.ts-chip.guest{border-style:dashed;border-color:var(--accent-line)}
+.ts-chip-av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:700;font-size:13px;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent-ink)}
+.ts-chip-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.ts-chip-t b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts-chip-t small{font-size:12px;color:var(--dim)}
+.ts-chip-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;box-shadow:0 0 0 3px var(--green-bg)}
+.ts-chip-dot.warn{background:var(--amber);box-shadow:0 0 0 3px var(--amber-bg)}
+.app.side-min .ts-chip-t,.app.side-min .ts-chip-dot{display:none}
+.app.side-min .ts-chip{justify-content:center;padding:8px}
+
+/* fenêtres */
+.ts-modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px}
+.ts-modal-box{position:relative;width:min(440px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r);padding:22px;box-shadow:0 30px 80px -30px rgba(0,0,0,.9)}
+.ts-x{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;border:none;background:none;color:var(--dim);font-size:22px;cursor:pointer}
+.ts-x:hover{background:var(--panel2);color:var(--text)}
+
+/* connexion */
+.ts-signin{display:flex;flex-direction:column;gap:12px}
+.ts-si-h{display:flex;flex-direction:column;gap:4px;margin-bottom:4px}
+.ts-si-h b{font-family:var(--display);font-size:18px}
+.ts-si-h span{font-size:13.5px;color:var(--muted);line-height:1.5}
+.ts-si-sec{font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600}
+.ts-si-wallets{display:flex;flex-direction:column;gap:8px}
+.ts-si-w{justify-content:flex-start;min-height:44px}
+.ts-si-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.ts-si-or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12px}
+.ts-si-or::before,.ts-si-or::after{content:"";flex:1;height:1px;background:var(--line)}
+.ts-si-mail{min-height:44px}
+.ts-si-form{display:flex;flex-direction:column;gap:12px}
+.ts-lbl{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.ts-lbl small{font-weight:400;color:var(--dim);margin-left:4px}
+.ts-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ts-row>input{flex:1;min-width:160px}
+.ts-row.spread{justify-content:space-between}
+.ts-note{font-size:13px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--panel2);color:var(--muted)}
+.ts-note.bad{border-color:var(--red-line);background:var(--red-bg);color:var(--red-ink)}
+.ts-note.warn{border-color:var(--amber-line);background:var(--amber-bg);color:var(--amber-ink)}
+.ts-small{font-size:12.5px}
+
+/* page Mon compte */
+.ts-account-guest{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:16px;align-items:start}
+.ts-why h3{margin:0 0 10px;font-family:var(--display)}
+.ts-why ul,.ts-promise{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;color:var(--muted);font-size:13.5px;line-height:1.5}
+.ts-why b{color:var(--text)}
+.ts-promise{margin-top:14px}
+.ts-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.ts-grid2>.card{margin:0}
+.ts-span2{grid-column:1/-1}
+.ts-prefs .toolbar{margin-top:16px}
+.ts-avatar-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.ts-avatar-row small{display:block;color:var(--dim);font-size:12.5px}
+.ts-avatar{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:22px;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent-ink)}
+.ts-kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+.ts-kv span{color:var(--dim)}
+.ts-kv b{font-weight:500;text-align:right;word-break:break-all}
+.ts-wallets{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.ts-wallet{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel2)}
+.ts-w-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ts-w-main code{font-size:12.5px;color:var(--muted);word-break:break-all}
+.ts-w-main small{color:var(--dim);font-size:12px}
+.ts-w-act{display:flex;gap:6px;flex-wrap:wrap}
+.ts-log{display:flex;flex-direction:column}
+.ts-log>div{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;align-items:center}
+.ts-log>div:first-child{border-top:none}
+.ts-mfa-enroll{display:grid;grid-template-columns:168px minmax(0,1fr);gap:16px;align-items:center}
+.ts-mfa-enroll img{border-radius:10px;background:#fff;padding:6px}
+.ts-steps{margin:0 0 12px;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--muted)}
+.ts-secret{font-family:var(--mono);font-size:12px;word-break:break-all;color:var(--text);background:var(--bg2);padding:1px 6px;border-radius:5px}
+.ts-mfa .ts-note{margin-top:10px}
+.ts-prefs .seg{display:flex;flex-wrap:wrap;max-width:100%}
+.ts-account .ltabs{max-width:100%}
+@media (max-width:900px){.ts-account-guest,.ts-grid2{grid-template-columns:minmax(0,1fr)}.ts-mfa-enroll{grid-template-columns:1fr;justify-items:start}.ts-log>div{grid-template-columns:1fr;gap:2px}}
