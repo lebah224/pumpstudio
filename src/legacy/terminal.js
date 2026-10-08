@@ -232,7 +232,7 @@ const toast = (title, text, kind) => PS.toast(title, text ? ' ' + text : '', kin
 const confirmBox = (title, text, ok, danger) => PS.confirm(title, text, ok, danger);
 
 /* --------------------------------------------------------------- wallet du bot (papier ou réel) */
-// Le bot peut trader en réel avec un wallet : le wallet rapide serveur en premier (il signe seul, même studio fermé),
+// Le bot peut trader en réel avec un wallet : le wallet rapide du compte en premier (il signe seul, sans fenêtre),
 // puis le wallet rapide du navigateur, puis le wallet connecté (chaque trade à signer). Papier = simulation.
 let EXEC = 'paper';
 try { const e = localStorage.getItem('pb-exec'); if (['paper', 'srv', 'quick', 'ext'].includes(e)) EXEC = e; } catch (e) {}

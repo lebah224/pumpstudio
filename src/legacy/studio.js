@@ -644,7 +644,7 @@
   async function legacyMigrate() {
     if (!SESSREC) return;
     if (SRVPK && SRVPK !== SESSREC.pk) return sessWithdraw(SRVPK);   // le compte a déjà un wallet rapide : on y vire les SOL
-    const i = await modal('Transférer ton ancien wallet rapide', '<p>Ton wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> était gardé dans ce navigateur. Il devient le wallet rapide de ton compte : <b>même adresse, mêmes fonds</b>. Il signera ensuite seul, même navigateur fermé.</p>' +
+    const i = await modal('Transférer ton ancien wallet rapide', '<p>Ton wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> était gardé dans ce navigateur. Il devient le wallet rapide de ton compte : <b>même adresse, mêmes fonds</b>. Il signera ensuite seul, sans fenêtre de confirmation.</p>' +
       PASS_FIELD('lgPw', 'Mot de passe de ce wallet rapide', 'current-password'), [{ label: 'Annuler' }, { label: 'Transférer', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const pass = $('lgPw').value;
@@ -821,12 +821,12 @@
   }
 
   /* ================================================================ exécution réelle pour le bot */
-  // Wallets que le bot peut utiliser : le wallet rapide serveur d'abord (signe seul, même studio fermé)
+  // Wallets que le bot peut utiliser : le wallet rapide serveur d'abord (signe seul, sans fenêtre de confirmation)
   // ready : utilisable tout de suite ; armable : activable en un clic (mot de passe du wallet rapide au besoin)
   function botWallets() {
     return [
       { id: 'srv', name: 'Wallet rapide', pk: SRVPK || (SESSREC && SESSREC.pk), ready: !!(SRVPK && window.TSServerWallet), armable: true,
-        note: SRVPK ? 'signe seul, même studio fermé' : SESSREC ? 'ton ancien wallet rapide ' + short(SESSREC.pk, 4) + ' passe sur ton compte · mot de passe seulement' : 'créé en une minute' },
+        note: SRVPK ? 'signe seul, sans fenêtre de confirmation' : SESSREC ? 'ton ancien wallet rapide ' + short(SESSREC.pk, 4) + ' passe sur ton compte · mot de passe seulement' : 'créé en une minute' },
       { id: 'ext', name: S.ext ? S.ext.name : 'Wallet connecté', pk: S.ext && S.ext.pk, ready: !!S.ext, armable: !!S.ext, note: S.ext ? 'chaque trade à signer dans ' + S.ext.name : 'aucun wallet connecté' },
     ];
   }
@@ -835,11 +835,11 @@
     const risk = '<p>Le bot achètera réellement <b>' + o.size + ' SOL</b> par entrée (ta limite par achat de ' + fSol(cfg.maxSol, 2) + ' s\'applique), jusqu\'à ' + o.max + ' positions, et vendra selon la stratégie.</p><div class="notice">Les memecoins peuvent perdre toute leur valeur en quelques secondes : n\'engage que ce que tu acceptes de perdre.</div>';
     const title = 'Trader en réel avec le bot ?';
     if (id === 'ext') return S.ext ? confirmBox(title, '<p>Le bot utilisera <b>' + esc(S.ext.name) + '</b> : chaque trade te sera présenté à signer.</p>' + risk, 'Activer le trading réel', true) : false;
-    if (id === 'srv' && SRVPK) return confirmBox(title, '<p>Le bot utilisera ton <b>wallet rapide</b> (' + short(SRVPK, 4) + ') : il signe seul, dans la limite de tes plafonds, même studio fermé.</p>' + risk, 'Activer le trading réel', true);
+    if (id === 'srv' && SRVPK) return confirmBox(title, '<p>Le bot utilisera ton <b>wallet rapide</b> (' + short(SRVPK, 4) + ') : il signe seul, sans fenêtre, dans la limite de tes plafonds. Garde l\'onglet du bot ouvert.</p>' + risk, 'Activer le trading réel', true);
     if (!SESSREC || id !== 'srv') { try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return false; }
     const toSrv = id === 'srv', needPw = toSrv || !SESSW.kp;
     const intro = toSrv
-      ? '<p>Ton ancien wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> devient le wallet rapide de ton compte : <b>même adresse, mêmes fonds, même mot de passe</b>. Le bot pourra trader même studio fermé.</p>'
+      ? '<p>Ton ancien wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> devient le wallet rapide de ton compte : <b>même adresse, mêmes fonds, même mot de passe</b>. Le bot pourra trader sans fenêtre de confirmation.</p>'
       : '<p>Le bot va utiliser ton wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> tant que cet onglet reste ouvert.</p>';
     const i = await modal(title, intro + risk + (needPw ? PASS_FIELD('botPw', 'Mot de passe de ton wallet rapide', 'current-password') : ''), [{ label: 'Annuler' }, { label: 'Activer le trading réel', cls: 'danger', keep: true }], true);
     if (i !== 1) return false;
@@ -856,7 +856,7 @@
       if (!window.TSServerWalletImport) { toast('Compte requis', 'Connecte-toi pour utiliser le serveur.', 'a'); return false; }
       try { await window.TSServerWalletImport(pass.length >= 10 ? pass : null, b58(kp.secretKey)); }
       catch (e) { toast('Placement sur le serveur impossible', e.message, 'r'); return false; }
-      toast('Wallet rapide transféré', short(SESSREC.pk, 4) + ' est le wallet rapide de ton compte : il trade même studio fermé.', 'g');
+      toast('Wallet rapide transféré', short(SESSREC.pk, 4) + ' est le wallet rapide de ton compte : il signe sans fenêtre de confirmation.', 'g');
       // un seul wallet rapide : la copie de ce navigateur est retirée
       try { localStorage.removeItem(LS.sess); } catch (e) {}
       SESSREC = null; SESSW.kp = null; cfg.useSess = false; save(LS.cfg, cfg);
@@ -2665,7 +2665,7 @@
     $('footMode').style.color = 'var(--violet)';
     const sc = (attr, dot, label, val) => '<button class="sc-it" type="button" ' + attr + '><span class="dot ' + dot + '"></span>' + label + '<em>' + val + '</em></button>';
     $('sideCheck').innerHTML =       sc('data-sc="pp" data-page="settings"', 'wait', 'Flux direct', '…') +
-      sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'RPC Solana', S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé') +
+      (cfg.sim ? '' : sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'RPC Solana', S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé')) +
       (cfg.sim ? sc('data-act="simoff"', 'demo', 'Mode', 'démo') : '');
     ppStatus(); renderWalletCard();
     $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length;
@@ -2814,7 +2814,7 @@
     renderKeysCard();
     document.querySelectorAll('#dMode [data-dmode]').forEach((b) => { b.classList.toggle('on', b.dataset.dmode === m); b.setAttribute('aria-pressed', b.dataset.dmode === m); });
     document.querySelectorAll('#dRange [data-drange]').forEach((b) => b.classList.toggle('on', b.dataset.drange === DASH.range));
-    const ppl = ppLabel(); $('dLive').innerHTML = '<span class="dot ' + ppl[0] + '"></span>Flux direct · ' + esc(ppl[1]) + '<i></i><span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait') + '"></span>RPC ' + (S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé');
+    const ppl = ppLabel(); $('dLive').innerHTML = '<span class="dot ' + ppl[0] + '"></span>Flux direct · ' + esc(ppl[1]) + (cfg.sim ? '' : '<i></i><span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait') + '"></span>RPC ' + (S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé'));
     // portefeuille
     const w = S.wallet;
     $('dModeBadge').className = 'badge v'; $('dModeBadge').textContent = 'Démo'; $('dModeBadge').hidden = !cfg.sim;
@@ -3361,7 +3361,8 @@
   function renderOrders() {
     const on = canAuto(), locked = S.wallet && S.wallet.id === 'session' && !SESSW.kp;
     const n = $('ordersNote');
-    if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Exécution automatique active.</b> Le wallet rapide vend à l\'instant où une condition est atteinte. Garde cet onglet ouvert.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause. <button class="btn sm" data-sw="unlock" type="button">Déverrouiller</button>' : 'Avec Phantom, chaque vente demande ta signature. Pour des ventes instantanées, active le <button class="btn sm" data-sw="panel" type="button">wallet rapide</button>. Garde l\'onglet ouvert.'; }
+    if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Exécution automatique active.</b> Ton wallet rapide vend à l\'instant où une condition est atteinte, tant que l\'outil est ouvert. Onglet fermé, tu reçois une alerte.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause.' : 'Avec ' + (S.ext ? esc(S.ext.name) : 'ton wallet') + ', chaque vente demande ta signature. Pour des ventes automatiques, utilise ton <button class="btn sm" data-sw="' + (SRVPK ? 'use' : 'create') + '" type="button">wallet rapide</button>.';
+      if (cfg.sim) { n.className = 'notice info'; n.innerHTML = '<b>Démo.</b> Un ordre déclenché est vendu aussitôt dans le wallet démo, au prix simulé.'; } }
     $('ordersBody').innerHTML = S.orders.length ? '<div class="card">' + S.orders.map(orderRow).join('') + '</div>' : '<div class="card"><div class="empty"><b>Aucun ordre préparé</b>Ouvre un token (Mes tokens ou Trader) et clique sur « Ajouter » dans le bloc Ordres préparés.</div></div>';
   }
   function renderJournal() {
@@ -3376,7 +3377,7 @@
     const TY = { create: 'Création', buy: 'Achat', sell: 'Vente', fees: 'Frais créateur', deposit: 'Dépôt', withdraw: 'Retrait' };
     $('jBody').innerHTML = L.length ? '<div class="tablebox"><table><thead><tr><th>Date</th><th>Opération</th><th>Token</th><th class="num">SOL</th><th class="num">Tokens</th><th>Statut</th><th>Lien</th></tr></thead><tbody>' +
       L.slice(0, 400).map((j) => '<tr><td class="dim">' + fT(j.t) + '</td><td>' + TY[j.type] + (j.sim ? ' <span class="badge v">démo</span>' : '') + '</td><td><b>' + esc(j.symbol || '') + '</b> <span class="dim mono">' + short(j.mint) + '</span></td><td class="num ' + cls(j.sol) + '">' + (j.sol ? fSol(j.sol, 4) : '—') + (j.est ? ' <span class="dim">≈</span>' : '') + '</td><td class="num">' + (j.tokens ? fTok(j.tokens) : '—') + '</td><td>' + (j.status === 'ok' ? '<span class="badge g">ok</span>' : '<span class="badge r" title="' + esc(j.err || '') + '">échec</span>') + '</td><td>' + (j.sig && !j.demo ? '<a href="' + solscan(j.sig) + '" target="_blank" rel="noopener">Solscan</a>' : j.demo ? '<span class="dim">démo</span>' : '<span class="dim">—</span>') + '</td></tr>').join('') + '</tbody></table></div>'
-      : '<div class="card"><div class="empty"><b>Aucune opération</b>Les lancements, achats et ventes (réels ou simulés) apparaîtront ici.</div></div>';
+      : '<div class="card"><div class="empty"><b>Aucune opération</b>' + (cfg.sim ? 'Les lancements, achats et ventes de la démo apparaîtront ici.' : 'Tes lancements, achats et ventes apparaîtront ici, avec leur lien Solscan.') + '</div></div>';
   }
   /* ---------- communication */
   let soTone = 'communaute';

@@ -10,7 +10,9 @@ import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 type Step = 'choose' | 'quick' | 'none' | 'email' | 'email-none' | 'code' | 'add';
 const short = (a: string) => a.slice(0, 4) + '…' + a.slice(-4);
 
-export const WalletMark = ({ w }: { w: Pick<WalletInfo, 'name' | 'color'> }) => <span className="ts-wmark" style={{ background: w.color }} aria-hidden="true">{initials(w.name)}</span>;
+// texte foncé sur les couleurs claires (contraste lisible), clair sur les foncées
+const inkFor = (hex: string) => { const m = /^#?([0-9a-f]{6})$/i.exec(hex); if (!m) return '#fff'; const n = parseInt(m[1]!, 16), l = (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255; return l > 0.55 ? '#0b0a09' : '#fff'; };
+export const WalletMark = ({ w }: { w: Pick<WalletInfo, 'name' | 'color'> }) => <span className="ts-wmark" style={{ background: w.color, color: inkFor(w.color) }} aria-hidden="true">{initials(w.name)}</span>;
 const QuickMark = () => <span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span>;
 
 /**
@@ -165,7 +167,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         {srv && !srv.address && (
           <button type="button" className="ts-si-opt ts-si-srv" onClick={() => { close(); setTimeout(() => openServerWallet('create'), 0); }}>
             <QuickMark />
-            <span className="ts-si-n">Wallet rapide<small>Créé sur ton compte : il signe seul, même navigateur fermé · recommandé pour le bot</small></span><em className="ts-si-tag ok">Conseillé</em>
+            <span className="ts-si-n">Wallet rapide<small>Créé sur ton compte : il signe seul, sans fenêtre · recommandé pour le bot</small></span><em className="ts-si-tag ok">Conseillé</em>
           </button>
         )}
         {walletList}

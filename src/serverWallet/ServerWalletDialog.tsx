@@ -57,7 +57,7 @@ export function ServerWalletDialog() {
           h?.legacyDrop();   // un seul wallet rapide : la copie du navigateur est retirée
         } else addr = await importServerWallet(pw, secret.trim());
         await studio()?.hub?.useServer(true);
-        toast('Wallet rapide prêt', short(addr) + ' signe maintenant tes transactions, même navigateur fermé.');
+        toast('Wallet rapide prêt', short(addr) + ' signe maintenant tes transactions, sans fenêtre de confirmation.');
         close(); return;
       }
       if (!pw) throw new Error('Saisis le mot de passe du wallet rapide.');
@@ -86,7 +86,7 @@ export function ServerWalletDialog() {
       <form className="ts-modal-box ts-srv" onSubmit={submit}>
         <button type="button" className="ts-x" aria-label="Fermer" onClick={close}>×</button>
         <div className="ts-si-h"><b>{TITLE[mode]}</b>
-          <span>{mode === 'create' ? 'Un wallet de trading rattaché à ton compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, même navigateur fermé : ventes automatiques, ordres et bot.'
+          <span>{mode === 'create' ? 'Un wallet de trading rattaché à ton compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, sans fenêtre de confirmation, dans la limite de tes plafonds : ventes automatiques, ordres et bot.'
             : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à ton compte.'
             : mode === 'limits' ? 'Le serveur refuse toute dépense au-delà du plafond du jour.'
             : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Garde-la hors ligne et ne la partage avec personne.'

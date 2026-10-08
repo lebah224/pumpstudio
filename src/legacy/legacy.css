@@ -1210,4 +1210,4 @@ textarea{font:inherit;color:inherit}
 .kp-in:focus{outline:none;border-color:var(--accent);box-shadow:var(--focus)}
 .kp-err{margin:10px 0 0}
 .kp-note{margin:10px 0 0;font-size:12.5px;color:var(--dim)}
-.kp-help{float:right;margin:-4px 0 6px 10px}
+.kp-help{display:block;width:fit-content;margin:0 0 6px auto}
