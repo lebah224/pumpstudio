@@ -1350,8 +1350,15 @@
 
   /* ---------- création */
   const imgExt = (b) => ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp' }[b && b.type] || 'png');
+  // image en ligne → fichier, sans réseau (la politique de sécurité du site interdit fetch sur data:)
+  function dataBlob(u) {
+    if (!/^data:/.test(u || '')) return null;
+    const i = u.indexOf(','), type = (u.slice(5, i).split(';')[0]) || 'image/png', bin = atob(u.slice(i + 1)), out = new Uint8Array(bin.length);
+    for (let k = 0; k < bin.length; k++) out[k] = bin.charCodeAt(k);
+    return new Blob([out], { type });
+  }
   async function uploadMeta(d) {
-    const blob = S.imgBlob || (d.image ? await (await fetch(d.image)).blob() : null);
+    const blob = S.imgBlob || (d.image ? (dataBlob(d.image) || await (await fetch(d.image)).blob()) : null);
     if (!blob) throw new Error('Logo manquant.');
     if (cfg.metaMethod === 'pinata') {
       if (!cfg.pinataJwt) throw new Error('Jeton Pinata manquant (Réglages).');
@@ -1368,6 +1375,8 @@
     const fd = new FormData();
     fd.append('file', blob, 'logo.' + imgExt(blob)); fd.append('name', d.name); fd.append('symbol', d.symbol); fd.append('description', d.desc);
     fd.append('twitter', d.tw || ''); fd.append('telegram', d.tg || ''); fd.append('website', d.web || ''); fd.append('showName', 'true');
+    // par le serveur TokenStudio (compte connecté) : pas de blocage du navigateur, aucune clé à fournir
+    if (CLOUD && window.TSUploadMeta) return window.TSUploadMeta(fd);
     let r;
     try { r = await fetch('https://pump.fun/api/ipfs', { method: 'POST', body: fd }); }
     catch (e) { throw new Error('pump.fun n\'accepte pas l\'envoi depuis cette page. Choisis Pinata dans Réglages (gratuit).'); }
@@ -1396,7 +1405,7 @@
       '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
       '<span>Frais de réseau et comptes</span><span>≈ ' + fr(PL.fee, 2) + ' SOL</span>' +
       '<span>Coût total estimé</span><span>' + fSol(dev + PL.fee) + '</span>' +
-      '<span>Métadonnées</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS)') + '</span>' +
+      '<span>Logo et fiche</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS), envoyés par le serveur') + '</span>' +
       (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' + creatorHtml +
       (ses && !ext ? '<div class="notice">Le wallet rapide sera affiché comme créateur et recevra les frais de créateur. Pour lancer en ton nom, connecte Phantom (ou ton wallet principal) : il sera proposé comme créateur.</div>' : '') +
       (ses && ext && cfg.engine === 'portal' ? '<div class="notice">Avec PumpPortal, le créateur est forcément le wallet qui signe (wallet rapide). Choisis le moteur Direct dans Réglages pour afficher ' + esc(ext.name) + '.</div>' : '') +
@@ -1425,7 +1434,7 @@
       const ctx = await runFlow((dry ? 'Test · ' : 'Lancement · ') + d.name, steps);
       if (ctx.error) {
         journalAdd({ type: 'create', mint, symbol: d.symbol, sim: dry, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 });
-        if (/pump\.fun n'accepte pas|refusé les métadonnées|Pinata/.test(ctx.error.message || '')) $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">L\'envoi du logo a échoué. Un jeton Pinata gratuit règle le problème. <button class="btn sm primary" data-act="keyhelp" data-k="pinata" type="button">Ajouter un jeton Pinata</button></div>');
+        if (/pump\.fun n'accepte pas|refusé les métadonnées|refusé la fiche|pump\.fun ne répond|Réponse inattendue|Pinata/.test(ctx.error.message || '')) $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">L\'envoi du logo a échoué. Un jeton Pinata gratuit règle le problème. <button class="btn sm primary" data-act="keyhelp" data-k="pinata" type="button">Ajouter un jeton Pinata</button></div>');
         return;
       }
       if (dry) {
@@ -3429,7 +3438,7 @@
   const FORMS = [
     { id: 'engine', title: 'Moteur de transaction', fields: [['engine', 'Construction des transactions', 'sel', 'Direct : programme pump.fun, sans intermédiaire ni frais en plus. PumpPortal : secours. Les tokens migrés passent automatiquement par PumpPortal, quel que soit ce choix.', [['direct', 'Direct (pump.fun)'], ['portal', 'PumpPortal (+0,5 %)']]]] },
     { id: 'conn', title: 'Connexion à Solana', help: 'helius', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct PumpPortal', 'bool', 'Prix et transactions pump.fun en temps réel : les ordres se déclenchent en moins d\'une seconde. Gratuit, sans clé.']] },
-    { id: 'meta', title: 'Métadonnées du token', help: 'pinata', fields: [['metaMethod', 'Envoi du logo', 'sel', 'pump.fun direct, ou Pinata si le navigateur bloque', [['pump', 'pump.fun (IPFS)'], ['pinata', 'Pinata (IPFS)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
+    { id: 'meta', title: 'Métadonnées du token', help: 'pinata', fields: [['metaMethod', 'Envoi du logo', 'sel', 'Par le serveur TokenStudio vers pump.fun, sans clé. Pinata en secours.', [['pump', 'Serveur → pump.fun (conseillé)'], ['pinata', 'Pinata (ta clé)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
     { id: 'speed', title: 'Vitesse d\'exécution', fields: [['speed', 'Priorité des transactions', 'sel', 'Calculée sur les frais réellement payés sur pump.fun ces dernières secondes', [['eco', 'Économique'], ['fast', 'Rapide (conseillé)'], ['turbo', 'Turbo'], ['manual', 'Manuelle']]], ['maxPriority', 'Plafond des frais de priorité', 'num', 'Jamais plus que ce montant par transaction', 'SOL'], ['priorityFee', 'Frais de priorité manuels', 'num', 'Utilisés seulement en mode Manuelle', 'SOL']] },
     { id: 'fast', title: 'Wallet rapide et envoi', fields: [['autoExec', 'Ventes automatiques', 'bool', 'Le wallet rapide exécute seul les paliers et le stop'], ['slSlippage', 'Slippage du stop', 'num', 'Plus large : mieux vaut vendre un peu moins cher que pas du tout', '%'], ['autoRetry', 'Nouveaux essais', 'num', 'Si le prix a trop bougé (0 à 3)', 'fois'], ['sender', 'Envoi direct aux validateurs', 'sel', 'Helius Sender, en plus de ton RPC. Pourboire inclus dans la transaction.', [['swqos', 'Rapide · 0,000005 SOL (conseillé)'], ['max', 'Maximum · 0,001 SOL'], ['off', 'Désactivé']]]] },
     { id: 'trade', title: 'Trading', fields: [['slippage', 'Slippage maximum', 'num', 'Écart de prix accepté', '%'], ['maxSol', 'Limite par achat', 'num', 'Garde-fou contre une erreur de saisie', 'SOL'], ['feePct', 'Frais pump.fun estimés', 'num', 'Pour les devis', '%'], ['portalFeePct', 'Frais PumpPortal', 'num', 'Seulement avec le moteur PumpPortal', '%']] },
@@ -3558,7 +3567,7 @@
       why: '<b>Gratuite, conseillée.</b> Prix en temps réel, envois plus rapides et pas de blocage. Sans elle, l\'outil passe par le RPC TokenStudio, plus lent.',
       steps: ['Crée un compte gratuit sur <a href="https://dashboard.helius.dev/" target="_blank" rel="noopener">helius.dev</a>.', 'Dans ton tableau de bord, copie ta clé <b>API Key</b>.', 'Colle-la ci-dessous, puis clique sur « Vérifier ».'] },
     pinata: { title: 'Ajouter ton jeton Pinata', label: 'Jeton Pinata (JWT)', ph: 'eyJhbGciOi…',
-      why: '<b>Gratuit.</b> Sert à envoyer le logo et la fiche du token quand pump.fun refuse l\'envoi depuis le navigateur.',
+      why: '<b>Gratuit, en secours.</b> Le serveur TokenStudio envoie normalement le logo et la fiche à pump.fun. Si cet envoi échoue, ton propre jeton Pinata prend le relais.',
       steps: ['Crée un compte gratuit sur <a href="https://app.pinata.cloud/developers/api-keys" target="_blank" rel="noopener">pinata.cloud</a>.', 'Dans <b>API Keys</b>, crée une clé avec le droit d\'envoi de fichiers, puis copie son <b>JWT</b>.', 'Colle-le ci-dessous, puis clique sur « Vérifier ».'] },
   };
   const heliusUrl = (v) => (/^https:\/\//i.test(v) ? v : 'https://mainnet.helius-rpc.com/?api-key=' + v);

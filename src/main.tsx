@@ -11,6 +11,7 @@ import { App } from './App';
 import { installSelectMenus } from './ui/selectMenu';
 import { installRpcRelay } from './lib/rpcRelay';
 import { installPushRouting } from './notify/push';
+import { installTokenMeta } from './lib/tokenMeta';
 import { enterDemoGuest, isDemoGuest, maybeSignedIn } from './lib/guest';
 
 // Sans compte, l'outil s'ouvre seulement en démo (depuis l'accueil) ou pour se connecter avec le wallet rapide
@@ -32,6 +33,8 @@ installSelectMenus();
 installRpcRelay();
 // clic sur une alerte : le studio s'ouvre sur la page des ordres
 installPushRouting();
+// logo et fiche des tokens envoyés par le serveur (pas de clé Pinata nécessaire)
+installTokenMeta();
 
 const root = document.getElementById('ts-root');
 if (root) createRoot(root).render(<StrictMode><App /></StrictMode>);
