@@ -792,8 +792,17 @@
       const size = t.message.serialize().length + 1 + 64 * t.message.header.numRequiredSignatures;
       if (size <= 1232) { tx = t; TIPPED.add(tx); } else tip = 0;   // trop gros : on garde l'envoi classique
     }
-    if (!tx) tx = build(base);
-    LAST_FEE = { sol: price * units / 1e6 / 1e9 + tip / 1e9, label: pr.label, tip };
+    const sizeOf = (t) => t.message.serialize().length + 1 + 64 * t.message.header.numRequiredSignatures;
+    let fee = price * units / 1e6 / 1e9;
+    if (!tx) {
+      tx = build(base);
+      // Solana refuse les transactions de plus de 1 232 octets (création + achat du créateur avec un long lien de
+      // métadonnées) : on retire d'abord les instructions de priorité, qui ne font que l'accélérer
+      if (sizeOf(tx) > 1232) { tx = build([web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: price })].concat(ixs)); fee = price * 200000 * ixs.length / 1e6 / 1e9; }
+      if (sizeOf(tx) > 1232) { tx = build(ixs); fee = 0; }
+      if (sizeOf(tx) > 1232) { const e = new Error('TX_TOO_BIG'); e.code = 'TX_TOO_BIG'; throw e; }
+    }
+    LAST_FEE = { sol: fee + tip / 1e9, label: pr.label, tip };
     return tx;
   }
   const MPC = {};
@@ -814,7 +823,16 @@
       const solAmount = new BN(Math.round(dev * 1e9));
       const amount = P.getBuyTokenAmountFromSolAmount({ global: st.global, feeConfig: st.fee, mintSupply: null, bondingCurve: null, amount: solAmount, quoteMint: NATIVE_MINT });
       ixs = await P.PUMP_SDK.createV2AndBuyInstructions({ global: st.global, mint, name: d.name, symbol: d.symbol, uri, creator, user, amount, solAmount, mayhemMode: false });
-    } else ixs = [await P.PUMP_SDK.createV2Instruction({ mint, name: d.name, symbol: d.symbol, uri, creator, user, mayhemMode: false })];
+      try { return await txFrom(ixs, 400000); }
+      catch (e) {
+        if (e.code !== 'TX_TOO_BIG') throw e;
+        // trop gros même sans priorité : la création part seule, l'achat du créateur suit aussitôt dans une 2e transaction
+        const tx = await txFrom([await P.PUMP_SDK.createV2Instruction({ mint, name: d.name, symbol: d.symbol, uri, creator, user, mayhemMode: false })], 250000);
+        tx.__devSplit = true;
+        return tx;
+      }
+    }
+    ixs = [await P.PUMP_SDK.createV2Instruction({ mint, name: d.name, symbol: d.symbol, uri, creator, user, mayhemMode: false })];
     return txFrom(ixs, 400000);
   }
   // pk : wallet qui achète ou vend (par défaut le wallet actif)
@@ -1374,6 +1392,18 @@
     if (!dry) {
       steps.push({ label: signLabel(), run: async (x) => { x.sig = await signAndSend(x.tx, [mintKp]); return short(x.sig, 6); } });
       steps.push({ label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) });
+      // achat du créateur séparé (création trop volumineuse pour une seule transaction)
+      if (dev > 0 && cfg.engine !== 'portal') steps.push({ label: 'Achat du créateur', run: async (x) => {
+        if (!x.tx.__devSplit) return 'inclus dans la création';
+        // le token existe déjà : un échec ici ne doit pas faire croire que le lancement a échoué
+        try {
+          let b = null;
+          for (let i = 0; i < 4 && !b; i++) { try { b = await directTrade(mint, 'buy', dev); } catch (e) { if (i === 3) throw e; await sleep(900); } }
+          const v = await simulate(b); if (v.err) throw new Error(simError(v));
+          x.buySig = await signAndSend(b);
+          return short(x.buySig, 6) + ' · ' + (await confirmSig(x.buySig));
+        } catch (e) { x.buyErr = e.message || String(e); return 'non effectué'; }
+      } });
     }
     try {
       const ctx = await runFlow((dry ? 'Test · ' : 'Lancement · ') + d.name, steps);
@@ -1388,11 +1418,12 @@
         toast(how === 'test' ? 'Test réussi' : 'Démo réussie', d.name + ' est prêt à être lancé.', 'g');
         return;
       }
-      const real = await actualDeltas(ctx.sig, mint);
+      const real = await actualDeltas(ctx.buySig || ctx.sig, mint);
       const thumb = await thumbnail(d.image);
       S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: thumb, createdAt: Date.now(), sig: ctx.sig, dev, platform: 'pump', creator: creatorPk, desc: d.desc, tw: d.tw, tg: d.tg, web: d.web });
       save(LS.tokens, S.tokens);
       journalAdd({ type: 'create', mint, symbol: d.symbol, sim: false, status: 'ok', sig: ctx.sig, sol: -(real ? real.sol : dev), tokens: real ? real.tokens : (q ? q.tokens : 0), est: !real });
+      if (ctx.buyErr) $('mBody').insertAdjacentHTML('beforeend', '<div class="notice warn">Le token est créé, mais l\'achat du créateur n\'a pas pu être fait (' + esc(ctx.buyErr) + '). Vous pouvez l\'acheter depuis Mes tokens ou Trader.</div>');
       $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est en ligne. <a href="' + PL.url(mint) + '" target="_blank" rel="noopener">' + PL.n + '</a> · <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Solscan</a></div>');
       toast('Token lancé', d.name + ' · ' + short(mint), 'g');
       // plan de prise de profit → ordres préparés (chaque vente demandera votre signature)

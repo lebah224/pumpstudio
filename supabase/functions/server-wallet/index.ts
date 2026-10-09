@@ -5,8 +5,9 @@
 // Retraits : uniquement vers les wallets liés et prouvés du compte, depuis plus de 24 heures (sauf le wallet de connexion).
 // Actions sensibles (retrait, export, hausse du plafond, suppression) : mot de passe du wallet + code de confirmation.
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
-import { Keypair, PublicKey, SystemProgram, Transaction, VersionedTransaction } from 'npm:@solana/web3.js@1.98.4';
+import { Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction, VersionedTransaction } from 'npm:@solana/web3.js@1.98.4';
 import bs58 from 'npm:bs58@6.0.0';
+import { Buffer } from 'node:buffer';
 import type { User } from 'npm:@supabase/supabase-js@2.117.3';
 import { alertMail, passwordError, rate, requireStepUp, Fail as Need } from '../_shared/security.ts';
 
@@ -211,14 +212,24 @@ const loginWallet = (u: User) => {
   return a && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a) ? a : null;
 };
 const DELAY_H = 24;
+// destinations autorisées : wallets liés et prouvés, ou adresses du coffre-fort (plateforme d'échange…), après 24 h
+async function destination(user: User, to: string) {
+  const uid = user.id;
+  const [{ data: w }, { data: v }] = await Promise.all([
+    admin.from('wallets').select('address, verified_at').eq('user_id', uid).eq('address', to).maybeSingle(),
+    admin.from('vault_addresses').select('address, created_at').eq('user_id', uid).eq('address', to).maybeSingle(),
+  ]);
+  if (!w && !v) throw new Fail(403, 'Envoi refusé : la destination doit être un wallet lié à votre compte ou une adresse enregistrée dans le coffre-fort.');
+  if (to === loginWallet(user)) return;
+  // une destination ajoutée récemment ne reçoit rien pendant 24 h : une session volée ne peut pas vider le wallet rapide
+  const since = Math.min(w ? Date.parse(w.verified_at) : Infinity, v ? Date.parse(v.created_at) : Infinity);
+  const age = (Date.now() - since) / 3600_000;
+  if (age < DELAY_H) throw new Fail(403, 'Cette destination a été ajoutée il y a moins de 24 heures : par sécurité, elle pourra recevoir des fonds dans ' + Math.ceil(DELAY_H - age) + ' h.', { code: 'cooldown' });
+}
 async function withdraw(user: User, row: Row, to: unknown, amount: unknown) {
   const uid = user.id;
   if (typeof to !== 'string') throw new Fail(400, 'Adresse de destination manquante.');
-  const { data: w } = await admin.from('wallets').select('address, verified_at').eq('user_id', uid).eq('address', to).maybeSingle();
-  if (!w) throw new Fail(403, 'Retrait refusé : la destination doit être un wallet lié à votre compte (Mon compte → Wallets).');
-  // un wallet ajouté récemment ne reçoit rien pendant 24 h : une session volée ne peut pas vider le wallet rapide
-  const age = (Date.now() - Date.parse(w.verified_at)) / 3600_000;
-  if (to !== loginWallet(user) && age < DELAY_H) throw new Fail(403, 'Ce wallet a été ajouté il y a moins de 24 heures : par sécurité, il pourra recevoir des retraits dans ' + Math.ceil(DELAY_H - age) + ' h.', { code: 'cooldown' });
+  await destination(user, to);
   const bal = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
   const fee = 5000;
   const lam = amount === 'max' ? bal - fee : Math.round(Number(amount) * 1e9);
@@ -234,6 +245,139 @@ async function withdraw(user: User, row: Row, to: unknown, amount: unknown) {
   await audit(uid, 'server_wallet_withdraw', { signature, to, sol: lam / 1e9 });
   alertMail(user, 'withdraw', { sol: Number((lam / 1e9).toFixed(6)), to, signature }).catch(() => {});
   return { signature, raw, sol: lam / 1e9 };
+}
+
+/* ---------- coffre-fort : SOL ↔ USDT/USDC dans le wallet rapide (Jupiter), envoi des stablecoins ---------- */
+const STABLES: Record<string, { mint: string; dec: number }> = {
+  USDT: { mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6 },
+  USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6 },
+};
+const JUP = 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4', JUP_API = 'https://lite-api.jup.ag/swap/v1';
+const SOL_RESERVE = 20_000_000;   // 0,02 SOL gardés pour les frais
+const ataOf = (owner: string, mint: string) => PublicKey.findProgramAddressSync([new PublicKey(owner).toBuffer(), new PublicKey(TOKEN).toBuffer(), new PublicKey(mint).toBuffer()], new PublicKey(ATA))[0].toBase58();
+const tokAmount = (b64data: string | undefined) => { if (!b64data) return 0n; const d = unb64(b64data); return d.length >= 72 ? new DataView(d.buffer, d.byteOffset + 64, 8).getBigUint64(0, true) : 0n; };
+async function stableHeld(owner: string, mint: string) { return (await tokenHeld(owner, mint)).raw; }
+
+// transaction d'échange Jupiter : seuls Jupiter, le budget de calcul, les comptes de tokens et l'enveloppe du SOL sont admis
+function swapPolicy(tx: VersionedTransaction, payer: string) {
+  const keys = tx.message.staticAccountKeys.map((k) => k.toBase58());
+  if (keys[0] !== payer) throw new Fail(403, 'Échange refusé : le wallet doit payer la transaction.');
+  const wsolAta = ataOf(payer, WSOL);
+  for (const ix of tx.message.compiledInstructions) {
+    const pid = keys[ix.programIdIndex];
+    if (pid === CB || pid === ATA || pid === JUP) continue;
+    const d = ix.data;
+    if (pid === SYSTEM) { const t = u32(d, 0); if (t === 0 || t === 3) continue; if (t === 2 && keys[ix.accountKeyIndexes[1]!] === wsolAta) continue; }
+    if (pid === TOKEN) { const op = d[0]; if (op === 17 || op === 1 || op === 16 || op === 18) continue; if (op === 9 && keys[ix.accountKeyIndexes[1]!] === payer) continue; }
+    throw new Fail(403, 'Échange refusé : instruction non autorisée.');
+  }
+}
+async function confirm(signature: string) {
+  for (let i = 0; i < 40; i++) {
+    await new Promise((res) => setTimeout(res, 1000));
+    const st = await rpc<{ value: ({ err: unknown; confirmationStatus?: string } | null)[] }>('getSignatureStatuses', [[signature]]).catch(() => null);
+    const v = st?.value?.[0];
+    if (v?.err) throw new Fail(422, 'Transaction refusée par la blockchain (' + JSON.stringify(v.err).slice(0, 100) + ').');
+    if (v && (v.confirmationStatus === 'confirmed' || v.confirmationStatus === 'finalized')) return true;
+  }
+  return false;
+}
+type Move = { kind: 'protect' | 'release' | 'send'; stable: string; sol?: number | null; stable_amount?: number | null; dest?: string | null; signature?: string | null; auto?: boolean; rule_id?: string | null; status?: 'ok' | 'err'; error?: string | null };
+const logMove = (uid: string, wallet: string, m: Move) => admin.from('vault_moves').insert({ user_id: uid, wallet, auto: false, status: 'ok', ...m, rule_id: m.rule_id && /^[0-9a-f-]{36}$/.test(m.rule_id) ? m.rule_id : null, error: m.error ? m.error.slice(0, 300) : null });
+
+/** from / to : 'SOL', 'USDT' ou 'USDC' ; amount : montant à convertir (unités lisibles) */
+async function vaultSwap(uid: string, row: Row, from: unknown, to: unknown, amount: unknown, rule: string | null = null) {
+  const protect = from === 'SOL', stable = String(protect ? to : from);
+  const S = STABLES[stable];
+  if (!S || (protect ? to : from) === 'SOL' || (!protect && to !== 'SOL')) throw new Fail(400, 'Échange possible seulement entre SOL et USDT ou USDC.');
+  const amt = Number(amount);
+  if (!(amt > 0) || amt > 1e9) throw new Fail(400, 'Montant invalide.');
+  const solBal = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
+  let raw: bigint;
+  if (protect) {
+    raw = BigInt(Math.floor(amt * 1e9));
+    if (raw < 10_000_000n) throw new Fail(400, 'Minimum 0,01 SOL.');
+    if (Number(raw) > solBal - SOL_RESERVE) throw new Fail(400, 'Solde insuffisant : gardez au moins 0,02 SOL pour les frais.');
+  } else {
+    raw = BigInt(Math.floor(amt * 10 ** S.dec));
+    const held = await stableHeld(row.address, S.mint);
+    if (raw > held) raw = held;
+    if (raw < 1_000_000n) throw new Fail(400, 'Minimum 1 ' + stable + '.');
+    if (solBal < 5_000_000) throw new Fail(400, 'Il faut au moins 0,005 SOL pour payer les frais.');
+  }
+  const inMint = protect ? WSOL : S.mint, outMint = protect ? S.mint : WSOL;
+  const qr = await fetch(JUP_API + '/quote?inputMint=' + inMint + '&outputMint=' + outMint + '&amount=' + raw + '&slippageBps=50&restrictIntermediateTokens=true', { signal: AbortSignal.timeout(10_000) });
+  const q = await qr.json().catch(() => null);
+  if (!qr.ok || !q?.outAmount) throw new Fail(502, 'Aucun prix disponible pour cet échange : réessayez dans un instant.');
+  if (Number(q.priceImpactPct) > 0.01) throw new Fail(422, 'Impact sur le prix trop élevé (plus de 1 %) : réduisez le montant.');
+  const sr = await fetch(JUP_API + '/swap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(15_000),
+    body: JSON.stringify({ quoteResponse: q, userPublicKey: row.address, wrapAndUnwrapSol: true, dynamicComputeUnitLimit: true, prioritizationFeeLamports: { priorityLevelWithMaxLamports: { maxLamports: 500_000, priorityLevel: 'high' } } }) });
+  const sj = await sr.json().catch(() => null);
+  if (!sr.ok || typeof sj?.swapTransaction !== 'string') throw new Fail(502, 'Préparation de l\'échange impossible : réessayez.');
+  const tx = VersionedTransaction.deserialize(unb64(sj.swapTransaction));
+  swapPolicy(tx, row.address);
+  // simulation : le SOL et le stablecoin bougent-ils comme prévu ?
+  const stableAta = ataOf(row.address, S.mint);
+  const pre = await rpc<{ value: ({ data: [string, string] } | null)[] }>('getMultipleAccounts', [[stableAta], { encoding: 'base64', commitment: 'confirmed' }]);
+  const preTok = tokAmount(pre.value?.[0]?.data?.[0]);
+  const sim = await rpc<{ value: { err: unknown; accounts: ({ lamports: number; data: [string, string] } | null)[] | null } }>('simulateTransaction', [sj.swapTransaction, { encoding: 'base64', sigVerify: false, replaceRecentBlockhash: true, commitment: 'confirmed', accounts: { encoding: 'base64', addresses: [row.address, stableAta] } }]);
+  if (sim.value.err) throw new Fail(422, 'La blockchain refuse cet échange (' + JSON.stringify(sim.value.err).slice(0, 100) + ').');
+  const postSol = sim.value.accounts?.[0]?.lamports, postTok = tokAmount(sim.value.accounts?.[1]?.data?.[0]);
+  if (postSol == null) throw new Fail(502, 'Simulation incomplète : réessayez.');
+  const minOut = BigInt(q.otherAmountThreshold);
+  if (protect) {
+    if (solBal - postSol > Number(raw) + 10_000_000) throw new Fail(403, 'Échange refusé : il coûterait plus de SOL que prévu.');
+    if (postTok - preTok < minOut) throw new Fail(403, 'Échange refusé : moins de ' + stable + ' reçus que prévu.');
+  } else {
+    if (preTok - postTok > raw) throw new Fail(403, 'Échange refusé : il prendrait plus de ' + stable + ' que prévu.');
+    if (postSol - solBal < Number(minOut) - 10_000_000) throw new Fail(403, 'Échange refusé : moins de SOL reçus que prévu.');
+  }
+  const kp = await open(row, uid + ':' + row.address);
+  if (kp.publicKey.toBase58() !== row.address) throw new Fail(500, 'Clé incohérente.');
+  tx.sign([kp]);
+  const signed = b64(tx.serialize());
+  await rpc('sendTransaction', [signed, { encoding: 'base64', skipPreflight: true, maxRetries: 3 }]);
+  const signature = bs58.encode(tx.signatures[0]!);
+  const confirmed = await confirm(signature);
+  const solAmt = protect ? Number(raw) / 1e9 : Number(q.outAmount) / 1e9, stAmt = protect ? Number(q.outAmount) / 10 ** S.dec : Number(raw) / 10 ** S.dec;
+  await logMove(uid, row.address, { kind: protect ? 'protect' : 'release', stable, sol: solAmt, stable_amount: stAmt, signature, auto: !!rule, rule_id: rule, status: 'ok' });
+  await audit(uid, 'vault_swap', { signature, from, to, sol: Number(solAmt.toFixed(6)), stable: Number(stAmt.toFixed(2)), auto: !!rule });
+  return { signature, confirmed, sol: solAmt, stable: stAmt, symbol: stable };
+}
+
+/** envoi d'USDT/USDC vers un wallet lié ou une adresse du coffre (plateforme d'échange…) */
+async function vaultSend(user: User, row: Row, stable: unknown, to: unknown, amount: unknown, rule: string | null = null) {
+  const uid = user.id, S = STABLES[String(stable)];
+  if (!S) throw new Fail(400, 'Seuls USDT et USDC peuvent être envoyés depuis le coffre.');
+  if (typeof to !== 'string' || !B58RE.test(to)) throw new Fail(400, 'Adresse de destination invalide.');
+  await destination(user, to);
+  const held = await stableHeld(row.address, S.mint);
+  let raw = amount === 'max' ? held : BigInt(Math.floor(Number(amount) * 10 ** S.dec));
+  if (raw > held) throw new Fail(400, 'Solde ' + stable + ' insuffisant.');
+  if (raw < 1_000_000n) throw new Fail(400, 'Minimum 1 ' + stable + '.');
+  if (!rule) await requireStepUp(uid, 'withdraw');
+  const kp = await open(row, uid + ':' + row.address);
+  const src = new PublicKey(ataOf(row.address, S.mint)), dst = new PublicKey(ataOf(to, S.mint)), mint = new PublicKey(S.mint), owner = new PublicKey(to);
+  const data = new Uint8Array(10); data[0] = 12; new DataView(data.buffer).setBigUint64(1, raw, true); data[9] = S.dec;
+  const { value } = await rpc<{ value: { blockhash: string } }>('getLatestBlockhash', [{ commitment: 'confirmed' }]);
+  const tx = new Transaction({ feePayer: kp.publicKey, recentBlockhash: value.blockhash }).add(
+    // compte de tokens du destinataire (créé s'il n'existe pas encore)
+    new TransactionInstruction({ programId: new PublicKey(ATA), data: Buffer.from([1]), keys: [
+      { pubkey: kp.publicKey, isSigner: true, isWritable: true }, { pubkey: dst, isSigner: false, isWritable: true }, { pubkey: owner, isSigner: false, isWritable: false },
+      { pubkey: mint, isSigner: false, isWritable: false }, { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, { pubkey: new PublicKey(TOKEN), isSigner: false, isWritable: false }] }),
+    new TransactionInstruction({ programId: new PublicKey(TOKEN), data: Buffer.from(data), keys: [
+      { pubkey: src, isSigner: false, isWritable: true }, { pubkey: mint, isSigner: false, isWritable: false }, { pubkey: dst, isSigner: false, isWritable: true }, { pubkey: kp.publicKey, isSigner: true, isWritable: false }] }),
+  );
+  tx.sign(kp);
+  const signed = b64(tx.serialize());
+  await rpc('sendTransaction', [signed, { encoding: 'base64', maxRetries: 3 }]);
+  const signature = bs58.encode(tx.signature!);
+  const confirmed = await confirm(signature);
+  const amt = Number(raw) / 10 ** S.dec;
+  await logMove(uid, row.address, { kind: 'send', stable: String(stable), stable_amount: amt, dest: to, signature, auto: !!rule, rule_id: rule, status: 'ok' });
+  await audit(uid, 'vault_send', { signature, to, amount: amt, stable, auto: !!rule });
+  alertMail(user, 'token_sent', { amount: amt.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' ' + stable, to, signature }).catch(() => {});
+  return { signature, confirmed, amount: amt, symbol: stable };
 }
 
 function parseSecret(s: unknown): Keypair {
@@ -269,6 +413,15 @@ Deno.serve(async (req) => {
     let b: Record<string, unknown>; try { b = await req.json(); } catch { return json(400, { error: 'Requête invalide.' }); }
     try {
       if (b.action === 'auto_sell' && typeof b.uid === 'string') return json(200, await autoSell(b.uid, b));
+      // règles automatiques du coffre-fort (fonction vault)
+      if ((b.action === 'vault_swap' || b.action === 'vault_send') && typeof b.uid === 'string') {
+        const row = await load(b.uid); if (!row) throw new Fail(404, 'no_wallet');
+        const rule = typeof b.rule === 'string' ? b.rule : 'auto';
+        if (b.action === 'vault_swap') return json(200, await vaultSwap(b.uid, row, b.from, b.to, b.amount, rule));
+        const { data: { user: u } } = await admin.auth.admin.getUserById(b.uid);
+        if (!u) throw new Fail(404, 'Compte introuvable.');
+        return json(200, await vaultSend(u, row, b.stable, b.to, b.amount, rule));
+      }
       return json(400, { error: 'Action inconnue.' });
     } catch (e) {
       if (e instanceof Fail) return json(e.status, { error: e.message });
@@ -291,8 +444,10 @@ Deno.serve(async (req) => {
     if (action === 'status') return json(200, row ? { address: row.address, daily_cap_sol: Number(row.daily_cap_sol), alert_balance_sol: Number(row.alert_balance_sol), spent_today: Number(row.spent_today), locked: !!(row.locked_until && Date.parse(row.locked_until) > Date.now()) } : { address: null });
     if (!row) throw new Fail(404, 'Aucun wallet rapide serveur sur ce compte.');
     if (action === 'sign_send') return json(200, await signSend(uid, row, body.tx));
+    if (action === 'vault_swap') return json(200, await vaultSwap(uid, row, body.from, body.to, body.amount));
     await checkPw(uid, row, body.password);
     if (action === 'withdraw') return json(200, await withdraw(user, row, body.to, body.amount));
+    if (action === 'vault_send') return json(200, await vaultSend(user, row, body.stable, body.to, body.amount));
     if (action === 'export') {
       await requireStepUp(uid, 'export_key');
       const kp = await open(row, uid + ':' + row.address); await audit(uid, 'server_wallet_export', {});

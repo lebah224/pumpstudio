@@ -140,7 +140,7 @@ const when = (lang: 'fr' | 'en') => new Date().toLocaleString(lang === 'en' ? 'e
 const shortAddr = (a: string) => a.slice(0, 6) + '…' + a.slice(-6);
 
 /** Alertes de sécurité par e-mail */
-export type AlertKind = 'login_new_device' | 'withdraw' | 'wallet_added' | 'limits' | 'export_key' | 'delete_wallet' | 'anti_phishing';
+export type AlertKind = 'login_new_device' | 'withdraw' | 'wallet_added' | 'limits' | 'export_key' | 'delete_wallet' | 'anti_phishing' | 'address_added' | 'token_sent';
 export function alertMail(u: User, kind: AlertKind, d: Record<string, string | number> = {}) {
   const S: Record<AlertKind, { fr: string; en: string }> = {
     login_new_device: { fr: 'Nouvelle connexion à votre compte TokenStudio', en: 'New sign-in to your TokenStudio account' },
@@ -150,6 +150,8 @@ export function alertMail(u: User, kind: AlertKind, d: Record<string, string | n
     export_key: { fr: 'Clé de votre wallet rapide exportée', en: 'Quick wallet key exported' },
     delete_wallet: { fr: 'Wallet rapide supprimé', en: 'Quick wallet deleted' },
     anti_phishing: { fr: 'Code anti-hameçonnage modifié', en: 'Anti-phishing code changed' },
+    address_added: { fr: 'Nouvelle adresse de destination', en: 'New destination address' },
+    token_sent: { fr: 'Envoi depuis votre coffre-fort', en: 'Transfer from your vault' },
   };
   return sendMail(u, S[kind], (lang) => {
     const L = lang === 'en';
@@ -162,6 +164,8 @@ export function alertMail(u: User, kind: AlertKind, d: Record<string, string | n
       case 'limits': return { title: t('Plafond modifié', 'Cap changed'), lead: t('Le plafond de dépense de votre wallet rapide a changé.', 'Your quick wallet spending cap changed.'), rows: [[t('Avant', 'Before'), d.before + ' SOL / ' + t('jour', 'day')], [t('Après', 'After'), d.after + ' SOL / ' + t('jour', 'day')], date] };
       case 'export_key': return { title: t('Clé exportée', 'Key exported'), lead: t('La clé privée de votre wallet rapide vient d\'être affichée. Quiconque la possède contrôle les fonds de ce wallet.', 'Your quick wallet private key was just displayed. Anyone who has it controls this wallet\'s funds.'), rows: [date] };
       case 'delete_wallet': return { title: t('Wallet rapide supprimé', 'Quick wallet deleted'), lead: t('Le wallet rapide de votre compte a été supprimé du serveur.', 'Your account\'s quick wallet was deleted from the server.'), rows: [date] };
+      case 'address_added': return { title: t('Adresse ajoutée', 'Address added'), lead: t('Une adresse de destination a été ajoutée à votre coffre-fort. Par sécurité, elle ne pourra rien recevoir avant 24 heures.', 'A destination address was added to your vault. For security, it cannot receive anything for 24 hours.'), rows: [[t('Nom', 'Name'), String(d.label || '—')], [t('Adresse', 'Address'), shortAddr(String(d.address))], date] };
+      case 'token_sent': return { title: t('Envoi effectué', 'Transfer sent'), lead: t('Un envoi vient de partir de votre wallet rapide.', 'A transfer just left your quick wallet.'), rows: [[t('Montant', 'Amount'), String(d.amount)], [t('Vers', 'To'), shortAddr(String(d.to))], [t('Transaction', 'Transaction'), shortAddr(String(d.signature))], date] };
       case 'anti_phishing': return { title: t('Code anti-hameçonnage modifié', 'Anti-phishing code changed'), lead: t('Votre code anti-hameçonnage a changé. Il apparaît désormais en haut de chacun de nos e-mails : un message sans ce code ne vient pas de nous.', 'Your anti-phishing code changed. It now appears at the top of every email we send: a message without it is not from us.'), rows: [date] };
     }
   });
