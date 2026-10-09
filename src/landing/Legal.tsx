@@ -6,8 +6,8 @@ import { LangSwitch } from './LangSwitch';
 export type LegalId = 'terms' | 'privacy' | 'risks' | 'notice';
 type Doc = { title: string; summary: ReactNode; sections: [string, ReactNode][] };
 
-/** Adresse de contact affichée dans les pages légales (vide : pas encore choisie) */
-const CONTACT = '';
+/** Adresse de contact affichée dans les pages légales */
+const CONTACT = 'sadoutv0@gmail.com';
 const UPDATED = { fr: '8 octobre 2026', en: 'October 8, 2026' };
 
 const mail = () => CONTACT ? <a href={'mailto:' + CONTACT}>{CONTACT}</a> : <b>{t('adresse de contact à venir', 'contact address coming soon')}</b>;
