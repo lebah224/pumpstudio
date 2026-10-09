@@ -49,8 +49,47 @@ export function useCaptchaToken(): string | null {
   useEffect(() => { subs.add(setV); setV(token); return () => { subs.delete(setV); }; }, []);
   return v;
 }
-export function captchaMissing(): string | null {
-  return captchaOn() && !token ? t('Cochez d\'abord la case « Je ne suis pas un robot ».', 'First tick the “I am not a robot” box.') : null;
+
+/**
+ * Vérification juste après le choix de connexion (wallet, e-mail, wallet rapide) :
+ * une petite fenêtre « Vérification de sécurité » s'ouvre, Cloudflare valide en général tout seul en une seconde,
+ * puis la connexion continue. Renvoie le jeton à joindre à la demande (une seule utilisation).
+ */
+export class HumanCancelled extends Error { constructor() { super('cancelled'); } }
+type Gate = { resolve: (v: string | undefined) => void; reject: (e: Error) => void } | null;
+let gate: Gate = null;
+const gateSubs = new Set<(g: Gate) => void>();
+const setGate = (g: Gate) => { gate = g; gateSubs.forEach((f) => f(g)); };
+export function verifyHuman(): Promise<string | undefined> {
+  if (!captchaOn()) return Promise.resolve(undefined);
+  if (token) return Promise.resolve(takeCaptcha());
+  gate?.reject(new HumanCancelled());
+  return new Promise((resolve, reject) => setGate({ resolve, reject }));
+}
+const SHIELD = <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>;
+/** Fenêtre de vérification, à placer une fois dans l'écran de connexion */
+export function HumanGate() {
+  const [g, setG] = useState<Gate>(gate);
+  const v = useCaptchaToken();
+  useEffect(() => { gateSubs.add(setG); return () => { gateSubs.delete(setG); }; }, []);
+  // jeton reçu : la connexion reprend aussitôt
+  useEffect(() => { if (g && v) { const r = g.resolve; setGate(null); r(takeCaptcha()); } }, [g, v]);
+  useEffect(() => {
+    if (!g) return;
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { const r = g.reject; setGate(null); r(new HumanCancelled()); } };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, [g]);
+  if (!g) return null;
+  const cancel = () => { const r = g.reject; setGate(null); r(new HumanCancelled()); };
+  return (
+    <div className="ts-modal ts-human" role="dialog" aria-modal="true" aria-labelledby="ts-human-t">
+      <div className="ts-modal-box">
+        <div className="ts-su-h"><span className="ts-su-ic">{SHIELD}</span><div><b id="ts-human-t">{t('Vérification de sécurité', 'Security check')}</b><span>{t('Nous vérifions que vous êtes bien une personne. Cela prend en général une seconde.', 'We check that you are a person. It usually takes a second.')}</span></div></div>
+        <Captcha />
+        <div className="ts-row ts-su-act"><button type="button" className="btn ghost" onClick={cancel}>{t('Annuler', 'Cancel')}</button></div>
+      </div>
+    </div>
+  );
 }
 
 /** La case elle-même */

@@ -121,16 +121,16 @@ export function SecurityTab() {
       <div className="card">
         <div className="card-h"><h3>Protections actives</h3><p>Ce que TokenStudio fait pour garder votre compte et vos fonds.</p></div>
         <ul className="ts-promise">
-          <li>Aucune clé privée de vos wallets n'est envoyée au serveur.</li>
-          <li>La clé du wallet rapide est chiffrée sur le serveur et ne signe que dans vos plafonds.</li>
+          <li>Les clés privées de vos wallets ne quittent jamais votre appareil.</li>
+          <li>La clé du wallet rapide est chiffrée et ne signe que dans vos plafonds.</li>
           <li>Retrait, export et hausse de plafond : mot de passe + code de confirmation.</li>
-          <li>Chaque table de la base est privée à votre compte (règles RLS).</li>
+          <li>Vos données sont privées : personne d'autre ne peut les lire.</li>
         </ul>
         <div className="toolbar"><button className="btn danger sm" type="button" onClick={() => { if (window.confirm('Déconnecter tous vos appareils, y compris celui-ci ?')) logoutEverywhere(signOut, true); }}>Déconnecter tous les appareils</button></div>
       </div>
 
       <div className="card ts-span2">
-        <div className="card-h"><h3>Journal de sécurité</h3><p>Les actions sensibles de votre compte, enregistrées par le serveur. Personne ne peut les modifier, pas même vous.</p></div>
+        <div className="card-h"><h3>Journal de sécurité</h3><p>Les actions sensibles de votre compte, enregistrées par TokenStudio. Personne ne peut les modifier, pas même vous.</p></div>
         {!log ? <div className="empty"><b>Chargement…</b></div> : !log.length ? <div className="empty"><b>Rien pour l'instant</b></div> : (
           <div className="ts-log">{log.map((e) => (
             <div key={e.id}><span className="mono dim">{new Date(e.created_at).toLocaleString('fr-FR')}</span><b>{EVENTS[e.event] || e.event}</b><span className="dim mono">{typeof e.detail?.address === 'string' ? (e.detail.address as string).slice(0, 4) + '…' + (e.detail.address as string).slice(-4) : typeof e.detail?.device === 'string' ? String(e.detail.device) + (e.detail.ip ? ' · ' + e.detail.ip : '') : e.detail?.apres != null ? <>{solOf(e.detail.avant)} → {solOf(e.detail.apres)}</> : e.detail?.after != null ? <>{solOf(e.detail.before)} → {solOf(e.detail.after)}</> : e.detail?.sol != null ? solOf(e.detail.sol) : ''}</span></div>

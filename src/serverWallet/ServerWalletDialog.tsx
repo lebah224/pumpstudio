@@ -94,11 +94,11 @@ export function ServerWalletDialog() {
       <form className="ts-modal-box ts-srv" onSubmit={submit}>
         <button type="button" className="ts-x" aria-label="Fermer" onClick={close}>×</button>
         <div className="ts-si-h"><b>{TITLE[mode]}</b>
-          <span>{mode === 'create' ? 'Un wallet de trading rattaché à votre compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, sans fenêtre de confirmation, dans la limite de vos plafonds : trades et ventes automatiques de vos ordres.'
+          <span>{mode === 'create' ? 'Un wallet de trading rattaché à votre compte : sa clé est gardée chiffrée par TokenStudio. Il signe seul, sans fenêtre de confirmation, dans la limite de vos plafonds : trades et ventes automatiques de vos ordres.'
             : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à votre compte depuis plus de 24 heures. Un code de confirmation vous sera demandé.'
-            : mode === 'limits' ? 'Le serveur refuse toute dépense au-delà du plafond du jour.'
+            : mode === 'limits' ? 'TokenStudio refuse toute dépense au-delà du plafond du jour.'
             : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Gardez-la hors ligne et ne la partage avec personne.'
-            : 'La clé chiffrée est effacée du serveur. Sans export préalable, les fonds restants seraient perdus.'}</span></div>
+            : 'La clé chiffrée est définitivement effacée. Sans export préalable, les fonds restants seraient perdus.'}</span></div>
 
         {mode === 'create' && (<>
           <div className="seg sm ts-srv-how" role="group" aria-label="Origine du wallet">
@@ -149,7 +149,7 @@ export function ServerWalletDialog() {
         {err && <div className="ts-note bad" role="alert">{err}</div>}
         <div className="ts-row" style={{ marginTop: 12 }}>
           <button type="button" className="btn ghost" onClick={close}>{shown ? 'Fermer' : 'Annuler'}</button>
-          {!shown && <button className={'btn ' + (mode === 'delete' ? 'danger' : 'primary')} disabled={busy}>{busy ? 'Patientez…' : mode === 'create' ? (how === 'new' ? 'Créer le wallet serveur' : 'Placer sur le serveur') : mode === 'withdraw' ? 'Retirer' : mode === 'limits' ? 'Enregistrer' : mode === 'export' ? 'Afficher la clé' : 'Supprimer'}</button>}
+          {!shown && <button className={'btn ' + (mode === 'delete' ? 'danger' : 'primary')} disabled={busy}>{busy ? 'Patientez…' : mode === 'create' ? (how === 'new' ? 'Créer le wallet rapide' : 'Placer sur mon compte') : mode === 'withdraw' ? 'Retirer' : mode === 'limits' ? 'Enregistrer' : mode === 'export' ? 'Afficher la clé' : 'Supprimer'}</button>}
         </div>
       </form>
     </div>

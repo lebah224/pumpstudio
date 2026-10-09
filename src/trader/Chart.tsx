@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { createChart, CrosshairMode, ColorType, LineStyle, type IChartApi, type ISeriesApi, type UTCTimestamp, type CandlestickData, type HistogramData, type IPriceLine } from 'lightweight-charts';
 import { candles as fetchCandles, TF_SEC, type Candle, type Tf } from './api';
 import { fCompact, fPrice } from './format';
-import { solUsd, useLiveTrades, useLiveState, type LiveMsg } from './live';
+import { solUsd, useLiveState } from './live';
 
 export const TFS: { tf: Tf; l: string }[] = [
   { tf: '1s', l: '1s' }, { tf: '15s', l: '15s' }, { tf: '1m', l: '1m' }, { tf: '5m', l: '5m' }, { tf: '15m', l: '15m' },
   { tf: '1h', l: '1h' }, { tf: '4h', l: '4h' }, { tf: '24h', l: '1j' },
 ];
-type Props = { mint: string; created: number | null; supply: number; pump: boolean; avgSol?: number | null };
+/** Une transaction à placer dans le graphique (flux en direct ou relecture des dernières transactions) */
+export type Tick = { t: number; sol: number; usd?: number | null; pSol?: number | null; pUsd?: number | null; mcSol?: number | null };
+type Props = { mint: string; created: number | null; supply: number; pump: boolean; avgSol?: number | null; feed: MutableRefObject<((x: Tick) => void) | null> };
 type Legend = { o: number; h: number; l: number; c: number; v: number; t: number } | null;
 
 const css = (name: string, fb: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb;
@@ -27,7 +29,7 @@ function loadPref(): { tf: Tf; cur: 'USD' | 'SOL'; mode: 'price' | 'mc' } {
  * construite transaction par transaction depuis le flux en direct. Aucun rechargement : chaque achat ou vente déplace
  * la bougie à l'instant où il passe sur la blockchain.
  */
-export function PriceChart({ mint, created, supply, pump, avgSol }: Props) {
+export function PriceChart({ mint, created, supply, pump, avgSol, feed }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
   const cs = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -120,30 +122,33 @@ export function PriceChart({ mint, created, supply, pump, avgSol }: Props) {
   }, [mint, tf, cur, created, mult, paint]);
   useEffect(() => { load(false); }, [load]);
 
-  // bougie en cours : chaque transaction du flux en direct
-  const onTrade = useCallback((m: LiveMsg) => {
-    const pSol = m.mcSol && supply > 0 ? m.mcSol / supply : m.tok > 0 ? m.sol / m.tok : 0;
-    const rate = cur === 'USD' ? solUsd() : 1; if (!rate || !(pSol > 0)) return;
-    const price = pSol * rate;
-    const vol = m.sol * (cur === 'USD' ? rate : 1);
-    const step = TF_SEC[tf], t = Math.floor(Date.now() / 1000 / step) * step;
+  // bougie en cours : chaque transaction, placée dans la bougie de son heure exacte
+  const onTick = useCallback((x: Tick) => {
+    const rate = solUsd();
+    const pSol = x.pSol ?? (x.mcSol && supply > 0 ? x.mcSol / supply : null);
+    const price = cur === 'USD' ? (x.pUsd ?? (pSol && rate ? pSol * rate : null)) : pSol;
+    if (!price || !(price > 0)) return;
+    const vol = cur === 'USD' ? (x.usd ?? (rate ? x.sol * rate : 0)) : x.sol;
+    const step = TF_SEC[tf], t = Math.floor(x.t / 1000 / step) * step;
     const L = last.current;
     let k;
     if (!L) k = { t, o: price, h: price, l: price, c: price, v: vol };
-    else if (t < L.t) return;
+    else if (t < L.t) return;                               // bougie déjà passée : corrigée à la prochaine relecture
     else if (t === L.t) k = { ...L, h: Math.max(L.h, price), l: Math.min(L.l, price), c: price, v: L.v + vol };
     else k = { t, o: L.c, h: Math.max(L.c, price), l: Math.min(L.c, price), c: price, v: vol };
-    last.current = k; paint(k);
-    if (state !== 'ok') setState('ok');
-  }, [cur, tf, supply, paint, state]);
-  useLiveTrades('chart', [mint], onTrade, pump);
+    last.current = k;
+    try { paint(k); } catch { /* graphique en cours de rechargement */ }
+    setState((st) => (st === 'ok' ? st : 'ok'));
+  }, [cur, tf, supply, paint]);
+  useEffect(() => { feed.current = onTick; return () => { if (feed.current === onTick) feed.current = null; }; }, [feed, onTick]);
 
-  // sans flux en direct (token hors pump.fun ou flux coupé) : relecture fréquente ; avec : correction toutes les 30 s
+  // tokens pump.fun : les transactions arrivent une à une (flux et relecture) ; correction des bougies toutes les 15 s.
+  // hors pump.fun : bougies relues toutes les quelques secondes
   useEffect(() => {
-    const every = !pump || liveSt !== 'on' ? (TF_SEC[tf] < 60 ? 3000 : 6000) : 30_000;
+    const every = !pump ? (TF_SEC[tf] < 60 ? 3000 : 6000) : 15_000;
     const id = setInterval(() => { if (!document.hidden) load(true); }, every);
     return () => clearInterval(id);
-  }, [load, pump, liveSt, tf]);
+  }, [load, pump, tf]);
 
   // prix moyen d'achat de l'utilisateur, en ligne pointillée
   useEffect(() => {
@@ -154,7 +159,7 @@ export function PriceChart({ mint, created, supply, pump, avgSol }: Props) {
     avgLine.current = s.createPriceLine({ price: avgSol * rate * mult, color: theme().accent, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: 'Mon prix moyen' });
   }, [avgSol, cur, mult, state]);
 
-  const L = legend ?? lastC;
+  const L = legend && (!lastC || legend.t !== lastC.t) ? legend : lastC ?? legend;   // la bougie en cours reste en direct, même survolée
   const fmt = (x: number) => (mode === 'mc' ? fCompact(x, '') : fPrice(x));
   return (
     <div className="tr-chart">
@@ -187,8 +192,8 @@ export function PriceChart({ mint, created, supply, pump, avgSol }: Props) {
         {state === 'err' && <div className="tr-chart-msg">Historique indisponible.<button type="button" className="btn sm" onClick={() => load(false)}>Réessayer</button></div>}
       </div>
       <div className="tr-chart-foot">
-        <span className={'tr-live ' + (pump ? liveSt : 'poll')}><i />{pump ? (liveSt === 'on' ? 'En direct · chaque transaction' : liveSt === 'wait' ? 'Connexion au flux en direct…' : 'Flux en direct coupé (Réglages) · actualisation toutes les quelques secondes') : 'Actualisation automatique'}</span>
-        <span className="dim">Historique : {src || '…'} · graphique <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener noreferrer">TradingView Lightweight Charts</a></span>
+        <span className={'tr-live ' + (pump ? liveSt : 'poll')}><i />{pump ? (liveSt === 'on' ? 'En direct · chaque transaction' : 'En direct · actualisé toutes les 2 à 3 secondes') : 'Actualisation automatique'}</span>
+        {src && src !== 'none' && <span className="dim">Historique : {src}</span>}
       </div>
     </div>
   );

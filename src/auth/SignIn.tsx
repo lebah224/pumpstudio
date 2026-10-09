@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
+import { FUNCTIONS_URL, PUBLISHABLE_KEY, supabase } from '../lib/supabase';
 import { useAuth, type SignInIntent } from './AuthContext';
 import { studio, toast } from '../legacy/bridge';
 import { initials, isMobile, walletChoices, type WalletInfo } from '../wallets/catalog';
 import { createAccountWithWallet, linkWallet, signInWithWallet, type Source } from '../wallets/walletAuth';
 import { useServerWallet } from '../serverWallet/api';
 import { lang, t } from '../lib/i18n';
-import { Captcha, captchaMissing, captchaOn, takeCaptcha, useCaptchaToken } from './Captcha';
+import { HumanCancelled, HumanGate, verifyHuman } from './Captcha';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 
 type Step = 'choose' | 'quick' | 'none' | 'email' | 'email-none' | 'code' | 'add';
@@ -15,6 +15,20 @@ const short = (a: string) => a.slice(0, 4) + '…' + a.slice(-4);
 // texte foncé sur les couleurs claires (contraste lisible), clair sur les foncées
 const inkFor = (hex: string) => { const m = /^#?([0-9a-f]{6})$/i.exec(hex); if (!m) return '#fff'; const n = parseInt(m[1]!, 16), l = (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255; return l > 0.55 ? '#0b0a09' : '#fff'; };
 export const WalletMark = ({ w }: { w: Pick<WalletInfo, 'name' | 'color'> }) => <span className="ts-wmark" style={{ background: w.color, color: inkFor(w.color) }} aria-hidden="true">{initials(w.name)}</span>;
+// le bouton Google n'apparaît que si le fournisseur est activé dans Supabase (réglages publics du serveur d'authentification)
+let googleState: Promise<boolean> | null = null;
+function useGoogleEnabled() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    googleState ??= fetch(FUNCTIONS_URL.replace('/functions/v1', '/auth/v1/settings'), { headers: { apikey: PUBLISHABLE_KEY } })
+      .then((r) => r.json()).then((j) => !!j?.external?.google).catch(() => false);
+    let alive = true; googleState.then((v) => { if (alive) setOn(v); });
+    return () => { alive = false; };
+  }, []);
+  return on;
+}
+// logo Google officiel (quatre couleurs), exigé par les règles de marque de Google pour ce bouton
+const GoogleMark = () => <svg className="ts-gmark" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" /><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" /><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" /><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" /></svg>;
 const QuickMark = () => <span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span>;
 
 /**
@@ -46,14 +60,13 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
   const adding = step === 'add';
   const srv = useServerWallet();
   const close = () => openSignIn(false);
-  // case « Je ne suis pas un robot » : demandée pour toute connexion ou création de compte (pas pour ajouter un wallet)
-  const robotToken = useCaptchaToken();
-  const robotOk = !!session || !captchaOn() || !!robotToken;
-  const robot = !session ? <Captcha /> : null;
+  // vérification anti-robot : juste après le choix, pour toute connexion ou création de compte (pas pour ajouter un wallet)
+  const googleOn = useGoogleEnabled();
+  const human = () => (session ? Promise.resolve(undefined) : verifyHuman());
 
   async function run(key: string, fn: () => Promise<void>) {
     setErr(null); setBusy(key);
-    try { await fn(); } catch (e) { setErr(readable(e)); } finally { setBusy(null); }
+    try { await fn(); } catch (e) { if (!(e instanceof HumanCancelled)) setErr(readable(e)); } finally { setBusy(null); }
   }
   // Le wallet est prêt dans le studio : on ajoute au compte, ou on cherche le compte de ce wallet
   async function afterConnect(s: Source, address: string, captcha?: string) {
@@ -71,7 +84,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     try { return await fn(); } finally { onHide(false); }
   }
   const pickWallet = (id: string) => run(id, async () => {
-    const miss = session ? null : captchaMissing(); if (miss) throw new Error(miss);
+    const captcha = await human();
     let pk: string | null | undefined;
     if (standalone) {
       // page de connexion : on connecte l'extension directement ; l'outil la reconnectera à l'ouverture
@@ -82,22 +95,26 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
       try { localStorage.setItem('pstudio_wallet_v1', JSON.stringify(id)); } catch { /* navigation privée */ }
     } else { pk = await hub?.connect(id); if (pk) await hub?.useExt(); }
     if (!pk) return;
-    await afterConnect({ kind: 'ext', id }, pk, session ? undefined : takeCaptcha());
+    await afterConnect({ kind: 'ext', id }, pk, captcha);
   });
   const pickQuick = (how: 'use' | 'create' | 'restore') => run('quick-' + how, async () => {
-    const miss = session ? null : captchaMissing(); if (miss) throw new Error(miss);
+    const captcha = await human();
     const pk = how === 'use' ? ((await legacy(() => hub!.quickUnlock())) ? quick?.pk : undefined)
       : await legacy(() => (how === 'create' ? hub!.quickCreate() : hub!.quickRestore()));
     if (!pk) return;
     // l'ancien wallet rapide sert seulement à se connecter : il ne signe plus de transactions
-    await afterConnect({ kind: 'quick' }, pk, session ? undefined : takeCaptcha());
+    await afterConnect({ kind: 'quick' }, pk, captcha);
   });
-  const create = () => run('create', async () => { const miss = captchaMissing(); if (miss) throw new Error(miss); if (src) await createAccountWithWallet(src, takeCaptcha()); });
+  const create = () => run('create', async () => { if (src) await createAccountWithWallet(src, await verifyHuman()); });
+  // Google : Supabase ouvre la page de connexion Google, puis revient ici avec la session (création du compte à la première fois)
+  const google = () => run('google', async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + (standalone ? '/connexion' : location.pathname), queryParams: { prompt: 'select_account' } } });
+    if (error) throw error;
+  });
   // ouverture depuis le menu avec un wallet déjà choisi : on enchaîne directement
   const started = useRef(false);
   useEffect(() => {
     if (started.current) return; started.current = true;
-    if (!session && captchaOn()) return; // la case anti-robot doit d'abord être cochée : l'utilisateur choisit lui-même
     if (intent.wallet === 'quick') { if (quick) pickQuick('use'); }
     else if (intent.wallet) pickWallet(intent.wallet);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,10 +125,11 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     ev?.preventDefault(); setErr(null);
     const v = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { setErr(t('Adresse e-mail invalide.', 'Invalid email address.')); return; }
-    const miss = captchaMissing(); if (miss) { setErr(miss); return; }
     setBusy('email');
+    let captcha: string | undefined;
+    try { captcha = await verifyHuman(); } catch { setBusy(null); return; }
     // langue des e-mails (modèles bilingues) : retenue à la création du compte
-    const { error } = await supabase.auth.signInWithOtp({ email: v, options: { shouldCreateUser: createUser || !!signup, emailRedirectTo: location.origin + (standalone ? '/connexion' : location.pathname), data: { lang: lang() }, captchaToken: takeCaptcha() } });
+    const { error } = await supabase.auth.signInWithOtp({ email: v, options: { shouldCreateUser: createUser || !!signup, emailRedirectTo: location.origin + (standalone ? '/connexion' : location.pathname), data: { lang: lang() }, captchaToken: captcha } });
     setBusy(null);
     if (error && /signups? not allowed|user not found/i.test(error.message)) { setEmail(v); setStep('email-none'); return; }
     if (error) { setErr(readable(error)); return; }
@@ -136,7 +154,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
       {location.protocol === 'file:' && <div className="ts-note warn">{t('Les wallets ne fonctionnent pas sur une page ouverte comme fichier : utilisez la version en ligne.', 'Wallets don\'t work on a page opened as a file: use the online version.')}</div>}
       <div className="ts-si-list" role="list">
         {found.map((x) => (
-          <button key={x.id} type="button" role="listitem" className="ts-si-opt" disabled={!!busy || !robotOk} onClick={() => pickWallet(x.id)}>
+          <button key={x.id} type="button" role="listitem" className="ts-si-opt" disabled={!!busy} onClick={() => pickWallet(x.id)}>
             <WalletMark w={x} /><span className="ts-si-n">{x.name}</span>
             <em className="ts-si-tag ok">{busy === x.id ? t('Validation…', 'Confirming…') : t('Détecté', 'Detected')}</em>
           </button>
@@ -167,9 +185,9 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         {signup ? head(t('Créer votre compte', 'Create your account'), t('Avec votre wallet ou votre e-mail. Une signature gratuite suffit : aucune transaction, aucun frais.', 'With your wallet or your email. One free signature is enough: no transaction, no fees.'))
           : head(t('Connexion à TokenStudio', 'Sign in to TokenStudio'), t('Choisissez comment vous connecter. Vos clés privées ne quittent jamais votre wallet.', 'Choose how to sign in. Your private keys never leave your wallet.'))}
         {intent.reason === 'real' && <div className="ts-note warn">Le mode réel demande un compte. La démo reste ouverte sans compte.</div>}
-        {robot}
         {walletList}
         <div className="ts-si-or"><span>{t('ou', 'or')}</span></div>
+        {googleOn && <button type="button" className="btn ts-si-mail ts-si-google" disabled={!!busy} onClick={google}><GoogleMark />{busy === 'google' ? t('Ouverture de Google…', 'Opening Google…') : t('Continuer avec Google', 'Continue with Google')}</button>}
         <button type="button" className="btn ts-si-mail" onClick={() => { setErr(null); setStep('email'); }}>{t('Continuer avec un e-mail', 'Continue with email')}</button>
         <button type="button" className="ts-si-sim" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
       </>)}
@@ -187,10 +205,9 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
 
       {step === 'quick' && (<>
         {head('Ancien wallet rapide', 'Ce navigateur garde encore votre ancien wallet rapide. Connectez-vous avec lui, puis transférez-le sur votre compte depuis le menu : vous le retrouverez partout.')}
-        {robot}
         <div className="ts-si-list">
           {quick && (
-            <button type="button" className="ts-si-opt" disabled={!!busy || !robotOk} onClick={() => pickQuick('use')}>
+            <button type="button" className="ts-si-opt" disabled={!!busy} onClick={() => pickQuick('use')}>
               <QuickMark /><span className="ts-si-n">Utiliser mon ancien wallet rapide<small className="mono">{short(quick.pk)}</small></span>
               <em className="ts-si-tag ok">{busy === 'quick-use' ? 'Validation…' : quick.unlocked ? 'Prêt' : 'Mot de passe'}</em>
             </button>
@@ -202,9 +219,8 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
 
       {step === 'none' && (<>
         {head(t('Aucun compte pour ce wallet', 'No account for this wallet'), <>{t('Le wallet', 'The wallet')} <b className="mono">{short(addr)}</b> {t('n\'est lié à aucun compte TokenStudio. Rien n\'a été créé.', 'isn\'t linked to any TokenStudio account. Nothing was created.')}</>)}
-        {robot}
         <div className="ts-si-choices">
-          <button type="button" className="btn primary" disabled={!!busy || !robotOk} onClick={create}>{busy === 'create' ? t('Signature en attente…', 'Waiting for signature…') : t('Créer mon compte avec ce wallet', 'Create my account with this wallet')}</button>
+          <button type="button" className="btn primary" disabled={!!busy} onClick={create}>{busy === 'create' ? t('Signature en attente…', 'Waiting for signature…') : t('Créer mon compte avec ce wallet', 'Create my account with this wallet')}</button>
           <button type="button" className="btn" disabled={!!busy} onClick={() => { setErr(null); setStep('email'); }}>{t('J\'ai déjà un compte (e-mail)', 'I already have an account (email)')}</button>
           <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
@@ -215,16 +231,14 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         <form onSubmit={(e) => sendEmail(e, false)} className="ts-si-form">
           {head(t('Connexion par e-mail', 'Sign in by email'), t('On vous envoie un lien et un code de connexion. Pas de mot de passe à retenir.', 'We send you a sign-in link and code. No password to remember.'))}
           <label className="field"><span className="ts-lbl">{t('Adresse e-mail', 'Email address')}</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('vous@exemple.com', 'you@example.com')} autoFocus /></label>
-          {robot}
-          <div className="ts-row">{back(src ? 'none' : 'choose')}<button className="btn primary" disabled={busy === 'email' || !robotOk}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Recevoir le code', 'Get the code')}</button></div>
+            <div className="ts-row">{back(src ? 'none' : 'choose')}<button className="btn primary" disabled={busy === 'email'}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Recevoir le code', 'Get the code')}</button></div>
         </form>
       )}
 
       {step === 'email-none' && (<>
         {head(t('Aucun compte avec cette adresse', 'No account with this address'), <>{t('Aucun compte TokenStudio n\'utilise', 'No TokenStudio account uses')} <b>{email}</b>. {t('Rien n\'a été créé.', 'Nothing was created.')}</>)}
-        {robot}
         <div className="ts-si-choices">
-          <button type="button" className="btn primary" disabled={busy === 'email' || !robotOk} onClick={() => sendEmail(null, true)}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Créer mon compte avec cet e-mail', 'Create my account with this email')}</button>
+          <button type="button" className="btn primary" disabled={busy === 'email'} onClick={() => sendEmail(null, true)}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Créer mon compte avec cet e-mail', 'Create my account with this email')}</button>
           <button type="button" className="btn" onClick={() => { setErr(null); setStep('email'); }}>{t('Changer d\'adresse', 'Change address')}</button>
           <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
@@ -238,6 +252,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         </form>
       )}
       {err && <div className="ts-note bad" role="alert">{err}</div>}
+      <HumanGate />
     </div>
   );
 }
@@ -261,12 +276,18 @@ export function SignInDialog() {
   );
 }
 
+// messages du serveur reformulés : aucun détail technique (serveur, RPC…) n'est montré dans l'application
+const plain = (m: string) => m
+  .replace(/wallet (rapide )?serveur/gi, 'wallet rapide').replace(/RPC TokenStudio/g, 'connexion Solana de TokenStudio')
+  .replace(/Configuration du serveur incomplète\./g, 'Service momentanément indisponible : réessayez plus tard.')
+  .replace(/la configuration des e-mails du serveur est incomplète/g, 'l\'envoi d\'e-mails est momentanément indisponible')
+  .replace(/Erreur du serveur/g, 'Erreur technique');
 export function readable(e: unknown): string {
-  const m = (e as { message?: string })?.message || String(e);
+  const m = plain((e as { message?: string })?.message || String(e));
   if (/rejected|denied|declined|cancel/i.test(m)) return t('Signature refusée dans le wallet.', 'Signature rejected in the wallet.');
-  if (/web3.*(disabled|not enabled)|provider.*disabled|unsupported provider/i.test(m)) return t('La connexion par wallet n\'est pas encore activée sur le serveur.', 'Wallet sign-in isn\'t enabled on the server yet.');
+  if (/web3.*(disabled|not enabled)|provider.*disabled|unsupported provider/i.test(m)) return t('La connexion par wallet n\'est pas disponible pour le moment.', 'Wallet sign-in isn\'t available right now.');
   if (/rate limit|too many/i.test(m)) return t('Trop de tentatives : réessayez dans quelques minutes.', 'Too many attempts: try again in a few minutes.');
   if (/expired|invalid.*(otp|token)|otp.*invalid/i.test(m)) return t('Code invalide ou expiré : demandez un nouveau code.', 'Invalid or expired code: request a new one.');
-  if (/redirect|url.*not allowed|uri/i.test(m)) return t('Cette adresse de site n\'est pas autorisée dans la configuration du serveur.', 'This site address isn\'t allowed in the server configuration.');
+  if (/redirect|url.*not allowed|uri/i.test(m)) return t('Cette adresse de site n\'est pas autorisée pour la connexion.', 'This site address isn\'t allowed for sign-in.');
   return m.slice(0, 200);
 }

@@ -91,7 +91,8 @@ export function Onboarding() {
 
   useEffect(() => {
     if (!open || !p) return;
-    setName(p.display_name ?? base.split(/[._-]+/).filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').slice(0, 40));
+    const gname = typeof user?.user_metadata?.full_name === 'string' ? (user.user_metadata.full_name as string).trim() : '';   // compte Google
+    setName(p.display_name ?? (gname.slice(0, 40) || base.split(/[._-]+/).filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').slice(0, 40)));
     setAvatar(p.avatar_url ?? 'gen:0');
     setTimeout(() => first.current?.focus(), 50);
     // eslint-disable-next-line react-hooks/exhaustive-deps

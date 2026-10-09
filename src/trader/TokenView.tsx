@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { analysis as fetchAnalysis, tokenInfo, tradesOf, type Analysis, type Row, type TokenInfo, type Trade } from './api';
 import { age, fCompact, fNum, fPct, fPrice, fTok, short, tone } from './format';
 import { solUsd, useLiveTrades, type LiveMsg } from './live';
-import { PriceChart } from './Chart';
+import { PriceChart, type Tick } from './Chart';
 import { TradePanel } from './TradePanel';
 import { CopyBtn, Star, TokenLogo, useFavs } from './bits';
 import { dexLabel } from './MarketList';
@@ -24,6 +24,8 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
   const [avg, setAvg] = useState<number | null>(null);
   const [, tick] = useState(0);
   const favs = useFavs();
+  const feed = useRef<((x: Tick) => void) | null>(null);
+  const seen = useRef(new Set<string>());
   const [tab, setTab] = useState<Tab>('tx');
   const [an, setAn] = useState<Analysis | null>(null);
   const [anErr, setAnErr] = useState<string | null>(null);
@@ -33,7 +35,8 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
     setErr(null); setTrades(null); setLive(null);
     const load = () => tokenInfo(mint).then((t) => { if (!off) setInfo(t); }).catch((e) => { if (!off) setErr((e as Error).message); });
     load();
-    tradesOf(mint, 60).then((t) => { if (!off) setTrades(t); }).catch(() => { if (!off) setTrades([]); });
+    seen.current = new Set();
+    tradesOf(mint, 60).then((t) => { if (off) return; t.forEach((x) => seen.current.add(x.sig)); setTrades(t); }).catch(() => { if (!off) setTrades([]); });
     setAn(null); setAnErr(null);
     const loadAn = () => fetchAnalysis(mint).then((x) => { if (!off) { setAn(x); setAnErr(null); } }).catch((e) => { if (!off) setAnErr((e as Error).message); });
     loadAn();
@@ -49,7 +52,10 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
   const onTrade = useCallback((m: LiveMsg) => {
     if (m.kind === 'migrate') { tokenInfo(mint).then(setInfo).catch(() => {}); return; }
     const rate = solUsd();
+    if (m.sig && seen.current.has(m.sig)) return;          // déjà reçue par la relecture
+    if (m.sig) seen.current.add(m.sig);
     if (m.mcSol) setLive({ mcSol: m.mcSol, at: Date.now(), dir: m.kind === 'sell' ? 'down' : 'up' });
+    feed.current?.({ t: Date.now(), sol: m.sol, mcSol: m.mcSol, pSol: m.mcSol ? null : m.tok > 0 ? m.sol / m.tok : null });
     if (!m.sig) return;
     setTrades((T) => {
       const L = T ?? [];
@@ -59,12 +65,25 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
     });
   }, [mint]);
   useLiveTrades('token', [mint], onTrade, pump);
-  // hors flux en direct : transactions relues régulièrement
+  // relecture des dernières transactions toutes les 2,5 s (en plus du flux) : le graphique et le ruban bougent même
+  // quand le flux en direct ne transmet rien pour ce token (pool PumpSwap, coupure, pare-feu…)
   useEffect(() => {
-    if (pump) return;
-    const id = setInterval(() => { if (!document.hidden) tradesOf(mint, 60).then(setTrades).catch(() => {}); }, 5000);
-    return () => clearInterval(id);
-  }, [mint, pump]);
+    let off = false, n = 0;
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      if (!pump && n++ % 2) return;                        // hors pump.fun : toutes les 5 s
+      tradesOf(mint, 40).then((list) => {
+        if (off || !list.length) return;
+        const fresh = list.filter((x) => !seen.current.has(x.sig)).sort((a, b) => a.t - b.t);
+        if (!fresh.length) return;
+        fresh.forEach((x) => { seen.current.add(x.sig); feed.current?.({ t: x.t, sol: x.sol ?? 0, usd: x.usd, pSol: x.pSol, pUsd: x.pUsd }); });
+        const z = fresh[fresh.length - 1]!;
+        if (z.pSol) setLive({ mcSol: z.pSol * supply, at: Date.now(), dir: z.side === 'sell' ? 'down' : 'up' });
+        setTrades((T) => [...fresh.reverse().map((x) => ({ ...x, live: true })), ...(T ?? [])].slice(0, 120));
+      }).catch(() => {});
+    }, 2500);
+    return () => { off = true; clearInterval(id); };
+  }, [mint, pump, supply]);
 
   const rate = solUsd();
   const mcUsd = live && rate ? live.mcSol * rate : info?.mcUsd ?? null;
@@ -110,7 +129,7 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
       <div className="tr-grid">
         <div className="tr-main">
           <div className="card tr-chart-card">
-            <PriceChart mint={mint} created={info?.created ?? null} supply={supply} pump={pump} avgSol={avg} />
+            <PriceChart mint={mint} created={info?.created ?? null} supply={supply} pump={pump} avgSol={avg} feed={feed} />
           </div>
 
           <div className="tr-stats card">

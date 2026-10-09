@@ -174,7 +174,7 @@
     let r;
     try { r = await rpcPost(JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })); }
     catch (e) { setRpc(false); throw new Error(cfg.rpc ? 'RPC injoignable : vérifiez l\'adresse dans Réglages.' : 'Le RPC public de Solana bloque cette page. Ajoutez votre clé Helius gratuite dans Réglages (helius.dev).'); }
-    if ((r.status === 429 || r.status === 403) && r.url.includes('/functions/v1/')) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'RPC TokenStudio : requête refusée.'); }
+    if ((r.status === 429 || r.status === 403) && r.url.includes('/functions/v1/')) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Connexion Solana de TokenStudio : requête refusée.'); }
     if (r.status === 429 || r.status === 403) { setRpc(false); throw new Error(cfg.rpc ? 'Votre RPC refuse ou limite les requêtes (' + r.status + '). Vérifiez votre clé Helius.' : 'Le RPC public de Solana refuse les requêtes de cette page (' + r.status + '). Ajoutez votre clé Helius gratuite dans Réglages.'); }
     if (!r.ok) { setRpc(false); throw new Error('RPC : erreur ' + r.status); }
     const j = await r.json();
@@ -424,7 +424,7 @@
     const deep = 'https://phantom.app/ul/browse/' + encodeURIComponent(location.href) + '?ref=' + encodeURIComponent(location.origin);
     const html = isMobile()
       ? (https ? '<p>Sur téléphone, Chrome et Safari ne peuvent pas utiliser l\'extension Phantom : Phantom ne se connecte aux sites que dans le navigateur intégré à son app.</p><p><a class="btn" href="' + esc(deep) + '">Ouvrir le studio dans l\'app Phantom</a></p><p class="dim" style="font-size:13px">Chaque navigateur garde ses propres données : dans l\'app Phantom, il faudra restaurer votre wallet rapide avec son code de sauvegarde.</p>'
-        : '<p>Sur téléphone, il faut ouvrir le studio dans le navigateur intégré de l\'app Phantom. Pour cela, le studio doit être en ligne (adresse https), pas ouvert comme fichier.</p><p>Mettez le fichier en ligne (GitHub Pages, Vercel, Netlify), puis ouvrez son adresse dans Phantom → onglet Explorer.</p>')
+        : '<p>Sur téléphone, il faut ouvrir le studio dans le navigateur intégré de l\'app Phantom. Pour cela, le studio doit être en ligne (adresse https), pas ouvert comme fichier.</p><p>Mettez le fichier en ligne (n\'importe quel hébergement web), puis ouvrez son adresse dans Phantom → onglet Explorer.</p>')
       : location.protocol === 'file:'
         ? '<p>Le studio est ouvert comme <b>fichier</b> : Chrome n\'y laisse pas entrer les extensions comme Phantom, sauf si vous l\'autorisez.</p><ol class="steps"><li>Ouvrez <span class="mono">chrome://extensions</span> dans un nouvel onglet.</li><li>Sur <b>Phantom</b>, cliquez <b>Détails</b>.</li><li>Activez <b>Autoriser l\'accès aux URL de fichier</b>.</li><li>Rechargez cette page, puis recliquez sur « Connecter le wallet ».</li></ol><p style="margin-top:12px">Si Phantom n\'est pas installé : <b>phantom.app</b>. Autre solution : mettre le studio en ligne (adresse https).</p>'
         : '<p>Aucun wallet Solana détecté dans ce navigateur. Installez l\'extension <b>Phantom</b> (phantom.app) ou <b>Solflare</b>, puis rechargez la page.</p>';
@@ -949,7 +949,7 @@
   async function signAndSend(tx, extraSigners, w) {
     w = w || S.wallet;
     if (w.id === 'server') {
-      if (!window.TSServerWallet) throw new Error('Wallet serveur indisponible : reconnectez-vous à votre compte.');
+      if (!window.TSServerWallet) throw new Error('Wallet rapide indisponible : reconnectez-vous à votre compte.');
       if (extraSigners && extraSigners.length) tx.sign(extraSigners);   // ex. clé du mint au lancement
       const r = await window.TSServerWallet.signSend(bytesToB64(tx.serialize()));
       INFLIGHT[r.signature] = { raw: r.raw, viaSender: false };
@@ -1350,7 +1350,7 @@
       '<span>Achat du créateur</span><span>' + (dev ? fSolH(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
       '<span>Frais de réseau et comptes</span><span>≈ ' + fSolH(PL.fee, 2) + '</span>' +
       '<span>Coût total estimé</span><span>' + fSolH(dev + PL.fee) + '</span>' +
-      '<span>Logo et fiche</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS), envoyés par le serveur') + '</span>' +
+      '<span>Logo et fiche</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS), envoyés par TokenStudio') + '</span>' +
       (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' + creatorHtml +
       (ses && !ext ? '<div class="notice">Le wallet rapide sera affiché comme créateur et recevra les frais de créateur. Pour lancer en votre nom, connectez Phantom (ou votre wallet principal) : il sera proposé comme créateur.</div>' : '') +
       (ses && ext && cfg.engine === 'portal' ? '<div class="notice">Avec PumpPortal, le créateur est forcément le wallet qui signe (wallet rapide). Choisissez le moteur Direct dans Réglages pour afficher ' + esc(ext.name) + '.</div>' : '') +
@@ -2456,7 +2456,7 @@
       if (S.wallet) add(S.bal != null && S.bal >= dev + 0.03, 'Solde suffisant (' + fSol(dev + 0.03, 2) + ' nécessaires)');
     }
     add(!q || q.supplyPct <= cfg.devMaxPct, 'Achat du créateur ≤ ' + cfg.devMaxPct + ' % de l\'offre');
-    if (!cfg.sim) add(!!cfg.rpc || !!relay(), cfg.rpc ? 'RPC privé configuré (Helius)' : 'RPC TokenStudio ou clé Helius', 'rec');
+    if (!cfg.sim) add(!!cfg.rpc || !!relay(), cfg.rpc ? 'RPC privé configuré (Helius)' : 'Connexion Solana TokenStudio ou clé Helius', 'rec');
     if (d.tpOn && dev > 0) add(tpValid().ok, 'Plan de prise de profit cohérent');
     if (!cfg.sim && cfg.metaMethod === 'pinata') add(!!cfg.pinataJwt, 'Jeton Pinata renseigné');
     const urlOk = (u) => !u || /^https?:\/\/\S+\.\S+/.test(u);
@@ -2614,7 +2614,7 @@
     sb.innerHTML = cfg.sim ? '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span><b>Mode démo.</b> Tout est simulé avec le wallet démo de 10 SOL fictifs : rien n\'est envoyé sur la blockchain.</span>' +
       '<button class="btn sm primary" data-act="' + (AUTH ? 'simoff' : 'needacct') + '" type="button">Passer en réel</button>' : '';
     const fb = $('filebar'); if (fb) { fb.hidden = location.protocol !== 'file:'; fb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>Studio ouvert comme fichier.</b> Phantom ne peut pas s\'y connecter : ouvrez la version en ligne (https) ou via localhost.</span><button class="btn sm" id="fileHelp" type="button">Comment faire</button>'; }
-    const rb = $('rpcbar'); if (rb) { rb.hidden = !(S.rpcOk === false) || !!cfg.sim; /* la démo n'utilise pas la blockchain */ rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Votre RPC ne répond pas.</b> Vérifiez l\'adresse dans Réglages.' : window.TSRelay ? '<b>Le RPC TokenStudio ne répond pas pour le moment.</b> Réessayez dans une minute, ou collez votre clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connectez-vous à votre compte pour utiliser le RPC TokenStudio, ou collez votre clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
+    const rb = $('rpcbar'); if (rb) { rb.hidden = !(S.rpcOk === false) || !!cfg.sim; /* la démo n'utilise pas la blockchain */ rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Votre RPC ne répond pas.</b> Vérifiez l\'adresse dans Réglages.' : window.TSRelay ? '<b>La connexion Solana de TokenStudio ne répond pas pour le moment.</b> Réessayez dans une minute, ou collez votre clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connectez-vous à votre compte pour utiliser la connexion Solana de TokenStudio, ou collez votre clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
     // seule la démo porte une étiquette de mode
     $('footMode').textContent = cfg.sim ? '● Démo' : ''; $('footMode').hidden = !cfg.sim;
     $('footMode').style.color = 'var(--violet)';
@@ -3333,7 +3333,7 @@
   function renderOrders() {
     const on = canAuto(), locked = S.wallet && S.wallet.id === 'session' && !SESSW.kp;
     const n = $('ordersNote');
-    if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Ventes automatiques actives.</b> Votre wallet rapide vend dès qu\'une condition est atteinte : à l\'instant quand l\'outil est ouvert, et par le serveur (vérification toutes les 10 secondes) quand il est fermé.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause.' : 'Avec ' + (S.ext ? esc(S.ext.name) : 'votre wallet') + ', chaque vente demande votre signature. Pour des ventes automatiques, utilisez votre <button class="btn sm" data-sw="' + (SRVPK ? 'use' : 'create') + '" type="button">wallet rapide</button>.';
+    if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Ventes automatiques actives.</b> Votre wallet rapide vend dès qu\'une condition est atteinte : à l\'instant quand l\'outil est ouvert, et par TokenStudio (vérification toutes les 10 secondes) quand il est fermé.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause.' : 'Avec ' + (S.ext ? esc(S.ext.name) : 'votre wallet') + ', chaque vente demande votre signature. Pour des ventes automatiques, utilisez votre <button class="btn sm" data-sw="' + (SRVPK ? 'use' : 'create') + '" type="button">wallet rapide</button>.';
       if (cfg.sim) { n.className = 'notice info'; n.innerHTML = '<b>Démo.</b> Un ordre déclenché est vendu aussitôt dans le wallet démo, au prix simulé.'; } }
     $('ordersBody').innerHTML = S.orders.length ? '<div class="card">' + S.orders.map(orderRow).join('') + '</div>' : '<div class="card"><div class="empty"><b>Aucun ordre préparé</b>Ouvrez un token (Mes tokens ou Trader) et cliquez sur « Ajouter » dans le bloc Ordres préparés.</div></div>';
   }
@@ -3401,7 +3401,7 @@
   const FORMS = [
     { id: 'engine', title: 'Moteur de transaction', fields: [['engine', 'Construction des transactions', 'sel', 'Direct : programme pump.fun, sans intermédiaire ni frais en plus. PumpPortal : secours. Les tokens migrés passent automatiquement par PumpPortal, quel que soit ce choix.', [['direct', 'Direct (pump.fun)'], ['portal', 'PumpPortal (+0,5 %)']]]] },
     { id: 'conn', title: 'Connexion à Solana', help: 'helius', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct PumpPortal', 'bool', 'Prix et transactions pump.fun en temps réel : les ordres se déclenchent en moins d\'une seconde. Gratuit, sans clé.']] },
-    { id: 'meta', title: 'Métadonnées du token', help: 'pinata', fields: [['metaMethod', 'Envoi du logo', 'sel', 'Par le serveur TokenStudio vers pump.fun, sans clé. Pinata en secours.', [['pump', 'Serveur → pump.fun (conseillé)'], ['pinata', 'Pinata (votre clé)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
+    { id: 'meta', title: 'Métadonnées du token', help: 'pinata', fields: [['metaMethod', 'Envoi du logo', 'sel', 'Par TokenStudio vers pump.fun, sans clé. Pinata en secours.', [['pump', 'TokenStudio → pump.fun (conseillé)'], ['pinata', 'Pinata (votre clé)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
     { id: 'speed', title: 'Vitesse d\'exécution', fields: [['speed', 'Priorité des transactions', 'sel', 'Calculée sur les frais réellement payés sur pump.fun ces dernières secondes', [['eco', 'Économique'], ['fast', 'Rapide (conseillé)'], ['turbo', 'Turbo'], ['manual', 'Manuelle']]], ['maxPriority', 'Plafond des frais de priorité', 'num', 'Jamais plus que ce montant par transaction', 'SOL'], ['priorityFee', 'Frais de priorité manuels', 'num', 'Utilisés seulement en mode Manuelle', 'SOL']] },
     { id: 'fast', title: 'Wallet rapide et envoi', fields: [['autoExec', 'Ventes automatiques', 'bool', 'Le wallet rapide exécute seul les paliers et le stop'], ['slSlippage', 'Slippage du stop', 'num', 'Plus large : mieux vaut vendre un peu moins cher que pas du tout', '%'], ['autoRetry', 'Nouveaux essais', 'num', 'Si le prix a trop bougé (0 à 3)', 'fois'], ['sender', 'Envoi direct aux validateurs', 'sel', 'Helius Sender, en plus de votre RPC. Pourboire inclus dans la transaction.', [['swqos', 'Rapide · 0,000005 SOL (conseillé)'], ['max', 'Maximum · 0,001 SOL'], ['off', 'Désactivé']]]] },
     { id: 'trade', title: 'Trading', fields: [['slippage', 'Slippage maximum', 'num', 'Écart de prix accepté', '%'], ['maxSol', 'Limite par achat', 'num', 'Garde-fou contre une erreur de saisie', 'SOL'], ['feePct', 'Frais pump.fun estimés', 'num', 'Pour les devis', '%'], ['portalFeePct', 'Frais PumpPortal', 'num', 'Seulement avec le moteur PumpPortal', '%']] },
@@ -3528,10 +3528,10 @@
   /* ---------- clés API (mode réel) : petit panneau en 3 étapes, vérifié avant d'enregistrer */
   const KEYS = {
     helius: { title: 'Ajouter votre clé Helius', label: 'Clé Helius', ph: 'ex. 1a2b3c4d-5e6f-…',
-      why: '<b>Gratuite, conseillée.</b> Prix en temps réel, envois plus rapides et pas de blocage. Sans elle, l\'outil passe par le RPC TokenStudio, plus lent.',
+      why: '<b>Gratuite, conseillée.</b> Prix en temps réel, envois plus rapides et pas de blocage. Sans elle, l\'outil passe par la connexion Solana de TokenStudio, plus lente.',
       steps: ['Créez un compte gratuit sur <a href="https://dashboard.helius.dev/" target="_blank" rel="noopener">helius.dev</a>.', 'Dans votre tableau de bord, copiez votre clé <b>API Key</b>.', 'Collez-la ci-dessous, puis cliquez sur « Vérifier ».'] },
     pinata: { title: 'Ajouter votre jeton Pinata', label: 'Jeton Pinata (JWT)', ph: 'eyJhbGciOi…',
-      why: '<b>Gratuit, en secours.</b> Le serveur TokenStudio envoie normalement le logo et la fiche à pump.fun. Si cet envoi échoue, votre propre jeton Pinata prend le relais.',
+      why: '<b>Gratuit, en secours.</b> TokenStudio envoie normalement le logo et la fiche à pump.fun. Si cet envoi échoue, votre propre jeton Pinata prend le relais.',
       steps: ['Créez un compte gratuit sur <a href="https://app.pinata.cloud/developers/api-keys" target="_blank" rel="noopener">pinata.cloud</a>.', 'Dans <b>API Keys</b>, créez une clé avec le droit d\'envoi de fichiers, puis copiez son <b>JWT</b>.', 'Collez-le ci-dessous, puis cliquez sur « Vérifier ».'] },
   };
   const heliusUrl = (v) => (/^https:\/\//i.test(v) ? v : 'https://mainnet.helius-rpc.com/?api-key=' + v);
@@ -3636,7 +3636,7 @@
         window.TSClaimOrder(o.id).then((ok) => {
           if (ok) { CLAIMS.set(o.id, 'ok'); fireOrder(o); return; }
           CLAIMS.delete(o.id); o.active = false; o.triggered = Date.now(); save(LS.orders, S.orders);
-          toast('Ordre pris en charge par le serveur', o.symbol + ' : votre wallet rapide le vend côté serveur.', ''); renderAll();
+          toast('Ordre déjà pris en charge', o.symbol + ' : votre wallet rapide le vend automatiquement.', ''); renderAll();
         });
         return;
       }

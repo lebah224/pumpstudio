@@ -50,7 +50,7 @@ export function DataTab() {
   return (
     <div className="ts-grid2">
       <div className="card">
-        <div className="card-h"><h3>Enregistrées sur votre compte</h3><p>Vos données vivent dans la base de TokenStudio : chaque changement y est écrit aussitôt, et vous les retrouvez sur chacun de vos appareils. Rien n'est gardé dans ce navigateur.</p></div>
+        <div className="card-h"><h3>Enregistrées sur votre compte</h3><p>Vos données sont enregistrées sur votre compte TokenStudio : chaque changement y est écrit aussitôt, et vous les retrouvez sur chacun de vos appareils. Rien n'est gardé dans ce navigateur.</p></div>
         <div className="ts-row spread">
           <div><span className={'badge ' + (s.error ? 'a' : 'g')}>{s.error ? 'En attente' : 'À jour'}</span> <span className="muted ts-small">{s.loading ? 'chargement…' : s.saving || s.pending ? 'enregistrement…' : s.lastSaved ? 'dernier enregistrement : ' + new Date(s.lastSaved).toLocaleTimeString('fr-FR') : ''}</span></div>
           {s.error && <button type="button" className="btn sm" disabled={s.saving} onClick={() => flushAll()}>Réessayer</button>}

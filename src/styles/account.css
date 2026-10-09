@@ -517,3 +517,8 @@
 /* tableau de bord : dans les petites cases (dépensé, reçu, flux net), le dollar passe sous le montant */
 .d-hstats b[data-sol]{overflow:visible}
 .d-hstats b[data-usd]::after{display:block;margin:3px 0 0;font-size:11.5px}
+/* bouton Google : version sombre autorisée par les règles de marque Google, logo officiel à gauche */
+.ts-si-google{display:flex;align-items:center;justify-content:center;gap:10px}
+.ts-gmark{width:18px;height:18px;flex:none}
+.ts-human .ts-modal-box{max-width:420px}
+.ts-human .ts-captcha{margin:14px 0 4px}

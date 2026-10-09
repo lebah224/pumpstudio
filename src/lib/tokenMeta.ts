@@ -12,7 +12,7 @@ export function installTokenMeta() {
       throw new Error(msg);
     }
     const uri = (data as { metadataUri?: string } | null)?.metadataUri;
-    if (!uri) throw new Error('Réponse inattendue du serveur.');
+    if (!uri) throw new Error('Réponse inattendue : réessayez.');
     return uri;
   };
 }
