@@ -59,7 +59,7 @@
 .tr-prog b{font-size:12px;color:var(--muted);font-weight:500;min-width:36px;text-align:right}
 .tr-prog.wide{display:flex;width:100%;margin:4px 0 2px}
 .tr-prog.wide .tr-bar{flex:1;width:auto;height:8px}
-.tr-fav{background:none;border:none;padding:4px;cursor:pointer;color:var(--dim);display:inline-grid;place-items:center;border-radius:6px}
+.tr-fav{background:none;border:none;padding:7px;margin:-3px;cursor:pointer;color:var(--dim);display:inline-grid;place-items:center;border-radius:6px}
 .tr-fav:hover{color:var(--accent);background:var(--panel3)}
 .tr-star{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7}
 .tr-star.on{fill:var(--accent);stroke:var(--accent)}
@@ -77,7 +77,7 @@
 .tr-sym{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--muted);background:var(--panel3);border:1px solid var(--line2);border-radius:6px;padding:2px 7px}
 .tr-head-m{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12.5px;color:var(--muted);margin-top:3px}
 .tr-addr{display:inline-flex;align-items:center;gap:4px;color:var(--text)}
-.tr-copy{background:none;border:none;padding:3px;border-radius:5px;color:var(--dim);cursor:pointer;display:inline-grid;place-items:center}
+.tr-copy{background:none;border:none;padding:8px;margin:-5px -3px;border-radius:5px;color:var(--dim);cursor:pointer;display:inline-grid;place-items:center}
 .tr-copy:hover{color:var(--text);background:var(--panel3)}
 .tr-copy .i{width:14px;height:14px}
 .tr-head-p{grid-row:span 2;display:flex;flex-direction:column;align-items:flex-end;gap:1px;border-radius:10px;padding:4px 8px}
@@ -110,7 +110,7 @@
 @keyframes tr-rot{to{transform:rotate(360deg)}}
 .tr-chart-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 12px;padding:8px 12px 10px;border-top:1px solid var(--line);font-size:12px}
 .tr-chart-foot .tr-live{border:none;background:none;padding:0}
-.tr-chart-foot a{color:var(--muted)}
+.tr-chart-foot a{color:var(--muted);text-decoration:underline}
 
 .tr-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;overflow:hidden}
 .tr-stats>div{display:flex;flex-direction:column;gap:3px;padding:12px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
