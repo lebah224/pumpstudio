@@ -4,6 +4,7 @@ import { studio, toast } from '../legacy/bridge';
 import { supabase } from '../lib/supabase';
 import { pwError } from '../lib/password';
 import { PasswordMeter } from '../ui/PasswordMeter';
+import { Sol } from '../ui/Sol';
 import { createServerWallet, deleteServerWallet, exportServerWallet, importServerWallet, setServerLimits, useServerWallet, withdrawServerWallet } from './api';
 
 export type SrvMode = 'create' | 'withdraw' | 'limits' | 'export' | 'delete';
@@ -112,7 +113,7 @@ export function ServerWalletDialog() {
           <label className="field"><span className="ts-lbl">Confirmez le mot de passe</span><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
           <ul className="ts-srv-rules">
             <li>Il ne signe que des achats, ventes, lancements et récupérations de frais : jamais de virement ni de transfert de tokens.</li>
-            <li>Plafond de dépense : 10 SOL par jour, réglable. Votre limite par achat s'applique aussi.</li>
+            <li>Plafond de dépense : <Sol v={10} d={0} /> par jour, réglable. Votre limite par achat s'applique aussi.</li>
             <li>Retraits uniquement vers vos wallets liés depuis plus de 24 h, avec ce mot de passe et un code de confirmation.</li>
           </ul>
           <label className="check"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} /><span>Je comprends que TokenStudio garde la clé de ce wallet. Je n'y laisse que ce que je suis prêt à risquer.</span></label>
@@ -132,7 +133,7 @@ export function ServerWalletDialog() {
             <label className="field"><span className="ts-lbl">Plafond par jour <small>SOL</small></span><input inputMode="decimal" value={cap} onChange={(e) => setCap(e.target.value)} /></label>
             <label className="field"><span className="ts-lbl">Alerte de solde <small>SOL</small></span><input inputMode="decimal" value={alert} onChange={(e) => setAlert(e.target.value)} /></label>
           </div>
-          <p className="muted ts-small">Dépensé aujourd'hui : {nf(srv?.spent_today ?? 0, 3)} SOL sur {nf(srv?.daily_cap_sol ?? 10, 2)} SOL. Entre 0,1 et 100 SOL par jour.</p>
+          <p className="muted ts-small">Dépensé aujourd'hui : <Sol v={srv?.spent_today ?? 0} d={3} /> sur <Sol v={srv?.daily_cap_sol ?? 10} d={2} />. Entre 0,1 et 100 SOL par jour.</p>
           {PW()}
         </>)}
 

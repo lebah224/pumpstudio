@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { studio, type DemoInfo } from '../legacy/bridge';
 import { Donut, type Slice } from './charts';
+import { Sol } from '../ui/Sol';
 
 // Portefeuille en démo : tout est fictif (solde, tokens, activité), rien n'est lu ni envoyé sur la blockchain.
 const SERIES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181'];
 const OTHER = '#6b665c';
 const nf = (n: number, d = 2) => n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const sol = (n: number, d = 3) => nf(n, d) + ' SOL';
-const usd = (n: number) => (Math.abs(n) >= 1000 ? nf(n, 0) : nf(n, 2)) + ' $';
 const amt = (n: number) => (n >= 1e6 ? nf(n / 1e6, 2) + ' M' : n >= 1e3 ? nf(n / 1e3, 2) + ' k' : nf(n, n < 1 ? 4 : 2));
 const ago = (t: number) => {
   const s = (Date.now() - t) / 1000;
@@ -36,7 +36,6 @@ export function DemoWallet({ visible }: { visible: boolean }) {
 
   const tokSol = (info?.hold ?? []).reduce((a, x) => a + (x.sol ?? 0), 0);
   const total = info ? info.bal + tokSol : 0;
-  const px = info?.solUsd ?? null;
   const slices: Slice[] = useMemo(() => {
     if (!info) return [];
     const top = info.hold.filter((x) => (x.sol ?? 0) > 1e-6).slice(0, 4), rest = info.hold.slice(4).reduce((a, x) => a + (x.sol ?? 0), 0);
@@ -60,11 +59,10 @@ export function DemoWallet({ visible }: { visible: boolean }) {
         <div className="ts-wp-col">
           <section className="card ts-wp-hero">
             <div className="ts-wp-eye">Wallet démo · 10 SOL fictifs au départ</div>
-            <div className="ts-wp-total mono">{sol(total)}</div>
+            <div className="ts-wp-total mono"><Sol v={total} d={3} stack /></div>
             <div className="ts-wp-sub">
-              <span className="mono">{sol(info.bal)} disponibles</span>
-              {info.hold.length > 0 && <span> · {info.hold.length} token{info.hold.length > 1 ? 's' : ''} ({sol(tokSol)})</span>}
-              {px ? <span> · ≈ {usd(total * px)}</span> : null}
+              <span className="mono"><Sol v={info.bal} d={3} /> disponibles</span>
+              {info.hold.length > 0 && <span> · {info.hold.length} token{info.hold.length > 1 ? 's' : ''} (<Sol v={tokSol} d={3} />)</span>}
             </div>
             <div className="ts-wp-actions">
               <button type="button" className="ts-wp-act" onClick={() => hub?.demoMove('deposit')}><span className="ts-wp-aic">↓</span>Déposer</button>
@@ -84,7 +82,7 @@ export function DemoWallet({ visible }: { visible: boolean }) {
                     <li key={x.t + '-' + i}><div className="ts-wp-row">
                       <span className={'ts-wp-k ' + k.c} aria-hidden="true">{k.ic}</span>
                       <span className="ts-wp-n"><b>{k.l}{x.symbol && x.symbol !== 'SOL' ? ' · ' + x.symbol : ''}</b><small>{ago(x.t)}{x.tokens ? ' · ' + amt(Math.abs(x.tokens)) + ' tokens' : ''}</small></span>
-                      <span className={'ts-wp-v ' + (x.sol >= 0 ? 'pos' : 'neg')}><b className="mono">{x.sol ? (x.sol > 0 ? '+' : '−') + nf(Math.abs(x.sol), 4) : '—'}</b><small>SOL</small></span>
+                      <span className={'ts-wp-v ' + (x.sol >= 0 ? 'pos' : 'neg')}><b className="mono">{x.sol ? <>{x.sol > 0 ? '+' : '−'}<Sol v={Math.abs(x.sol)} d={4} /></> : '—'}</b></span>
                     </div></li>
                   );
                 })}
@@ -98,7 +96,7 @@ export function DemoWallet({ visible }: { visible: boolean }) {
             <div className="ts-wp-alloc-b">
               <Donut items={slices} center={{ v: sol(total, 2), l: 'total' }} fmt={(v) => sol(v)} />
               <ul className="ts-legend">
-                {slices.map((x) => <li key={x.key}><i style={{ background: x.color }} /><b>{x.label}</b><span className="mono">{sol(x.value)}</span><small>{Math.round((x.value / (total || 1)) * 100)} % · {x.sub}</small></li>)}
+                {slices.map((x) => <li key={x.key}><i style={{ background: x.color }} /><b>{x.label}</b><span className="mono"><Sol v={x.value} d={3} /></span><small>{Math.round((x.value / (total || 1)) * 100)} % · {x.sub}</small></li>)}
               </ul>
             </div>
           </section>
@@ -111,7 +109,7 @@ export function DemoWallet({ visible }: { visible: boolean }) {
                     <button type="button" onClick={() => (window.PumpStudio as unknown as { openTrade?: (m: string) => void })?.openTrade?.(x.mint)} title="Ouvrir dans Trader">
                       {x.image ? <img src={x.image} alt="" loading="lazy" data-rm-on-error="1" /> : <span className="ts-wp-tok">{x.symbol.slice(0, 2)}</span>}
                       <span className="ts-wp-n"><b>{x.symbol}</b><small>{x.demo ? 'token démo' : 'prix réel, SOL fictifs'}</small></span>
-                      <span className="ts-wp-v"><b className="mono">{x.sol != null ? sol(x.sol, 4) : '—'}</b><small className="mono">{amt(x.amount)}</small></span>
+                      <span className="ts-wp-v"><b className="mono">{x.sol != null ? <Sol v={x.sol} d={4} /> : '—'}</b><small className="mono">{amt(x.amount)}</small></span>
                     </button>
                   </li>
                 ))}

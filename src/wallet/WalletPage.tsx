@@ -6,6 +6,7 @@ import { AreaChart, Donut, QrCode, type Slice } from './charts';
 import { useServerWallet } from '../serverWallet/api';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 import { DemoWallet } from './DemoWallet';
+import { Sol } from '../ui/Sol';
 import { activity, balanceOf, balanceSeries, forget, holdings, solHistory, type Holding, type Pt, type Range, type Tx } from './walletData';
 
 // Couleurs de répartition (palette catégorielle validée pour fond sombre, ordre fixe) et « Autres » en neutre
@@ -94,7 +95,8 @@ export function WalletPage() {
   const p0 = shown[0], p1 = shown[shown.length - 1];
   const delta = shown.length > 1 && p0 && p1 ? p1.v - p0.v : null;
   const deltaPct = delta != null && p0 && p1 && p0.v > Math.abs(p1.v) * 0.05 ? (delta / p0.v) * 100 : null;
-  const fmtV = unit === 'usd' && series?.usd.length ? usd : (v: number) => sol(v);
+  const inUsd = unit === 'usd' && !!series?.usd.length;
+  const fmtV = inUsd ? usd : (v: number) => sol(v);
   const slices: Slice[] = useMemo(() => {
     if (solVal == null) return [];
     const toks = (hold ?? []).filter((x) => (x.usd ?? 0) > 0.01);
@@ -132,7 +134,7 @@ export function WalletPage() {
                     <a href={'https://solscan.io/tx/' + x.sig} target="_blank" rel="noopener noreferrer">
                       <span className={'ts-wp-k ' + k.c} aria-hidden="true">{k.ic}</span>
                       <span className="ts-wp-n"><b>{k.l}</b><small>{ago(x.t)}{x.peer && (x.kind === 'in' || x.kind === 'out') ? (x.kind === 'in' ? ' · de ' : ' · vers ') + short(x.peer) : ''}{x.token ? ' · ' + amt(Math.abs(x.token.delta)) + ' ' + short(x.token.mint) : ''}</small></span>
-                      <span className={'ts-wp-v ' + (x.sol >= 0 ? 'pos' : 'neg')}><b className="mono">{(x.sol >= 0 ? '+' : '−') + nf(Math.abs(x.sol), 4)}</b><small>SOL</small></span>
+                      <span className={'ts-wp-v ' + (x.sol >= 0 ? 'pos' : 'neg')}><b className="mono">{x.sol >= 0 ? '+' : '−'}<Sol v={Math.abs(x.sol)} d={4} /></b></span>
                     </a>
                   </li>
                 );
@@ -171,11 +173,11 @@ export function WalletPage() {
           <div className="ts-wp-h">
             <div>
               <div className="ts-wp-eye">{name} · {signs ? <span className="ts-hub-pill ok">signe vos transactions</span> : <button type="button" className="ts-hub-pill" onClick={useIt}>Utiliser pour signer</button>}{isQuick && !quick!.unlocked && <span className="badge a">verrouillé</span>}</div>
-              <div className="ts-wp-total mono">{total != null ? usd(total) : bal != null ? sol(bal) : '—'}</div>
+              <div className="ts-wp-total mono">{total != null ? usd(total) : bal != null ? <Sol v={bal} d={4} stack /> : '—'}</div>
               <div className="ts-wp-sub">
-                <span className="mono">{bal != null ? sol(bal) : '…'}</span>
+                <span className="mono">{bal != null ? <Sol v={bal} d={4} /> : '…'}</span>
                 {hold && hold.length > 0 && <span> · {hold.length} token{hold.length > 1 ? 's' : ''}{tokUsd > 0 ? ' (' + usd(tokUsd) + ')' : ''}</span>}
-                {delta != null && Math.abs(delta) > 1e-9 && <span className={'ts-wp-chg ' + (delta >= 0 ? 'up' : 'down')}>{delta >= 0 ? '▲ +' : '▼ −'}{fmtV(Math.abs(delta))}{deltaPct != null ? ' (' + nf(Math.abs(deltaPct), 1) + ' %)' : ''} <small>{RANGE_LABEL[range]}</small></span>}
+                {delta != null && Math.abs(delta) > 1e-9 && <span className={'ts-wp-chg ' + (delta >= 0 ? 'up' : 'down')}>{delta >= 0 ? '▲ +' : '▼ −'}{inUsd ? usd(Math.abs(delta)) : <Sol v={Math.abs(delta)} d={4} />}{deltaPct != null ? ' (' + nf(Math.abs(deltaPct), 1) + ' %)' : ''} <small>{RANGE_LABEL[range]}</small></span>}
               </div>
             </div>
           </div>
@@ -196,7 +198,7 @@ export function WalletPage() {
             <div className="seg sm" role="group" aria-label="Unité"><button type="button" className={unit === 'usd' ? 'on' : ''} onClick={() => setUnit('usd')}>$</button><button type="button" className={unit === 'sol' ? 'on' : ''} onClick={() => setUnit('sol')}>SOL</button></div>
             <div className="seg sm" role="group" aria-label="Période">{(['1d', '7d', '30d'] as Range[]).map((r) => <button key={r} type="button" className={range === r ? 'on' : ''} onClick={() => setRange(r)}>{RANGE_LABEL[r]}</button>)}</div>
           </div>
-          {series ? <AreaChart pts={shown} fmt={fmtV} fmtT={fmtT(range)} fmtTip={(t) => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} label={'Solde ' + (unit === 'usd' ? 'en dollars' : 'en SOL')} />
+          {series ? <AreaChart pts={shown} fmt={fmtV} fmtT={fmtT(range)} fmtTip={(t) => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} label={'Solde ' + (unit === 'usd' ? 'en dollars' : 'en SOL')} sol={!inUsd} />
             : <div className="ts-chart ts-skel" style={{ height: 220 }} />}
           <p className="ts-wp-foot">{series?.partial ? 'Historique partiel : reconstitué à partir des 25 dernières transactions. ' : ''}Courbe du SOL détenu{unit === 'usd' ? ', valorisé au prix du SOL à chaque instant' : ''}. Les tokens ne sont pas inclus dans la courbe.</p>
         </section>
@@ -243,9 +245,9 @@ export function WalletPage() {
             <div className="card-h"><h3>Wallet rapide</h3><p>Clé chiffrée sur votre compte. Il signe seul, uniquement des opérations de trading, dans la limite de vos plafonds.</p></div>
             <div className="ts-cap">
               <div className="ts-cap-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(capPct)} aria-label="Plafond du jour utilisé"><i className={capPct > 80 ? 'hot' : ''} style={{ width: capPct + '%' }} /></div>
-              <div className="ts-cap-t"><span>Dépensé aujourd'hui : <b className="mono">{nf(srvSt.spent_today ?? 0, 3)} SOL</b></span><span>plafond {nf(srvSt.daily_cap_sol ?? 10, 2)} SOL</span></div>
+              <div className="ts-cap-t"><span>Dépensé aujourd'hui : <b className="mono"><Sol v={srvSt.spent_today ?? 0} d={3} /></b></span><span>plafond <Sol v={srvSt.daily_cap_sol ?? 10} d={2} /></span></div>
             </div>
-            {bal != null && srvSt.alert_balance_sol != null && bal > srvSt.alert_balance_sol && <div className="ts-note warn">Solde au-dessus de votre seuil d'alerte ({nf(srvSt.alert_balance_sol, 2)} SOL) : pensez à retirer les gains vers votre wallet principal.</div>}
+            {bal != null && srvSt.alert_balance_sol != null && bal > srvSt.alert_balance_sol && <div className="ts-note warn">Solde au-dessus de votre seuil d'alerte (<Sol v={srvSt.alert_balance_sol} d={2} />) : pensez à retirer les gains vers votre wallet principal.</div>}
             <div className="ts-wp-secb">
               <button type="button" className="btn sm" onClick={() => openServerWallet('limits')}>Plafonds</button>
               <button type="button" className="btn sm ghost" onClick={() => openServerWallet('export')}>Exporter la clé</button>
@@ -287,7 +289,7 @@ function ReceiveDialog({ pk, name, canFund, onClose }: { pk: string; name: strin
         <div className="ts-recv-qr"><QrCode text={uri} /></div>
         <button type="button" className="ts-recv-addr mono" onClick={() => copy(pk)} title="Copier l'adresse">{pk}<span>Copier</span></button>
         <label className="field"><span className="ts-lbl">Montant demandé (facultatif)</span><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="ex. 0,5 SOL" /></label>
-        {ok && <p className="muted ts-small">Le QR code contient maintenant une demande de {nf(n, n < 1 ? 4 : 2)} SOL (Solana Pay) : l'app du wallet pré-remplit le montant.</p>}
+        {ok && <p className="muted ts-small">Le QR code contient maintenant une demande de <Sol v={n} d={n < 1 ? 4 : 2} /> (Solana Pay) : l'app du wallet pré-remplit le montant.</p>}
         <div className="ts-note warn">Réseau Solana uniquement. Un envoi depuis un autre réseau (Ethereum, BNB…) serait perdu.</div>
         <div className="ts-row">
           {canFund && <button type="button" className="btn" onClick={() => { onClose(); studio()?.hub?.walletAction('fund'); }}>{'Alimenter depuis ' + (studio()?.hub?.state().ext?.name ?? 'mon wallet')}</button>}

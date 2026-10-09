@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import type { AuditEntry } from '../lib/types';
 import { useAuth } from '../auth/AuthContext';
@@ -8,6 +8,10 @@ import { toast } from '../legacy/bridge';
 import { uaLabel } from '../notify/push';
 import { security } from '../security/stepUp';
 import { logoutEverywhere } from './logout';
+import { Sol } from '../ui/Sol';
+
+// montant en SOL du journal (avec son équivalent en dollars), texte brut si la valeur n'est pas un nombre
+const solOf = (x: unknown): ReactNode => { const n = Number(x); return x != null && x !== '' && isFinite(n) ? <Sol v={n} /> : String(x) + ' SOL'; };
 
 type Sess = { id: string; created_at: string; updated_at: string | null; refreshed_at: string | null; user_agent: string | null; ip: string | null; aal: string | null };
 const EVENTS: Record<string, string> = {
@@ -129,7 +133,7 @@ export function SecurityTab() {
         <div className="card-h"><h3>Journal de sécurité</h3><p>Les actions sensibles de votre compte, enregistrées par le serveur. Personne ne peut les modifier, pas même vous.</p></div>
         {!log ? <div className="empty"><b>Chargement…</b></div> : !log.length ? <div className="empty"><b>Rien pour l'instant</b></div> : (
           <div className="ts-log">{log.map((e) => (
-            <div key={e.id}><span className="mono dim">{new Date(e.created_at).toLocaleString('fr-FR')}</span><b>{EVENTS[e.event] || e.event}</b><span className="dim mono">{typeof e.detail?.address === 'string' ? (e.detail.address as string).slice(0, 4) + '…' + (e.detail.address as string).slice(-4) : typeof e.detail?.device === 'string' ? String(e.detail.device) + (e.detail.ip ? ' · ' + e.detail.ip : '') : e.detail?.apres != null ? e.detail.avant + ' → ' + e.detail.apres + ' SOL' : e.detail?.after != null ? e.detail.before + ' → ' + e.detail.after + ' SOL' : e.detail?.sol != null ? e.detail.sol + ' SOL' : ''}</span></div>
+            <div key={e.id}><span className="mono dim">{new Date(e.created_at).toLocaleString('fr-FR')}</span><b>{EVENTS[e.event] || e.event}</b><span className="dim mono">{typeof e.detail?.address === 'string' ? (e.detail.address as string).slice(0, 4) + '…' + (e.detail.address as string).slice(-4) : typeof e.detail?.device === 'string' ? String(e.detail.device) + (e.detail.ip ? ' · ' + e.detail.ip : '') : e.detail?.apres != null ? <>{solOf(e.detail.avant)} → {solOf(e.detail.apres)}</> : e.detail?.after != null ? <>{solOf(e.detail.before)} → {solOf(e.detail.after)}</> : e.detail?.sol != null ? solOf(e.detail.sol) : ''}</span></div>
           ))}</div>
         )}
       </div>

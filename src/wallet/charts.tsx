@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from 'react';
 import qrcode from 'qrcode-generator';
+import { Sol } from '../ui/Sol';
 import type { Pt } from './walletData';
 
 /** Largeur réelle d'un conteneur, suivie au redimensionnement */
@@ -17,8 +18,9 @@ function useWidth<T extends HTMLElement>() {
 /**
  * Courbe d'une seule série avec aire dégradée : grille discrète, deux repères d'axe,
  * réticule et infobulle au survol (souris et doigt).
+ * sol : valeurs en SOL, l'infobulle affiche aussi l'équivalent en dollars.
  */
-export function AreaChart({ pts, height = 220, fmt, fmtT, fmtTip = fmtT, label }: { pts: Pt[]; height?: number; fmt: (v: number) => string; fmtT: (t: number) => string; fmtTip?: (t: number) => string; label: string }) {
+export function AreaChart({ pts, height = 220, fmt, fmtT, fmtTip = fmtT, label, sol }: { pts: Pt[]; height?: number; fmt: (v: number) => string; fmtT: (t: number) => string; fmtTip?: (t: number) => string; label: string; sol?: boolean }) {
   const [box, w] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
   const gid = useId().replace(/:/g, '');
@@ -71,7 +73,7 @@ export function AreaChart({ pts, height = 220, fmt, fmtT, fmtTip = fmtT, label }
       ) : <div className="ts-chart-empty">{pts.length < 2 ? 'Pas assez de données pour tracer la courbe.' : ''}</div>}
       {hp && geo && (
         <div className="ts-tip" style={{ left: Math.min(Math.max(geo.x(hp.t), 70), w - 70), top: Math.max(geo.y(hp.v) - 54, 0) }}>
-          <b className="mono">{fmt(hp.v)}</b><small>{fmtTip(hp.t)}</small>
+          <b className="mono">{sol ? <Sol v={hp.v} d={4} /> : fmt(hp.v)}</b><small>{fmtTip(hp.t)}</small>
         </div>
       )}
     </div>

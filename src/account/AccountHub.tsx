@@ -11,6 +11,7 @@ import { logoutEverywhere } from './logout';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 import { useProfile } from './profile';
 import { UserAvatar } from './Avatar';
+import { Sol } from '../ui/Sol';
 
 const THEME_NAMES: Record<string, string> = { or: 'Or', platine: 'Platine', saphir: 'Saphir', jade: 'Jade', cuivre: 'Cuivre', iris: 'Iris' };
 const DEPTH_NAMES: Record<string, string> = { nuit: 'Nuit', profond: 'Profond', doux: 'Doux' };
@@ -98,8 +99,6 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   // celui qui signe : le wallet serveur s'il est choisi, sinon le wallet rapide, sinon l'extension
   const signer = srv?.active ? 'srv' : quick?.active ? 'quick' : ext ? 'ext' : null;
   const use = (k: 'ext' | 'quick' | 'srv') => (k === 'srv' ? hub?.useServer(true) : k === 'quick' ? hub?.useQuick(true) : hub?.useExt());
-  const usd = (b: number | null) => (b != null && st.solUsd ? '≈ ' + fmt(b * st.solUsd, 2) + ' $' : 'SOL');
-  const bal = (b: number | null) => (b == null ? '—' : fmt(b, b >= 100 ? 2 : 4));
   const signIn = (wallet?: string) => act(() => openSignIn({ start: 'choose', wallet }));
   async function link(src: 'ext' | 'quick') {
     setBusy('link-' + src);
@@ -112,6 +111,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   // bouton déclencheur : connecté, solde du wallet actif puis avatar du compte (comme les grandes plateformes) ;
   // wallet sans compte, son avatar et son solde ; invité, bouton de connexion
   const name = me?.display_name || (me?.username ? '@' + me.username : '') || label;
+  // le bouton reste compact (sans dollar, l'unité est même masquée sur mobile) : l'équivalent en dollars est dans le panneau
   const balTxt = st.bal == null ? '—' : fmt(st.bal, st.bal >= 100 ? 2 : mobile ? 3 : 4);
   const trigger = signed ? (<>
     {w && <span className="ts-hub-balbox" title={'Solde du wallet actif · ' + short(w.pk)}>{w.locked && <span className="ts-hub-lock" title="Wallet rapide verrouillé">●</span>}<span className="ts-hub-bal mono">{balTxt}<small> SOL</small></span></span>}
@@ -158,7 +158,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
           <b>{kind === 'srv' ? 'Wallet rapide' : kind === 'quick' ? 'Wallet rapide' : ext!.name}{kind === 'quick' && !quick!.unlocked && <em className="badge a">verrouillé</em>}</b>
           <button type="button" className="ts-hub-addr mono" data-hub-item onClick={() => copy(x.pk)} title="Copier l'adresse">{short(x.pk)} {I.copy}</button>
         </span>
-        <span className="ts-hub-wb"><b className="mono">{bal(x.bal)}</b><small>{usd(x.bal)}</small></span>
+        <span className="ts-hub-wb"><b className="mono"><Sol v={x.bal} d={x.bal != null && x.bal >= 100 ? 2 : 4} /></b></span>
         <div className="ts-hub-wa">
           {activeW ? <span className="ts-hub-pill ok" title="Ce wallet signe vos transactions">Signe</span>
             : <button type="button" className="ts-hub-pill" data-hub-item onClick={() => use(kind)}>Utiliser</button>}
