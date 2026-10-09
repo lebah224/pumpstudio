@@ -281,3 +281,5 @@
   .tr-tab-body>.tr-table-wrap,.an-creator .tr-table-wrap,.tr-tab-body>div>.tr-table-wrap{margin:0 -14px}
   .tr-count{display:none}
 }
+.an-creator .an-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:700px){.an-creator .an-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
