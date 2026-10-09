@@ -1,6 +1,7 @@
 // Clés API du compte (adresse RPC Helius, jeton Pinata) : chiffrées ici (AES-256-GCM, clé maître du Vault,
 // liées au compte) et rendues en clair seulement à leur propriétaire connecté.
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
+import { Fail, rate } from '../_shared/security.ts';
 
 const HOSTS = [
   /^tokenstudio-sol\.vercel\.app$/,
@@ -67,6 +68,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'Méthode non autorisée.' }, h);
   const { data: { user } } = await admin.auth.getUser((req.headers.get('Authorization') ?? '').replace(/^Bearer /, ''));
   if (!user) return json(401, { error: 'Connexion requise.' }, h);
+  try { await rate('keys:' + user.id, 60, 3600); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
   let body: { action?: string; keys?: Keys } = {};
   try { body = await req.json(); } catch { /* corps vide */ }
   try {

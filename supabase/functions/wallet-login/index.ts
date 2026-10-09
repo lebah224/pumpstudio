@@ -3,6 +3,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
 import nacl from 'npm:tweetnacl@1.0.3';
 import bs58 from 'npm:bs58@6.0.0';
+import { Fail, clientIp, rate, verifyCaptcha } from '../_shared/security.ts';
 
 const HOSTS = [
   /^tokenstudio-sol\.vercel\.app$/,
@@ -37,9 +38,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: h });
   if (req.method !== 'POST') return json(405, { error: 'Méthode non autorisée.' }, h);
 
-  let body: { address?: unknown; message?: unknown; signature?: unknown };
+  let body: { address?: unknown; message?: unknown; signature?: unknown; captchaToken?: unknown };
   try { body = await req.json(); } catch { return json(400, { error: 'Requête invalide.' }, h); }
   const { address, message, signature } = body;
+  // limite par adresse IP et case « Je ne suis pas un robot »
+  const ip = clientIp(req);
+  try { await rate('wallet_login:' + (ip || 'inconnue'), 30, 600, 'Trop de tentatives de connexion : réessaie dans 10 minutes.'); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
+  if (!(await verifyCaptcha(body.captchaToken, ip))) return json(403, { error: 'Vérification anti-robot échouée : coche de nouveau la case.', code: 'captcha' }, h);
   if (typeof address !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) return json(400, { error: 'Adresse invalide.' }, h);
   if (typeof message !== 'string' || message.length > 600) return json(400, { error: 'Message invalide.' }, h);
   if (typeof signature !== 'string' || signature.length > 200) return json(400, { error: 'Signature invalide.' }, h);

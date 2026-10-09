@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { FunctionsHttpError } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { invokeSecure } from '../security/stepUp';
 import { studio } from '../legacy/bridge';
 
 // Wallet rapide serveur : la clé reste sur le serveur (chiffrée) ; le navigateur envoie des transactions à signer,
@@ -8,15 +7,8 @@ import { studio } from '../legacy/bridge';
 
 export type SrvStatus = { address: string | null; daily_cap_sol?: number; alert_balance_sol?: number; spent_today?: number; locked?: boolean };
 
-async function call<T>(action: string, body: Record<string, unknown> = {}): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('server-wallet', { body: { action, ...body } });
-  if (error) {
-    let msg = error.message;
-    if (error instanceof FunctionsHttpError) { try { msg = (await error.context.json()).error || msg; } catch { /* réponse non JSON */ } }
-    throw new Error(msg);
-  }
-  return data as T;
-}
+// retrait, export, hausse du plafond, suppression : le serveur peut demander un code de confirmation (fenêtre dédiée)
+const call = <T,>(action: string, body: Record<string, unknown> = {}): Promise<T> => invokeSecure<T>('server-wallet', { action, ...body });
 
 /* ---------- état partagé (menu, portefeuille, bot) ---------- */
 let state: SrvStatus | null = null;

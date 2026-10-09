@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
-import type { AuditEntry, Preferences, PrefsPatch, Profile, Wallet } from '../lib/types';
+import type { Preferences, PrefsPatch, Profile, Wallet } from '../lib/types';
 import { useAuth, userLabel, walletOf } from '../auth/AuthContext';
 import { SignInPanel, readable } from '../auth/SignIn';
-import { MfaSettings } from '../auth/Mfa';
 import { savePrefs } from './usePrefsSync';
 import { studio, toast } from '../legacy/bridge';
 import { DataTab } from './DataTab';
+import { SecurityTab } from './SecurityTab';
 import { PushCard } from '../notify/PushCard';
-import { logoutEverywhere } from './logout';
 import { USERNAME_RE, updateProfile, useProfile } from './profile';
 import { UserAvatar, cleanAvatars } from './Avatar';
 import { AvatarPicker, UsernameField } from './Onboarding';
@@ -252,45 +251,6 @@ function WalletsTab() {
       )}
       {err && <div className="ts-note bad" role="alert">{err}</div>}
       <div className="toolbar"><button className="btn primary" type="button" onClick={() => openSignIn({ start: 'add' })}>Ajouter un wallet</button><span className="muted ts-small">Phantom, Solflare, Backpack, Coinbase, OKX, Trust… ou ton wallet rapide. Une signature gratuite prouve qu'il t'appartient.</span></div>
-    </div>
-  );
-}
-
-/* ---------------- Sécurité ---------------- */
-const EVENTS: Record<string, string> = {
-  account_created: 'Compte créé', wallet_added: 'Wallet ajouté', wallet_removed: 'Wallet retiré',
-  mode_reel: 'Passage en mode réel', mode_simulation: 'Retour en démo', limite_achat_modifiee: 'Limite par achat modifiée',
-};
-function SecurityTab() {
-  const { user, signOut } = useAuth();
-  const [log, setLog] = useState<AuditEntry[] | null>(null);
-  useEffect(() => {
-    if (!user) return;
-    supabase.from('audit_log').select('id,event,detail,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50).then(({ data }) => setLog((data as AuditEntry[]) ?? []));
-  }, [user]);
-  return (
-    <div className="ts-grid2">
-      <div className="card">
-        <div className="card-h"><h3>Double authentification</h3><p>Protège ton compte même si ton e-mail ou ta session est compromis.</p></div>
-        <MfaSettings />
-      </div>
-      <div className="card">
-        <div className="card-h"><h3>Sessions</h3><p>Déconnecte tous les appareils si tu as un doute.</p></div>
-        <div className="toolbar"><button className="btn" type="button" onClick={() => logoutEverywhere(signOut)}>Se déconnecter</button><button className="btn danger" type="button" onClick={() => { if (window.confirm('Déconnecter tous tes appareils ?')) logoutEverywhere(signOut, true); }}>Déconnecter tous les appareils</button></div>
-        <ul className="ts-promise">
-          <li>Aucune clé privée n'est envoyée au serveur, jamais.</li>
-          <li>La clé du wallet rapide est chiffrée sur le serveur et ne signe que dans tes plafonds.</li>
-          <li>Chaque table de la base est privée à ton compte (règles RLS).</li>
-        </ul>
-      </div>
-      <div className="card ts-span2">
-        <div className="card-h"><h3>Journal de sécurité</h3><p>Les actions sensibles de ton compte, enregistrées par le serveur. Personne ne peut les modifier, pas même toi.</p></div>
-        {!log ? <div className="empty"><b>Chargement…</b></div> : !log.length ? <div className="empty"><b>Rien pour l'instant</b></div> : (
-          <div className="ts-log">{log.map((e) => (
-            <div key={e.id}><span className="mono dim">{new Date(e.created_at).toLocaleString('fr-FR')}</span><b>{EVENTS[e.event] || e.event}</b><span className="dim mono">{typeof e.detail?.address === 'string' ? (e.detail.address as string).slice(0, 4) + '…' + (e.detail.address as string).slice(-4) : e.detail?.apres != null ? e.detail.avant + ' → ' + e.detail.apres + ' SOL' : ''}</span></div>
-          ))}</div>
-        )}
-      </div>
     </div>
   );
 }

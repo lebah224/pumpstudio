@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { FunctionsHttpError } from '@supabase/supabase-js';
 import { useAuth } from '../auth/AuthContext';
-import { supabase } from '../lib/supabase';
 import { cloudCounts, detachCloud, exportCloud, flushAll, useCloudStatus } from '../data/cloud';
 import { toast } from '../legacy/bridge';
 import { disablePush } from '../notify/push';
 import { leaveDemoGuest, markLeaving } from '../lib/guest';
+import { invokeSecure } from '../security/stepUp';
 
 const ORDER = ['tokens', 'operations', 'orders', 'distributions', 'bot_trades'];
 const LABELS: Record<string, string> = { tokens: 'tokens', operations: 'opérations du journal', orders: 'ordres', distributions: 'demandes de référencement', bot_trades: 'trades du bot' };
@@ -35,13 +34,9 @@ export function DataTab() {
     if (aal.next === 'aal2' && aal.current !== 'aal2') { setDelErr('Valide d\'abord ta double authentification.'); return; }
     setBusy('delete'); setDelErr(null);
     try {
+      // code de confirmation demandé par le serveur (e-mail ou double authentification) avant la suppression
+      await invokeSecure('delete-account', { confirm: 'SUPPRIMER' });
       await disablePush().catch(() => {});
-      const { error } = await supabase.functions.invoke('delete-account', { body: { confirm: 'SUPPRIMER' } });
-      if (error) {
-        let msg = error.message;
-        if (error instanceof FunctionsHttpError) { try { msg = (await error.context.json()).error || msg; } catch { /* réponse non JSON */ } }
-        throw new Error(msg);
-      }
       // compte supprimé : plus rien de ce compte dans ce navigateur
       markLeaving();
       await detachCloud();

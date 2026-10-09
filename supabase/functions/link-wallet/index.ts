@@ -1,8 +1,11 @@
 // Lie un wallet Solana à un compte après vérification d'une signature ed25519.
 // Aucune clé privée n'est jamais reçue : seulement l'adresse publique, le message et sa signature.
+// Si le compte a un wallet rapide (les wallets liés peuvent recevoir ses retraits) : code de confirmation demandé,
+// alerte par e-mail, et le nouveau wallet ne reçoit des retraits qu'après 24 heures.
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
 import nacl from 'npm:tweetnacl@1.0.3';
 import bs58 from 'npm:bs58@6.0.0';
+import { Fail, alertMail, audit, rate, requireStepUp } from '../_shared/security.ts';
 
 const HOSTS = [
   /^tokenstudio-sol\.vercel\.app$/,
@@ -52,6 +55,8 @@ Deno.serve(async (req) => {
     if (aal !== 'aal2') return json(403, { error: 'Valide d\'abord ta double authentification.' }, h);
   }
 
+  try { await rate('link:' + user.id, 10, 3600, 'Trop d\'ajouts de wallets : réessaie dans une heure.'); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
+
   let body: { address?: unknown; message?: unknown; signature?: unknown };
   try { body = await req.json(); } catch { return json(400, { error: 'Requête invalide.' }, h); }
   const { address, message, signature } = body;
@@ -79,10 +84,16 @@ Deno.serve(async (req) => {
     if (existing.user_id === user.id) return json(200, { wallet: existing }, h);
     return json(409, { error: 'Ce wallet est déjà lié à un autre compte.' }, h);
   }
+  const { data: srv } = await admin.from('server_wallets').select('user_id').eq('user_id', user.id).maybeSingle();
+  if (srv) {
+    try { await requireStepUp(user.id, 'link_wallet'); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message, ...(e as Fail).extra }, h); }
+  }
   const { count } = await admin.from('wallets').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_primary', true);
   const { data: wallet, error } = await admin.from('wallets')
     .insert({ user_id: user.id, address, label: 'Wallet', is_primary: !count })
     .select().single();
   if (error) return json(/Limite/.test(error.message) ? 429 : 500, { error: /Limite/.test(error.message) ? 'Limite de 10 wallets atteinte.' : 'Enregistrement impossible.' }, h);
+  if (srv) { await audit(user.id, 'withdraw_wallet_pending', { address }); }
+  await alertMail(user, 'wallet_added', { address }).catch(() => false);
   return json(200, { wallet }, h);
 });

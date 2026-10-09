@@ -3,6 +3,7 @@
 // Garde-fou : si son wallet rapide serveur contient encore des SOL ou des tokens, la suppression est refusée,
 // car la clé chiffrée disparaîtrait avec le compte et les fonds seraient perdus.
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
+import { Fail, rate, requireStepUp } from '../_shared/security.ts';
 
 const HOSTS = [
   /^tokenstudio-sol\.vercel\.app$/,
@@ -74,6 +75,7 @@ Deno.serve(async (req) => {
   let body: { confirm?: string } = {};
   try { body = await req.json(); } catch { /* corps vide */ }
   if (body.confirm !== 'SUPPRIMER') return json(400, { error: 'Confirmation manquante : écris SUPPRIMER.' }, h);
+  try { await rate('delete_account:' + user.id, 5, 3600); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
 
   // garde-fou des fonds du wallet rapide serveur
   const { data: w } = await admin.from('server_wallets').select('address').eq('user_id', user.id).maybeSingle();
@@ -82,6 +84,9 @@ Deno.serve(async (req) => {
     if (!st) return json(503, { error: 'Impossible de vérifier le solde de ton wallet rapide. Réessaie dans un instant.' }, h);
     if (!st.empty) return json(409, { error: 'Ton wallet rapide contient encore ' + (st.sol >= 0.001 ? st.sol.toFixed(4).replace('.', ',') + ' SOL' : '') + (st.sol >= 0.001 && st.tokens ? ' et ' : '') + (st.tokens ? st.tokens + ' token' + (st.tokens > 1 ? 's' : '') : '') + '. Vends tes tokens et retire tes SOL avant de supprimer le compte : sinon ils seraient perdus.', code: 'wallet_not_empty' }, h);
   }
+
+  // code de confirmation (e-mail ou double authentification), demandé en dernier : rien n'est consommé si le wallet bloque
+  try { await requireStepUp(user.id, 'delete_account'); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message, ...(e as Fail).extra }, h); }
 
   // logos du stockage (dossier <uid>/), puis le compte : toutes les tables liées suivent en cascade
   try {

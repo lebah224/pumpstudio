@@ -434,6 +434,8 @@
     try { return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(rec.iv) }, k, b64ToBytes(rec.ct))); }
     catch (e) { throw new Error('Mot de passe incorrect.'); }
   }
+  // règle commune des mots de passe (src/lib/password.ts) : 10 caractères, majuscule, minuscule, chiffre, symbole
+  const pwWeak = (p) => (window.TSPassword ? window.TSPassword.error(p) : p.length < 10 ? 'Mot de passe trop court : 10 caractères minimum.' : null);
   const PASS_FIELD = (id, label, auto) => '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="password" autocomplete="' + auto + '"></div>';
   async function askPass(title, intro, okLabel) {
     const i = await modal(title, intro + PASS_FIELD('pw1', 'Mot de passe du wallet rapide', 'current-password'), [{ label: 'Annuler' }, { label: okLabel || 'Déverrouiller', cls: 'primary', keep: true }], true);
@@ -465,12 +467,12 @@
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
     const html = '<p>Le studio crée un wallet Solana qui lui est propre. Sa clé est <b>chiffrée avec ton mot de passe</b> et rangée dans ce navigateur. Il signe seul, en quelques millisecondes : les paliers de prise de profit et le stop partent à l\'instant où le prix les atteint.</p>' +
       '<div class="notice">Ce wallet est un « portefeuille de poche ». Si cet appareil ou ce navigateur est compromis, son contenu peut être volé. N\'y mets que ce que tu acceptes de risquer, et retire les gains vers Phantom.</div>' +
-      PASS_FIELD('pw1', 'Choisis un mot de passe (10 caractères minimum)', 'new-password') + PASS_FIELD('pw2', 'Confirme le mot de passe', 'new-password') +
+      PASS_FIELD('pw1', 'Choisis un mot de passe (10 caractères, majuscule, minuscule, chiffre et symbole)', 'new-password') + PASS_FIELD('pw2', 'Confirme le mot de passe', 'new-password') +
       '<label class="check"><input type="checkbox" id="pwAck"><span>J\'ai compris : sans ce mot de passe ni la sauvegarde de la clé, les fonds de ce wallet sont perdus.</span></label>';
     const i = await modal('Créer le wallet rapide', html, [{ label: 'Annuler' }, { label: 'Créer', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const p1 = $('pw1').value, p2 = $('pw2').value, ack = $('pwAck').checked;
-    if (p1.length < 10) return toast('Mot de passe trop court', '10 caractères minimum.', 'r');
+    const weak1 = pwWeak(p1); if (weak1) return toast('Mot de passe trop faible', weak1, 'r');
     if (p1 !== p2) return toast('Mots de passe différents', 'Retape-les à l\'identique.', 'r');
     if (!ack) return toast('Confirmation manquante', 'Coche la case pour continuer.', 'a');
     closeModal();
@@ -545,7 +547,7 @@
     const setMode = (m) => {
       if (m === mode) return; mode = m;
       $('impPw').innerHTML = m === 'code' ? PASS_FIELD('pw1', 'Mot de passe de ce wallet rapide', 'current-password')
-        : m === 'key' ? PASS_FIELD('pw1', 'Nouveau mot de passe (10 caractères minimum)', 'new-password') + PASS_FIELD('pw2', 'Confirme le mot de passe', 'new-password') : '';
+        : m === 'key' ? PASS_FIELD('pw1', 'Nouveau mot de passe (10 caractères, majuscule, minuscule, chiffre et symbole)', 'new-password') + PASS_FIELD('pw2', 'Confirme le mot de passe', 'new-password') : '';
     };
     const update = () => {
       const t = $('impKey').value.trim(), el = $('impPk');
@@ -572,7 +574,7 @@
         rec = { pk: o.pk, salt: o.salt, iv: o.iv, ct: o.ct, at: Date.now(), restored: true };
       } else {
         kp = parseSecret(t);
-        if (p1.length < 10) throw new Error('Mot de passe trop court : 10 caractères minimum.');
+        const weak2 = pwWeak(p1); if (weak2) throw new Error(weak2);
         if (p1 !== p2) throw new Error('Les deux mots de passe sont différents.');
         rec = Object.assign({ pk: kp.publicKey.toBase58(), at: Date.now(), restored: true }, await sealSecret(kp.secretKey, p1));
       }
@@ -651,10 +653,10 @@
     let kp; try { kp = W3().Keypair.fromSecretKey(await openSecret(SESSREC, pass)); if (kp.publicKey.toBase58() !== SESSREC.pk) throw new Error(); }
     catch (e) { toast('Mot de passe incorrect', 'Le wallet rapide n\'a pas pu être ouvert.', 'r'); return; }
     let pw = pass;
-    if (pass.length < 10) {
-      const j = await modal('Nouveau mot de passe', '<p>Sur ton compte, le wallet rapide demande un mot de passe d\'au moins 10 caractères.</p>' + PASS_FIELD('lgPw2', 'Nouveau mot de passe (10 caractères minimum)', 'new-password'), [{ label: 'Annuler' }, { label: 'Valider', cls: 'primary', keep: true }], true);
+    if (pwWeak(pass)) {
+      const j = await modal('Nouveau mot de passe', '<p>Sur ton compte, le wallet rapide demande un mot de passe solide : au moins 10 caractères, avec une majuscule, une minuscule, un chiffre et un symbole.</p>' + PASS_FIELD('lgPw2', 'Nouveau mot de passe', 'new-password'), [{ label: 'Annuler' }, { label: 'Valider', cls: 'primary', keep: true }], true);
       if (j !== 1) return;
-      pw = $('lgPw2').value; if (pw.length < 10) { toast('Mot de passe trop court', '10 caractères minimum.', 'a'); return; }
+      pw = $('lgPw2').value; const weak3 = pwWeak(pw); if (weak3) { toast('Mot de passe trop faible', weak3, 'a'); return; }
     }
     closeModal();
     if (!window.TSServerWalletImport) { toast('Compte requis', 'Connecte-toi à ton compte pour transférer le wallet.', 'a'); return; }

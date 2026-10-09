@@ -1,5 +1,5 @@
 import { signAsync } from '@noble/ed25519';
-import { FunctionsHttpError } from '@supabase/supabase-js';
+import { invokeSecure } from '../security/stepUp';
 import { supabase } from '../lib/supabase';
 import { studio } from '../legacy/bridge';
 import type { Wallet } from '../lib/types';
@@ -41,34 +41,27 @@ export async function accountStatus(address: string): Promise<AccountStatus> {
 const STATEMENT = () => t('Connexion à TokenStudio. Cette signature est gratuite : elle prouve que ce wallet t\'appartient et n\'autorise aucune transaction.', 'Sign in to TokenStudio. This signature is free: it proves this wallet is yours and authorizes no transaction.');
 
 /** Connexion Supabase native (Sign-In With Solana) : crée le compte s'il n'existe pas, donc appelée seulement après accord */
-async function web3SignIn(s: Signer) {
+async function web3SignIn(s: Signer, captchaToken?: string) {
   // Phantom propose signIn (Sign-In With Solana) ; sinon on passe un adaptateur qui renvoie toujours des octets,
   // car plusieurs wallets répondent à signMessage par { signature } au lieu d'un Uint8Array
   const wallet = typeof s.provider?.signIn === 'function' ? s.provider
     : { publicKey: { toBase58: () => s.address }, signMessage: (m: Uint8Array) => s.signMessage(m) };
-  const { error } = await supabase.auth.signInWithWeb3({ chain: 'solana', statement: STATEMENT(), wallet: wallet as never });
+  const { error } = await supabase.auth.signInWithWeb3({ chain: 'solana', statement: STATEMENT(), wallet: wallet as never, options: captchaToken ? { captchaToken } : undefined });
   if (error) throw error;
 }
 
-async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(fn, { body });
-  if (error) {
-    let msg = error.message;
-    if (error instanceof FunctionsHttpError) { try { msg = (await error.context.json()).error || msg; } catch { /* réponse non JSON */ } }
-    throw new Error(msg);
-  }
-  return data as T;
-}
+// ajout d'un wallet sur un compte qui a un wallet rapide : le serveur demande un code de confirmation
+const invoke = <T,>(fn: string, body: Record<string, unknown>): Promise<T> => invokeSecure<T>(fn, body);
 
 /**
  * Connexion à un compte existant avec ce wallet. Ne crée jamais de compte :
  * renvoie 'none' quand aucun compte n'existe, pour laisser l'utilisateur choisir.
  */
-export async function signInWithWallet(src: Source): Promise<'ok' | 'none'> {
+export async function signInWithWallet(src: Source, captchaToken?: string): Promise<'ok' | 'none'> {
   const s = signerFor(src);
   const st = await accountStatus(s.address);
   if (st === 'none') return 'none';
-  if (st === 'web3') { await web3SignIn(s); return 'ok'; }
+  if (st === 'web3') { await web3SignIn(s, captchaToken); return 'ok'; }
   // wallet lié à un compte (ajouté depuis Mon compte) : la fonction serveur vérifie la signature et ouvre la session
   const message = [
     'TokenStudio : connexion avec ce wallet.',
@@ -79,17 +72,17 @@ export async function signInWithWallet(src: Source): Promise<'ok' | 'none'> {
     'Cette signature est gratuite et n\'autorise aucune transaction.',
   ].join('\n');
   const sig = await s.signMessage(new TextEncoder().encode(message));
-  const { token_hash } = await invoke<{ token_hash: string }>('wallet-login', { address: s.address, message, signature: b64(sig) });
+  const { token_hash } = await invoke<{ token_hash: string }>('wallet-login', { address: s.address, message, signature: b64(sig), captchaToken });
   const { error } = await supabase.auth.verifyOtp({ token_hash, type: 'magiclink' });
   if (error) throw error;
   return 'ok';
 }
 
 /** Création explicite d'un compte avec ce wallet (après accord de l'utilisateur) */
-export async function createAccountWithWallet(src: Source) {
+export async function createAccountWithWallet(src: Source, captchaToken?: string) {
   const s = signerFor(src);
-  if ((await accountStatus(s.address)) !== 'none') { await signInWithWallet(src); return; }
-  await web3SignIn(s);
+  if ((await accountStatus(s.address)) !== 'none') { await signInWithWallet(src, captchaToken); return; }
+  await web3SignIn(s, captchaToken);
 }
 
 /**

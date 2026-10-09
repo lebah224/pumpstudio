@@ -24,8 +24,8 @@ export async function pushState(): Promise<PushState> {
   return sub ? 'on' : 'off';
 }
 
-function deviceLabel() {
-  const ua = navigator.userAgent;
+/** Nom lisible d'un appareil à partir de son agent utilisateur (« Android · Chrome ») */
+export function uaLabel(ua: string) {
   const os = /iPhone|iPad/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'Appareil';
   const br = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'navigateur';
   return os + ' · ' + br;
@@ -38,7 +38,7 @@ export async function enablePush(userId: string) {
   if (perm !== 'granted') throw new Error('Notifications refusées : autorise-les dans les réglages du navigateur pour ce site.');
   const reg = await registration(); await navigator.serviceWorker.ready;
   const sub = (await reg.pushManager.getSubscription()) ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUBLIC) });
-  const row = { user_id: userId, endpoint: sub.endpoint, p256dh: toB64u(sub.getKey('p256dh')), auth: toB64u(sub.getKey('auth')), label: deviceLabel() };
+  const row = { user_id: userId, endpoint: sub.endpoint, p256dh: toB64u(sub.getKey('p256dh')), auth: toB64u(sub.getKey('auth')), label: uaLabel(navigator.userAgent) };
   const { error } = await supabase.from('push_subscriptions').insert(row);
   if (error && !/duplicate|unique/i.test(error.message)) { await sub.unsubscribe().catch(() => {}); throw new Error(/row-level|policy/i.test(error.message) ? 'Limite de 10 appareils atteinte : retire un ancien appareil.' : error.message); }
 }

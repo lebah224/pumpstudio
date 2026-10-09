@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth, walletOf } from '../auth/AuthContext';
 import { studio, toast } from '../legacy/bridge';
 import { supabase } from '../lib/supabase';
+import { pwError } from '../lib/password';
+import { PasswordMeter } from '../ui/PasswordMeter';
 import { createServerWallet, deleteServerWallet, exportServerWallet, importServerWallet, setServerLimits, useServerWallet, withdrawServerWallet } from './api';
 
 export type SrvMode = 'create' | 'withdraw' | 'limits' | 'export' | 'delete';
@@ -21,7 +23,7 @@ export function ServerWalletDialog() {
   const [to, setTo] = useState(''); const [amount, setAmount] = useState(''); const [all, setAll] = useState(false);
   const [cap, setCap] = useState(''); const [alert, setAlert] = useState('');
   const [shown, setShown] = useState<string | null>(null);
-  const [linked, setLinked] = useState<string[]>([]);
+  const [linked, setLinked] = useState<{ address: string; wait: number }[]>([]);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null);
   // ancien wallet rapide du navigateur : peut devenir le wallet rapide du compte (même adresse)
   const quick = studio()?.hub?.state().quickSaved ?? null;
@@ -32,7 +34,12 @@ export function ServerWalletDialog() {
       setMode(m); setErr(null); setPw(''); setPw2(''); setSecret(''); setAck(false); setShown(null); setAmount(''); setAll(false);
       setHow(quick ? 'move' : 'new');
       setCap(String(srv?.daily_cap_sol ?? 10)); setAlert(String(srv?.alert_balance_sol ?? 5));
-      if (m === 'withdraw' && user) supabase.from('wallets').select('address').eq('user_id', user.id).then(({ data }) => { const l = (data ?? []).map((x) => x.address as string); setLinked(l); setTo(l[0] ?? ''); });
+      // un wallet ajouté il y a moins de 24 h ne reçoit pas encore de retraits (sauf le wallet de connexion du compte)
+      if (m === 'withdraw' && user) supabase.from('wallets').select('address, verified_at').eq('user_id', user.id).then(({ data }) => {
+        const own = walletOf(user);
+        const l = (data ?? []).map((x) => ({ address: x.address as string, wait: x.address === own ? 0 : Math.max(0, Math.ceil(24 - (Date.now() - Date.parse(x.verified_at as string)) / 3600_000)) }));
+        setLinked(l); setTo(l.find((x) => !x.wait)?.address ?? '');
+      });
     };
     window.addEventListener('ts-srv', f); return () => window.removeEventListener('ts-srv', f);
   }, [srv, user, quick]);
@@ -43,7 +50,7 @@ export function ServerWalletDialog() {
     e.preventDefault(); setErr(null); setBusy(true);
     try {
       if (mode === 'create') {
-        if (pw.length < 10) throw new Error('Mot de passe de 10 caractères minimum.');
+        const weak = pwError(pw); if (weak) throw new Error(weak);
         if (pw !== pw2) throw new Error('Les deux mots de passe sont différents.');
         if (!ack) throw new Error('Coche la case pour confirmer.');
         let addr: string;
@@ -87,7 +94,7 @@ export function ServerWalletDialog() {
         <button type="button" className="ts-x" aria-label="Fermer" onClick={close}>×</button>
         <div className="ts-si-h"><b>{TITLE[mode]}</b>
           <span>{mode === 'create' ? 'Un wallet de trading rattaché à ton compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, sans fenêtre de confirmation, dans la limite de tes plafonds : ventes automatiques, ordres et bot.'
-            : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à ton compte.'
+            : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à ton compte depuis plus de 24 heures. Un code de confirmation te sera demandé.'
             : mode === 'limits' ? 'Le serveur refuse toute dépense au-delà du plafond du jour.'
             : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Garde-la hors ligne et ne la partage avec personne.'
             : 'La clé chiffrée est effacée du serveur. Sans export préalable, les fonds restants seraient perdus.'}</span></div>
@@ -100,19 +107,20 @@ export function ServerWalletDialog() {
           </div>
           {how === 'move' && quick && <p className="muted ts-small">Ton ancien wallet rapide <b className="mono">{short(quick.pk)}</b> devient le wallet rapide de ton compte, à la même adresse et avec ses fonds. Rien n'est transféré sur la blockchain.</p>}
           {how === 'key' && <label className="field"><span className="ts-lbl">Clé privée (base58 ou tableau de 64 nombres)</span><input value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="off" spellCheck={false} /></label>}
-          {PW('Mot de passe du wallet rapide (10 caractères minimum)', 'new-password')}
+          {PW('Mot de passe du wallet rapide', 'new-password')}
+          <PasswordMeter value={pw} />
           <label className="field"><span className="ts-lbl">Confirme le mot de passe</span><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
           <ul className="ts-srv-rules">
             <li>Il ne signe que des achats, ventes, lancements et récupérations de frais : jamais de virement ni de transfert de tokens.</li>
             <li>Plafond de dépense : 10 SOL par jour, réglable. Ta limite par achat s'applique aussi.</li>
-            <li>Retraits uniquement vers tes wallets liés, avec ce mot de passe.</li>
+            <li>Retraits uniquement vers tes wallets liés depuis plus de 24 h, avec ce mot de passe et un code de confirmation.</li>
           </ul>
           <label className="check"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} /><span>Je comprends que TokenStudio garde la clé de ce wallet. Je n'y laisse que ce que je suis prêt à risquer.</span></label>
         </>)}
 
         {mode === 'withdraw' && (<>
           {linked.length ? (
-            <label className="field"><span className="ts-lbl">Vers</span><select value={to} onChange={(e) => setTo(e.target.value)}>{linked.map((a) => <option key={a} value={a}>{short(a)}</option>)}</select></label>
+            <label className="field"><span className="ts-lbl">Vers</span><select value={to} onChange={(e) => setTo(e.target.value)}>{linked.map((a) => <option key={a.address} value={a.address} disabled={a.wait > 0}>{short(a.address) + (a.wait > 0 ? ' · disponible dans ' + a.wait + ' h' : '')}</option>)}</select></label>
           ) : <div className="ts-note warn">Aucun wallet lié à ton compte. Ajoute d'abord ton Phantom (menu en haut à droite → Ajouter un wallet).</div>}
           <label className="field"><span className="ts-lbl">Montant (SOL)</span><input inputMode="decimal" value={all ? '' : amount} disabled={all} onChange={(e) => setAmount(e.target.value)} placeholder="ex. 0,5" /></label>
           <label className="check"><input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} /><span>Tout retirer</span></label>

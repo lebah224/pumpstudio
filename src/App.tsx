@@ -15,6 +15,8 @@ import { ServerWalletDialog } from './serverWallet/ServerWalletDialog';
 import { isDemoGuest, isLeaving } from './lib/guest';
 import { loadProfile } from './account/profile';
 import { Onboarding } from './account/Onboarding';
+import { StepUpDialog } from './security/StepUpDialog';
+import { registerDevice } from './security/device';
 
 /** Le studio demande une connexion (wallet manquant, passage en réel) : on ouvre la fenêtre de connexion du compte */
 function useConnectBridge() {
@@ -31,6 +33,8 @@ function useConnectBridge() {
   useEffect(() => { if (ready) studio()?.hub?.setAuth(signed); }, [ready, signed]);
   // profil du compte (nom, nom d'utilisateur, avatar) pour le menu et la fenêtre de bienvenue
   useEffect(() => { if (ready) loadProfile(signed ? user!.id : null); }, [ready, signed, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // appareil connu ou nouveau (alerte e-mail à la première connexion d'un nouvel appareil)
+  useEffect(() => { if (ready && signed) registerDevice(user!.id); }, [ready, signed, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // wallet rapide serveur du compte (s'il existe)
   useEffect(() => { if (!ready) return; if (signed) refreshServerWallet(); else clearServerWallet(); }, [ready, signed, user?.id]);
   // sans compte, l'outil n'est ouvert qu'en démo : sinon retour à l'accueil
@@ -65,6 +69,7 @@ function Mounts() {
       {wallet && createPortal(<WalletPage />, wallet)}
       <SignInDialog />
       <ServerWalletDialog />
+      <StepUpDialog />
       <MfaChallenge />
       <Onboarding />
       <CloudNotice />

@@ -4,6 +4,8 @@ import './legacy/legacy.css';
 import './styles/account.css';
 // Catalogue des wallets (Phantom, Solflare…) partagé avec le studio historique
 import './wallets/catalog';
+// Règle des mots de passe, aussi utilisée par le studio historique (window.TSPassword)
+import './lib/password';
 // Studio historique : s'exécute après le chargement du kit Solana (public/vendor/pumpkit.js)
 import './legacy/studio.js';
 import './legacy/terminal.js';

@@ -6,6 +6,7 @@ import { initials, isMobile, walletChoices, type WalletInfo } from '../wallets/c
 import { createAccountWithWallet, linkWallet, signInWithWallet, type Source } from '../wallets/walletAuth';
 import { useServerWallet } from '../serverWallet/api';
 import { lang, t } from '../lib/i18n';
+import { Captcha, captchaMissing, captchaOn, takeCaptcha, useCaptchaToken } from './Captcha';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 
 type Step = 'choose' | 'quick' | 'none' | 'email' | 'email-none' | 'code' | 'add';
@@ -45,20 +46,24 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
   const adding = step === 'add';
   const srv = useServerWallet();
   const close = () => openSignIn(false);
+  // case « Je ne suis pas un robot » : demandée pour toute connexion ou création de compte (pas pour ajouter un wallet)
+  const robotToken = useCaptchaToken();
+  const robotOk = !!session || !captchaOn() || !!robotToken;
+  const robot = !session ? <Captcha /> : null;
 
   async function run(key: string, fn: () => Promise<void>) {
     setErr(null); setBusy(key);
     try { await fn(); } catch (e) { setErr(readable(e)); } finally { setBusy(null); }
   }
   // Le wallet est prêt dans le studio : on ajoute au compte, ou on cherche le compte de ce wallet
-  async function afterConnect(s: Source, address: string) {
+  async function afterConnect(s: Source, address: string, captcha?: string) {
     setSrc(s); setAddr(address);
     if (session) {
       await linkWallet(s);
       toast(t('Wallet ajouté à ton compte', 'Wallet added to your account'), short(address));
       close(); return;
     }
-    if ((await signInWithWallet(s)) === 'none') { if (signup) await createAccountWithWallet(s); else setStep('none'); }
+    if ((await signInWithWallet(s, captcha)) === 'none') { if (signup) await createAccountWithWallet(s, captcha); else setStep('none'); }
   }
   // Les fenêtres du studio (mot de passe, sauvegarde) passent au premier plan pendant qu'on masque celle-ci
   async function legacy<T>(fn: () => Promise<T>): Promise<T> {
@@ -66,6 +71,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     try { return await fn(); } finally { onHide(false); }
   }
   const pickWallet = (id: string) => run(id, async () => {
+    const miss = session ? null : captchaMissing(); if (miss) throw new Error(miss);
     let pk: string | null | undefined;
     if (standalone) {
       // page de connexion : on connecte l'extension directement ; l'outil la reconnectera à l'ouverture
@@ -76,20 +82,22 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
       try { localStorage.setItem('pstudio_wallet_v1', JSON.stringify(id)); } catch { /* navigation privée */ }
     } else { pk = await hub?.connect(id); if (pk) await hub?.useExt(); }
     if (!pk) return;
-    await afterConnect({ kind: 'ext', id }, pk);
+    await afterConnect({ kind: 'ext', id }, pk, session ? undefined : takeCaptcha());
   });
   const pickQuick = (how: 'use' | 'create' | 'restore') => run('quick-' + how, async () => {
+    const miss = session ? null : captchaMissing(); if (miss) throw new Error(miss);
     const pk = how === 'use' ? ((await legacy(() => hub!.quickUnlock())) ? quick?.pk : undefined)
       : await legacy(() => (how === 'create' ? hub!.quickCreate() : hub!.quickRestore()));
     if (!pk) return;
     // l'ancien wallet rapide sert seulement à se connecter : il ne signe plus de transactions
-    await afterConnect({ kind: 'quick' }, pk);
+    await afterConnect({ kind: 'quick' }, pk, session ? undefined : takeCaptcha());
   });
-  const create = () => run('create', async () => { if (src) await createAccountWithWallet(src); });
+  const create = () => run('create', async () => { const miss = captchaMissing(); if (miss) throw new Error(miss); if (src) await createAccountWithWallet(src, takeCaptcha()); });
   // ouverture depuis le menu avec un wallet déjà choisi : on enchaîne directement
   const started = useRef(false);
   useEffect(() => {
     if (started.current) return; started.current = true;
+    if (!session && captchaOn()) return; // la case anti-robot doit d'abord être cochée : l'utilisateur choisit lui-même
     if (intent.wallet === 'quick') { if (quick) pickQuick('use'); }
     else if (intent.wallet) pickWallet(intent.wallet);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,9 +108,10 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     ev?.preventDefault(); setErr(null);
     const v = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { setErr(t('Adresse e-mail invalide.', 'Invalid email address.')); return; }
+    const miss = captchaMissing(); if (miss) { setErr(miss); return; }
     setBusy('email');
     // langue des e-mails (modèles bilingues) : retenue à la création du compte
-    const { error } = await supabase.auth.signInWithOtp({ email: v, options: { shouldCreateUser: createUser || !!signup, emailRedirectTo: location.origin + (standalone ? '/connexion' : location.pathname), data: { lang: lang() } } });
+    const { error } = await supabase.auth.signInWithOtp({ email: v, options: { shouldCreateUser: createUser || !!signup, emailRedirectTo: location.origin + (standalone ? '/connexion' : location.pathname), data: { lang: lang() }, captchaToken: takeCaptcha() } });
     setBusy(null);
     if (error && /signups? not allowed|user not found/i.test(error.message)) { setEmail(v); setStep('email-none'); return; }
     if (error) { setErr(readable(error)); return; }
@@ -127,7 +136,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
       {location.protocol === 'file:' && <div className="ts-note warn">{t('Les wallets ne fonctionnent pas sur une page ouverte comme fichier : utilise la version en ligne.', 'Wallets don\'t work on a page opened as a file: use the online version.')}</div>}
       <div className="ts-si-list" role="list">
         {found.map((x) => (
-          <button key={x.id} type="button" role="listitem" className="ts-si-opt" disabled={!!busy} onClick={() => pickWallet(x.id)}>
+          <button key={x.id} type="button" role="listitem" className="ts-si-opt" disabled={!!busy || !robotOk} onClick={() => pickWallet(x.id)}>
             <WalletMark w={x} /><span className="ts-si-n">{x.name}</span>
             <em className="ts-si-tag ok">{busy === x.id ? t('Validation…', 'Confirming…') : t('Détecté', 'Detected')}</em>
           </button>
@@ -158,6 +167,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         {signup ? head(t('Créer ton compte', 'Create your account'), t('Avec ton wallet ou ton e-mail. Une signature gratuite suffit : aucune transaction, aucun frais.', 'With your wallet or your email. One free signature is enough: no transaction, no fees.'))
           : head(t('Connexion à TokenStudio', 'Sign in to TokenStudio'), t('Choisis comment te connecter. Tes clés privées ne quittent jamais ton wallet.', 'Choose how to sign in. Your private keys never leave your wallet.'))}
         {intent.reason === 'real' && <div className="ts-note warn">Le mode réel demande un compte. La démo reste ouverte sans compte.</div>}
+        {robot}
         {walletList}
         <div className="ts-si-or"><span>{t('ou', 'or')}</span></div>
         <button type="button" className="btn ts-si-mail" onClick={() => { setErr(null); setStep('email'); }}>{t('Continuer avec un e-mail', 'Continue with email')}</button>
@@ -177,9 +187,10 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
 
       {step === 'quick' && (<>
         {head('Ancien wallet rapide', 'Ce navigateur garde encore ton ancien wallet rapide. Connecte-toi avec lui, puis transfère-le sur ton compte depuis le menu : tu le retrouveras partout.')}
+        {robot}
         <div className="ts-si-list">
           {quick && (
-            <button type="button" className="ts-si-opt" disabled={!!busy} onClick={() => pickQuick('use')}>
+            <button type="button" className="ts-si-opt" disabled={!!busy || !robotOk} onClick={() => pickQuick('use')}>
               <QuickMark /><span className="ts-si-n">Utiliser mon ancien wallet rapide<small className="mono">{short(quick.pk)}</small></span>
               <em className="ts-si-tag ok">{busy === 'quick-use' ? 'Validation…' : quick.unlocked ? 'Prêt' : 'Mot de passe'}</em>
             </button>
@@ -191,8 +202,9 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
 
       {step === 'none' && (<>
         {head(t('Aucun compte pour ce wallet', 'No account for this wallet'), <>{t('Le wallet', 'The wallet')} <b className="mono">{short(addr)}</b> {t('n\'est lié à aucun compte TokenStudio. Rien n\'a été créé.', 'isn\'t linked to any TokenStudio account. Nothing was created.')}</>)}
+        {robot}
         <div className="ts-si-choices">
-          <button type="button" className="btn primary" disabled={!!busy} onClick={create}>{busy === 'create' ? t('Signature en attente…', 'Waiting for signature…') : t('Créer mon compte avec ce wallet', 'Create my account with this wallet')}</button>
+          <button type="button" className="btn primary" disabled={!!busy || !robotOk} onClick={create}>{busy === 'create' ? t('Signature en attente…', 'Waiting for signature…') : t('Créer mon compte avec ce wallet', 'Create my account with this wallet')}</button>
           <button type="button" className="btn" disabled={!!busy} onClick={() => { setErr(null); setStep('email'); }}>{t('J\'ai déjà un compte (e-mail)', 'I already have an account (email)')}</button>
           <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
@@ -203,14 +215,16 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         <form onSubmit={(e) => sendEmail(e, false)} className="ts-si-form">
           {head(t('Connexion par e-mail', 'Sign in by email'), t('On t\'envoie un lien et un code de connexion. Pas de mot de passe à retenir.', 'We send you a sign-in link and code. No password to remember.'))}
           <label className="field"><span className="ts-lbl">{t('Adresse e-mail', 'Email address')}</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('toi@exemple.com', 'you@example.com')} autoFocus /></label>
-          <div className="ts-row">{back(src ? 'none' : 'choose')}<button className="btn primary" disabled={busy === 'email'}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Recevoir le code', 'Get the code')}</button></div>
+          {robot}
+          <div className="ts-row">{back(src ? 'none' : 'choose')}<button className="btn primary" disabled={busy === 'email' || !robotOk}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Recevoir le code', 'Get the code')}</button></div>
         </form>
       )}
 
       {step === 'email-none' && (<>
         {head(t('Aucun compte avec cette adresse', 'No account with this address'), <>{t('Aucun compte TokenStudio n\'utilise', 'No TokenStudio account uses')} <b>{email}</b>. {t('Rien n\'a été créé.', 'Nothing was created.')}</>)}
+        {robot}
         <div className="ts-si-choices">
-          <button type="button" className="btn primary" disabled={busy === 'email'} onClick={() => sendEmail(null, true)}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Créer mon compte avec cet e-mail', 'Create my account with this email')}</button>
+          <button type="button" className="btn primary" disabled={busy === 'email' || !robotOk} onClick={() => sendEmail(null, true)}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Créer mon compte avec cet e-mail', 'Create my account with this email')}</button>
           <button type="button" className="btn" onClick={() => { setErr(null); setStep('email'); }}>{t('Changer d\'adresse', 'Change address')}</button>
           <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
