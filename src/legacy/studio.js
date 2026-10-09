@@ -142,7 +142,7 @@
     const i = await modal(title, html, [{ label: 'Annuler' }, { label: testLabel || 'Tester' }, { label: ok, cls: danger ? 'danger' : 'primary' }], true);
     return i === 2 ? 'real' : i === 1 ? 'test' : null;
   }
-  const dryNote = (how) => how === 'test' ? '<div class="notice info">Test réussi : la transaction passerait. Rien n\'a été envoyé ; relance pour l\'exécuter.</div>' : '<div class="notice info">Démo réussie : l\'opération est vérifiée sur la blockchain et passerait en réel. Rien n\'a été envoyé.</div>';
+  const dryNote = (how) => how === 'test' ? '<div class="notice info">Test réussi : la transaction passerait. Rien n\'a été envoyé ; relancez pour l\'exécuter.</div>' : '<div class="notice info">Démo réussie : l\'opération est vérifiée sur la blockchain et passerait en réel. Rien n\'a été envoyé.</div>';
 
   /* ================================================================ RPC Solana */
   let rpcId = 0;
@@ -169,9 +169,9 @@
   async function rpc(method, params) {
     let r;
     try { r = await rpcPost(JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })); }
-    catch (e) { setRpc(false); throw new Error(cfg.rpc ? 'RPC injoignable : vérifie l\'adresse dans Réglages.' : 'Le RPC public de Solana bloque cette page. Ajoute ta clé Helius gratuite dans Réglages (helius.dev).'); }
+    catch (e) { setRpc(false); throw new Error(cfg.rpc ? 'RPC injoignable : vérifiez l\'adresse dans Réglages.' : 'Le RPC public de Solana bloque cette page. Ajoutez votre clé Helius gratuite dans Réglages (helius.dev).'); }
     if ((r.status === 429 || r.status === 403) && r.url.includes('/functions/v1/')) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'RPC TokenStudio : requête refusée.'); }
-    if (r.status === 429 || r.status === 403) { setRpc(false); throw new Error(cfg.rpc ? 'Ton RPC refuse ou limite les requêtes (' + r.status + '). Vérifie ta clé Helius.' : 'Le RPC public de Solana refuse les requêtes de cette page (' + r.status + '). Ajoute ta clé Helius gratuite dans Réglages.'); }
+    if (r.status === 429 || r.status === 403) { setRpc(false); throw new Error(cfg.rpc ? 'Votre RPC refuse ou limite les requêtes (' + r.status + '). Vérifiez votre clé Helius.' : 'Le RPC public de Solana refuse les requêtes de cette page (' + r.status + '). Ajoutez votre clé Helius gratuite dans Réglages.'); }
     if (!r.ok) { setRpc(false); throw new Error('RPC : erreur ' + r.status); }
     const j = await r.json();
     if (j.error) throw new Error(j.error.message || 'Erreur RPC');
@@ -246,7 +246,7 @@
       const a = acc && acc.value && acc.value[i], owner = a && a.data && a.data.parsed && a.data.parsed.info && a.data.parsed.info.owner;
       const amt = +x.uiAmount || (+x.amount / 1e6);
       let label = '';
-      if (owner && c && owner === c.pda) label = 'Courbe de liaison'; else if (owner && c && owner === c.creator) label = 'Créateur'; else if (S.wallet && owner === S.wallet.pk) label = 'Toi';
+      if (owner && c && owner === c.pda) label = 'Courbe de liaison'; else if (owner && c && owner === c.creator) label = 'Créateur'; else if (S.wallet && owner === S.wallet.pk) label = 'Vous';
       return { owner: owner || x.address, amount: amt, pct: amt / sup * 100, label };
     });
   }
@@ -349,8 +349,8 @@
   }
   async function connectWallet(pv, silent) {
     try {
-      if (!silent) toast('Connexion…', 'Valide la demande dans la fenêtre ' + pv.name + '.', '');
-      const res = await Promise.race([pv.p.connect(silent ? { onlyIfTrusted: true } : undefined), sleep(silent ? 4000 : 45000).then(() => { throw new Error(pv.name + ' ne répond pas. Vérifie qu\'il est déverrouillé, puis réessaie.'); })]);
+      if (!silent) toast('Connexion…', 'Validez la demande dans la fenêtre ' + pv.name + '.', '');
+      const res = await Promise.race([pv.p.connect(silent ? { onlyIfTrusted: true } : undefined), sleep(silent ? 4000 : 45000).then(() => { throw new Error(pv.name + ' ne répond pas. Vérifiez qu\'il est déverrouillé, puis réessayez.'); })]);
       const pk = ((res && res.publicKey) || pv.p.publicKey).toString();
       S.wallet = { id: pv.id, name: pv.name, prov: pv.p, pk };
       save(LS.wallet, pv.id);
@@ -381,7 +381,7 @@
     if (!S.wallet && window.__tsConnectUI && location.protocol !== 'file:') { window.dispatchEvent(new CustomEvent('ts-connect')); return; }
     if (S.wallet && S.wallet.id === 'session') return walletPanel();
     if (S.wallet) {
-      const i = await modal('Wallet connecté', '<div class="recap"><div class="kv"><span>Wallet</span><span>' + esc(S.wallet.name) + '</span><span>Adresse</span><span>' + short(S.wallet.pk, 6) + '</span><span>Solde</span><span>' + fSol(S.bal) + '</span></div></div><p>L\'adresse publique sert à préparer les transactions. Chaque transaction réelle te sera présentée par ton wallet pour signature.</p>',
+      const i = await modal('Wallet connecté', '<div class="recap"><div class="kv"><span>Wallet</span><span>' + esc(S.wallet.name) + '</span><span>Adresse</span><span>' + short(S.wallet.pk, 6) + '</span><span>Solde</span><span>' + fSol(S.bal) + '</span></div></div><p>L\'adresse publique sert à préparer les transactions. Chaque transaction réelle vous sera présentée par votre wallet pour signature.</p>',
         [{ label: 'Fermer' }, { label: 'Copier l\'adresse' }, { label: 'Déconnecter', cls: 'danger' }, { label: 'Wallet rapide', cls: 'primary' }]);
       if (i === 1) { try { await navigator.clipboard.writeText(S.wallet.pk); toast('Adresse copiée', '', 'g'); } catch (e) {} }
       if (i === 2) disconnectWallet(false);
@@ -389,7 +389,7 @@
       return;
     }
     if (location.protocol === 'file:') {
-      modal('Phantom ne fonctionne pas sur un fichier', '<p>Phantom accepte seulement les pages en <b>https</b> ou servies par ton ordinateur (<b>localhost</b>). Ouvert depuis Téléchargements, le studio ne peut pas s\'y connecter, même avec l\'autorisation des fichiers.</p><ol class="steps"><li><b>Le plus simple</b> : ouvre l\'adresse en ligne du studio (https), une fois mis en ligne.</li><li><b>Sur ton PC</b> : dans le dossier du fichier, lance <span class="mono">python -m http.server 8000</span>, puis ouvre <span class="mono">http://localhost:8000/TokenStudio.html</span>.</li></ol><p style="margin-top:12px">En attendant, tout le reste fonctionne : génération, logo, plan, devis.</p>', [{ label: 'Compris' }], true);
+      modal('Phantom ne fonctionne pas sur un fichier', '<p>Phantom accepte seulement les pages en <b>https</b> ou servies par votre ordinateur (<b>localhost</b>). Ouvert depuis Téléchargements, le studio ne peut pas s\'y connecter, même avec l\'autorisation des fichiers.</p><ol class="steps"><li><b>Le plus simple</b> : ouvrez l\'adresse en ligne du studio (https), une fois mis en ligne.</li><li><b>Sur votre PC</b> : dans le dossier du fichier, lancez <span class="mono">python -m http.server 8000</span>, puis ouvrez <span class="mono">http://localhost:8000/TokenStudio.html</span>.</li></ol><p style="margin-top:12px">En attendant, tout le reste fonctionne : génération, logo, plan, devis.</p>', [{ label: 'Compris' }], true);
       return;
     }
     const list = providers();
@@ -402,12 +402,12 @@
     const https = location.protocol === 'https:';
     const deep = 'https://phantom.app/ul/browse/' + encodeURIComponent(location.href) + '?ref=' + encodeURIComponent(location.origin);
     const html = isMobile()
-      ? (https ? '<p>Sur téléphone, Chrome et Safari ne peuvent pas utiliser l\'extension Phantom : Phantom ne se connecte aux sites que dans le navigateur intégré à son app.</p><p><a class="btn" href="' + esc(deep) + '">Ouvrir le studio dans l\'app Phantom</a></p><p class="dim" style="font-size:13px">Chaque navigateur garde ses propres données : dans l\'app Phantom, il faudra restaurer ton wallet rapide avec son code de sauvegarde.</p>'
-        : '<p>Sur téléphone, il faut ouvrir le studio dans le navigateur intégré de l\'app Phantom. Pour cela, le studio doit être en ligne (adresse https), pas ouvert comme fichier.</p><p>Mets le fichier en ligne (GitHub Pages, Vercel, Netlify), puis ouvre son adresse dans Phantom → onglet Explorer.</p>')
+      ? (https ? '<p>Sur téléphone, Chrome et Safari ne peuvent pas utiliser l\'extension Phantom : Phantom ne se connecte aux sites que dans le navigateur intégré à son app.</p><p><a class="btn" href="' + esc(deep) + '">Ouvrir le studio dans l\'app Phantom</a></p><p class="dim" style="font-size:13px">Chaque navigateur garde ses propres données : dans l\'app Phantom, il faudra restaurer votre wallet rapide avec son code de sauvegarde.</p>'
+        : '<p>Sur téléphone, il faut ouvrir le studio dans le navigateur intégré de l\'app Phantom. Pour cela, le studio doit être en ligne (adresse https), pas ouvert comme fichier.</p><p>Mettez le fichier en ligne (GitHub Pages, Vercel, Netlify), puis ouvrez son adresse dans Phantom → onglet Explorer.</p>')
       : location.protocol === 'file:'
-        ? '<p>Le studio est ouvert comme <b>fichier</b> : Chrome n\'y laisse pas entrer les extensions comme Phantom, sauf si tu l\'autorises.</p><ol class="steps"><li>Ouvre <span class="mono">chrome://extensions</span> dans un nouvel onglet.</li><li>Sur <b>Phantom</b>, clique <b>Détails</b>.</li><li>Active <b>Autoriser l\'accès aux URL de fichier</b>.</li><li>Recharge cette page, puis reclique sur « Connecter le wallet ».</li></ol><p style="margin-top:12px">Si Phantom n\'est pas installé : <b>phantom.app</b>. Autre solution : mettre le studio en ligne (adresse https).</p>'
-        : '<p>Aucun wallet Solana détecté dans ce navigateur. Installe l\'extension <b>Phantom</b> (phantom.app) ou <b>Solflare</b>, puis recharge la page.</p>';
-    const fast = '<div class="wcard" style="margin-top:14px"><div class="wh"><b>Ou utiliser le wallet rapide</b><span class="badge g">fonctionne ici</span></div><p>Il marche dans ce navigateur, sans extension ni app : il signe seul, et tes ventes automatiques partent sans fenêtre de confirmation. Déjà créé sur un autre appareil ? Restaure-le avec son code de sauvegarde.</p><div class="row-btns"><button class="btn sm primary" data-sw="create" type="button">Créer un wallet rapide</button><button class="btn sm" data-sw="import" type="button">Restaurer un wallet rapide</button></div></div>';
+        ? '<p>Le studio est ouvert comme <b>fichier</b> : Chrome n\'y laisse pas entrer les extensions comme Phantom, sauf si vous l\'autorisez.</p><ol class="steps"><li>Ouvrez <span class="mono">chrome://extensions</span> dans un nouvel onglet.</li><li>Sur <b>Phantom</b>, cliquez <b>Détails</b>.</li><li>Activez <b>Autoriser l\'accès aux URL de fichier</b>.</li><li>Rechargez cette page, puis recliquez sur « Connecter le wallet ».</li></ol><p style="margin-top:12px">Si Phantom n\'est pas installé : <b>phantom.app</b>. Autre solution : mettre le studio en ligne (adresse https).</p>'
+        : '<p>Aucun wallet Solana détecté dans ce navigateur. Installez l\'extension <b>Phantom</b> (phantom.app) ou <b>Solflare</b>, puis rechargez la page.</p>';
+    const fast = '<div class="wcard" style="margin-top:14px"><div class="wh"><b>Ou utiliser le wallet rapide</b><span class="badge g">fonctionne ici</span></div><p>Il marche dans ce navigateur, sans extension ni app : il signe seul, et vos ventes automatiques partent sans fenêtre de confirmation. Déjà créé sur un autre appareil ? Restaurez-le avec son code de sauvegarde.</p><div class="row-btns"><button class="btn sm primary" data-sw="create" type="button">Créer un wallet rapide</button><button class="btn sm" data-sw="import" type="button">Restaurer un wallet rapide</button></div></div>';
     modal('Aucun wallet détecté', html + fast, [{ label: 'Fermer' }]);
   }
 
@@ -461,20 +461,20 @@
     const w = S.wallet; if (!w || w.id !== 'session' || SESSW.kp) return true;   // wallet serveur : rien à déverrouiller
     return sessUnlock(true);
   }
-  const signLabel = () => S.wallet && S.wallet.id === 'server' ? 'Signature par le wallet rapide' : S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans ton wallet';
+  const signLabel = () => S.wallet && S.wallet.id === 'server' ? 'Signature par le wallet rapide' : S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans votre wallet';
 
   async function sessCreate(noPanel) {
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
-    const html = '<p>Le studio crée un wallet Solana qui lui est propre. Sa clé est <b>chiffrée avec ton mot de passe</b> et rangée dans ce navigateur. Il signe seul, en quelques millisecondes : les paliers de prise de profit et le stop partent à l\'instant où le prix les atteint.</p>' +
-      '<div class="notice">Ce wallet est un « portefeuille de poche ». Si cet appareil ou ce navigateur est compromis, son contenu peut être volé. N\'y mets que ce que tu acceptes de risquer, et retire les gains vers Phantom.</div>' +
-      PASS_FIELD('pw1', 'Choisis un mot de passe (10 caractères, majuscule, minuscule, chiffre et symbole)', 'new-password') + PASS_FIELD('pw2', 'Confirme le mot de passe', 'new-password') +
+    const html = '<p>Le studio crée un wallet Solana qui lui est propre. Sa clé est <b>chiffrée avec votre mot de passe</b> et rangée dans ce navigateur. Il signe seul, en quelques millisecondes : les paliers de prise de profit et le stop partent à l\'instant où le prix les atteint.</p>' +
+      '<div class="notice">Ce wallet est un « portefeuille de poche ». Si cet appareil ou ce navigateur est compromis, son contenu peut être volé. N\'y mettez que ce que vous acceptez de risquer, et retirez les gains vers Phantom.</div>' +
+      PASS_FIELD('pw1', 'Choisissez un mot de passe (10 caractères, majuscule, minuscule, chiffre et symbole)', 'new-password') + PASS_FIELD('pw2', 'Confirmez le mot de passe', 'new-password') +
       '<label class="check"><input type="checkbox" id="pwAck"><span>J\'ai compris : sans ce mot de passe ni la sauvegarde de la clé, les fonds de ce wallet sont perdus.</span></label>';
     const i = await modal('Créer le wallet rapide', html, [{ label: 'Annuler' }, { label: 'Créer', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const p1 = $('pw1').value, p2 = $('pw2').value, ack = $('pwAck').checked;
     const weak1 = pwWeak(p1); if (weak1) return toast('Mot de passe trop faible', weak1, 'r');
-    if (p1 !== p2) return toast('Mots de passe différents', 'Retape-les à l\'identique.', 'r');
-    if (!ack) return toast('Confirmation manquante', 'Coche la case pour continuer.', 'a');
+    if (p1 !== p2) return toast('Mots de passe différents', 'Retapez-les à l\'identique.', 'r');
+    if (!ack) return toast('Confirmation manquante', 'Cochez la case pour continuer.', 'a');
     closeModal();
     const kp = W3().Keypair.generate();
     const rec = Object.assign({ pk: kp.publicKey.toBase58(), at: Date.now() }, await sealSecret(kp.secretKey, p1));
@@ -494,14 +494,14 @@
   }
   // Clé privée base58 (export Phantom, Solflare) ou tableau JSON de 64 nombres (fichier id.json de Solana)
   function parseSecret(raw) {
-    const t = String(raw || '').trim(); if (!t) throw new Error('Colle la clé privée du wallet.');
+    const t = String(raw || '').trim(); if (!t) throw new Error('Collez la clé privée du wallet.');
     let bytes;
     if (t[0] === '[') {
       let arr; try { arr = JSON.parse(t); } catch (e) { throw new Error('Tableau illisible : il doit ressembler à [12,34,…] avec 64 nombres.'); }
       if (!Array.isArray(arr) || arr.some((x) => !Number.isInteger(x) || x < 0 || x > 255)) throw new Error('Le tableau doit contenir des nombres de 0 à 255.');
       bytes = Uint8Array.from(arr);
     } else if (t.split(/\s+/).length >= 12) {
-      throw new Error('C\'est une phrase secrète : elle n\'est pas acceptée ici. Exporte plutôt la clé privée du compte (Phantom : Paramètres → Gérer les comptes → Afficher la clé privée).');
+      throw new Error('C\'est une phrase secrète : elle n\'est pas acceptée ici. Exportez plutôt la clé privée du compte (Phantom : Paramètres → Gérer les comptes → Afficher la clé privée).');
     } else bytes = b58dec(t.replace(/\s+/g, ''));
     try {
       if (bytes.length === 64) return W3().Keypair.fromSecretKey(bytes);
@@ -513,7 +513,7 @@
   const BK_PREFIX = 'pstudio-wallet:';
   const backupCode = (rec) => BK_PREFIX + btoa(JSON.stringify({ v: 1, pk: rec.pk, salt: rec.salt, iv: rec.iv, ct: rec.ct }));
   function parseBackup(t) {
-    let o; try { o = JSON.parse(atob(t.slice(BK_PREFIX.length).replace(/\s+/g, ''))); } catch (e) { throw new Error('Code de sauvegarde illisible : copie-le en entier, de « pstudio-wallet: » jusqu\'au dernier caractère.'); }
+    let o; try { o = JSON.parse(atob(t.slice(BK_PREFIX.length).replace(/\s+/g, ''))); } catch (e) { throw new Error('Code de sauvegarde illisible : copiez-le en entier, de « pstudio-wallet: » jusqu\'au dernier caractère.'); }
     if (!o || !o.pk || !o.salt || !o.iv || !o.ct) throw new Error('Code de sauvegarde incomplet.');
     return o;
   }
@@ -521,8 +521,8 @@
     if (!SESSREC) return;
     const code = backupCode(SESSREC);
     await modal('Code de sauvegarde du wallet rapide',
-      '<p>Ce code contient ton wallet rapide <b>chiffré par son mot de passe</b>. Garde-le avec ce mot de passe : ensemble, ils permettent de restaurer le wallet sur un autre navigateur ou appareil (Wallets → Restaurer un wallet rapide).</p>' +
-      '<div class="notice">Sans le mot de passe, le code ne sert à rien. Avec le mot de passe, il donne accès aux fonds : ne partage jamais les deux.</div>' +
+      '<p>Ce code contient votre wallet rapide <b>chiffré par son mot de passe</b>. Gardez-le avec ce mot de passe : ensemble, ils permettent de restaurer le wallet sur un autre navigateur ou appareil (Wallets → Restaurer un wallet rapide).</p>' +
+      '<div class="notice">Sans le mot de passe, le code ne sert à rien. Avec le mot de passe, il donne accès aux fonds : ne partagez jamais les deux.</div>' +
       '<div class="skbox"><span class="mono" id="bkTxt">' + esc(code) + '</span></div>' +
       '<div class="row-btns"><button class="btn sm" id="bkCopy" type="button">Copier</button><button class="btn sm" id="bkDl" type="button">Télécharger (.txt)</button></div>',
       [{ label: 'Fermer', cls: 'primary' }], true);
@@ -530,15 +530,15 @@
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('#bkCopy, #bkDl'); if (!b || !SESSREC) return;
     const code = backupCode(SESSREC);
-    if (b.id === 'bkCopy') { try { await navigator.clipboard.writeText(code); toast('Code copié', 'Range-le avec le mot de passe du wallet.', 'g'); } catch (e2) { const r = document.createRange(); r.selectNodeContents($('bkTxt')); const s2 = getSelection(); s2.removeAllRanges(); s2.addRange(r); } return; }
+    if (b.id === 'bkCopy') { try { await navigator.clipboard.writeText(code); toast('Code copié', 'Rangez-le avec le mot de passe du wallet.', 'g'); } catch (e2) { const r = document.createRange(); r.selectNodeContents($('bkTxt')); const s2 = getSelection(); s2.removeAllRanges(); s2.addRange(r); } return; }
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([code + '\n'], { type: 'text/plain' })); a.download = 'wallet-rapide-' + SESSREC.pk.slice(0, 6) + '.txt'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   });
   // Restaurer un wallet rapide créé par le studio : code de sauvegarde (+ mot de passe du wallet) ou clé notée à la création
   async function sessImport(noPanel) {
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
     let curBal = null; if (SESSREC) { try { curBal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {} }
-    const html = '<p>Récupère un wallet rapide créé par le studio, par exemple sur un autre navigateur ou après l\'avoir supprimé. Colle son <b>code de sauvegarde</b> (Wallets → Sauvegarde), ou la <b>clé privée notée à sa création</b>.</p>' +
-      (SESSREC ? '<div class="notice">Le wallet rapide actuel (<span class="mono">' + short(SESSREC.pk, 6) + '</span>' + (curBal == null ? ', solde inconnu' : ', ' + fSol(curBal, 4)) + ') sera remplacé. Sauvegarde-le ou retire ses fonds avant.</div>' : '') +
+    const html = '<p>Récupérez un wallet rapide créé par le studio, par exemple sur un autre navigateur ou après l\'avoir supprimé. Collez son <b>code de sauvegarde</b> (Wallets → Sauvegarde), ou la <b>clé privée notée à sa création</b>.</p>' +
+      (SESSREC ? '<div class="notice">Le wallet rapide actuel (<span class="mono">' + short(SESSREC.pk, 6) + '</span>' + (curBal == null ? ', solde inconnu' : ', ' + fSol(curBal, 4)) + ') sera remplacé. Sauvegardez-le ou retirez ses fonds avant.</div>' : '') +
       '<div class="field"><label for="impKey">Code de sauvegarde ou clé notée à la création</label><input id="impKey" class="mono" type="password" autocomplete="off" spellcheck="false"><label class="check sm-check" style="margin-top:4px"><input type="checkbox" id="impShow">Afficher</label><div class="dim" id="impPk" style="font-size:13px">L\'adresse du wallet s\'affichera ici.</div></div>' +
       '<div id="impPw"></div>' +
       (SESSREC ? '<label class="check"><input type="checkbox" id="pwAck"><span>Je confirme le remplacement du wallet rapide actuel.</span></label>' : '');
@@ -547,7 +547,7 @@
     const setMode = (m) => {
       if (m === mode) return; mode = m;
       $('impPw').innerHTML = m === 'code' ? PASS_FIELD('pw1', 'Mot de passe de ce wallet rapide', 'current-password')
-        : m === 'key' ? PASS_FIELD('pw1', 'Nouveau mot de passe (10 caractères, majuscule, minuscule, chiffre et symbole)', 'new-password') + PASS_FIELD('pw2', 'Confirme le mot de passe', 'new-password') : '';
+        : m === 'key' ? PASS_FIELD('pw1', 'Nouveau mot de passe (10 caractères, majuscule, minuscule, chiffre et symbole)', 'new-password') + PASS_FIELD('pw2', 'Confirmez le mot de passe', 'new-password') : '';
     };
     const update = () => {
       const t = $('impKey').value.trim(), el = $('impPk');
@@ -556,7 +556,7 @@
         let pk;
         if (t.startsWith(BK_PREFIX)) { setMode('code'); pk = parseBackup(t).pk; }
         else { setMode('key'); pk = parseSecret(t).publicKey.toBase58(); }
-        el.innerHTML = 'Wallet rapide : <b class="mono">' + esc(pk) + '</b>' + (S.ext && pk === S.ext.pk ? ' <span class="neg">· c\'est ton wallet principal : refusé</span>' : '');
+        el.innerHTML = 'Wallet rapide : <b class="mono">' + esc(pk) + '</b>' + (S.ext && pk === S.ext.pk ? ' <span class="neg">· c\'est votre wallet principal : refusé</span>' : '');
       } catch (e) { el.textContent = e.message; }
     };
     $('impKey').addEventListener('input', update);
@@ -564,11 +564,11 @@
     const i = await pr;
     if (i !== 1) { const k = $('impKey'); if (k) k.value = ''; return; }
     const t = $('impKey').value.trim(), p1 = $('pw1') ? $('pw1').value : '', p2 = $('pw2') ? $('pw2').value : '';
-    if (SESSREC && !$('pwAck').checked) return toast('Confirmation manquante', 'Coche la case pour remplacer le wallet rapide actuel.', 'a');
+    if (SESSREC && !$('pwAck').checked) return toast('Confirmation manquante', 'Cochez la case pour remplacer le wallet rapide actuel.', 'a');
     let kp, rec;
     try {
       if (t.startsWith(BK_PREFIX)) {
-        const o = parseBackup(t); if (!p1) throw new Error('Saisis le mot de passe de ce wallet rapide.');
+        const o = parseBackup(t); if (!p1) throw new Error('Saisissez le mot de passe de ce wallet rapide.');
         kp = W3().Keypair.fromSecretKey(await openSecret(o, p1));
         if (kp.publicKey.toBase58() !== o.pk) throw new Error('Code de sauvegarde altéré.');
         rec = { pk: o.pk, salt: o.salt, iv: o.iv, ct: o.ct, at: Date.now(), restored: true };
@@ -579,8 +579,8 @@
         rec = Object.assign({ pk: kp.publicKey.toBase58(), at: Date.now(), restored: true }, await sealSecret(kp.secretKey, p1));
       }
     } catch (e) { return toast('Restauration impossible', e.message, 'r'); }
-    if (S.ext && rec.pk === S.ext.pk) return toast('Wallet principal refusé', 'Le wallet rapide doit rester distinct de ton wallet Phantom.', 'r');
-    if (SESSREC && rec.pk === SESSREC.pk) { $('impKey').value = ''; closeModal(); SESSW.kp = kp; renderAll(); toast('Déjà en place', 'C\'est ton wallet rapide actuel. Il est déverrouillé.', 'g'); return noPanel ? rec.pk : walletPanel(); }
+    if (S.ext && rec.pk === S.ext.pk) return toast('Wallet principal refusé', 'Le wallet rapide doit rester distinct de votre wallet Phantom.', 'r');
+    if (SESSREC && rec.pk === SESSREC.pk) { $('impKey').value = ''; closeModal(); SESSW.kp = kp; renderAll(); toast('Déjà en place', 'C\'est votre wallet rapide actuel. Il est déverrouillé.', 'g'); return noPanel ? rec.pk : walletPanel(); }
     $('impKey').value = ''; closeModal();
     save(LS.sess, rec); SESSREC = rec; SESSW.kp = kp; quickOn();
     cfg.useSess = true; save(LS.cfg, cfg);
@@ -591,23 +591,23 @@
   }
   async function sessBackup(sk, first) {
     const key = b58(sk);
-    await modal(first ? 'Sauvegarde la clé maintenant' : 'Clé du wallet rapide',
-      '<p>Cette clé privée donne un accès total au wallet rapide. Note-la <b>hors ligne</b> (papier, gestionnaire de mots de passe). Elle s\'importe dans Phantom : <i>Ajouter un compte → Importer une clé privée</i>.</p>' +
-      '<div class="notice bad">Ne la partage avec personne, ni support, ni « admin », ni assistant. Personne n\'en a besoin pour t\'aider.</div>' +
+    await modal(first ? 'Sauvegardez la clé maintenant' : 'Clé du wallet rapide',
+      '<p>Cette clé privée donne un accès total au wallet rapide. Notez-la <b>hors ligne</b> (papier, gestionnaire de mots de passe). Elle s\'importe dans Phantom : <i>Ajouter un compte → Importer une clé privée</i>.</p>' +
+      '<div class="notice bad">Ne la partagez avec personne, ni support, ni « admin », ni assistant. Personne n\'en a besoin pour vous aider.</div>' +
       '<div class="skbox"><span class="mono" id="skTxt" data-blur="1">' + esc(key) + '</span></div>' +
       '<div class="row-btns"><button class="btn sm" data-sk="show" type="button">Afficher</button><button class="btn sm" data-sk="copy" type="button">Copier</button></div>',
       [{ label: first ? 'Je l\'ai sauvegardée' : 'Fermer', cls: 'primary' }], true);
   }
   async function sessExport() {
     if (!SESSREC) return;
-    const pass = await askPass('Afficher la clé', '<p>Saisis ton mot de passe pour afficher la clé privée du wallet rapide.</p>', 'Afficher');
+    const pass = await askPass('Afficher la clé', '<p>Saisissez votre mot de passe pour afficher la clé privée du wallet rapide.</p>', 'Afficher');
     if (!pass) return;
     try { await sessBackup(await openSecret(SESSREC, pass), false); } catch (e) { toast('Impossible', e.message, 'r'); }
   }
   async function sessDelete() {
     let bal = null; try { bal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {}
     const rich = bal == null || bal > 0.001;
-    const ok = await confirmBox('Supprimer le wallet rapide ?', '<p>La clé chiffrée sera effacée de ce navigateur.</p>' + (rich ? '<div class="notice bad">Le wallet contient ' + (bal == null ? 'peut-être des fonds' : fSol(bal, 4)) + '. Retire-les vers Phantom avant, ou assure-toi d\'avoir sauvegardé la clé : sinon ils seront perdus.</div>' : ''), 'Supprimer', true);
+    const ok = await confirmBox('Supprimer le wallet rapide ?', '<p>La clé chiffrée sera effacée de ce navigateur.</p>' + (rich ? '<div class="notice bad">Le wallet contient ' + (bal == null ? 'peut-être des fonds' : fSol(bal, 4)) + '. Retirez-les vers Phantom avant, ou assurez-vous d\'avoir sauvegardé la clé : sinon ils seront perdus.</div>' : ''), 'Supprimer', true);
     if (!ok) return;
     try { localStorage.removeItem(LS.sess); } catch (e) {}
     SESSREC = null; SESSW.kp = null; cfg.useSess = false; save(LS.cfg, cfg); S.bal = null;
@@ -615,16 +615,16 @@
   }
   // Alimenter le wallet rapide du compte depuis le wallet connecté (Phantom…) : un virement de SOL signé dans Phantom
   async function sessFund() {
-    if (!S.ext) { toast('Wallet non connecté', 'Connecte Phantom (ou un autre wallet) pour alimenter ton wallet rapide.', 'a'); return; }
-    if (!SRVPK) { toast('Pas encore de wallet rapide', 'Crée d\'abord ton wallet rapide, puis alimente-le depuis ' + S.ext.name + '.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return; }
-    if (cfg.sim) return toast('Mode démo', 'Passe en réel pour alimenter ton wallet rapide.', 'a');
+    if (!S.ext) { toast('Wallet non connecté', 'Connectez Phantom (ou un autre wallet) pour alimenter votre wallet rapide.', 'a'); return; }
+    if (!SRVPK) { toast('Pas encore de wallet rapide', 'Créez d\'abord votre wallet rapide, puis alimentez-le depuis ' + S.ext.name + '.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return; }
+    if (cfg.sim) return toast('Mode démo', 'Passez en réel pour alimenter votre wallet rapide.', 'a');
     const ext = S.ext, to = SRVPK;
     let have = S.extBal; try { have = (await rpc('getBalance', [ext.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {}
     const max = have != null ? Math.max(0, have - 0.003) : null;   // garde de quoi payer les frais du wallet
-    const i = await modal('Alimenter le wallet rapide', '<p>Virement de SOL depuis <b>' + esc(ext.name) + '</b> <span class="mono">' + short(ext.pk) + '</span> vers ton wallet rapide <span class="mono">' + short(to) + '</span>. ' + esc(ext.name) + ' te demandera de signer.</p>' +
+    const i = await modal('Alimenter le wallet rapide', '<p>Virement de SOL depuis <b>' + esc(ext.name) + '</b> <span class="mono">' + short(ext.pk) + '</span> vers votre wallet rapide <span class="mono">' + short(to) + '</span>. ' + esc(ext.name) + ' vous demandera de signer.</p>' +
       '<div class="field"><label for="fundAmt">Montant' + (max != null ? ' <small>disponible : ' + fSol(have, 4) + '</small>' : '') + '</label><span class="unit"><input id="fundAmt" type="number" min="0.001" step="any" value="' + (max != null ? Math.min(0.3, Math.floor(max * 1000) / 1000) : 0.3) + '"><em>SOL</em></span></div>' +
       (max != null ? '<div class="row-btns">' + [0.1, 0.5, 1].filter((v) => v <= max).map((v) => '<button class="btn sm" type="button" data-fundset="' + v + '">' + fr(v, 1) + ' SOL</button>').join('') + '<button class="btn sm" type="button" data-fundset="' + Math.floor(max * 1e6) / 1e6 + '">Maximum</button></div>' : '') +
-      '<p class="muted" style="font-size:13.5px">Conseil : juste de quoi couvrir tes achats et les frais (environ 0,03 SOL pour un lancement). Les plafonds de ton wallet rapide s\'appliquent ensuite.</p>',
+      '<p class="muted" style="font-size:13.5px">Conseil : juste de quoi couvrir vos achats et les frais (environ 0,03 SOL pour un lancement). Les plafonds de votre wallet rapide s\'appliquent ensuite.</p>',
       [{ label: 'Annuler' }, { label: 'Alimenter', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const amt = num($('fundAmt').value);
@@ -638,7 +638,7 @@
       { label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) },
     ]);
     if (!ctx.error) {
-      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSol(amt, 4) + ' envoyés sur ton wallet rapide. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
+      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSol(amt, 4) + ' envoyés sur votre wallet rapide. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
       toast('Wallet rapide alimenté', '+' + fSol(amt, 4), 'g'); S.bal = null; refreshBal(); renderAll();
     }
   }
@@ -646,7 +646,7 @@
   async function legacyMigrate() {
     if (!SESSREC) return;
     if (SRVPK && SRVPK !== SESSREC.pk) return sessWithdraw(SRVPK);   // le compte a déjà un wallet rapide : on y vire les SOL
-    const i = await modal('Transférer ton ancien wallet rapide', '<p>Ton wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> était gardé dans ce navigateur. Il devient le wallet rapide de ton compte : <b>même adresse, mêmes fonds</b>. Il signera ensuite seul, sans fenêtre de confirmation.</p>' +
+    const i = await modal('Transférer votre ancien wallet rapide', '<p>Votre wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> était gardé dans ce navigateur. Il devient le wallet rapide de votre compte : <b>même adresse, mêmes fonds</b>. Il signera ensuite seul, sans fenêtre de confirmation.</p>' +
       PASS_FIELD('lgPw', 'Mot de passe de ce wallet rapide', 'current-password'), [{ label: 'Annuler' }, { label: 'Transférer', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const pass = $('lgPw').value;
@@ -654,33 +654,33 @@
     catch (e) { toast('Mot de passe incorrect', 'Le wallet rapide n\'a pas pu être ouvert.', 'r'); return; }
     let pw = pass;
     if (pwWeak(pass)) {
-      const j = await modal('Nouveau mot de passe', '<p>Sur ton compte, le wallet rapide demande un mot de passe solide : au moins 10 caractères, avec une majuscule, une minuscule, un chiffre et un symbole.</p>' + PASS_FIELD('lgPw2', 'Nouveau mot de passe', 'new-password'), [{ label: 'Annuler' }, { label: 'Valider', cls: 'primary', keep: true }], true);
+      const j = await modal('Nouveau mot de passe', '<p>Sur votre compte, le wallet rapide demande un mot de passe solide : au moins 10 caractères, avec une majuscule, une minuscule, un chiffre et un symbole.</p>' + PASS_FIELD('lgPw2', 'Nouveau mot de passe', 'new-password'), [{ label: 'Annuler' }, { label: 'Valider', cls: 'primary', keep: true }], true);
       if (j !== 1) return;
       pw = $('lgPw2').value; const weak3 = pwWeak(pw); if (weak3) { toast('Mot de passe trop faible', weak3, 'a'); return; }
     }
     closeModal();
-    if (!window.TSServerWalletImport) { toast('Compte requis', 'Connecte-toi à ton compte pour transférer le wallet.', 'a'); return; }
+    if (!window.TSServerWalletImport) { toast('Compte requis', 'Connectez-vous à votre compte pour transférer le wallet.', 'a'); return; }
     try { await window.TSServerWalletImport(pw, b58(kp.secretKey)); }
     catch (e) { toast('Transfert impossible', e.message, 'r'); return; }
     try { localStorage.removeItem(LS.sess); } catch (e) {}
     SESSREC = null; SESSW.kp = null; cfg.useSess = false; cfg.useSrv = true; save(LS.cfg, cfg);
-    toast('Wallet rapide transféré', short(kp.publicKey.toBase58(), 4) + ' est maintenant le wallet rapide de ton compte.', 'g');
+    toast('Wallet rapide transféré', short(kp.publicKey.toBase58(), 4) + ' est maintenant le wallet rapide de votre compte.', 'g');
     renderAll();
   }
   async function sessWithdraw(destTo) {
     if (!SESSW.kp && !(await sessUnlock(true))) return;
     const dest0 = typeof destTo === 'string' ? destTo : S.ext ? S.ext.pk : '';
     let bal = 0; try { bal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value; } catch (e) { return toast('RPC en erreur', e.message, 'r'); }
-    const i = await modal('Retirer vers ton wallet', '<p>Solde du wallet rapide : <b>' + fSol(bal / 1e9, 4) + '</b>. Les tokens ne sont pas déplacés : vends-les d\'abord si tu veux tout récupérer en SOL.</p>' +
+    const i = await modal('Retirer vers votre wallet', '<p>Solde du wallet rapide : <b>' + fSol(bal / 1e9, 4) + '</b>. Les tokens ne sont pas déplacés : vendez-les d\'abord si vous voulez tout récupérer en SOL.</p>' +
       '<div class="field"><label for="wdDest">Adresse de destination</label><input id="wdDest" class="mono" value="' + esc(dest0) + '" autocomplete="off" spellcheck="false"></div>' +
       '<div class="field"><label for="wdAmt">Montant <small>vide = tout le solde, frais déduits</small></label><span class="unit"><input id="wdAmt" type="number" min="0" step="any" placeholder="tout"><em>SOL</em></span></div>',
       [{ label: 'Annuler' }, { label: 'Retirer', cls: 'danger', keep: true }], true);
     if (i !== 1) return;
     const dest = validMint($('wdDest').value || ''), amtIn = $('wdAmt').value.trim();
-    if (!dest) return toast('Adresse invalide', 'Colle une adresse Solana complète.', 'r');
+    if (!dest) return toast('Adresse invalide', 'Collez une adresse Solana complète.', 'r');
     if (dest === SESSREC.pk) return toast('Adresse invalide', 'C\'est l\'adresse du wallet rapide lui-même.', 'r');
     closeModal();
-    if (cfg.sim) return toast('Mode démo', 'Le retrait n\'est pas envoyé en démo. Passe en réel pour retirer.', 'a');
+    if (cfg.sim) return toast('Mode démo', 'Le retrait n\'est pas envoyé en démo. Passez en réel pour retirer.', 'a');
     const { web3 } = KIT(), price = 20000, feeLam = 5000 + Math.ceil(price * 1000 / 1e6);
     const lam = amtIn ? Math.round(num(amtIn) * 1e9) : bal - feeLam;
     if (!(lam > 0) || lam + feeLam > bal) return toast('Montant trop élevé', 'Disponible : ' + fSol((bal - feeLam) / 1e9, 6) + '.', 'r');
@@ -702,7 +702,7 @@
     const balHtml = (b, meta) => '<div class="wbal"><b>' + (b == null ? '—' : fr(b, 4)) + '</b><em>SOL</em></div><div class="wmeta">' + (S.solUsd && b != null ? '≈ ' + fUsd(b * S.solUsd) + ' · ' : '') + meta + '</div>';
     const B = (sw, label, c) => '<button class="btn sm ' + (c || '') + '" data-sw="' + sw + '" type="button">' + label + '</button>';
     const sesHtml = !ses
-      ? card('Wallet rapide', null, '<p>Signe seul, sans fenêtre Phantom : les ventes de tes paliers partent dès que le prix les atteint (moins d\'une seconde au lieu de 3 à 6).</p>', B('create', 'Créer le wallet rapide', 'primary') + B('import', 'Restaurer un wallet rapide'))
+      ? card('Wallet rapide', null, '<p>Signe seul, sans fenêtre Phantom : les ventes de vos paliers partent dès que le prix les atteint (moins d\'une seconde au lieu de 3 à 6).</p>', B('create', 'Créer le wallet rapide', 'primary') + B('import', 'Restaurer un wallet rapide'))
       : card('Wallet rapide', act ? { t: SESSW.kp ? 'actif · déverrouillé' : 'actif · verrouillé', c: SESSW.kp ? 'g' : 'a', on: true } : { t: 'en veille', c: '' },
         balHtml(sesBal, 'ventes automatiques ' + (cfg.autoExec ? 'activées' : 'désactivées')),
         (act ? '' : B('use', 'Utiliser pour signer', 'primary')) + (SESSW.kp ? B('lock', 'Verrouiller') : B('unlock', 'Déverrouiller', act ? 'primary' : '')) + B('fund', 'Alimenter') + B('withdraw', 'Retirer') + B('copyses', 'Copier l\'adresse') + B('backup', 'Sauvegarde') + B('export', 'Clé privée', 'ghost') + B('import', 'Restaurer un autre', 'ghost') + B('delete', 'Supprimer', 'ghost'), SESSREC.pk);
@@ -720,8 +720,8 @@
     if (a === 'unlock') { await sessUnlock(); return; }
     if (a === 'lock') { SESSW.kp = null; toast('Wallet rapide verrouillé', 'Ventes automatiques en pause.', ''); renderAll(); return walletPanel(); }
     if (a === 'use') { if (SRVPK) { cfg.useSrv = true; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); } return; }
-    if (a === 'useOld') { cfg.useSess = true; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); toast('Wallet rapide sélectionné', SESSW.kp ? 'Il signe tes transactions.' : 'Déverrouille-le pour signer.', 'g'); return walletPanel(); }
-    if (a === 'useext') { cfg.useSess = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); toast(S.ext.name + ' sélectionné', 'Chaque transaction demandera ta signature.', 'g'); return walletPanel(); }
+    if (a === 'useOld') { cfg.useSess = true; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); toast('Wallet rapide sélectionné', SESSW.kp ? 'Il signe vos transactions.' : 'Déverrouillez-le pour signer.', 'g'); return walletPanel(); }
+    if (a === 'useext') { cfg.useSess = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); toast(S.ext.name + ' sélectionné', 'Chaque transaction demandera votre signature.', 'g'); return walletPanel(); }
     if (a === 'fund') return sessFund();
     if (a === 'withdraw') return sessWithdraw();
     if (a === 'export') return sessExport();
@@ -810,7 +810,7 @@
       return txFrom(ixs, 250000, { payer });
     }
     let s;
-    try { s = await st.online.fetchSellState(m, user, tp); } catch (e) { throw new Error(/Associated token account/.test(e.message) ? 'Tu ne détiens pas ce token dans ce wallet.' : e.message); }
+    try { s = await st.online.fetchSellState(m, user, tp); } catch (e) { throw new Error(/Associated token account/.test(e.message) ? 'Vous ne détenez pas ce token dans ce wallet.' : e.message); }
     if (s.bondingCurve.complete) throw new Error('MIGRATED');
     const amount = new BN(String(amt));
     const solAmount = P.getSellSolAmountFromTokenAmount({ global: st.global, feeConfig: st.fee, mintSupply: s.bondingCurve.tokenTotalSupply, bondingCurve: s.bondingCurve, amount });
@@ -887,7 +887,7 @@
   function simError(v) {
     const logs = (v.logs || []).join('\n');
     if (/insufficient lamports|insufficient funds/i.test(logs) || /InsufficientFunds/.test(JSON.stringify(v.err))) return 'Solde SOL insuffisant pour cette opération.';
-    if (/TooMuchSolRequired|TooLittleSolReceived|slippage/i.test(logs)) return 'Le prix a trop bougé : augmente le slippage ou réduis le montant.';
+    if (/TooMuchSolRequired|TooLittleSolReceived|slippage/i.test(logs)) return 'Le prix a trop bougé : augmentez le slippage ou réduisez le montant.';
     return 'La blockchain refuse cette transaction (' + JSON.stringify(v.err).slice(0, 120) + ').';
   }
   // Envoi rapide : la transaction a déjà été simulée, on l'envoie sans contrôle préalable et on la
@@ -923,19 +923,19 @@
       if (v && (v.confirmationStatus === 'confirmed' || v.confirmationStatus === 'finalized')) { delete INFLIGHT[sig]; return ((Date.now() - t0) / 1000).toFixed(1).replace('.', ',') + ' s'; }
     }
     delete INFLIGHT[sig];
-    throw new Error('Pas de confirmation dans les 75 s. Vérifie sur Solscan avant de réessayer : la transaction a peut-être expiré.');
+    throw new Error('Pas de confirmation dans les 75 s. Vérifiez sur Solscan avant de réessayer : la transaction a peut-être expiré.');
   }
   async function signAndSend(tx, extraSigners, w) {
     w = w || S.wallet;
     if (w.id === 'server') {
-      if (!window.TSServerWallet) throw new Error('Wallet serveur indisponible : reconnecte-toi à ton compte.');
+      if (!window.TSServerWallet) throw new Error('Wallet serveur indisponible : reconnectez-vous à votre compte.');
       if (extraSigners && extraSigners.length) tx.sign(extraSigners);   // ex. clé du mint au lancement
       const r = await window.TSServerWallet.signSend(bytesToB64(tx.serialize()));
       INFLIGHT[r.signature] = { raw: r.raw, viaSender: false };
       return r.signature;
     }
     if (w.id === 'session') {
-      if (!SESSW.kp) throw new Error('Wallet rapide verrouillé : déverrouille-le puis relance.');
+      if (!SESSW.kp) throw new Error('Wallet rapide verrouillé : déverrouillez-le puis relancez.');
       tx.sign([SESSW.kp].concat(extraSigners || []));
       return sendRaw(tx);
     }
@@ -987,7 +987,7 @@
   const demoSave = () => save('pstudio_demo_v1', DEMO);
   const isDemoMint = (m) => typeof m === 'string' && m.startsWith('DEMO0');
   // invitation au réel : créer un compte (invité) ou passer en réel (compte connecté)
-  const demoCta = () => '<div class="notice info ts-acct-cta"><span><b>Opération fictive.</b> ' + (AUTH ? 'En réel, la même opération est vérifiée sur la blockchain puis envoyée après ta signature.' : 'Crée ton compte pour passer en réel : chaque opération y est vérifiée sur la blockchain avant ta signature.') + '</span>' +
+  const demoCta = () => '<div class="notice info ts-acct-cta"><span><b>Opération fictive.</b> ' + (AUTH ? 'En réel, la même opération est vérifiée sur la blockchain puis envoyée après votre signature.' : 'Créez votre compte pour passer en réel : chaque opération y est vérifiée sur la blockchain avant votre signature.') + '</span>' +
     '<button class="btn sm primary" data-act="' + (AUTH ? 'simoff' : 'needacct') + '" type="button">Passer en réel</button></div>';
 
   // Marché simulé des tokens lancés en démo : courbe de liaison, acheteurs et vendeurs fictifs, détenteurs, frais créateur
@@ -1072,7 +1072,7 @@
     if (isDemoMint(mint)) { dmRun(); T = DM.tok[mint]; if (!T) throw new Error('Token démo introuvable.'); sym = T.symbol; }
     else {
       const X = await dexMarket(mint); price = X && X.stats && X.stats.price;
-      if (!(price > 0)) throw new Error('Prix introuvable pour ce token sur DexScreener. Essaie un token déjà échangé, ou lance ton propre token en démo.');
+      if (!(price > 0)) throw new Error('Prix introuvable pour ce token sur DexScreener. Essayez un token déjà échangé, ou lancez votre propre token en démo.');
       sym = (X.meta && X.meta.symbol) || short(mint);
     }
     let sol, tokens;
@@ -1108,13 +1108,13 @@
   // dépôt et retrait fictifs sur le wallet démo
   async function demoMove(kind) {
     const dep = kind === 'deposit';
-    const i = await modal(dep ? 'Ajouter des SOL fictifs' : 'Retirer du wallet démo', '<p>' + (dep ? 'Simule un dépôt sur le wallet démo. Aucun vrai SOL n\'est envoyé, et l\'adresse démo ne peut pas en recevoir.' : 'Simule un retrait vers ton wallet. Rien n\'est envoyé.') + '</p>' +
+    const i = await modal(dep ? 'Ajouter des SOL fictifs' : 'Retirer du wallet démo', '<p>' + (dep ? 'Simulez un dépôt sur le wallet démo. Aucun vrai SOL n\'est envoyé, et l\'adresse démo ne peut pas en recevoir.' : 'Simulez un retrait vers votre wallet. Rien n\'est envoyé.') + '</p>' +
       '<div class="field"><label for="dmAmt">Montant</label><span class="unit"><input id="dmAmt" type="number" min="0.01" step="any" value="' + (dep ? '5' : fr(Math.min(1, DEMO.bal), 2).replace(',', '.')) + '"><em>SOL</em></span></div>' +
       '<p class="muted" style="font-size:13.5px">Solde démo actuel : ' + fSol(DEMO.bal, 3) + (dep ? ' · maximum 1 000 SOL.' : '.') + '</p>',
       [{ label: 'Annuler' }, { label: dep ? 'Ajouter' : 'Retirer', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const amt = num($('dmAmt').value);
-    if (!(amt > 0)) return toast('Montant invalide', 'Entre un montant positif.', 'r');
+    if (!(amt > 0)) return toast('Montant invalide', 'Entrez un montant positif.', 'r');
     if (dep && DEMO.bal + amt > 1000) return toast('Montant trop élevé', 'Le wallet démo est limité à 1 000 SOL.', 'r');
     if (!dep && amt > DEMO.bal) return toast('Solde insuffisant', 'Disponible : ' + fSol(DEMO.bal, 3) + '.', 'r');
     closeModal();
@@ -1129,7 +1129,7 @@
     try {
       const Q = await demoQuote(mint, side, amountStr);
       const recap = '<div class="recap"><div class="kv"><span>Opération</span><span>' + (side === 'buy' ? 'Achat' : 'Vente') + ' de ' + esc(Q.sym) + '</span>' +
-        (side === 'buy' ? '<span>Tu paies</span><span>' + fSol(Q.sol) + '</span><span>Tu reçois environ</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span>' : '<span>Tu vends</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span><span>Tu reçois environ</span><span>' + fSol(Q.sol) + '</span>') +
+        (side === 'buy' ? '<span>Vous payez</span><span>' + fSol(Q.sol) + '</span><span>Vous recevez environ</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span>' : '<span>Vous vendez</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span><span>Vous recevez environ</span><span>' + fSol(Q.sol) + '</span>') +
         '<span>Prix</span><span>' + Q.src + '</span><span>Wallet</span><span>Wallet démo · ' + fSol(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' + (opts.note ? '<div class="notice">' + esc(opts.note) + '</div>' : '') + demoCta();
       if (!(await confirmBox(opts.title || (side === 'buy' ? 'Acheter ' : 'Vendre ') + Q.sym + ' en démo ?', recap, side === 'buy' ? 'Acheter en démo' : 'Vendre en démo'))) return;
       const r = demoApply(mint, side, Q);
@@ -1161,7 +1161,7 @@
     const recap = '<div class="recap"><div class="kv"><span>Token</span><span>' + esc(d.name) + ' · $' + esc(d.symbol) + '</span>' +
       '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
       '<span>Coût total estimé</span><span>' + fSol(cost) + '</span><span>Wallet</span><span>Wallet démo · ' + fSol(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' +
-      '<p>Le token est créé sur un marché simulé : des acheteurs et vendeurs fictifs le font vivre, et tu le suis comme un vrai token.</p>' + demoCta();
+      '<p>Le token est créé sur un marché simulé : des acheteurs et vendeurs fictifs le font vivre, et vous le suivez comme un vrai token.</p>' + demoCta();
     if (!(await confirmBox('Lancer ' + d.name + ' en démo ?', recap, 'Lancer en démo'))) return;
     const now = Date.now(), mint = 'DEMO0' + rndB58(39);
     const T = { mint, name: d.name, symbol: d.symbol, image: '', createdAt: now, last: now, vSol: INIT_CURVE.vSol, vTok: INIT_CURVE.vTok, realTok: INIT_CURVE.realTok, realSol: 0, complete: false,
@@ -1188,7 +1188,7 @@
       d.tp.forEach((l, i) => S.orders.push({ id: Date.now().toString(36) + i, mint, symbol: d.symbol, kind: 'tp', value: Math.round((l.x - 1) * 100), pct: l.pct, tokens: buy.tokens * l.pct / 100, ref, active: true, createdAt: Date.now(), plan: true }));
       save(LS.orders, S.orders);
     }
-    $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est lancé en démo. Le marché simulé démarre : suis son prix, tes ordres et sa diffusion comme pour un vrai token. <button class="btn sm primary" data-dtok="' + mint + '" type="button">Voir le token</button></div>' + demoCta());
+    $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est lancé en démo. Le marché simulé démarre : suivez son prix, vos ordres et sa diffusion comme pour un vrai token. <button class="btn sm primary" data-dtok="' + mint + '" type="button">Voir le token</button></div>' + demoCta());
     toast('Lancement démo', d.name + ' · wallet démo ' + fSol(DEMO.bal), 'g');
     renderAll();
   }
@@ -1204,7 +1204,7 @@
     opts = opts || {};
     // démo sans compte ou sans wallet : opération locale sur le wallet démo, sans vérification
     if (cfg.sim) return demoTrade(mint, side, amountStr, opts);
-    if (!S.wallet) { toast('Wallet non connecté', 'Connecte ton wallet pour préparer la transaction.', 'a'); return walletMenu(); }
+    if (!S.wallet) { toast('Wallet non connecté', 'Connectez votre wallet pour préparer la transaction.', 'a'); return walletMenu(); }
     if (!cfg.sim && !(await ensureSigner())) return;
     if (S.busy) return; S.busy = true;
     let dry = !!cfg.sim, how = cfg.sim ? 'demo' : 'real';
@@ -1215,7 +1215,7 @@
       let q = null, amount, denom;
       if (side === 'buy') {
         const sol = num(amountStr); if (!(sol > 0)) throw new Error('Montant SOL invalide.');
-        if (sol > cfg.maxSol) throw new Error('Au-delà de ta limite par trade (' + fSol(cfg.maxSol) + '). Modifie-la dans Réglages si c\'est voulu.');
+        if (sol > cfg.maxSol) throw new Error('Au-delà de votre limite par trade (' + fSol(cfg.maxSol) + '). Modifiez-la dans Réglages si c\'est voulu.');
         if (!cfg.sim && S.bal != null && sol + 0.01 > S.bal) throw new Error('Solde insuffisant : ' + fSol(S.bal) + ' disponibles.');
         q = C.curve.complete ? null : quoteBuy(C.curve, sol); amount = sol; denom = 'true';
       } else {
@@ -1223,18 +1223,18 @@
         let tokens;
         if (/%$/.test(String(amountStr))) { const p = num(String(amountStr).replace('%', '')); if (!(p > 0 && p <= 100)) throw new Error('Pourcentage invalide.'); tokens = bal * p / 100; amount = p + '%'; }
         else { tokens = num(amountStr); amount = tokens; }
-        if (!(tokens > 0)) throw new Error(bal ? 'Quantité invalide.' : 'Tu ne détiens pas ce token.');
-        if (!cfg.sim && tokens > bal * 1.0001) throw new Error('Tu ne détiens que ' + fTok(bal) + ' ' + sym + '.');
+        if (!(tokens > 0)) throw new Error(bal ? 'Quantité invalide.' : 'Vous ne détenez pas ce token.');
+        if (!cfg.sim && tokens > bal * 1.0001) throw new Error('Vous ne détenez que ' + fTok(bal) + ' ' + sym + '.');
         q = C.curve.complete ? null : quoteSell(C.curve, tokens); denom = 'false';
       }
       const recap = '<div class="recap"><div class="kv">' +
         '<span>Opération</span><span>' + (side === 'buy' ? 'Achat' : 'Vente') + ' de ' + esc(sym) + '</span>' +
-        (side === 'buy' ? '<span>Tu paies</span><span>' + fSol(amount) + '</span><span>Tu reçois environ</span><span>' + (q ? fTok(q.tokens) + ' ' + esc(sym) : 'selon le pool') + '</span>'
-          : '<span>Tu vends</span><span>' + (typeof amount === 'string' ? amount + ' · ' : '') + (q ? fTok(q.tokens) : '') + ' ' + esc(sym) + '</span><span>Tu reçois environ</span><span>' + (q ? fSol(q.sol) : 'selon le pool') + '</span>') +
+        (side === 'buy' ? '<span>Vous payez</span><span>' + fSol(amount) + '</span><span>Vous recevez environ</span><span>' + (q ? fTok(q.tokens) + ' ' + esc(sym) : 'selon le pool') + '</span>'
+          : '<span>Vous vendez</span><span>' + (typeof amount === 'string' ? amount + ' · ' : '') + (q ? fTok(q.tokens) : '') + ' ' + esc(sym) + '</span><span>Vous recevez environ</span><span>' + (q ? fSol(q.sol) : 'selon le pool') + '</span>') +
         (q ? '<span>Impact sur le prix</span><span class="' + (Math.abs(q.impact) > 5 ? 'warn' : '') + '">' + fPct(q.impact, 2) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span><span>Minimum garanti</span><span>' + (side === 'buy' ? fTok(q.minOut) + ' ' + esc(sym) : fSol(q.minOut)) + '</span>' : '') +
         '<span>Slippage max</span><span>' + fPct(cfg.slippage, 0) + '</span>' + (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' +
         (opts.note ? '<div class="notice info">' + esc(opts.note) + '</div>' : '') +
-        (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : S.wallet.id === 'session' ? '<p>Le wallet rapide signe dès que tu confirmes : aucune autre fenêtre.</p>' : '<p>Ton wallet va te présenter la transaction : vérifie le montant avant de signer.</p>');
+        (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : S.wallet.id === 'session' ? '<p>Le wallet rapide signe dès que vous confirmez : aucune autre fenêtre.</p>' : '<p>Votre wallet va vous présenter la transaction : vérifiez le montant avant de signer.</p>');
       how = await confirmTest(opts.title || (side === 'buy' ? 'Acheter ' : 'Vendre ') + sym + ' ?', recap, cfg.sim ? 'Vérifier en démo' : (side === 'buy' ? 'Acheter' : 'Vendre'), side === 'sell');
       if (!how) return; dry = how !== 'real';
       const body = { publicKey: S.wallet.pk, action: side, mint, amount, denominatedInSol: denom, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: C.curve.complete ? 'auto' : 'pump' };
@@ -1249,7 +1249,7 @@
             const raw = await tokenRaw(S.wallet.pk, mint);
             let sellRaw = typeof amount === 'string' ? raw * BigInt(Math.round(num(amount) * 100)) / 10000n : BigInt(Math.floor(amount * 1e6));
             if (sellRaw > raw) sellRaw = raw;
-            if (sellRaw <= 0n) throw new Error('Tu ne détiens pas ce token dans ce wallet.');
+            if (sellRaw <= 0n) throw new Error('Vous ne détenez pas ce token dans ce wallet.');
             x.tx = await directTrade(mint, 'sell', sellRaw.toString());
           } catch (e) { if (e.message !== 'MIGRATED') throw e; await viaPortal(x); return 'token migré entre-temps, routé par PumpPortal'; }
         } },
@@ -1303,8 +1303,8 @@
     if (CLOUD && window.TSUploadMeta) return window.TSUploadMeta(fd);
     let r;
     try { r = await fetch('https://pump.fun/api/ipfs', { method: 'POST', body: fd }); }
-    catch (e) { throw new Error('pump.fun n\'accepte pas l\'envoi depuis cette page. Choisis Pinata dans Réglages (gratuit).'); }
-    if (!r.ok) throw new Error('pump.fun a refusé les métadonnées (' + r.status + '). Essaie Pinata dans Réglages.');
+    catch (e) { throw new Error('pump.fun n\'accepte pas l\'envoi depuis cette page. Choisissez Pinata dans Réglages (gratuit).'); }
+    if (!r.ok) throw new Error('pump.fun a refusé les métadonnées (' + r.status + '). Essayez Pinata dans Réglages.');
     const j = await r.json(); if (!j.metadataUri) throw new Error('Réponse inattendue de pump.fun.');
     return j.metadataUri;
   }
@@ -1320,21 +1320,21 @@
     const who = (w) => (w.id === 'session' ? 'Wallet rapide' : esc(w.name)) + ' · <span class="mono">' + short(w.pk) + '</span>';
     const creatorHtml = canPick
       ? '<div class="cr-pick"><div class="cr-h">Créateur affiché sur pump.fun</div>' +
-        '<label class="cr-opt"><input type="radio" name="crWho" value="ext" checked><span><b>' + who(ext) + '</b><small>Recommandé · ton profil pump.fun s\'affiche et les frais de créateur arrivent sur ' + esc(ext.name) + '. Le wallet rapide paie et signe, sans fenêtre.</small></span></label>' +
+        '<label class="cr-opt"><input type="radio" name="crWho" value="ext" checked><span><b>' + who(ext) + '</b><small>Recommandé · votre profil pump.fun s\'affiche et les frais de créateur arrivent sur ' + esc(ext.name) + '. Le wallet rapide paie et signe, sans fenêtre.</small></span></label>' +
         '<label class="cr-opt"><input type="radio" name="crWho" value="quick"><span><b>' + who(S.wallet) + '</b><small>Son adresse s\'affiche comme créateur et reçoit les frais.</small></span></label></div>'
       : '';
     const recap = '<div class="recap"><div class="kv">' +
       '<span>Token</span><span>' + esc(d.name) + ' · $' + esc(d.symbol) + '</span>' +
-      (canPick ? '' : '<span>Créateur affiché</span><span>' + who(S.wallet) + (ses ? '' : ' <small class="dim">(ou ton pseudo pump.fun)</small>') + '</span>') +
+      (canPick ? '' : '<span>Créateur affiché</span><span>' + who(S.wallet) + (ses ? '' : ' <small class="dim">(ou votre pseudo pump.fun)</small>') + '</span>') +
       '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
       '<span>Frais de réseau et comptes</span><span>≈ ' + fr(PL.fee, 2) + ' SOL</span>' +
       '<span>Coût total estimé</span><span>' + fSol(dev + PL.fee) + '</span>' +
       '<span>Logo et fiche</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS), envoyés par le serveur') + '</span>' +
       (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' + creatorHtml +
-      (ses && !ext ? '<div class="notice">Le wallet rapide sera affiché comme créateur et recevra les frais de créateur. Pour lancer en ton nom, connecte Phantom (ou ton wallet principal) : il sera proposé comme créateur.</div>' : '') +
-      (ses && ext && cfg.engine === 'portal' ? '<div class="notice">Avec PumpPortal, le créateur est forcément le wallet qui signe (wallet rapide). Choisis le moteur Direct dans Réglages pour afficher ' + esc(ext.name) + '.</div>' : '') +
-      (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? (d.slMode === 'trail' ? ' · stop suiveur −' : ' · stop −') + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente te sera présentée à signer.') + '</div>' : '') +
-      (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur ' + PL.n + ' et visible par tous. Ton wallet va te présenter la transaction : vérifie avant de signer. Une création ne s\'annule pas.</p>');
+      (ses && !ext ? '<div class="notice">Le wallet rapide sera affiché comme créateur et recevra les frais de créateur. Pour lancer en votre nom, connectez Phantom (ou votre wallet principal) : il sera proposé comme créateur.</div>' : '') +
+      (ses && ext && cfg.engine === 'portal' ? '<div class="notice">Avec PumpPortal, le créateur est forcément le wallet qui signe (wallet rapide). Choisissez le moteur Direct dans Réglages pour afficher ' + esc(ext.name) + '.</div>' : '') +
+      (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? (d.slMode === 'trail' ? ' · stop suiveur −' : ' · stop −') + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente vous sera présentée à signer.') + '</div>' : '') +
+      (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur ' + PL.n + ' et visible par tous. Votre wallet va vous présenter la transaction : vérifiez avant de signer. Une création ne s\'annule pas.</p>');
     const how = await confirmTest(cfg.sim ? 'Lancer ' + d.name + ' en démo ?' : 'Lancer ' + d.name + ' ?', recap, cfg.sim ? 'Vérifier en démo' : 'Lancer le token', !cfg.sim, 'Tester avant de lancer');
     if (!how) return;
     const dry = how !== 'real';
@@ -1374,14 +1374,14 @@
       journalAdd({ type: 'create', mint, symbol: d.symbol, sim: false, status: 'ok', sig: ctx.sig, sol: -(real ? real.sol : dev), tokens: real ? real.tokens : (q ? q.tokens : 0), est: !real });
       $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est en ligne. <a href="' + PL.url(mint) + '" target="_blank" rel="noopener">' + PL.n + '</a> · <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Solscan</a></div>');
       toast('Token lancé', d.name + ' · ' + short(mint), 'g');
-      // plan de prise de profit → ordres préparés (chaque vente demandera ta signature)
+      // plan de prise de profit → ordres préparés (chaque vente demandera votre signature)
       const devTok = real ? real.tokens : (q ? q.tokens : 0), devSol = real ? real.sol : dev;
       if (d.tpOn && devTok > 0 && tpValid().ok) {
         const ref = devSol / devTok;
         d.tp.forEach((l, i) => S.orders.push({ id: Date.now().toString(36) + i, mint, symbol: d.symbol, kind: 'tp', value: Math.round((l.x - 1) * 100), pct: l.pct, tokens: devTok * l.pct / 100, ref, active: true, createdAt: Date.now(), plan: true }));
         if (d.sl > 0) S.orders.push(Object.assign({ id: Date.now().toString(36) + 's', mint, symbol: d.symbol, kind: d.slMode === 'trail' ? 'trail' : 'sl', value: d.sl, pct: 100, ref, active: true, createdAt: Date.now(), plan: true }, d.slMode === 'trail' ? { arm: 0, armed: true, peak: ref } : {}));
         save(LS.orders, S.orders);
-        $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">Plan de prise de profit actif : ' + d.tp.length + ' palier(s)' + (d.sl > 0 ? ' et un stop' : '') + '. Le studio surveille le prix et te présentera chaque vente à signer.</div>');
+        $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">Plan de prise de profit actif : ' + d.tp.length + ' palier(s)' + (d.sl > 0 ? ' et un stop' : '') + '. Le studio surveille le prix et vous présentera chaque vente à signer.</div>');
       }
       S.view.mine = mint; refreshBal(); renderAll();
     } finally { S.busy = false; }
@@ -1464,7 +1464,7 @@
     nature: '<svg viewBox="0 0 120 72" aria-hidden="true"><path d="M50 40h20v18a6 6 0 0 1-6 6h-8a6 6 0 0 1-6-6z" fill="#f5ecdc"/><path d="M26 42C26 16 94 16 94 42Z" fill="var(--th)"/><circle cx="42" cy="30" r="4.4" fill="#fff5ee"/><circle cx="60" cy="24" r="5" fill="#fff5ee"/><circle cx="78" cy="32" r="3.8" fill="#fff5ee"/><ellipse cx="36" cy="64" rx="10" ry="2.4" fill="#6fcf7f"/><ellipse cx="86" cy="64" rx="8" ry="2" fill="#6fcf7f"/></svg>',
   });
   const UNIV_TINT = { luxe: '#d6b26e', meme: '#7fd18a', internet: '#7cc4ff', space: '#8fb4ff', tech: '#5fd4c4', prestige: '#e2c27a', myth: '#e8925a', brand: '#cfc6b4', ocean: '#5fb6ff', food: '#f59ac0', gaming: '#b59cff', nature: '#e0524f' };
-  const UNIV_HINT = { luxe: 'Aurelia · Monarch', meme: 'Capy · Donut · Koi', internet: 'Aura · Rizz', space: 'Nova · Orbit', tech: 'Neuron · Synth', prestige: 'Crown · Onyx', myth: 'Phoenix · Atlas', brand: 'Ton propre nom', ocean: 'Coral · Orca', food: 'Mochi · Latte', gaming: 'Loot · Phoenix', nature: 'Fern · Lotus' };
+  const UNIV_HINT = { luxe: 'Aurelia · Monarch', meme: 'Capy · Donut · Koi', internet: 'Aura · Rizz', space: 'Nova · Orbit', tech: 'Neuron · Synth', prestige: 'Crown · Onyx', myth: 'Phoenix · Atlas', brand: 'Votre propre nom', ocean: 'Coral · Orca', food: 'Mochi · Latte', gaming: 'Loot · Phoenix', nature: 'Fern · Lotus' };
   const TONES = { luxe: 'Premium', minimal: 'Sobre', witty: 'Décalé', community: 'Communauté' };
   const LANGS = { en: 'Anglais', fr: 'Français' };
   // Descriptions : courtes, sans superlatifs creux ni formules « Bienvenue dans… », ni promesse de gains.
@@ -1478,7 +1478,7 @@
     fr: {
       luxe: ['{n}. Rare par nature.', 'L\'assurance tranquille, sur la blockchain. {n}.', 'Moins de promesses. Plus de goût. {n}.', 'Pensé pour les holders patients.', '{n} n\'est pas fait pour tout le monde. C\'est voulu.', 'Un lancement équitable, soigné jusqu\'au détail.', 'Un {k} qui a des exigences.', 'Discret. Sans compromis. {n}.'],
       minimal: ['{n}. Rien de plus, rien de moins.', 'Un coin, une idée : {n}.', 'Pas de roadmap. Pas de prévente. Juste {n}.', '{n}, simple par principe.', 'Moins de bruit. Plus de {n}.', '{n}, discrètement sur la blockchain.', 'Un ticker net pour une idée nette.', 'Lancement équitable. Rien de caché.'],
-      witty: ['{n} n\'a pas de roadmap. {n} a des vibes.', 'Le seul {k} qui regarde le graphique avant le café.', '{n} n\'a aucune utilité et l\'assume.', 'Il fallait bien que quelqu\'un lance {n}.', 'Alimenté par la conviction et peu de sommeil.', '{n} : zéro utilité, beaucoup de caractère.', 'Ton portefeuille a appelé. Il voulait {n}.', 'Le {k} que personne n\'avait vu venir.'],
+      witty: ['{n} n\'a pas de roadmap. {n} a des vibes.', 'Le seul {k} qui regarde le graphique avant le café.', '{n} n\'a aucune utilité et l\'assume.', 'Il fallait bien que quelqu\'un lance {n}.', 'Alimenté par la conviction et peu de sommeil.', '{n} : zéro utilité, beaucoup de caractère.', 'Votre portefeuille a appelé. Il voulait {n}.', 'Le {k} que personne n\'avait vu venir.'],
       community: ['{n} appartient à ceux qui le gardent.', 'Fait par les holders, pour les holders.', 'Lancement équitable, aucune part réservée. {n} est à vous.', 'Un {k} pour ceux qui restent.', 'Pas d\'initiés, pas de réserve. Que des holders.', 'Chaque holder fait partie de l\'histoire.', 'Parti de rien, construit ensemble.', 'La communauté, c\'est la roadmap.'],
     },
   };
@@ -1530,10 +1530,10 @@
     parts.push({ k: words.length === 1 ? 'Un seul mot' : words.length === 2 ? 'Deux mots' : 'Trop de mots', v: words.length === 1 ? 15 : words.length === 2 ? 10 : 2 });
     const mine = word && name.toLowerCase().includes(word.toLowerCase());
     const sound = /^[A-Za-z ]+$/.test(name);
-    parts.push({ k: mine ? 'Ton mot' : sound ? 'Sonne international' : 'Caractères spéciaux', v: mine || sound ? 10 : 0 });
+    parts.push({ k: mine ? 'Votre mot' : sound ? 'Sonne international' : 'Caractères spéciaux', v: mine || sound ? 10 : 0 });
     const famous = FAMOUS.includes(ticker) || FAMOUS.some((f) => name.toUpperCase().replace(/\s/g, '') === f);
     const used = S.tokens.some((t) => t.symbol === ticker);
-    parts.push({ k: famous ? 'Ticker déjà célèbre' : used ? 'Déjà utilisé par toi' : 'Original', v: famous || used ? 0 : 25 });
+    parts.push({ k: famous ? 'Ticker déjà célèbre' : used ? 'Déjà utilisé par vous' : 'Original', v: famous || used ? 0 : 25 });
     return { score: parts.reduce((s2, p) => s2 + p.v, 0), parts };
   }
   function nameFor(th, word) {
@@ -1588,7 +1588,7 @@
     S.draft.logo = Object.assign({}, S.draft.logo, { emoji: x.emo, text: x.ticker, pal: x.pal, style: x.style || 'meme', theme: x.theme || S.draft.theme, motif: x.motif || '', mchar: x.mchar || '', mexpr: '', macc: null, name: x.name, textCustom: false, seed: x.seed || Math.floor(Math.random() * 1e6) });
     S.imgBlob = null; S.draft.imgSrc = 'gen';
     saveDraft(); drawLogo(); fillFields(); renderIdeas(); renderLaunchSide();
-    if (!silent) toast('Idée reprise', x.name + ' · $' + x.ticker + '. Ajuste le logo à l\'étape 2.', 'g');
+    if (!silent) toast('Idée reprise', x.name + ' · $' + x.ticker + '. Ajustez le logo à l\'étape 2.', 'g');
   }
 
   /* ================================================================ logo (v3, premium) */
@@ -2320,7 +2320,7 @@
   // Six propositions pour le nom et le ticker en cours : styles et palettes tous différents
   function logoVariants() {
     const d = S.draft, txt = logoTicker();
-    if (!txt) { toast('Nom du token manquant', 'Choisis une idée à l\'étape 1, ou saisis un nom et un ticker à l\'étape 3.', 'a'); return; }
+    if (!txt) { toast('Nom du token manquant', 'Choisissez une idée à l\'étape 1, ou saisissez un nom et un ticker à l\'étape 3.', 'a'); return; }
     const th = THEMES[d.theme] || THEMES.luxe;
     const styles = ['meme', 'meme', 'meme', 'illus'].concat(shuffled(Object.keys(STYLES).filter((k) => !['mascot', 'illus', 'meme'].includes(k))).slice(0, 2));
     const pals = shuffled(PALS.map((_, i) => i).filter((i) => i !== th.pal)); pals.unshift(th.pal);
@@ -2335,7 +2335,7 @@
   function renderLogoVars() {
     const el = $('logoVars'); if (!el) return;
     const txt = logoTicker();
-    $('logoGenHint').textContent = txt ? 'Pour $' + txt + (S.draft.name ? ' · ' + S.draft.name : '') : 'Choisis d\'abord un nom à l\'étape 1 ou 3.';
+    $('logoGenHint').textContent = txt ? 'Pour $' + txt + (S.draft.name ? ' · ' + S.draft.name : '') : 'Choisissez d\'abord un nom à l\'étape 1 ou 3.';
     if (!S.logoVars) { el.hidden = true; return; }
     el.hidden = false;
     const L = S.draft.logo, cur = S.draft.imgSrc !== 'upload';
@@ -2365,7 +2365,7 @@
   // Carré centré, 512 à 1024 px, JPEG si opaque, PNG si transparent ; les GIF animés sont gardés tels quels
   async function importLogo(f) {
     if (!/^image\/(png|jpeg|gif|webp)$/.test(f.type)) return toast('Format refusé', 'PNG, JPG, GIF ou WEBP uniquement.', 'r');
-    if (f.size > 4 * 1024 * 1024) return toast('Image trop lourde', '4 Mo maximum. Réduis-la ou exporte-la en JPG.', 'r');
+    if (f.size > 4 * 1024 * 1024) return toast('Image trop lourde', '4 Mo maximum. Réduisez-la ou exportez-la en JPG.', 'r');
     try {
       const src = await readFile(f), im = await loadImg(src), w = im.naturalWidth, h = im.naturalHeight, warn = [];
       if (Math.min(w, h) < 400) warn.push('petite image (' + w + ' × ' + h + '), elle peut paraître floue');
@@ -2471,21 +2471,21 @@
   const tpAmt = (k, dev) => dev > 0 ? fSol(dev * k, 3) : fr(k * 100, 0) + ' % de la mise';
   function renderTpPlan() {
     const d = S.draft, dev = num(d.dev) || 0;
-    const head = '<div class="tp-head"><span class="switch"><input type="checkbox" id="tpOn"' + (d.tpOn ? ' checked' : '') + ' aria-label="Activer le plan de prise de profit"><i></i></span><div><h4>Plan de prise de profit</h4><p>Des ventes par paliers, préparées dès le lancement : tu sécurises tes gains quand le prix monte, sans rester devant l\'écran.</p></div></div>';
-    if (!d.tpOn) { $('tpPlan').innerHTML = head + '<p class="tp-off">Désactivé. Tu pourras toujours créer des ordres plus tard depuis « Ordres préparés ».</p>'; return; }
+    const head = '<div class="tp-head"><span class="switch"><input type="checkbox" id="tpOn"' + (d.tpOn ? ' checked' : '') + ' aria-label="Activer le plan de prise de profit"><i></i></span><div><h4>Plan de prise de profit</h4><p>Des ventes par paliers, préparées dès le lancement : vous sécurisez vos gains quand le prix monte, sans rester devant l\'écran.</p></div></div>';
+    if (!d.tpOn) { $('tpPlan').innerHTML = head + '<p class="tp-off">Désactivé. Vous pourrez toujours créer des ordres plus tard depuis « Ordres préparés ».</p>'; return; }
     const pre = '<div class="tp-presets">' + Object.keys(TP_PRESETS).map((k) => '<button class="tp-pre" data-tppre="' + k + '" type="button"><b>' + TP_PRESETS[k].n + '</b><span>' + TP_PRESETS[k].d + '</span></button>').join('') + '</div>';
     const rows = d.tp.map((l, i) => '<div class="tp-tr"><span class="tp-n">' + (i + 1) + '</span>' +
       '<span class="tp-in"><em>×</em><input type="number" min="1.1" step="0.1" data-tpx="' + i + '" value="' + l.x + '" aria-label="Multiplicateur du palier ' + (i + 1) + '"><small id="tpG' + i + '"></small></span>' +
       '<span class="tp-in"><input type="number" min="1" max="100" step="1" data-tpp="' + i + '" value="' + l.pct + '" aria-label="Part vendue au palier ' + (i + 1) + '"><em>%</em></span>' +
       '<span class="tp-v" id="tpE' + i + '"></span><span class="tp-v" id="tpC' + i + '"></span>' +
       '<button class="btn sm ghost" data-tpdel="' + i + '" type="button" aria-label="Supprimer le palier ' + (i + 1) + '">✕</button></div>').join('');
-    $('tpPlan').innerHTML = head + (dev > 0 ? '' : '<div class="notice info">Le plan vend les tokens de ton achat de créateur. Indique un montant ci-dessus pour qu\'il s\'applique ; les montants sont affichés en part de la mise en attendant.</div>') + pre +
-      '<div class="tp-table"><div class="tp-tr tp-th"><span>#</span><span>Quand le prix atteint</span><span>Vendre <small>de tes tokens</small></span><span>Tu récupères</span><span>Cumul</span><span></span></div>' + rows + '</div>' +
+    $('tpPlan').innerHTML = head + (dev > 0 ? '' : '<div class="notice info">Le plan vend les tokens de votre achat de créateur. Indiquez un montant ci-dessus pour qu\'il s\'applique ; les montants sont affichés en part de la mise en attendant.</div>') + pre +
+      '<div class="tp-table"><div class="tp-tr tp-th"><span>#</span><span>Quand le prix atteint</span><span>Vendre <small>de vos tokens</small></span><span>Vous récupérez</span><span>Cumul</span><span></span></div>' + rows + '</div>' +
       '<div class="tp-foot">' + (d.tp.length < 6 ? '<button class="btn sm" data-tpadd="1" type="button">Ajouter un palier</button>' : '') + '</div>' +
       '<div class="tp-ladder" id="tpLadder"></div>' +
-      '<div class="tp-stop"><div><b>Stop de protection</b><div class="seg tp-seg" role="group" aria-label="Type de stop"><button type="button" data-slmode="fixed" class="' + (d.slMode === 'trail' ? '' : 'on') + '">Fixe</button><button type="button" data-slmode="trail" class="' + (d.slMode === 'trail' ? 'on' : '') + '">Suiveur</button></div><p>' + (d.slMode === 'trail' ? 'Le stop suit le prix : il retient le plus haut atteint et vend tout ce qui reste si le prix recule de ce pourcentage depuis ce sommet. Il protège tes gains pendant la montée.' : 'Si le prix descend sous ton prix d\'achat de ce pourcentage, tout ce qui reste est vendu.') + ' Laisse vide pour ne pas en mettre.</p></div><span class="tp-in"><em>−</em><input type="number" min="0" max="99" step="1" id="tpSl" value="' + (d.sl || '') + '" placeholder="aucun" aria-label="Seuil du stop en pourcentage"><em>%</em></span></div>' +
+      '<div class="tp-stop"><div><b>Stop de protection</b><div class="seg tp-seg" role="group" aria-label="Type de stop"><button type="button" data-slmode="fixed" class="' + (d.slMode === 'trail' ? '' : 'on') + '">Fixe</button><button type="button" data-slmode="trail" class="' + (d.slMode === 'trail' ? 'on' : '') + '">Suiveur</button></div><p>' + (d.slMode === 'trail' ? 'Le stop suit le prix : il retient le plus haut atteint et vend tout ce qui reste si le prix recule de ce pourcentage depuis ce sommet. Il protège vos gains pendant la montée.' : 'Si le prix descend sous votre prix d\'achat de ce pourcentage, tout ce qui reste est vendu.') + ' Laissez vide pour ne pas en mettre.</p></div><span class="tp-in"><em>−</em><input type="number" min="0" max="99" step="1" id="tpSl" value="' + (d.sl || '') + '" placeholder="aucun" aria-label="Seuil du stop en pourcentage"><em>%</em></span></div>' +
       '<div class="tp-sum" id="tpSum"></div><div id="tpErr"></div>' +
-      '<p class="tp-note">Estimations frais pump.fun déduits, hors impact de ta vente sur le prix : une grosse vente rapporte un peu moins. Le multiplicateur se compte depuis ton prix d\'achat.</p>';
+      '<p class="tp-note">Estimations frais pump.fun déduits, hors impact de votre vente sur le prix : une grosse vente rapporte un peu moins. Le multiplicateur se compte depuis votre prix d\'achat.</p>';
     renderTpLive();
   }
   // Mise à jour sans reconstruire les champs (la saisie garde le focus)
@@ -2500,10 +2500,10 @@
     });
     const over = C.sold > 100;
     $('tpLadder').innerHTML = '<div class="tp-bar' + (over ? ' over' : '') + '">' + C.rows.map((r, i) => '<i style="flex:' + Math.max(0, r.p) + ';opacity:' + (1 - i * 0.14) + '" title="' + fx(r.x) + ' : ' + r.p + ' %"><span>' + fx(r.x) + '</span></i>').join('') + (C.keep > 0 ? '<i class="keep" style="flex:' + C.keep + '"><span>gardé</span></i>' : '') + '</div>' +
-      '<div class="tp-bar-l"><span>' + (over ? '<b class="neg">' + C.sold + ' % vendu : plus que tes tokens</b>' : C.sold + ' % vendu par paliers') + '</span><span>' + C.keep + ' % gardé jusqu\'à ta décision</span></div>';
+      '<div class="tp-bar-l"><span>' + (over ? '<b class="neg">' + C.sold + ' % vendu : plus que vos tokens</b>' : C.sold + ' % vendu par paliers') + '</span><span>' + C.keep + ' % gardé jusqu\'à votre décision</span></div>';
     const st = (l, v, s, cl) => '<div class="stat"><div class="l">' + l + '</div><div class="v ' + (cl || '') + '">' + v + '</div><div class="s">' + s + '</div></div>';
     $('tpSum').innerHTML =
-      st('Mise récupérée', C.back != null ? 'à ' + fx(C.rows[C.back].x) : 'jamais', C.back != null ? 'au palier ' + (C.back + 1) + ', le reste est du bonus' : 'augmente la part vendue aux premiers paliers', C.back != null ? 'pos' : 'warn') +
+      st('Mise récupérée', C.back != null ? 'à ' + fx(C.rows[C.back].x) : 'jamais', C.back != null ? 'au palier ' + (C.back + 1) + ', le reste est du bonus' : 'augmentez la part vendue aux premiers paliers', C.back != null ? 'pos' : 'warn') +
       st('Si tous les paliers sont atteints', tpAmt(C.cum, C.dev), C.keep > 0 ? '+ ' + C.keep + ' % gardés (≈ ' + tpAmt(C.keepVal, C.dev) + ' au dernier palier)' : 'tout est vendu', 'pos') +
       st('Perte maximale', C.slLoss != null ? '−' + tpAmt(C.slLoss, C.dev).replace(/^-/, '') : 'non limitée', C.slLoss != null ? (d.slMode === 'trail' ? 'si le prix recule dès l\'achat ; ensuite le stop remonte avec le prix' : 'si le stop se déclenche avant le 1er palier') : 'pas de stop : le prix peut aller jusqu\'à 0', C.slLoss != null ? '' : 'neg');
     $('tpErr').innerHTML = V.ok ? '' : '<div class="danger-note">' + V.errs.map(esc).join(' · ') + '</div>';
@@ -2530,7 +2530,7 @@
     if (!S.draft.tp || !S.draft.tp.length) S.draft.tp = [{ x: 2, pct: 25 }, { x: 3, pct: 25 }, { x: 5, pct: 25 }];
     S.draft.tpOn = true;
     saveDraft(); S.step = 4; renderLaunch();
-    toast('Token généré', best.name + ' · $' + best.ticker + ' · note ' + best.score + '/100. Vérifie puis lance.', 'g');
+    toast('Token généré', best.name + ' · $' + best.ticker + ' · note ' + best.score + '/100. Vérifiez puis lancez.', 'g');
   }
 
   /* ================================================================ palettes de l'interface (bouton « Personnaliser » de la barre latérale) */
@@ -2578,7 +2578,7 @@
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de tes wallets'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de vos wallets'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     // le bouton wallet historique est remplacé par le menu de compte (React) ; on le met à jour s'il existe encore
@@ -2591,8 +2591,8 @@
     sb.className = 'simbar'; sb.hidden = !cfg.sim;
     sb.innerHTML = cfg.sim ? '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span><b>Mode démo.</b> Tout est simulé avec le wallet démo de 10 SOL fictifs : rien n\'est envoyé sur la blockchain.</span>' +
       '<button class="btn sm primary" data-act="' + (AUTH ? 'simoff' : 'needacct') + '" type="button">Passer en réel</button>' : '';
-    const fb = $('filebar'); if (fb) { fb.hidden = location.protocol !== 'file:'; fb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>Studio ouvert comme fichier.</b> Phantom ne peut pas s\'y connecter : ouvre la version en ligne (https) ou via localhost.</span><button class="btn sm" id="fileHelp" type="button">Comment faire</button>'; }
-    const rb = $('rpcbar'); if (rb) { rb.hidden = !(S.rpcOk === false) || !!cfg.sim; /* la démo n'utilise pas la blockchain */ rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Ton RPC ne répond pas.</b> Vérifie l\'adresse dans Réglages.' : window.TSRelay ? '<b>Le RPC TokenStudio ne répond pas pour le moment.</b> Réessaie dans une minute, ou colle ta clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connecte-toi à ton compte pour utiliser le RPC TokenStudio, ou colle ta clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
+    const fb = $('filebar'); if (fb) { fb.hidden = location.protocol !== 'file:'; fb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>Studio ouvert comme fichier.</b> Phantom ne peut pas s\'y connecter : ouvrez la version en ligne (https) ou via localhost.</span><button class="btn sm" id="fileHelp" type="button">Comment faire</button>'; }
+    const rb = $('rpcbar'); if (rb) { rb.hidden = !(S.rpcOk === false) || !!cfg.sim; /* la démo n'utilise pas la blockchain */ rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Votre RPC ne répond pas.</b> Vérifiez l\'adresse dans Réglages.' : window.TSRelay ? '<b>Le RPC TokenStudio ne répond pas pour le moment.</b> Réessayez dans une minute, ou collez votre clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connectez-vous à votre compte pour utiliser le RPC TokenStudio, ou collez votre clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
     // seule la démo porte une étiquette de mode
     $('footMode').textContent = cfg.sim ? '● Démo' : ''; $('footMode').hidden = !cfg.sim;
     $('footMode').style.color = 'var(--violet)';
@@ -2609,13 +2609,13 @@
   let AUTH = null;
   function setAuth(on) {
     AUTH = !!on;
-    if (!AUTH && !cfg.sim) { cfg.sim = true; save(LS.cfg, cfg); toast('Mode démo', 'Connecte-toi à ton compte pour passer en réel.', 'a'); }
+    if (!AUTH && !cfg.sim) { cfg.sim = true; save(LS.cfg, cfg); toast('Mode démo', 'Connectez-vous à votre compte pour passer en réel.', 'a'); }
     renderAll();
   }
   async function goReal() {
     if (!cfg.sim) return;
-    if (!AUTH) { try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'real' })); } catch (e) {} if (AUTH === false) toast('Compte requis', 'Crée ton compte ou connecte-toi pour passer en réel. La démo reste ouverte à tous.', 'a'); return; }
-    if (await confirmBox('Passer en mode réel ?', '<p>Les transactions que tu signes partiront réellement sur la blockchain et engageront ton SOL. Un lancement ou un trade confirmé ne s\'annule pas.</p><p>Vérifie d\'abord tes réglages : limite par achat ' + fSol(cfg.maxSol, 2) + ', slippage ' + cfg.slippage + ' %.</p>', 'Passer en réel', true)) { cfg.sim = false; save(LS.cfg, cfg); toast('Mode réel activé', 'Chaque transaction demandera ta signature.', 'a'); renderAll(); }
+    if (!AUTH) { try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'real' })); } catch (e) {} if (AUTH === false) toast('Compte requis', 'Créez votre compte ou connectez-vous pour passer en réel. La démo reste ouverte à tous.', 'a'); return; }
+    if (await confirmBox('Passer en mode réel ?', '<p>Les transactions que vous signez partiront réellement sur la blockchain et engageront votre SOL. Un lancement ou un trade confirmé ne s\'annule pas.</p><p>Vérifiez d\'abord vos réglages : limite par achat ' + fSol(cfg.maxSol, 2) + ', slippage ' + cfg.slippage + ' %.</p>', 'Passer en réel', true)) { cfg.sim = false; save(LS.cfg, cfg); toast('Mode réel activé', 'Chaque transaction demandera votre signature.', 'a'); renderAll(); }
   }
   function goSim() { if (cfg.sim) return; cfg.sim = true; save(LS.cfg, cfg); toast('Mode démo', 'Plus rien n\'est envoyé.', 'g'); renderAll(); }
   function openSettings() {
@@ -2753,7 +2753,7 @@
     $('dModeBadge').className = 'badge v'; $('dModeBadge').textContent = 'Démo'; $('dModeBadge').hidden = !cfg.sim;
     const demoW = cfg.sim && (!w || !AUTH);   // démo sans wallet ou sans compte : solde du wallet démo
     $('dBal').innerHTML = demoW ? fr(DEMO.bal, 2) + '<small> SOL démo</small>' : w && S.bal != null ? fr(S.bal, S.bal >= 100 ? 2 : 4) + '<small> SOL</small>' : '—';
-    $('dBalS').textContent = demoW ? 'Wallet démo · fonds fictifs' + (S.solUsd ? ' ≈ ' + fUsd(DEMO.bal * S.solUsd) : '') : w ? (S.solUsd && S.bal != null ? '≈ ' + fUsd(S.bal * S.solUsd) + ' · ' : '') + (w.id === 'session' ? 'Wallet rapide' : w.name) + ' · ' + short(w.pk) : 'Connecte un wallet pour voir ton solde';
+    $('dBalS').textContent = demoW ? 'Wallet démo · fonds fictifs' + (S.solUsd ? ' ≈ ' + fUsd(DEMO.bal * S.solUsd) : '') : w ? (S.solUsd && S.bal != null ? '≈ ' + fUsd(S.bal * S.solUsd) + ' · ' : '') + (w.id === 'session' ? 'Wallet rapide' : w.name) + ' · ' + short(w.pk) : 'Connectez un wallet pour voir votre solde';
     const ok = L.filter((j) => j.status === 'ok'), spent = Math.abs(ok.filter((j) => j.sol < 0).reduce((a, j) => a + j.sol, 0)), recv = ok.filter((j) => j.sol > 0).reduce((a, j) => a + j.sol, 0), net = recv - spent;
     const hs = (l, v, c) => '<div><span>' + l + '</span><b class="' + (c || '') + '">' + v + '</b></div>';
     $('dHero').innerHTML = hs('Dépensé', fSol(spent, 3)) + hs('Reçu', fSol(recv, 3)) + hs('Flux net', (net > 0 ? '+' : '') + fSol(net, 3), cls(net));
@@ -2765,7 +2765,7 @@
       $('dSolChg').className = 'd-chg ' + cls(chg); $('dSolChg').textContent = (chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : '') + fr(chg, 2) + ' %';
       const pts = H.slice(); if (S.solUsd) pts[pts.length - 1] = Object.assign({}, pts[pts.length - 1], { v: S.solUsd });
       lineChart($('dSolCv'), pts, { fy: (v, hv) => fr(v, hv ? 2 : (v >= 100 ? 0 : 1)) + ' $', fx: (p) => DASH.range === '1d' ? fHm(p.t) : fDay(p.t), ft: (p) => fDay(p.t) + ' · ' + fHm(p.t) });
-      $('dSolFoot').innerHTML = '<span>Plus haut <b>' + fr(hi, 2) + ' $</b></span><span>Plus bas <b>' + fr(lo, 2) + ' $</b></span><span>Amplitude <b>' + fr((hi / lo - 1) * 100, 1) + ' %</b></span>' + (S.bal != null && w ? '<span>Ton solde <b>' + fUsd(S.bal * last) + '</b></span>' : '');
+      $('dSolFoot').innerHTML = '<span>Plus haut <b>' + fr(hi, 2) + ' $</b></span><span>Plus bas <b>' + fr(lo, 2) + ' $</b></span><span>Amplitude <b>' + fr((hi / lo - 1) * 100, 1) + ' %</b></span>' + (S.bal != null && w ? '<span>Votre solde <b>' + fUsd(S.bal * last) + '</b></span>' : '');
     } else { $('dSolChg').textContent = ''; lineChart($('dSolCv'), null, { empty: 'Chargement de l\'historique du SOL…', fy: (v) => v, fx: () => '' }); $('dSolFoot').innerHTML = ''; }
     // tuiles
     const act = S.orders.filter((o) => o.active), kinds = { tp: 0, sl: 0, trail: 0 }; act.forEach((o) => { kinds[o.kind === 'trail' ? 'trail' : o.kind === 'sl' ? 'sl' : 'tp']++; });
@@ -2782,7 +2782,7 @@
     // flux net cumulé
     let c2 = 0; const fpts = okAsc.length ? [{ t: okAsc[0].t - 1, v: 0 }].concat(okAsc.map((j) => ({ t: j.t, v: (c2 += j.sol || 0), j }))) : null;
     $('dFlowNote').textContent = 'SOL reçu moins SOL dépensé · opérations ' + (m === 'real' ? 'réelles' : m === 'sim' ? 'simulées' : 'réelles et simulées');
-    lineChart($('dFlowCv'), fpts, { zero: true, yw: 76, empty: 'La courbe apparaîtra après ta première opération.', fy: (v, hv) => (v > 0 ? '+' : '') + fr(v, hv ? 4 : Math.abs(v) >= 10 ? 1 : 3), fx: (p) => fDay(p.t), ft: (p) => (p.j ? (DTYPE[p.j.type] || p.j.type) + ' ' + (p.j.symbol || '') + ' · ' : '') + fDay(p.t) + ' ' + fHm(p.t) });
+    lineChart($('dFlowCv'), fpts, { zero: true, yw: 76, empty: 'La courbe apparaîtra après votre première opération.', fy: (v, hv) => (v > 0 ? '+' : '') + fr(v, hv ? 4 : Math.abs(v) >= 10 ? 1 : 3), fx: (p) => fDay(p.t), ft: (p) => (p.j ? (DTYPE[p.j.type] || p.j.type) + ' ' + (p.j.symbol || '') + ' · ' : '') + fDay(p.t) + ' ' + fHm(p.t) });
     // répartition
     const mix = [{ k: 'buy', l: 'Achats', c: K.green }, { k: 'sell', l: 'Ventes', c: K.red }, { k: 'create', l: 'Lancements', c: K.accent }, { k: 'err', l: 'Échecs', c: K.dim }].map((x) => Object.assign(x, { n: L.filter((j) => x.k === 'err' ? j.status === 'err' : j.status === 'ok' && j.type === x.k).length }));
     donut($('dMixCv'), mix, [String(L.length), 'opérations']);
@@ -2799,12 +2799,12 @@
       const lab = o.kind === 'trail' ? 'Stop suiveur −' + o.value + ' %' : o.kind === 'sl' ? 'Stop −' + o.value + ' %' : o.kind === 'tp' ? (o.plan ? 'Objectif ×' + fr(1 + o.value / 100, 1).replace(',0', '') : 'Objectif +' + o.value + ' %') : 'Objectif ' + o.value;
       let prog = null; if (r != null) { if (o.kind === 'tp') prog = Math.max(0, Math.min(1, r / o.value)); else if (o.kind === 'sl') prog = Math.max(0, Math.min(1, -r / o.value)); }
       return '<div class="d-row"><span class="d-tag ' + (o.kind === 'tp' ? 'g' : o.kind === 'sl' ? 'r' : 'b') + '">' + (o.kind === 'tp' ? 'TP' : o.kind === 'sl' ? 'SL' : 'TS') + '</span><span class="d-main"><b>' + esc(o.symbol || short(o.mint)) + '</b><small>' + lab + ' · ' + (o.pct || 100) + ' % des tokens</small>' + (prog != null ? '<span class="d-prog ' + (o.kind === 'sl' ? 'r' : '') + '"><i style="width:' + (prog * 100).toFixed(1) + '%"></i></span>' : '') + '</span><span class="d-val ' + cls(r) + '">' + (r != null ? (r > 0 ? '+' : '') + fr(r, 1) + ' %' : '<span class="dim">prix…</span>') + '</span></div>';
-    }).join('') + (act.length > 6 ? '<div class="d-more">+ ' + (act.length - 6) + ' autres ordres</div>' : '') : '<div class="d-empty"><b>Aucun ordre actif</b>Ajoute un objectif ou un stop depuis un token.</div>';
+    }).join('') + (act.length > 6 ? '<div class="d-more">+ ' + (act.length - 6) + ' autres ordres</div>' : '') : '<div class="d-empty"><b>Aucun ordre actif</b>Ajoutez un objectif ou un stop depuis un token.</div>';
     // dernières opérations
     const last6 = L.slice(0, 6);
-    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' || j.type === 'fees' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : j.type === 'fees' ? 'F' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + (j.type === 'fees' ? '' : ' · ' + esc(j.symbol || short(j.mint))) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Tes achats, ventes et lancements apparaîtront ici.</div>';
+    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' || j.type === 'fees' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : j.type === 'fees' ? 'F' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + (j.type === 'fees' ? '' : ' · ' + esc(j.symbol || short(j.mint))) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Vos achats, ventes et lancements apparaîtront ici.</div>';
     // tokens lancés
-    $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.ext ? (PLATFORMS[t.platform] || PLATFORMS.pump).n + (C.curve.dex === 'launchlab' ? ' · ≈ ' + fr(st.progress, 0) + ' %' : ' · ' + dexName(C.curve)) : C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Crée ton premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
+    $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.ext ? (PLATFORMS[t.platform] || PLATFORMS.pump).n + (C.curve.dex === 'launchlab' ? ' · ≈ ' + fr(st.progress, 0) + ' %' : ' · ' + dexName(C.curve)) : C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Créez votre premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
     solHist(false);
   }
   /* ================================================================ diffusion : référencement sur les grandes plateformes */
@@ -2899,7 +2899,7 @@
     sel.innerHTML = list.length ? list.map((t) => '<option value="' + esc(t.mint) + '">' + esc(t.name) + ' · $' + esc(t.symbol) + ' · ' + esc((PLATFORMS[t.platform] || PLATFORMS.pump).n) + '</option>').join('') : '<option value="">Aucun token lancé</option>';
     if (!list.find((t) => t.mint === DS.mint)) DS.mint = list.length ? list[0].mint : '';
     sel.value = DS.mint;
-    if (!DS.mint) { box.innerHTML = '<div class="card"><div class="empty"><b>Aucun token à diffuser</b>Lance un token (ou ajoute-en un existant dans Mes tokens) : son adresse est nécessaire pour toutes les plateformes. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div></div>'; return; }
+    if (!DS.mint) { box.innerHTML = '<div class="card"><div class="empty"><b>Aucun token à diffuser</b>Lancez un token (ou ajoutez-en un existant dans Mes tokens) : son adresse est nécessaire pour toutes les plateformes. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div></div>'; return; }
     const t = list.find((x) => x.mint === DS.mint), X = DS.cache[t.mint], rec = DS.rec[t.mint] || {};
     if (!X || (!X.loading && Date.now() - X.at > 120000)) { distCheck(t.mint); if (!S.cache[t.mint]) loadToken(t.mint, false).then(() => { if (S.page === 'dist') renderDist(); }).catch(() => {}); }
     const XX = X || { st: {}, loading: true }, vis = DIST.filter((p) => (XX.st[p.id] || {}).s === 'on').length;
@@ -2908,7 +2908,7 @@
     box.innerHTML =
       '<div class="dist-top">' +
         '<div class="card dist-sum"><div class="ring" style="--p:' + Math.round(vis / DIST.length * 100) + '">' + ring(vis / DIST.length * 100, 'var(--accent)') + '</div><div><b>Visible sur ' + vis + ' / ' + DIST.length + ' plateformes</b><span>' + (XX.loading ? 'Vérification en cours…' : 'Vérifié ' + fAgo(XX.at)) + ' · ' + sent + ' demande' + (sent > 1 ? 's' : '') + ' envoyée' + (sent > 1 ? 's' : '') + '</span>' + (XX.vol != null ? '<span>Volume 24 h ' + fUsd(XX.vol) + ' · liquidité ' + fUsd(XX.liq) + '</span>' : '') + '</div><button class="btn sm" data-dist="refresh" type="button">Revérifier</button></div>' +
-        '<div class="card dist-act"><b>Soumettre en une fois</b><span>Coche les plateformes, copie le dossier, puis ouvre tous leurs formulaires d\'un clic.</span><div class="toolbar"><button class="btn sm" data-dist="free" type="button">Sélection gratuite</button><button class="btn sm" data-dist="none" type="button">Aucune</button><button class="btn primary" data-dist="open" type="button"' + (nSel ? '' : ' disabled') + '>Ouvrir la sélection (' + nSel + ')</button></div></div>' +
+        '<div class="card dist-act"><b>Soumettre en une fois</b><span>Cochez les plateformes, copiez le dossier, puis ouvrez tous leurs formulaires d\'un clic.</span><div class="toolbar"><button class="btn sm" data-dist="free" type="button">Sélection gratuite</button><button class="btn sm" data-dist="none" type="button">Aucune</button><button class="btn primary" data-dist="open" type="button"' + (nSel ? '' : ' disabled') + '>Ouvrir la sélection (' + nSel + ')</button></div></div>' +
       '</div>' +
       '<div class="dist-grid">' + DIST.map((p) => {
         const st = XX.st[p.id] || { s: XX.loading ? 'unk' : 'unk', t: XX.loading ? 'vérification…' : '—' }, l = SL[st.s] || SL.unk, r = rec[p.id], pg = p.page(t.mint, XX);
@@ -2919,7 +2919,7 @@
           '<p>' + esc(p.note) + '</p>' +
           '<div class="dist-b">' + (pg ? '<a class="btn sm" href="' + esc(pg) + '" target="_blank" rel="noopener">Voir la fiche</a>' : '') + (p.form ? '<a class="btn sm' + (p.cost === 'free' ? ' primary' : '') + '" href="' + esc(p.form) + '" target="_blank" rel="noopener" data-distform="' + p.id + '">' + esc(p.formL) + '</a><button class="btn sm ghost" data-distmark="' + p.id + '" type="button">' + (r ? (r.done ? 'Annuler' : 'Acceptée ?') : 'Marquer envoyé') + '</button>' : '') + '</div></div>';
       }).join('') + '</div>' +
-      '<div class="card"><div class="card-h"><h3>Dossier de soumission</h3><p>Les mêmes informations sont demandées partout : copie chaque champ, ou tout le dossier d\'un coup. Les champs vides sont à compléter dans Lancer un token (liens) avant d\'envoyer une demande.</p></div>' +
+      '<div class="card"><div class="card-h"><h3>Dossier de soumission</h3><p>Les mêmes informations sont demandées partout : copiez chaque champ, ou tout le dossier d\'un coup. Les champs vides sont à compléter dans Lancer un token (liens) avant d\'envoyer une demande.</p></div>' +
       '<div class="dist-kit">' + distKit(t).map((f, i) => '<div class="' + (f[1] ? '' : 'miss') + '"><span>' + esc(f[0]) + '</span><b>' + (f[1] ? esc(f[1]) : 'à compléter') + '</b>' + (f[1] ? '<button class="btn sm ghost" data-distcp="' + i + '" type="button">Copier</button>' : '') + '</div>').join('') + '</div>' +
       '<div class="toolbar"><button class="btn primary" data-distcp="all" type="button">Copier tout le dossier</button><span class="muted" style="font-size:13px">Conseil : un site web, un compte X actif et un volume régulier font la différence pour CoinGecko, CoinMarketCap et Jupiter.</span></div></div>';
   }
@@ -2932,14 +2932,14 @@
       const ps = DIST.filter((p) => DS.sel.has(p.id) && p.form); let blocked = 0;
       try { await navigator.clipboard.writeText(distKit(t).map((f) => f[0] + ' : ' + (f[1] || '')).join('\n')); } catch (e) {}
       ps.forEach((p) => { const w = window.open(p.form, '_blank', 'noopener'); if (!w) blocked++; distMark(p.id, true); });
-      if (blocked) toast('Onglets bloqués', blocked + ' formulaire(s) bloqué(s) par le navigateur : autorise les fenêtres pop-up pour ce site, ou ouvre-les depuis chaque carte.', 'a');
-      else toast(ps.length + ' formulaires ouverts', 'Le dossier complet est copié : colle-le au fur et à mesure.', 'g');
+      if (blocked) toast('Onglets bloqués', blocked + ' formulaire(s) bloqué(s) par le navigateur : autorisez les fenêtres pop-up pour ce site, ou ouvrez-les depuis chaque carte.', 'a');
+      else toast(ps.length + ' formulaires ouverts', 'Le dossier complet est copié : collez-le au fur et à mesure.', 'g');
       return renderDist();
     }
     if (d.distmark) { const r = (DS.rec[DS.mint] || {})[d.distmark]; if (!r) distMark(d.distmark, true); else if (!r.done) { r.done = true; save(LSD, DS.rec); } else { delete DS.rec[DS.mint][d.distmark]; save(LSD, DS.rec); } return renderDist(); }
     if (d.distcp) {
       const K = distKit(t), txt = d.distcp === 'all' ? K.map((f) => f[0] + ' : ' + (f[1] || '')).join('\n') : K[+d.distcp][1];
-      try { await navigator.clipboard.writeText(txt); toast('Copié', d.distcp === 'all' ? 'Dossier complet' : K[+d.distcp][0], 'g'); } catch (e) { toast('Copie impossible', 'Sélectionne le texte à la main.', 'a'); }
+      try { await navigator.clipboard.writeText(txt); toast('Copié', d.distcp === 'all' ? 'Dossier complet' : K[+d.distcp][0], 'g'); } catch (e) { toast('Copie impossible', 'Sélectionnez le texte à la main.', 'a'); }
     }
   }
   function distMark(id, on) { if (!DS.mint) return; const R = DS.rec[DS.mint] = DS.rec[DS.mint] || {}; if (on && !R[id]) R[id] = { at: Date.now() }; save(LSD, DS.rec); }
@@ -2957,15 +2957,15 @@
     if (CFEE.pk !== pk) { CFEE.sol = null; CFEE.err = null; }
     CFEE.pk = pk; CFEE.loading = true; renderFees();
     try { const { web3 } = KIT(), bn = await pumpConn().online.getCreatorVaultBalanceBothPrograms(new web3.PublicKey(pk)); CFEE.sol = Number(bn.toString()) / 1e9; CFEE.err = null; }
-    catch (e) { CFEE.err = 'Lecture impossible : ' + (/fetch|RPC|403|429/i.test(e.message || '') ? 'le RPC ne répond pas (ajoute ta clé Helius dans Réglages).' : (e.message || e)); }
+    catch (e) { CFEE.err = 'Lecture impossible : ' + (/fetch|RPC|403|429/i.test(e.message || '') ? 'le RPC ne répond pas (ajoutez votre clé Helius dans Réglages).' : (e.message || e)); }
     CFEE.loading = false; CFEE.at = Date.now(); renderFees();
   }
   function feesHtml() {
     const w = feeWallet();
-    if (!w) return '<div class="fee-l"><span class="fee-ic">' + IC.wallet + '</span><span><b>Frais de créateur</b><small>Connecte le wallet qui a créé tes tokens pour voir ce qu\'ils t\'ont rapporté.</small></span></div>';
+    if (!w) return '<div class="fee-l"><span class="fee-ic">' + IC.wallet + '</span><span><b>Frais de créateur</b><small>Connectez le wallet qui a créé vos tokens pour voir ce qu\'ils vous ont rapporté.</small></span></div>';
     const amt = CFEE.pk === w.pk ? CFEE.sol : null, has = amt > 0;
     return '<div class="fee-l"><span class="fee-ic">' + IC.wallet + '</span><span><b>Frais de créateur à récupérer</b><small>' +
-      (CFEE.err && CFEE.pk === w.pk ? esc(CFEE.err) : 'Part des frais de chaque échange sur tes tokens · wallet ' + esc(w.id === 'session' ? 'rapide' : w.name) + ' ' + short(w.pk)) + '</small></span></div>' +
+      (CFEE.err && CFEE.pk === w.pk ? esc(CFEE.err) : 'Part des frais de chaque échange sur vos tokens · wallet ' + esc(w.id === 'session' ? 'rapide' : w.name) + ' ' + short(w.pk)) + '</small></span></div>' +
       '<div class="fee-r"><span class="fee-v' + (has ? ' pos' : '') + '">' + (amt == null ? (CFEE.loading ? '…' : '—') : fr(amt, amt >= 1 ? 3 : 5) + '<small> SOL</small>') + (has && S.solUsd ? '<em>≈ ' + fUsd(amt * S.solUsd) + '</em>' : '') + '</span>' +
       '<button class="btn sm ghost" data-fees="refresh" type="button" title="Relire">' + (CFEE.loading ? '…' : 'Actualiser') + '</button>' +
       '<button class="btn sm ' + (has ? 'primary' : '') + '" data-fees="claim" type="button"' + (has && !S.busy ? '' : ' disabled') + '>' + (has ? 'Récupérer' : 'Rien à récupérer') + '</button></div>';
@@ -2975,10 +2975,10 @@
   async function demoClaimFees() {
     await feesRead(true);
     const amt = CFEE.sol || 0;
-    if (!(amt > 0)) { toast('Rien à récupérer', 'Tes tokens démo n\'ont pas encore généré de frais.', 'a'); return; }
+    if (!(amt > 0)) { toast('Rien à récupérer', 'Vos tokens démo n\'ont pas encore généré de frais.', 'a'); return; }
     const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSol(amt, 5) + '</span><span>Wallet</span><span>Wallet démo · ' + fSol(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' + demoCta();
     if (!(await confirmBox('Récupérer ' + fSol(amt, 4) + ' en démo ?', recap, 'Récupérer en démo'))) return;
-    const ctx = await runFlow('Démo · Frais de créateur', [{ label: 'Frais récupérés sur tes tokens démo', run: async () => { await sleep(400); return fSol(amt, 5); } }]);
+    const ctx = await runFlow('Démo · Frais de créateur', [{ label: 'Frais récupérés sur vos tokens démo', run: async () => { await sleep(400); return fSol(amt, 5); } }]);
     if (ctx.error) return;
     Object.values(DM.tok).forEach((T) => { T.claimed = T.fees; }); dmSave();
     DEMO.bal += amt; demoSave();
@@ -2996,7 +2996,7 @@
     const amt = CFEE.sol || 0, pk = W.pk;
     if (!(amt > 0)) { toast('Rien à récupérer', CFEE.err || 'Aucun frais de créateur en attente pour ce wallet.', 'a'); return; }
     const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSol(amt, 5) + (S.solUsd ? ' · ≈ ' + fUsd(amt * S.solUsd) : '') + '</span><span>Wallet créateur</span><span>' + short(pk, 6) + '</span><span>Sources</span><span>courbe pump.fun + PumpSwap</span><span>Frais de réseau</span><span>≈ 0,0001 SOL</span>' + (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' +
-      (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : '<p>Les SOL arrivent directement sur ce wallet. ' + (W.id === 'session' ? 'Le wallet rapide signe dès que tu confirmes.' : 'Ton wallet va te présenter la transaction.') + '</p>');
+      (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : '<p>Les SOL arrivent directement sur ce wallet. ' + (W.id === 'session' ? 'Le wallet rapide signe dès que vous confirmez.' : 'Votre wallet va vous présenter la transaction.') + '</p>');
     if (!(await confirmBox(cfg.sim ? 'Vérifier la récupération en démo ?' : 'Récupérer ' + fSol(amt, 4) + ' ?', recap, cfg.sim ? 'Vérifier en démo' : 'Récupérer'))) return;
     S.busy = true; renderFees();
     try {
@@ -3005,13 +3005,13 @@
         { label: 'Vérification sur la blockchain', run: async (x) => { const v = await simulate(x.tx); x.logs = (v.logs || []).slice(-12).join('\n'); if (v.err) throw new Error(simError(v)); x.logs = ''; return 'acceptée'; } },
       ];
       if (!cfg.sim) {
-        steps.push({ label: W.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans ton wallet', run: async (x) => { x.sig = await signAndSend(x.tx, null, W); return short(x.sig, 6); } });
+        steps.push({ label: W.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans votre wallet', run: async (x) => { x.sig = await signAndSend(x.tx, null, W); return short(x.sig, 6); } });
         steps.push({ label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) });
       }
       const ctx = await runFlow((cfg.sim ? 'Simulation · ' : '') + 'Frais de créateur', steps);
       if (ctx.error) { journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: cfg.sim, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 }); return; }
       journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: cfg.sim, status: 'ok', sig: ctx.sig || '', sol: amt, tokens: 0, est: true });
-      if (cfg.sim) { $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">Démo réussie : la récupération réelle passerait. Passe en réel pour recevoir les SOL.</div>'); return; }
+      if (cfg.sim) { $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">Démo réussie : la récupération réelle passerait. Passez en réel pour recevoir les SOL.</div>'); return; }
       $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSol(amt, 5) + ' récupérés. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
       toast('Frais récupérés', fSol(amt, 5), 'g');
       CFEE.sol = 0; refreshBal();
@@ -3047,10 +3047,10 @@
     Object.keys(CR_FIELDS).forEach((id) => set(id, d[CR_FIELDS[id]]));
     $('crDescCnt').textContent = (d.desc || '').length + ' / 1000';
     $('crSymHelp').textContent = d.symManual ? 'Ticker saisi à la main.' : 'Rempli tout seul à partir du nom, modifiable.';
-    $('crLogo').innerHTML = d.image ? '<img src="' + d.image + '" alt="Logo du token"><em>' + (d.imgSrc === 'upload' ? 'Ton image' : 'Logo généré') + '</em>' : '<span>Pas encore de logo</span>';
+    $('crLogo').innerHTML = d.image ? '<img src="' + d.image + '" alt="Logo du token"><em>' + (d.imgSrc === 'upload' ? 'Votre image' : 'Logo généré') + '</em>' : '<span>Pas encore de logo</span>';
     $('crPvImg').innerHTML = d.image ? '<img src="' + d.image + '" alt="">' : esc((d.symbol || '?').slice(0, 3));
     $('crPvName').textContent = d.name.trim() || 'Nom du token'; $('crPvSym').textContent = '$' + (d.symbol || 'TICKER');
-    $('crPvDesc').textContent = (d.desc || '').trim() || 'Ta description apparaîtra ici.';
+    $('crPvDesc').textContent = (d.desc || '').trim() || 'Votre description apparaîtra ici.';
     const st = crSteps();
     [['crOk1', 'crS1', st.s1], ['crOk2', 'crS2', st.s2], ['crOk3', 'crS3', st.s3]].forEach(([o, sec, ok]) => { $(o).innerHTML = ok ? CHECK_SVG : ''; $(sec).classList.toggle('done', ok); });
     const it = (ok, l, opt) => '<div class="' + (ok ? 'ok' : opt ? 'opt' : '') + '"><i>' + (ok ? CHECK_SVG : '') + '</i>' + l + '</div>';
@@ -3060,9 +3060,9 @@
   }
   function crAction(a) {
     const d = S.draft;
-    if (a === 'desc') { if (!d.name.trim()) { toast('Nom manquant', 'Écris d\'abord le nom de ton token.', 'a'); $('crName').focus(); return; } d.desc = descFor(d.name, d.symbol || tickerFor(d.name), d.name.split(' ').pop()); saveDraft(); renderCreate(); return; }
+    if (a === 'desc') { if (!d.name.trim()) { toast('Nom manquant', 'Écrivez d\'abord le nom de votre token.', 'a'); $('crName').focus(); return; } d.desc = descFor(d.name, d.symbol || tickerFor(d.name), d.name.split(' ').pop()); saveDraft(); renderCreate(); return; }
     if (a === 'gen') {
-      if (!d.symbol) { toast('Nom manquant', 'Écris d\'abord le nom de ton token : le logo s\'en inspire.', 'a'); $('crName').focus(); return; }
+      if (!d.symbol) { toast('Nom manquant', 'Écrivez d\'abord le nom de votre token : le logo s\'en inspire.', 'a'); $('crName').focus(); return; }
       if (d.imgSrc === 'upload') { d.imgSrc = 'gen'; drawLogo.key = null; }
       d.logo.name = d.name; if (!d.logo.textCustom) d.logo.text = d.symbol;
       logoVariants(); if (S.logoVars) applyLogoVar(0); renderCreate(); return;
@@ -3071,9 +3071,9 @@
     if (a === 'launch') {
       const st = crSteps();
       if (!st.s1) { toast('Bloc 1 à compléter', 'Il faut un nom, un ticker de 2 à 10 caractères et une description.', 'a'); $('crS1').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-      if (!st.s2) { toast('Logo manquant', 'Importe ton image ou clique sur « Proposer des logos ».', 'a'); $('crS2').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      if (!st.s2) { toast('Logo manquant', 'Importez votre image ou cliquez sur « Proposer des logos ».', 'a'); $('crS2').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
       setLaunchTab('studio'); S.step = 4; renderLaunch(); window.scrollTo(0, 0);
-      toast('Prêt pour le lancement', d.name + ' · $' + d.symbol + '. Choisis l\'achat du créateur, puis lance.', 'g');
+      toast('Prêt pour le lancement', d.name + ' · $' + d.symbol + '. Choisissez l\'achat du créateur, puis lancez.', 'g');
     }
   }
   /* ================================================================ rendu : lancer */
@@ -3102,7 +3102,7 @@
   }
   function renderIdeas() {
     $('ideas').innerHTML = S.ideas.length ? S.ideas.map((x, i) => '<button class="idea ' + (S.draft.idea === i && S.draft.name === x.name ? 'on' : '') + '" data-idea="' + i + '" type="button"><div class="h"><img class="idea-logo" alt="" src="' + (x.logo || (x.logo = ideaLogo(x))) + '"><b>' + esc(x.name) + '</b><span class="sc ' + (x.score >= 80 ? 'pos' : x.score >= 60 ? 'warn' : 'neg') + '">' + x.score + '</span></div><span class="tk-l">$' + esc(x.ticker) + '</span><small>' + esc(x.tag) + '</small><div class="why-score">' + x.parts.map((p) => '<span class="' + (p.v >= 10 ? 'p' : p.v <= 3 ? 'm' : '') + '">' + esc(p.k) + '</span>').join('') + '</div></button>').join('')
-      : '<div class="empty"><b>Choisis un univers ci-dessus</b>Les idées apparaissent ici : nom, ticker et logo. Clique sur celle qui te plaît, le studio passe tout seul à l\'étape suivante.</div>';
+      : '<div class="empty"><b>Choisissez un univers ci-dessus</b>Les idées apparaissent ici : nom, ticker et logo. Cliquez sur celle qui vous plaît, le studio passe tout seul à l\'étape suivante.</div>';
   }
   function fillFields() {
     const set = (id, v) => { const el = $(id); if (el && el !== document.activeElement) el.value = v || ''; };
@@ -3113,14 +3113,14 @@
   }
   function renderDevQuote() {
     const dev = num(S.draft.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null, st = curveStats(INIT_CURVE);
-    $('devQuote').innerHTML = '<div class="kv">' + (q ? '<span>Tu reçois</span><span>' + fTok(q.tokens) + ' tokens</span><span>Part de l\'offre</span><span class="' + (q.supplyPct > cfg.devMaxPct ? 'neg' : q.supplyPct > 5 ? 'warn' : 'pos') + '">' + fPct(q.supplyPct, 2) + '</span><span>Capitalisation après</span><span>' + (S.solUsd ? fUsd(q.mcapAfterSol * S.solUsd) : fSol(q.mcapAfterSol, 1)) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span>'
+    $('devQuote').innerHTML = '<div class="kv">' + (q ? '<span>Vous recevez</span><span>' + fTok(q.tokens) + ' tokens</span><span>Part de l\'offre</span><span class="' + (q.supplyPct > cfg.devMaxPct ? 'neg' : q.supplyPct > 5 ? 'warn' : 'pos') + '">' + fPct(q.supplyPct, 2) + '</span><span>Capitalisation après</span><span>' + (S.solUsd ? fUsd(q.mcapAfterSol * S.solUsd) : fSol(q.mcapAfterSol, 1)) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span>'
       : '<span>Achat du créateur</span><span>aucun</span><span>Capitalisation de départ</span><span>' + (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) + '</span>') + '</div>';
-    $('launchNote').innerHTML = q && q.supplyPct > 5 ? 'Un créateur qui détient plus de 5 % de l\'offre fait fuir les acheteurs prudents : les outils d\'analyse l\'affichent en rouge.' : 'L\'achat du créateur est visible publiquement. Une petite part rassure : tu montres que tu crois au projet sans contrôler le prix.';
+    $('launchNote').innerHTML = q && q.supplyPct > 5 ? 'Un créateur qui détient plus de 5 % de l\'offre fait fuir les acheteurs prudents : les outils d\'analyse l\'affichent en rouge.' : 'L\'achat du créateur est visible publiquement. Une petite part rassure : vous montrez que vous croyez au projet sans contrôler le prix.';
     const R = readiness();
     $('launchBtn').textContent = cfg.sim ? 'Lancer en démo' : 'Lancer le token';
     $('launchBtn').className = 'btn ' + (cfg.sim ? 'primary' : 'danger');
     $('launchBtn').disabled = S.busy;
-    $('launchHint').textContent = R.blocking.length ? 'À compléter : ' + R.blocking[0] : cfg.sim ? 'Prêt pour un lancement en démo.' : 'Prêt. Le token sera publié après ta signature.';
+    $('launchHint').textContent = R.blocking.length ? 'À compléter : ' + R.blocking[0] : cfg.sim ? 'Prêt pour un lancement en démo.' : 'Prêt. Le token sera publié après votre signature.';
   }
   function ring(pct, color) { const r = 16, c = 2 * Math.PI * r; return '<svg viewBox="0 0 38 38"><circle cx="19" cy="19" r="' + r + '" fill="none" stroke="var(--line2)" stroke-width="4"/><circle cx="19" cy="19" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + (c * pct / 100) + ' ' + c + '"/></svg><span>' + Math.round(pct) + '</span>'; }
   function renderLaunchSide() {
@@ -3177,24 +3177,24 @@
     if (!C) return '<div class="card"><div class="empty"><b>Chargement…</b>Lecture de la courbe de liaison sur la blockchain.</div></div>';
     if (C.error) return '<div class="notice bad">' + esc(C.error) + '</div>';
     const c = C.curve, st = C.stats, m = C.meta || {}, sym = m.symbol || short(mint), name = m.name || 'Token ' + short(mint);
-    if (!c.exists) return '<div class="notice bad">Aucun marché pour cette adresse : ni courbe pump.fun, ni paire sur DEX Screener. Vérifie le mint ; un token tout juste créé peut mettre une minute à apparaître.</div>';
+    if (!c.exists) return '<div class="notice bad">Aucun marché pour cette adresse : ni courbe pump.fun, ni paire sur DEX Screener. Vérifiez le mint ; un token tout juste créé peut mettre une minute à apparaître.</div>';
     const plat = PLATFORMS[platOf(mint)];
     const pos = myPosition(mint, C), side = S.side[ctx], R = risks(C);
     const usd = (sol) => S.solUsd ? fUsd(sol * S.solUsd) : fSol(sol);
     const H = C.holders || [];
-    const tradesHtml = (C.trades || []).slice(0, 40).map((x) => '<div class="tr"><span class="badge ' + (x.side === 'buy' ? 'g' : 'r') + '">' + (x.side === 'buy' ? 'Achat' : 'Vente') + '</span><span class="w">' + (x.wallet === c.creator ? '<b class="warn">créateur</b>' : S.wallet && x.wallet === S.wallet.pk ? '<b>toi</b>' : short(x.wallet)) + ' · ' + fAgo(x.t) + '</span><span class="num">' + fTok(x.tokens) + '</span><span class="num ' + (x.side === 'buy' ? 'pos' : 'neg') + '">' + fSol(x.sol, 3) + '</span></div>').join('');
+    const tradesHtml = (C.trades || []).slice(0, 40).map((x) => '<div class="tr"><span class="badge ' + (x.side === 'buy' ? 'g' : 'r') + '">' + (x.side === 'buy' ? 'Achat' : 'Vente') + '</span><span class="w">' + (x.wallet === c.creator ? '<b class="warn">créateur</b>' : S.wallet && x.wallet === S.wallet.pk ? '<b>vous</b>' : short(x.wallet)) + ' · ' + fAgo(x.t) + '</span><span class="num">' + fTok(x.tokens) + '</span><span class="num ' + (x.side === 'buy' ? 'pos' : 'neg') + '">' + fSol(x.sol, 3) + '</span></div>').join('');
     const orders = S.orders.filter((o) => o.mint === mint);
     return '<div class="card"><div class="tok-head"><div class="av lg">' + (m.image ? '<img src="' + esc(m.image) + '" alt="">' : esc(sym.slice(0, 3))) + '</div><div><h2>' + esc(name) + ' <span class="badge v">$' + esc(sym) + '</span>' + (c.ext ? ' <span class="badge b">' + esc(plat ? plat.n : dexName(c)) + '</span>' : c.complete ? ' <span class="badge b">migré</span>' : '') + '</h2><p>' + short(mint, 8) + ' <button class="copy" data-copy="' + mint + '" type="button" title="Copier">⧉</button></p></div><div class="spacer"></div>' +
       (isDemoMint(mint) ? '<div class="links"><span class="badge v">token démo</span><span class="dim">Marché simulé : il n\'existe pas sur la blockchain.</span></div>'
         : '<div class="links">' + (plat ? '<a href="' + plat.url(mint) + '" target="_blank" rel="noopener">' + plat.n + '</a>' : '') + '<a href="https://solscan.io/token/' + mint + '" target="_blank" rel="noopener">Solscan</a><a href="https://dexscreener.com/solana/' + mint + '" target="_blank" rel="noopener">DEX Screener</a></div>') +
-      (C.live && Date.now() - C.live < 60000 ? '<span class="badge g" title="Prix reçu en direct (' + esc(C.liveSrc || 'blockchain') + ')">● temps réel</span>' : LIVE[mint] ? '<span class="badge b" title="Abonnement actif, en attente d\'une transaction">● à l\'écoute</span>' : '<span class="badge" title="Ajoute un RPC Helius pour le temps réel">actualisation ' + cfg.pollSec + ' s</span>') +
+      (C.live && Date.now() - C.live < 60000 ? '<span class="badge g" title="Prix reçu en direct (' + esc(C.liveSrc || 'blockchain') + ')">● temps réel</span>' : LIVE[mint] ? '<span class="badge b" title="Abonnement actif, en attente d\'une transaction">● à l\'écoute</span>' : '<span class="badge" title="Ajoutez un RPC Helius pour le temps réel">actualisation ' + cfg.pollSec + ' s</span>') +
       '<button class="btn sm" data-refresh="' + ctx + '" type="button">Actualiser</button></div>' +
       '<div class="grid-stats" style="margin-top:14px">' +
       '<div class="stat"><div class="l">Capitalisation</div><div class="v">' + usd(st.mcapSol) + '</div><div class="s">' + fSol(st.mcapSol, 1) + '</div></div>' +
       '<div class="stat"><div class="l">Prix</div><div class="v">' + fPrice(st.price) + '</div><div class="s">SOL par token</div></div>' +
       (c.ext ? '<div class="stat"><div class="l">' + (c.dex === 'launchlab' ? 'Courbe LaunchLab' : 'Marché') + '</div><div class="v">' + (c.dex === 'launchlab' ? '≈ ' + fPct(st.progress, 0) : esc(dexName(c))) + '</div>' + (c.dex === 'launchlab' ? '<div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div>' : '') + '<div class="s">' + (st.realSol ? fSol(st.realSol, 2) + ' dans le pool' : 'liquidité ' + fUsd(st.liqUsd)) + (c.dex === 'launchlab' ? ' · migration à ~85 SOL' : '') + '</div></div>' :
       '<div class="stat"><div class="l">Courbe de liaison</div><div class="v">' + fPct(st.progress, 1) + '</div><div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div><div class="s">' + fSol(st.realSol, 2) + ' dans la courbe' + (c.complete ? ' · terminée' : '') + '</div></div>') +
-      '<div class="stat"><div class="l">' + (cfg.sim ? 'Ta position démo' : 'Ta position') + '</div><div class="v">' + (S.wallet || cfg.sim ? fTok(pos.bal) : '—') + '</div><div class="s">' + (S.wallet || cfg.sim ? usd(pos.value) + (pos.avg ? ' · PRU ' + fPrice(pos.avg) : '') : 'wallet non connecté') + '</div></div>' +
+      '<div class="stat"><div class="l">' + (cfg.sim ? 'Votre position démo' : 'Votre position') + '</div><div class="v">' + (S.wallet || cfg.sim ? fTok(pos.bal) : '—') + '</div><div class="s">' + (S.wallet || cfg.sim ? usd(pos.value) + (pos.avg ? ' · PRU ' + fPrice(pos.avg) : '') : 'wallet non connecté') + '</div></div>' +
       '<div class="stat"><div class="l">Résultat</div><div class="v ' + cls(pos.pnl) + '">' + (pos.spent || pos.recv ? fSol(pos.pnl, 3) : '—') + '</div><div class="s">valeur + ventes − achats</div></div>' +
       '</div></div>' +
       '<div class="tok-grid"><div>' +
@@ -3207,7 +3207,7 @@
       (side === 'buy'
         ? '<div class="amt"><input id="amt-' + ctx + '" type="number" min="0" step="0.01" placeholder="0,1" inputmode="decimal"><em>SOL</em></div><div class="presets">' + [0.05, 0.1, 0.25, 0.5, 1].map((v) => '<button class="btn sm" data-preset="' + v + '" data-ctx="' + ctx + '" type="button">' + fr(v, v < 0.1 ? 2 : 2).replace(/,?0+$/, '') + '</button>').join('') + '</div>'
         : '<div class="amt"><input id="amt-' + ctx + '" type="text" placeholder="50%" inputmode="decimal"><em>' + esc(sym) + '</em></div><div class="presets">' + ['25%', '50%', '75%', '100%'].map((v) => '<button class="btn sm" data-preset="' + v + '" data-ctx="' + ctx + '" type="button">' + v + '</button>').join('') + '</div>') +
-      '<div class="quote" id="q-' + ctx + '"><span class="muted">Saisis un montant pour voir le devis.</span></div>' +
+      '<div class="quote" id="q-' + ctx + '"><span class="muted">Saisissez un montant pour voir le devis.</span></div>' +
       '<button class="btn ' + (side === 'buy' ? 'primary' : 'danger') + '" style="width:100%" data-go="' + ctx + '" data-mint="' + mint + '" type="button">' + (side === 'buy' ? 'Acheter' : 'Vendre') + (cfg.sim ? ' en démo' : '') + '</button>' +
       '<p class="dim" style="font-size:13.5px;margin:10px 0 0">Slippage ' + cfg.slippage + ' % · priorité ' + (cfg.speed === 'manual' ? fSol(cfg.priorityFee, 4) : (SPEEDS[cfg.speed] || SPEEDS.fast).label.toLowerCase()) + ' · limite ' + fSol(cfg.maxSol, 2) + ' par achat</p></div>' +
       '<div class="card" style="margin-top:16px"><div class="card-h"><h3>Ordres préparés</h3><button class="btn sm" data-neworder="' + mint + '" type="button" style="margin-left:auto">Ajouter</button></div>' +
@@ -3226,17 +3226,17 @@
     const mint = S.view[ctx], C = S.cache[mint], el = $('q-' + ctx), inp = $('amt-' + ctx);
     if (!el || !inp || !C || !C.curve || !C.curve.exists) return;
     const side = S.side[ctx], v = inp.value.trim();
-    if (!v) { el.innerHTML = '<span class="muted">Saisis un montant pour voir le devis.</span>'; return; }
+    if (!v) { el.innerHTML = '<span class="muted">Saisissez un montant pour voir le devis.</span>'; return; }
     if (C.curve.complete) { el.innerHTML = '<span class="muted">' + (C.curve.ext ? 'Token ' + esc(dexName(C.curve)) + ' : le prix dépend du pool, devis exact non disponible ici.' : 'Token migré : le prix dépend du pool PumpSwap, devis non disponible ici.') + '</span>'; return; }
     const sym = (C.meta && C.meta.symbol) || 'tokens';
     if (side === 'buy') {
       const sol = num(v), q = quoteBuy(C.curve, sol);
       if (!q) { el.innerHTML = '<span class="neg">Montant invalide.</span>'; return; }
-      el.innerHTML = '<div class="kv"><span>Tu reçois environ</span><span>' + fTok(q.tokens) + ' ' + esc(sym) + '</span><span>Impact sur le prix</span><span class="' + (q.impact > 5 ? 'warn' : '') + '">+' + fPct(q.impact, 2) + '</span><span>Minimum garanti</span><span>' + fTok(q.minOut) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span></div>' + (sol > cfg.maxSol ? '<div class="danger-note">Au-delà de ta limite de ' + fSol(cfg.maxSol, 2) + ' par achat.</div>' : '');
+      el.innerHTML = '<div class="kv"><span>Vous recevez environ</span><span>' + fTok(q.tokens) + ' ' + esc(sym) + '</span><span>Impact sur le prix</span><span class="' + (q.impact > 5 ? 'warn' : '') + '">+' + fPct(q.impact, 2) + '</span><span>Minimum garanti</span><span>' + fTok(q.minOut) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span></div>' + (sol > cfg.maxSol ? '<div class="danger-note">Au-delà de votre limite de ' + fSol(cfg.maxSol, 2) + ' par achat.</div>' : '');
     } else {
       const bal = C.myBal || 0, tokens = /%$/.test(v) ? bal * (num(v.replace('%', '')) || 0) / 100 : num(v), q = quoteSell(C.curve, tokens);
-      if (!q) { el.innerHTML = '<span class="' + (bal ? 'neg' : 'muted') + '">' + (bal ? 'Quantité invalide.' : 'Tu ne détiens pas ce token.') + '</span>'; return; }
-      el.innerHTML = '<div class="kv"><span>Tu vends</span><span>' + fTok(tokens) + ' ' + esc(sym) + '</span><span>Tu reçois environ</span><span>' + fSol(q.sol) + '</span><span>Impact sur le prix</span><span class="' + (q.impact < -5 ? 'warn' : '') + '">' + fPct(q.impact, 2) + '</span><span>Minimum garanti</span><span>' + fSol(q.minOut) + '</span></div>';
+      if (!q) { el.innerHTML = '<span class="' + (bal ? 'neg' : 'muted') + '">' + (bal ? 'Quantité invalide.' : 'Vous ne détenez pas ce token.') + '</span>'; return; }
+      el.innerHTML = '<div class="kv"><span>Vous vendez</span><span>' + fTok(tokens) + ' ' + esc(sym) + '</span><span>Vous recevez environ</span><span>' + fSol(q.sol) + '</span><span>Impact sur le prix</span><span class="' + (q.impact < -5 ? 'warn' : '') + '">' + fPct(q.impact, 2) + '</span><span>Minimum garanti</span><span>' + fSol(q.minOut) + '</span></div>';
     }
   }
   async function showToken(ctx, mint) {
@@ -3278,14 +3278,14 @@
       const C = S.cache[t.mint], st = C && C.stats;
       return '<button class="tok-card ' + (S.view.mine === t.mint ? 'on' : '') + '" data-mine="' + t.mint + '" type="button"><div class="tk"><div class="av">' + (t.image ? '<img src="' + esc(t.image) + '" alt="">' : esc(t.symbol.slice(0, 3))) + '</div><div class="nm"><b>' + esc(t.name) + '</b><small>$' + esc(t.symbol) + ' · ' + esc((PLATFORMS[t.platform] || PLATFORMS.pump).n) + ' · ' + fAgo(t.createdAt) + '</small></div></div>' +
         '<div class="kv"><span>Capitalisation</span><span>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</span><span>Courbe</span><span>' + (st ? fPct(st.progress, 0) : '…') + '</span></div>' + (st ? '<div class="bar"><i style="width:' + st.progress.toFixed(1) + '%;background:var(--violet)"></i></div>' : '') + '</button>';
-    }).join('') : '<div class="card"><div class="empty"><b>Aucun token lancé pour l\'instant</b>Lance ton premier token depuis « Lancer un token », ou ajoute un token existant.</div></div>';
+    }).join('') : '<div class="card"><div class="empty"><b>Aucun token lancé pour l\'instant</b>Lancez votre premier token depuis « Lancer un token », ou ajoutez un token existant.</div></div>';
   }
   function renderOrders() {
     const on = canAuto(), locked = S.wallet && S.wallet.id === 'session' && !SESSW.kp;
     const n = $('ordersNote');
-    if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Ventes automatiques actives.</b> Ton wallet rapide vend dès qu\'une condition est atteinte : à l\'instant quand l\'outil est ouvert, et par le serveur (vérification toutes les 10 secondes) quand il est fermé.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause.' : 'Avec ' + (S.ext ? esc(S.ext.name) : 'ton wallet') + ', chaque vente demande ta signature. Pour des ventes automatiques, utilise ton <button class="btn sm" data-sw="' + (SRVPK ? 'use' : 'create') + '" type="button">wallet rapide</button>.';
+    if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Ventes automatiques actives.</b> Votre wallet rapide vend dès qu\'une condition est atteinte : à l\'instant quand l\'outil est ouvert, et par le serveur (vérification toutes les 10 secondes) quand il est fermé.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause.' : 'Avec ' + (S.ext ? esc(S.ext.name) : 'votre wallet') + ', chaque vente demande votre signature. Pour des ventes automatiques, utilisez votre <button class="btn sm" data-sw="' + (SRVPK ? 'use' : 'create') + '" type="button">wallet rapide</button>.';
       if (cfg.sim) { n.className = 'notice info'; n.innerHTML = '<b>Démo.</b> Un ordre déclenché est vendu aussitôt dans le wallet démo, au prix simulé.'; } }
-    $('ordersBody').innerHTML = S.orders.length ? '<div class="card">' + S.orders.map(orderRow).join('') + '</div>' : '<div class="card"><div class="empty"><b>Aucun ordre préparé</b>Ouvre un token (Mes tokens ou Trader) et clique sur « Ajouter » dans le bloc Ordres préparés.</div></div>';
+    $('ordersBody').innerHTML = S.orders.length ? '<div class="card">' + S.orders.map(orderRow).join('') + '</div>' : '<div class="card"><div class="empty"><b>Aucun ordre préparé</b>Ouvrez un token (Mes tokens ou Trader) et cliquez sur « Ajouter » dans le bloc Ordres préparés.</div></div>';
   }
   function renderJournal() {
     document.querySelectorAll('#jFilter .chip').forEach((b) => b.classList.toggle('on', b.dataset.jf === S.jf));
@@ -3299,7 +3299,7 @@
     const TY = { create: 'Création', buy: 'Achat', sell: 'Vente', fees: 'Frais créateur', deposit: 'Dépôt', withdraw: 'Retrait' };
     $('jBody').innerHTML = L.length ? '<div class="tablebox"><table><thead><tr><th>Date</th><th>Opération</th><th>Token</th><th class="num">SOL</th><th class="num">Tokens</th><th>Statut</th><th>Lien</th></tr></thead><tbody>' +
       L.slice(0, 400).map((j) => '<tr><td class="dim">' + fT(j.t) + '</td><td>' + TY[j.type] + (j.sim ? ' <span class="badge v">démo</span>' : '') + '</td><td><b>' + esc(j.symbol || '') + '</b> <span class="dim mono">' + short(j.mint) + '</span></td><td class="num ' + cls(j.sol) + '">' + (j.sol ? fSol(j.sol, 4) : '—') + (j.est ? ' <span class="dim">≈</span>' : '') + '</td><td class="num">' + (j.tokens ? fTok(j.tokens) : '—') + '</td><td>' + (j.status === 'ok' ? '<span class="badge g">ok</span>' : '<span class="badge r" title="' + esc(j.err || '') + '">échec</span>') + '</td><td>' + (j.sig && !j.demo ? '<a href="' + solscan(j.sig) + '" target="_blank" rel="noopener">Solscan</a>' : j.demo ? '<span class="dim">démo</span>' : '<span class="dim">—</span>') + '</td></tr>').join('') + '</tbody></table></div>'
-      : '<div class="card"><div class="empty"><b>Aucune opération</b>' + (cfg.sim ? 'Les lancements, achats et ventes de la démo apparaîtront ici.' : 'Tes lancements, achats et ventes apparaîtront ici, avec leur lien Solscan.') + '</div></div>';
+      : '<div class="card"><div class="empty"><b>Aucune opération</b>' + (cfg.sim ? 'Les lancements, achats et ventes de la démo apparaîtront ici.' : 'Vos lancements, achats et ventes apparaîtront ici, avec leur lien Solscan.') + '</div></div>';
   }
   /* ---------- communication */
   let soTone = 'communaute';
@@ -3312,7 +3312,7 @@
     if (cur && sel.querySelector('option[value="' + cur + '"]')) sel.value = cur;
     $('soTone').innerHTML = Object.keys(SO_TONES).map((k) => '<button class="chip ' + (soTone === k ? 'on' : '') + '" data-sotone="' + k + '" type="button">' + SO_TONES[k] + '</button>').join('');
     const t = list[+sel.value || 0];
-    if (!t) { $('posts').innerHTML = '<div class="card"><div class="empty"><b>Rien à annoncer pour l\'instant</b>Prépare un token dans « Lancer un token ».</div></div>'; return; }
+    if (!t) { $('posts').innerHTML = '<div class="card"><div class="empty"><b>Rien à annoncer pour l\'instant</b>Préparez un token dans « Lancer un token ».</div></div>'; return; }
     const PLn = PLATFORMS[t.platform || (t.draft ? S.draft.platform : 'pump')] || PLATFORMS.pump;
     const link = t.mint ? PLn.url(t.mint) : (S.draft.lang !== 'fr' ? '[' + PLn.n + ' link after launch]' : '[lien ' + PLn.n + ' après lancement]'), ca = t.mint || (S.draft.lang !== 'fr' ? '[contract after launch]' : '[adresse après lancement]');
     const C = t.mint && S.cache[t.mint], mc = C && C.stats && S.solUsd ? fUsd(C.stats.mcapSol * S.solUsd) : '[capitalisation]';
@@ -3330,13 +3330,13 @@
     }[soTone] : {
       communaute: [['Annonce du lancement', '$' + t.symbol + ' est en ligne sur ' + PLn.n + '.\n\n' + t.name + ' appartient à ceux qui le gardent. Lancement équitable, sans prévente.\n\nCA : ' + ca + '\n' + link + nfaTxt],
         ['Palier atteint', t.name + ' vient de passer ' + mc + ' de capitalisation.\n\nMerci à ceux qui étaient là tôt.\n\n$' + t.symbol + '\n' + link + nfaTxt],
-        ['Message Telegram de bienvenue', 'Bienvenue sur ' + t.name + '.\n\nContrat officiel : ' + ca + '\nL\'équipe ne t\'écrira jamais en privé la première.' + nfaTxt]],
+        ['Message Telegram de bienvenue', 'Bienvenue sur ' + t.name + '.\n\nContrat officiel : ' + ca + '\nL\'équipe ne vous écrira jamais en privé la première.' + nfaTxt]],
       drole: [['Annonce du lancement', 'On a lancé $' + t.symbol + '. Personne ne l\'a demandé. Le voilà quand même.\n\nCA : ' + ca + '\n' + link + nfaTxt],
         ['Palier atteint', t.name + ' vaut ' + mc + '. Nos parents ne comprennent toujours pas ce qu\'on fait.\n\n$' + t.symbol + '\n' + link + nfaTxt],
-        ['Message Telegram de bienvenue', 'Tu as trouvé ' + t.name + '. Règle un : des mèmes. Règle deux : voir règle un.\n\nContrat officiel : ' + ca + '\nPersonne de l\'équipe ne t\'écrira en privé.' + nfaTxt]],
+        ['Message Telegram de bienvenue', 'Vous avez trouvé ' + t.name + '. Règle un : des mèmes. Règle deux : voir règle un.\n\nContrat officiel : ' + ca + '\nPersonne de l\'équipe ne vous écrira en privé.' + nfaTxt]],
       epique: [['Annonce du lancement', 'Chaque histoire commence petite.\n\n' + t.name + ' ($' + t.symbol + ') est en ligne sur ' + PLn.n + '.\n\nCA : ' + ca + '\n' + link + nfaTxt],
         ['Palier atteint', t.name + ' atteint ' + mc + '.\n\nCe n\'est que le début.\n\n$' + t.symbol + '\n' + link + nfaTxt],
-        ['Message Telegram de bienvenue', 'Bienvenue sur ' + t.name + '.\n\nContrat officiel : ' + ca + '\nAucun membre de l\'équipe ne t\'écrira en privé le premier.' + nfaTxt]],
+        ['Message Telegram de bienvenue', 'Bienvenue sur ' + t.name + '.\n\nContrat officiel : ' + ca + '\nAucun membre de l\'équipe ne vous écrira en privé le premier.' + nfaTxt]],
     }[soTone];
     $('posts').innerHTML = T.map((p, i) => '<div class="post"><b>' + esc(p[0]) + '</b><textarea data-post="' + i + '">' + esc(p[1]) + '</textarea><div class="foot"><span class="cnt" data-cnt="' + i + '"></span><button class="btn sm" data-pcopy="' + i + '" type="button">Copier</button><a class="btn sm" data-px="' + i + '" target="_blank" rel="noopener" href="#">Publier sur X</a></div></div>').join('');
     document.querySelectorAll('#posts textarea').forEach(updatePost);
@@ -3351,9 +3351,9 @@
   const FORMS = [
     { id: 'engine', title: 'Moteur de transaction', fields: [['engine', 'Construction des transactions', 'sel', 'Direct : programme pump.fun, sans intermédiaire ni frais en plus. PumpPortal : secours. Les tokens migrés passent automatiquement par PumpPortal, quel que soit ce choix.', [['direct', 'Direct (pump.fun)'], ['portal', 'PumpPortal (+0,5 %)']]]] },
     { id: 'conn', title: 'Connexion à Solana', help: 'helius', fields: [['rpc', 'Adresse RPC', 'text', 'Helius conseillé : https://mainnet.helius-rpc.com/?api-key=…', 'wide'], ['pollSec', 'Actualisation des fiches', 'num', 'Toutes les N secondes', 's'], ['ppLive', 'Flux en direct PumpPortal', 'bool', 'Prix et transactions pump.fun en temps réel : les ordres se déclenchent en moins d\'une seconde. Gratuit, sans clé.']] },
-    { id: 'meta', title: 'Métadonnées du token', help: 'pinata', fields: [['metaMethod', 'Envoi du logo', 'sel', 'Par le serveur TokenStudio vers pump.fun, sans clé. Pinata en secours.', [['pump', 'Serveur → pump.fun (conseillé)'], ['pinata', 'Pinata (ta clé)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
+    { id: 'meta', title: 'Métadonnées du token', help: 'pinata', fields: [['metaMethod', 'Envoi du logo', 'sel', 'Par le serveur TokenStudio vers pump.fun, sans clé. Pinata en secours.', [['pump', 'Serveur → pump.fun (conseillé)'], ['pinata', 'Pinata (votre clé)']]], ['pinataJwt', 'Jeton Pinata (JWT)', 'password', 'Gratuit sur pinata.cloud, reste dans ce navigateur', 'wide']] },
     { id: 'speed', title: 'Vitesse d\'exécution', fields: [['speed', 'Priorité des transactions', 'sel', 'Calculée sur les frais réellement payés sur pump.fun ces dernières secondes', [['eco', 'Économique'], ['fast', 'Rapide (conseillé)'], ['turbo', 'Turbo'], ['manual', 'Manuelle']]], ['maxPriority', 'Plafond des frais de priorité', 'num', 'Jamais plus que ce montant par transaction', 'SOL'], ['priorityFee', 'Frais de priorité manuels', 'num', 'Utilisés seulement en mode Manuelle', 'SOL']] },
-    { id: 'fast', title: 'Wallet rapide et envoi', fields: [['autoExec', 'Ventes automatiques', 'bool', 'Le wallet rapide exécute seul les paliers et le stop'], ['slSlippage', 'Slippage du stop', 'num', 'Plus large : mieux vaut vendre un peu moins cher que pas du tout', '%'], ['autoRetry', 'Nouveaux essais', 'num', 'Si le prix a trop bougé (0 à 3)', 'fois'], ['sender', 'Envoi direct aux validateurs', 'sel', 'Helius Sender, en plus de ton RPC. Pourboire inclus dans la transaction.', [['swqos', 'Rapide · 0,000005 SOL (conseillé)'], ['max', 'Maximum · 0,001 SOL'], ['off', 'Désactivé']]]] },
+    { id: 'fast', title: 'Wallet rapide et envoi', fields: [['autoExec', 'Ventes automatiques', 'bool', 'Le wallet rapide exécute seul les paliers et le stop'], ['slSlippage', 'Slippage du stop', 'num', 'Plus large : mieux vaut vendre un peu moins cher que pas du tout', '%'], ['autoRetry', 'Nouveaux essais', 'num', 'Si le prix a trop bougé (0 à 3)', 'fois'], ['sender', 'Envoi direct aux validateurs', 'sel', 'Helius Sender, en plus de votre RPC. Pourboire inclus dans la transaction.', [['swqos', 'Rapide · 0,000005 SOL (conseillé)'], ['max', 'Maximum · 0,001 SOL'], ['off', 'Désactivé']]]] },
     { id: 'trade', title: 'Trading', fields: [['slippage', 'Slippage maximum', 'num', 'Écart de prix accepté', '%'], ['maxSol', 'Limite par achat', 'num', 'Garde-fou contre une erreur de saisie', 'SOL'], ['feePct', 'Frais pump.fun estimés', 'num', 'Pour les devis', '%'], ['portalFeePct', 'Frais PumpPortal', 'num', 'Seulement avec le moteur PumpPortal', '%']] },
     { id: 'launch', title: 'Lancement', fields: [['devMaxPct', 'Part maximale du créateur', 'num', 'Bloque un achat initial plus gros', '% offre']] },
     { id: 'alerts', title: 'Alertes', fields: [['notify', 'Notifications du navigateur', 'bool', 'Quand un ordre préparé se déclenche'], ['sound', 'Son', 'bool', '']] },
@@ -3366,7 +3366,7 @@
       if (extra === 'wide') return '<div class="f wide">' + lab + '<input type="' + type + '" id="' + id + '" data-k="' + k + '" value="' + esc(cfg[k]) + '" autocomplete="off" spellcheck="false"></div>';
       return '<div class="f">' + lab + '<span class="unit"><input type="number" step="any" min="0" id="' + id + '" data-k="' + k + '" value="' + esc(cfg[k]) + '"><em>' + esc(extra || '') + '</em></span></div>';
     }).join('') + '<div class="actions"><span class="msg">Modifications non enregistrées</span><button class="btn sm" data-fa="cancel" type="button">Annuler</button><button class="btn sm primary" data-fa="save" type="button">Valider</button></div></fieldset>').join('') +
-      '<fieldset><legend>Test</legend><p class="muted" style="font-size:13.5px;margin:0 0 10px">Vérifie que le RPC répond et lit bien la blockchain.</p><button class="btn" data-act="testrpc" type="button">Tester le RPC</button></fieldset>';
+      '<fieldset><legend>Test</legend><p class="muted" style="font-size:13.5px;margin:0 0 10px">Vérifiez que le RPC répond et lit bien la blockchain.</p><button class="btn" data-act="testrpc" type="button">Tester le RPC</button></fieldset>';
   }
   const fieldsOf = (fs) => FORMS.find((F) => F.id === fs.dataset.form).fields;
   function readField(el, type) { return type === 'bool' ? el.checked : type === 'sel' || type === 'text' || type === 'password' ? el.value.trim() : num(el.value); }
@@ -3386,7 +3386,7 @@
     bad('feePct', (x) => x > 5, '5 % maximum');
     bad('slSlippage', (x) => x < 1 || x > 60, 'Entre 1 et 60 %');
     bad('autoRetry', (x) => x < 0 || x > 3 || Math.round(x) !== x, 'Entier de 0 à 3');
-    if (errs.length) { errs.forEach(([el, m]) => { el.classList.add('err'); const d = document.createElement('div'); d.className = 'ferr'; d.textContent = m; el.closest('.f').appendChild(d); }); toast('Valeurs invalides', 'Corrige les champs en rouge.', 'r'); return; }
+    if (errs.length) { errs.forEach(([el, m]) => { el.classList.add('err'); const d = document.createElement('div'); d.className = 'ferr'; d.textContent = m; el.closest('.f').appendChild(d); }); toast('Valeurs invalides', 'Corrigez les champs en rouge.', 'r'); return; }
     Object.assign(cfg, v); save(LS.cfg, cfg); fs.classList.remove('dirty');
     if ('notify' in v && v.notify && window.Notification && Notification.permission === 'default') Notification.requestPermission();
     if ('ppLive' in v) { if (cfg.ppLive) ppSync(liveSet()); else ppClose(); }
@@ -3469,28 +3469,28 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.ppLive && PP.want.size && !PP.ws) ppConnect(); });
   /* ---------- clés API (mode réel) : petit panneau en 3 étapes, vérifié avant d'enregistrer */
   const KEYS = {
-    helius: { title: 'Ajouter ta clé Helius', label: 'Clé Helius', ph: 'ex. 1a2b3c4d-5e6f-…',
+    helius: { title: 'Ajouter votre clé Helius', label: 'Clé Helius', ph: 'ex. 1a2b3c4d-5e6f-…',
       why: '<b>Gratuite, conseillée.</b> Prix en temps réel, envois plus rapides et pas de blocage. Sans elle, l\'outil passe par le RPC TokenStudio, plus lent.',
-      steps: ['Crée un compte gratuit sur <a href="https://dashboard.helius.dev/" target="_blank" rel="noopener">helius.dev</a>.', 'Dans ton tableau de bord, copie ta clé <b>API Key</b>.', 'Colle-la ci-dessous, puis clique sur « Vérifier ».'] },
-    pinata: { title: 'Ajouter ton jeton Pinata', label: 'Jeton Pinata (JWT)', ph: 'eyJhbGciOi…',
-      why: '<b>Gratuit, en secours.</b> Le serveur TokenStudio envoie normalement le logo et la fiche à pump.fun. Si cet envoi échoue, ton propre jeton Pinata prend le relais.',
-      steps: ['Crée un compte gratuit sur <a href="https://app.pinata.cloud/developers/api-keys" target="_blank" rel="noopener">pinata.cloud</a>.', 'Dans <b>API Keys</b>, crée une clé avec le droit d\'envoi de fichiers, puis copie son <b>JWT</b>.', 'Colle-le ci-dessous, puis clique sur « Vérifier ».'] },
+      steps: ['Créez un compte gratuit sur <a href="https://dashboard.helius.dev/" target="_blank" rel="noopener">helius.dev</a>.', 'Dans votre tableau de bord, copiez votre clé <b>API Key</b>.', 'Collez-la ci-dessous, puis cliquez sur « Vérifier ».'] },
+    pinata: { title: 'Ajouter votre jeton Pinata', label: 'Jeton Pinata (JWT)', ph: 'eyJhbGciOi…',
+      why: '<b>Gratuit, en secours.</b> Le serveur TokenStudio envoie normalement le logo et la fiche à pump.fun. Si cet envoi échoue, votre propre jeton Pinata prend le relais.',
+      steps: ['Créez un compte gratuit sur <a href="https://app.pinata.cloud/developers/api-keys" target="_blank" rel="noopener">pinata.cloud</a>.', 'Dans <b>API Keys</b>, créez une clé avec le droit d\'envoi de fichiers, puis copiez son <b>JWT</b>.', 'Collez-le ci-dessous, puis cliquez sur « Vérifier ».'] },
   };
   const heliusUrl = (v) => (/^https:\/\//i.test(v) ? v : 'https://mainnet.helius-rpc.com/?api-key=' + v);
   async function checkKey(kind, raw) {
-    const v = (raw || '').trim(); if (!v) throw new Error('Colle d\'abord la clé.');
-    const go = (url, o) => fetch(url, Object.assign({ signal: AbortSignal.timeout(10000) }, o)).catch(() => { throw new Error((kind === 'helius' ? 'Helius' : 'Pinata') + ' ne répond pas. Vérifie ta connexion et réessaie.'); });
+    const v = (raw || '').trim(); if (!v) throw new Error('Collez d\'abord la clé.');
+    const go = (url, o) => fetch(url, Object.assign({ signal: AbortSignal.timeout(10000) }, o)).catch(() => { throw new Error((kind === 'helius' ? 'Helius' : 'Pinata') + ' ne répond pas. Vérifiez votre connexion et réessayez.'); });
     if (kind === 'helius') {
       if (!/^https:\/\//i.test(v) && !/^[A-Za-z0-9-]{20,}$/.test(v)) throw new Error('Cela ne ressemble pas à une clé Helius (lettres, chiffres et tirets).');
       const url = heliusUrl(v), r = await go(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getSlot' }) });
-      if (r.status === 401 || r.status === 403) throw new Error('Clé refusée par Helius. Recopie-la depuis ton tableau de bord.');
+      if (r.status === 401 || r.status === 403) throw new Error('Clé refusée par Helius. Recopiez-la depuis votre tableau de bord.');
       const j = await r.json().catch(() => ({}));
-      if (!r.ok || j.error || typeof j.result !== 'number') throw new Error('Helius a répondu une erreur (' + r.status + '). Vérifie la clé.');
+      if (!r.ok || j.error || typeof j.result !== 'number') throw new Error('Helius a répondu une erreur (' + r.status + '). Vérifiez la clé.');
       return url;
     }
     if (v.split('.').length !== 3) throw new Error('Ce n\'est pas un JWT : il commence par « eyJ » et contient deux points.');
     const r = await go('https://api.pinata.cloud/data/testAuthentication', { headers: { Authorization: 'Bearer ' + v } });
-    if (!r.ok) throw new Error('Jeton refusé par Pinata (' + r.status + '). Vérifie qu\'il a le droit d\'envoi de fichiers.');
+    if (!r.ok) throw new Error('Jeton refusé par Pinata (' + r.status + '). Vérifiez qu\'il a le droit d\'envoi de fichiers.');
     return v;
   }
   async function keyPanel(kind, intro) {
@@ -3498,7 +3498,7 @@
     for (;;) {
       const html = (intro ? '<div class="notice">' + intro + '</div>' : '') + '<p class="kp-why">' + K.why + '</p><ol class="kp-steps">' + K.steps.map((t) => '<li><span>' + t + '</span></li>').join('') + '</ol>' +
         '<label class="kp-f" for="kpIn">' + esc(K.label) + '</label><input class="kp-in" id="kpIn" type="password" autocomplete="off" spellcheck="false" placeholder="' + esc(K.ph) + '" value="' + esc(val) + '">' +
-        (err ? '<div class="notice bad kp-err">' + esc(err) + '</div>' : '') + '<p class="kp-note">La clé reste dans ce navigateur. Tu la retrouves dans Réglages.</p>';
+        (err ? '<div class="notice bad kp-err">' + esc(err) + '</div>' : '') + '<p class="kp-note">La clé reste dans ce navigateur. Vous la retrouvez dans Réglages.</p>';
       const i = await modal(K.title, html, [{ label: 'Plus tard' }, { label: 'Vérifier', cls: 'primary', keep: true }]);
       if (i !== 1) return false;
       val = ($('kpIn') || {}).value || '';
@@ -3519,7 +3519,7 @@
     const kc = $('keysCard'); if (!kc) return;
     const show = !cfg.sim && AUTH === true && !cfg.rpc && !cfg.keysLater;
     kc.hidden = !show; if (!show) { kc.innerHTML = ''; return; }
-    kc.innerHTML = '<svg class="i" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg><span><b>Ajoute ta clé Helius gratuite.</b> Prix en temps réel et envois plus rapides, en 2 minutes.</span>' +
+    kc.innerHTML = '<svg class="i" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg><span><b>Ajoutez votre clé Helius gratuite.</b> Prix en temps réel et envois plus rapides, en 2 minutes.</span>' +
       '<button class="btn sm" data-act="keylater" type="button">Plus tard</button><button class="btn sm primary" data-act="keyhelp" data-k="helius" type="button">Ajouter</button>';
   }
 
@@ -3534,14 +3534,14 @@
     const sym = (C.meta && C.meta.symbol) || short(mint), pos = myPosition(mint, C), ref = pos.avg || C.stats.price;
     const html = '<div class="field"><label>Condition</label><select id="oKind"><option value="tp">Prise de profit : le prix monte de X %</option><option value="sl">Stop fixe : le prix baisse de X % sous la référence</option><option value="trail">Stop suiveur : le prix recule de X % depuis son plus haut</option><option value="mcap">La capitalisation atteint X $</option></select></div>' +
       '<div class="row2"><div class="field"><label for="oVal">Valeur X</label><input id="oVal" type="number" min="0" step="any" value="100"></div><div class="field"><label for="oPct">Part à vendre</label><input id="oPct" type="number" min="1" max="100" step="1" value="50"></div></div>' +
-      '<div class="field" id="oArmF" hidden><label for="oArm">Commencer à suivre après une hausse de <small>en %, 0 = tout de suite</small></label><input id="oArm" type="number" min="0" step="any" value="0"><div class="dim" style="font-size:13px">Le stop suiveur retient le prix le plus haut atteint et vend si le prix recule de X % depuis ce sommet. Il protège tes gains pendant la montée.</div></div>' +
-      '<p>Prix de référence : <b class="mono">' + fPrice(ref) + '</b> (' + (pos.avg ? 'ton prix moyen d\'achat' : 'prix actuel') + '). Quand la condition est atteinte, le studio te prévient et prépare la vente : tu signes ou tu refuses.</p>';
+      '<div class="field" id="oArmF" hidden><label for="oArm">Commencer à suivre après une hausse de <small>en %, 0 = tout de suite</small></label><input id="oArm" type="number" min="0" step="any" value="0"><div class="dim" style="font-size:13px">Le stop suiveur retient le prix le plus haut atteint et vend si le prix recule de X % depuis ce sommet. Il protège vos gains pendant la montée.</div></div>' +
+      '<p>Prix de référence : <b class="mono">' + fPrice(ref) + '</b> (' + (pos.avg ? 'votre prix moyen d\'achat' : 'prix actuel') + '). Quand la condition est atteinte, le studio vous prévient et prépare la vente : vous signez ou vous refusez.</p>';
     const pr = modal('Nouvel ordre · ' + sym, html, [{ label: 'Annuler' }, { label: 'Créer l\'ordre', cls: 'primary', keep: true }], true);
     $('oKind').onchange = () => { const tr = $('oKind').value === 'trail'; $('oArmF').hidden = !tr; if (tr && num($('oVal').value) >= 100) $('oVal').value = 30; };
     const i = await pr;
     if (i !== 1) return;
     const kind = $('oKind').value, val = num($('oVal').value), pct = num($('oPct').value), arm = Math.max(0, num($('oArm').value) || 0);
-    if (!(val > 0) || !(pct >= 1 && pct <= 100) || ((kind === 'sl' || kind === 'trail') && val >= 100)) { toast('Valeurs invalides', 'Vérifie la valeur et la part (1 à 100 %).', 'r'); return; }
+    if (!(val > 0) || !(pct >= 1 && pct <= 100) || ((kind === 'sl' || kind === 'trail') && val >= 100)) { toast('Valeurs invalides', 'Vérifiez la valeur et la part (1 à 100 %).', 'r'); return; }
     closeModal();
     const o = { id: Date.now().toString(36), mint, symbol: sym, kind, value: val, pct, ref, active: true, createdAt: Date.now() };
     if (kind === 'trail') Object.assign(o, arm > 0 ? { arm, armed: false } : { arm: 0, armed: true, peak: C.stats.price });
@@ -3578,7 +3578,7 @@
         window.TSClaimOrder(o.id).then((ok) => {
           if (ok) { CLAIMS.set(o.id, 'ok'); fireOrder(o); return; }
           CLAIMS.delete(o.id); o.active = false; o.triggered = Date.now(); save(LS.orders, S.orders);
-          toast('Ordre pris en charge par le serveur', o.symbol + ' : ton wallet rapide le vend côté serveur.', ''); renderAll();
+          toast('Ordre pris en charge par le serveur', o.symbol + ' : votre wallet rapide le vend côté serveur.', ''); renderAll();
         });
         return;
       }
@@ -3651,7 +3651,7 @@
     }
     o.auto = 'ko'; o.failed = lastErr ? lastErr.message : 'Échec'; save(LS.orders, S.orders);
     journalAdd({ type: 'sell', mint: o.mint, symbol: sym, sim: cfg.sim, status: 'err', err: o.failed, sol: 0, tokens: 0, auto: true });
-    toast('Vente automatique échouée', sym + ' : ' + o.failed + ' Relance-la depuis Ordres.', 'r');
+    toast('Vente automatique échouée', sym + ' : ' + o.failed + ' Relancez-la depuis Ordres.', 'r');
     renderAll();
   }
   function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value = 880; g.gain.value = 0.08; o.start(); setTimeout(() => { o.frequency.value = 660; }, 140); setTimeout(() => { o.stop(); a.close(); }, 300); } catch (e) {} }
@@ -3704,13 +3704,13 @@
     if (d.drange) { DASH.range = d.drange; renderDash(); return solHist(true); }
     if (b.id === 'walletBtn' || b.id === 'fileHelp') return walletMenu();
     if (d.sw) return swAction(d.sw);
-    if (d.sk) { const el = $('skTxt'); if (!el) return; if (d.sk === 'show') { el.dataset.blur = el.dataset.blur === '1' ? '0' : '1'; b.textContent = el.dataset.blur === '1' ? 'Afficher' : 'Masquer'; } else { try { await navigator.clipboard.writeText(el.textContent); toast('Clé copiée', 'Colle-la dans un endroit sûr, puis efface le presse-papiers.', 'a'); } catch (e2) {} } return; }
+    if (d.sk) { const el = $('skTxt'); if (!el) return; if (d.sk === 'show') { el.dataset.blur = el.dataset.blur === '1' ? '0' : '1'; b.textContent = el.dataset.blur === '1' ? 'Afficher' : 'Masquer'; } else { try { await navigator.clipboard.writeText(el.textContent); toast('Clé copiée', 'Collez-la dans un endroit sûr, puis effacez le presse-papiers.', 'a'); } catch (e2) {} } return; }
     if (d.act === 'simoff') return goReal();
     if (d.act === 'needacct') { try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'demo' })); } catch (e) {} return; }
     if (d.act === 'simon') return goSim();
     if (d.act === 'testrpc') return testRpc(false);
     if (d.act === 'keyhelp') return keyPanel(d.k === 'pinata' ? 'pinata' : 'helius');
-    if (d.act === 'keylater') { cfg.keysLater = true; save(LS.cfg, cfg); renderKeysCard(); toast('Rappel masqué', 'Tu peux ajouter la clé à tout moment dans Réglages.', ''); return; }
+    if (d.act === 'keylater') { cfg.keysLater = true; save(LS.cfg, cfg); renderKeysCard(); toast('Rappel masqué', 'Vous pouvez ajouter la clé à tout moment dans Réglages.', ''); return; }
     if (d.step) { S.step = +d.step; renderLaunch(); return; }
     if (d.theme) { S.draft.theme = d.theme; S.draft.logo.pal = THEMES[d.theme].pal; S.draft.logo.theme = d.theme; S.draft.logo.motif = ''; saveDraft(); genIdeas(); renderLaunch(); const el = $('ideas'); if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 30); return; }
     if (d.tone) { S.draft.tone = d.tone; saveDraft(); renderLaunch(); return; }
@@ -3725,13 +3725,13 @@
     if (d.lstyle) { S.draft.logo.style = d.lstyle; S.draft.logo.seed = Math.floor(Math.random() * 1e6); S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (d.pal != null) { S.draft.logo.pal = +d.pal; S.draft.imgSrc = 'gen'; S.imgBlob = null; saveDraft(); renderLaunch(); return; }
     if (b.id === 'logoDl') { const a = document.createElement('a'), src = S.draft.image || $('logoCv').toDataURL('image/jpeg', 0.92), ext = (/^data:image\/(\w+)/.exec(src) || [])[1] || 'png'; a.href = src; a.download = (S.draft.symbol || 'logo').toLowerCase() + '.' + (ext === 'jpeg' ? 'jpg' : ext); a.click(); return; }
-    if (b.id === 'descRegen') { if (!S.draft.name) return toast('Nom manquant', 'Choisis d\'abord un nom.', 'a'); S.draft.desc = descFor(S.draft.name, S.draft.symbol, S.draft.name.split(' ').pop()); saveDraft(); fillFields(); renderLaunchSide(); return; }
+    if (b.id === 'descRegen') { if (!S.draft.name) return toast('Nom manquant', 'Choisissez d\'abord un nom.', 'a'); S.draft.desc = descFor(S.draft.name, S.draft.symbol, S.draft.name.split(' ').pop()); saveDraft(); fillFields(); renderLaunchSide(); return; }
     if (d.dev != null) { S.draft.dev = +d.dev; saveDraft(); fillFields(); renderLaunchSide(); renderTpPlan(); return; }
     if (b.id === 'launchBtn') return launch();
     if (b.id === 'mineAdd') {
       const i = await modal('Ajouter un token existant', '<div class="field"><label for="addMint">Adresse du token (mint)</label><input id="addMint" style="font-family:var(--mono)" autocomplete="off"></div><p>Le token apparaîtra dans « Mes tokens » pour le suivre et créer des ordres.</p>', [{ label: 'Annuler' }, { label: 'Ajouter', cls: 'primary', keep: true }], true);
       if (i !== 1) return;
-      const mint = validMint($('addMint').value || ''); if (!mint) return toast('Adresse invalide', 'Colle l\'adresse complète du token.', 'r');
+      const mint = validMint($('addMint').value || ''); if (!mint) return toast('Adresse invalide', 'Collez l\'adresse complète du token.', 'r');
       closeModal();
       if (S.tokens.some((t) => t.mint === mint)) return showToken('mine', mint);
       let m = { name: '', symbol: '' }; try { m = await tokenMeta(mint); } catch (e2) {}
@@ -3739,11 +3739,11 @@
       save(LS.tokens, S.tokens); renderAll(); showToken('mine', mint); return;
     }
     if (d.mine) { showToken('mine', d.mine); renderMineList(); return; }
-    if (b.id === 'tradeGo') { const mint = validMint($('tradeMint').value || ''); if (!mint) return toast('Adresse invalide', 'Colle l\'adresse complète du token (mint).', 'r'); delete S.cache[mint]; showToken('trade', mint); return; }
+    if (b.id === 'tradeGo') { const mint = validMint($('tradeMint').value || ''); if (!mint) return toast('Adresse invalide', 'Collez l\'adresse complète du token (mint).', 'r'); delete S.cache[mint]; showToken('trade', mint); return; }
     if (d.refresh) { const mint = S.view[d.refresh]; if (mint) { if (S.cache[mint]) S.cache[mint].holdersAt = 0; showToken(d.refresh, mint); } return; }
     if (d.side) { S.side[d.ctx] = d.side; renderTokenView(d.ctx); return; }
     if (d.preset) { const inp = $('amt-' + d.ctx); if (inp) { inp.value = d.preset; updateQuote(d.ctx); } return; }
-    if (d.go) { const inp = $('amt-' + d.go); if (!inp || !inp.value.trim()) return toast('Montant manquant', 'Saisis un montant.', 'a'); return trade(d.mint, S.side[d.go], inp.value.trim()); }
+    if (d.go) { const inp = $('amt-' + d.go); if (!inp || !inp.value.trim()) return toast('Montant manquant', 'Saisissez un montant.', 'a'); return trade(d.mint, S.side[d.go], inp.value.trim()); }
     if (d.copy) { try { await navigator.clipboard.writeText(d.copy); toast('Copié', short(d.copy, 6), 'g'); } catch (e2) {} return; }
     if (d.neworder) return newOrder(d.neworder);
     if (d.otoggle) { const o = S.orders.find((x) => x.id === d.otoggle); if (o) { o.active = !o.active; if (o.active) { o.triggered = null; o.done = false; } save(LS.orders, S.orders); renderAll(); } return; }
@@ -3893,7 +3893,7 @@
     renderRadarInspire();
     if (RADAR.loading && !RADAR.rows.length) { el.innerHTML = '<div class="empty"><b>Lecture des marchés…</b>DexScreener et GeckoTerminal, sur ' + (RADAR.chain === 'all' ? 'quatre blockchains' : R_CHAINS[RADAR.chain].n) + '.</div>'; return; }
     if (!RADAR.rows.length) {
-      el.innerHTML = '<div class="empty"><b>' + (RADAR.errs.length ? 'Sources injoignables' : 'Aucun token pour l\'instant') + '</b>' + (RADAR.errs.length ? 'Impossible de joindre ' + esc(RADAR.errs.join(', ')) + '. Vérifie ta connexion, ou désactive un bloqueur de publicité qui filtrerait ces sites, puis réessaie.' : 'Aucun token tendance trouvé sur cette sélection.') + '<div style="margin-top:12px"><button class="btn sm" data-rload="1" type="button">Réessayer</button></div></div>';
+      el.innerHTML = '<div class="empty"><b>' + (RADAR.errs.length ? 'Sources injoignables' : 'Aucun token pour l\'instant') + '</b>' + (RADAR.errs.length ? 'Impossible de joindre ' + esc(RADAR.errs.join(', ')) + '. Vérifiez votre connexion, ou désactivez un bloqueur de publicité qui filtrerait ces sites, puis réessayez.' : 'Aucun token tendance trouvé sur cette sélection.') + '<div style="margin-top:12px"><button class="btn sm" data-rload="1" type="button">Réessayer</button></div></div>';
       return;
     }
     const rows = rFiltered();
@@ -3943,7 +3943,7 @@
     const el = $('rInspire'); if (!el) return;
     const r = RADAR.rows[RADAR.sel]; if (!r || !RADAR.ideas.length) { el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false; const t = rTheme(r.theme);
-    el.innerHTML = '<div class="card-h"><h3>Concepts originaux · ' + esc(t.n) + '</h3><button class="btn sm ghost" data-rclose="1" type="button" style="margin-left:auto">Fermer</button><p>Inspirés du thème de <b>' + esc(r.name || r.symbol) + '</b> ($' + esc(r.symbol) + '), sans reprendre son nom, son ticker, son logo ni ses liens. Clique sur un concept pour l\'ouvrir dans le studio.</p></div>' +
+    el.innerHTML = '<div class="card-h"><h3>Concepts originaux · ' + esc(t.n) + '</h3><button class="btn sm ghost" data-rclose="1" type="button" style="margin-left:auto">Fermer</button><p>Inspirés du thème de <b>' + esc(r.name || r.symbol) + '</b> ($' + esc(r.symbol) + '), sans reprendre son nom, son ticker, son logo ni ses liens. Cliquez sur un concept pour l\'ouvrir dans le studio.</p></div>' +
       '<div class="ideas">' + RADAR.ideas.map((x, i) => {
         const ck = RADAR.checks[x.ticker] || {}, near = x.near, pc = Math.round(near.s * 100);
         const tkb = ck.st === 'ok' ? (ck.n ? '<span class="badge a">$' + esc(x.ticker) + ' déjà utilisé ×' + ck.n + '</span>' : '<span class="badge g">Ticker libre</span>') : ck.st === 'err' ? '<span class="badge">Ticker non vérifié</span>' : '<span class="badge">Vérification…</span>';
@@ -3955,7 +3955,7 @@
     S.draft.theme = x.th; S.ideas = RADAR.ideas.slice(); pickIdea(i, true);
     S.draft.logo.style = rnd(['mono', 'coin', 'orb', 'shield', 'hex', 'glass']); S.draft.logo.seed = Math.floor(Math.random() * 1e6); saveDraft();
     setLaunchTab('studio'); S.step = 2; renderLaunch(); window.scrollTo(0, 0);
-    toast('Concept repris', x.name + ' · $' + x.ticker + '. Choisis le logo, puis vérifie la description.', 'g');
+    toast('Concept repris', x.name + ' · $' + x.ticker + '. Choisissez le logo, puis vérifiez la description.', 'g');
   }
   function setLaunchTab(tab) {
     S.ltab = tab === 'radar' || tab === 'create' ? tab : 'studio';
@@ -4001,7 +4001,7 @@
     const el = $('sideWallet'); if (!el) return;
     const w = S.wallet, ses = w && w.id === 'session', usd = (b) => S.solUsd && b != null ? '≈ ' + fUsd(b * S.solUsd) : '';
     if (!w) {
-      el.innerHTML = '<div class="sw sw-empty"><div class="sw-top">' + '<span class="wav none" aria-hidden="true">' + WI.plug + '</span><div class="sw-id"><b>Aucun wallet</b><small>Connecte Phantom ou utilise le wallet rapide</small></div></div>' +
+      el.innerHTML = '<div class="sw sw-empty"><div class="sw-top">' + '<span class="wav none" aria-hidden="true">' + WI.plug + '</span><div class="sw-id"><b>Aucun wallet</b><small>Connectez Phantom ou utilisez le wallet rapide</small></div></div>' +
         '<div class="sw-act two">' + wAct('connect', 'plug', 'Connecter', 'primary') + wAct('panel', 'bolt', 'Wallet rapide') + '</div></div>';
     } else {
       const locked = ses && !SESSW.kp;
@@ -4081,7 +4081,7 @@
   function palRender() {
     const L = $('palList'); PAL.items = palCommands($('palQ').value);
     PAL.sel = clamp(PAL.sel, 0, Math.max(0, PAL.items.length - 1));
-    if (!PAL.items.length) { L.innerHTML = '<div class="pal-empty">Aucune commande ne correspond. Colle une adresse de token complète pour l\'analyser.</div>'; return; }
+    if (!PAL.items.length) { L.innerHTML = '<div class="pal-empty">Aucune commande ne correspond. Collez une adresse de token complète pour l\'analyser.</div>'; return; }
     let g = '', h = '';
     PAL.items.forEach((c, i) => {
       if (c.g !== g) { g = c.g; h += '<div class="pal-grp">' + esc(g) + '</div>'; }
@@ -4114,7 +4114,7 @@
   function libReady() { return !!(window.solanaWeb3 && window.solanaWeb3.PublicKey && window.PumpKit); }
   async function boot() {
     if (!libReady()) {
-      document.querySelector('.main').insertAdjacentHTML('afterbegin', '<div class="notice bad">La bibliothèque Solana n\'a pas pu être chargée (connexion internet ?). Recharge la page.</div>');
+      document.querySelector('.main').insertAdjacentHTML('afterbegin', '<div class="notice bad">La bibliothèque Solana n\'a pas pu être chargée (connexion internet ?). Rechargez la page.</div>');
       return;
     }
     setFormsHtml();
@@ -4123,7 +4123,7 @@
     await solPrice(); renderTop();
     testRpc(true);
     const last = load(LS.wallet, null), pv = providers().find((x) => x.id === last); if (pv) connectWallet(pv, true);
-    if (cfg.useSess && SESSREC) { refreshBal(); if (S.orders.some((o) => o.active)) toast('Wallet rapide verrouillé', 'Des ordres sont actifs : déverrouille-le pour qu\'ils s\'exécutent seuls.', 'a'); }
+    if (cfg.useSess && SESSREC) { refreshBal(); if (S.orders.some((o) => o.active)) toast('Wallet rapide verrouillé', 'Des ordres sont actifs : déverrouillez-le pour qu\'ils s\'exécutent seuls.', 'a'); }
     setInterval(solPrice, 60000);
     setInterval(refreshBal, 30000);
     let tick = 0;
@@ -4179,7 +4179,7 @@
       setAuth,
       authed: () => AUTH === true,
       demoReset: async () => {
-        if (!(await confirmBox('Réinitialiser la démo ?', '<p>Le wallet démo revient à 10 SOL fictifs. Tes tokens démo, leurs ordres et l\'historique démo sont effacés.</p>', 'Réinitialiser', true))) return;
+        if (!(await confirmBox('Réinitialiser la démo ?', '<p>Le wallet démo revient à 10 SOL fictifs. Vos tokens démo, leurs ordres et l\'historique démo sont effacés.</p>', 'Réinitialiser', true))) return;
         DEMO.bal = 10; DEMO.pos = {}; demoSave(); DM.tok = {}; dmSave();
         ['pstudio_demo_tokens_v1', 'pstudio_demo_orders_v1', 'pstudio_demo_journal_v1', 'pstudio_demo_dist_v1'].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
         if (cfg.sim) { S.tokens = []; S.orders = []; S.journal = []; DS.rec = {}; S.view.mine = null; S.view.trade = null; }
