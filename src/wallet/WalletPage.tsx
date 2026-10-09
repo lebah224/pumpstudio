@@ -186,7 +186,7 @@ export function WalletPage() {
               : isQuick
               ? <button type="button" className="ts-wp-act" onClick={() => hub?.walletAction('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
               : srv ? <button type="button" className="ts-wp-act" title={'Envoyer des SOL de ' + name + ' vers ton wallet rapide (signé dans ' + name + ')'} onClick={() => hub?.walletAction('fund')}><span className="ts-wp-aic">⇢</span>Alimenter</button>
-              : <button type="button" className="ts-wp-act" title="Wallet de ton compte qui signe seul, sans fenêtre : ventes automatiques et bot" onClick={() => openServerWallet('create')}><span className="ts-wp-aic">ϟ</span>Wallet rapide</button>}
+              : <button type="button" className="ts-wp-act" title="Wallet de ton compte qui signe seul, sans fenêtre : ventes automatiques de tes ordres" onClick={() => openServerWallet('create')}><span className="ts-wp-aic">ϟ</span>Wallet rapide</button>}
             <button type="button" className="ts-wp-act" onClick={() => copy(pk)}><span className="ts-wp-aic">⧉</span>Copier</button>
             <a className="ts-wp-act" href={'https://solscan.io/account/' + pk} target="_blank" rel="noopener noreferrer"><span className="ts-wp-aic">↗</span>Solscan</a>
           </div>

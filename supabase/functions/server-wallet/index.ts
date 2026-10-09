@@ -282,7 +282,7 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return json(400, { error: 'Requête invalide.' }); }
   try {
     const action = body.action;
-    // limites d'appels : signatures du bot et des ordres, et actions du compte
+    // limites d'appels : signatures des trades et des ordres, et actions du compte
     if (action === 'sign_send') await rate('sw_sign:' + uid, 600, 3600);
     else if (action !== 'status') await rate('sw:' + uid, 60, 3600);
     if (action === 'create') return json(200, await create(uid, body.password, Keypair.generate()));

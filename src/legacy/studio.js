@@ -796,7 +796,7 @@
     } else ixs = [await P.PUMP_SDK.createV2Instruction({ mint, name: d.name, symbol: d.symbol, uri, creator, user, mayhemMode: false })];
     return txFrom(ixs, 400000);
   }
-  // pk : wallet qui achète ou vend (par défaut le wallet actif) ; utile au bot qui a son propre wallet
+  // pk : wallet qui achète ou vend (par défaut le wallet actif)
   async function directTrade(mint, side, amt, slip, pk) {
     const { P, BN, web3 } = KIT(), slippage = slip || cfg.slippage, payer = pk || S.wallet.pk;
     const [st, tp] = await Promise.all([pumpGlobal(), mintProgram(mint)]);
@@ -820,84 +820,6 @@
   async function tokenRaw(owner, mint) {
     const r = await rpc('getTokenAccountsByOwner', [owner, { mint }, { encoding: 'jsonParsed', commitment: 'confirmed' }]);
     return (r && r.value || []).reduce((s2, a) => s2 + BigInt((((a.account.data.parsed || {}).info || {}).tokenAmount || {}).amount || '0'), 0n);
-  }
-
-  /* ================================================================ exécution réelle pour le bot */
-  // Wallets que le bot peut utiliser : le wallet rapide serveur d'abord (signe seul, sans fenêtre de confirmation)
-  // ready : utilisable tout de suite ; armable : activable en un clic (mot de passe du wallet rapide au besoin)
-  function botWallets() {
-    return [
-      { id: 'srv', name: 'Wallet rapide', pk: SRVPK || (SESSREC && SESSREC.pk), ready: !!(SRVPK && window.TSServerWallet), armable: true,
-        note: SRVPK ? 'signe seul, sans fenêtre de confirmation' : SESSREC ? 'ton ancien wallet rapide ' + short(SESSREC.pk, 4) + ' passe sur ton compte · mot de passe seulement' : 'créé en une minute' },
-      { id: 'ext', name: S.ext ? S.ext.name : 'Wallet connecté', pk: S.ext && S.ext.pk, ready: !!S.ext, armable: !!S.ext, note: S.ext ? 'chaque trade à signer dans ' + S.ext.name : 'aucun wallet connecté' },
-    ];
-  }
-  // Activation du trading réel du bot : un seul écran (risques + mot de passe si besoin)
-  async function botArm(id, o) {
-    const risk = '<p>Le bot achètera réellement <b>' + o.size + ' SOL</b> par entrée (ta limite par achat de ' + fSol(cfg.maxSol, 2) + ' s\'applique), jusqu\'à ' + o.max + ' positions, et vendra selon la stratégie.</p><div class="notice">Les memecoins peuvent perdre toute leur valeur en quelques secondes : n\'engage que ce que tu acceptes de perdre.</div>';
-    const title = 'Trader en réel avec le bot ?';
-    if (id === 'ext') return S.ext ? confirmBox(title, '<p>Le bot utilisera <b>' + esc(S.ext.name) + '</b> : chaque trade te sera présenté à signer.</p>' + risk, 'Activer le trading réel', true) : false;
-    if (id === 'srv' && SRVPK) return confirmBox(title, '<p>Le bot utilisera ton <b>wallet rapide</b> (' + short(SRVPK, 4) + ') : il signe seul, sans fenêtre, dans la limite de tes plafonds. Garde l\'onglet du bot ouvert.</p>' + risk, 'Activer le trading réel', true);
-    if (!SESSREC || id !== 'srv') { try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return false; }
-    const toSrv = id === 'srv', needPw = toSrv || !SESSW.kp;
-    const intro = toSrv
-      ? '<p>Ton ancien wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> devient le wallet rapide de ton compte : <b>même adresse, mêmes fonds, même mot de passe</b>. Le bot pourra trader sans fenêtre de confirmation.</p>'
-      : '<p>Le bot va utiliser ton wallet rapide <b class="mono">' + short(SESSREC.pk, 4) + '</b> tant que cet onglet reste ouvert.</p>';
-    const i = await modal(title, intro + risk + (needPw ? PASS_FIELD('botPw', 'Mot de passe de ton wallet rapide', 'current-password') : ''), [{ label: 'Annuler' }, { label: 'Activer le trading réel', cls: 'danger', keep: true }], true);
-    if (i !== 1) return false;
-    const pass = needPw ? $('botPw').value : null;
-    let kp = SESSW.kp;
-    if (needPw) {
-      if (!pass) { toast('Mot de passe manquant', 'Saisis le mot de passe de ton wallet rapide.', 'a'); return false; }
-      try { kp = W3().Keypair.fromSecretKey(await openSecret(SESSREC, pass)); if (kp.publicKey.toBase58() !== SESSREC.pk) throw new Error('Clé incohérente.'); }
-      catch (e) { toast('Mot de passe incorrect', 'Le wallet rapide n\'a pas pu être ouvert.', 'r'); return false; }
-      SESSW.kp = kp;
-    }
-    closeModal();
-    if (toSrv) {
-      if (!window.TSServerWalletImport) { toast('Compte requis', 'Connecte-toi pour utiliser le serveur.', 'a'); return false; }
-      try { await window.TSServerWalletImport(pass.length >= 10 ? pass : null, b58(kp.secretKey)); }
-      catch (e) { toast('Placement sur le serveur impossible', e.message, 'r'); return false; }
-      toast('Wallet rapide transféré', short(SESSREC.pk, 4) + ' est le wallet rapide de ton compte : il signe sans fenêtre de confirmation.', 'g');
-      // un seul wallet rapide : la copie de ce navigateur est retirée
-      try { localStorage.removeItem(LS.sess); } catch (e) {}
-      SESSREC = null; SESSW.kp = null; cfg.useSess = false; save(LS.cfg, cfg);
-    } else toast('Wallet rapide prêt', 'Le bot signe seul tant que l\'onglet reste ouvert.', 'g');
-    renderAll(); return true;
-  }
-  function botWallet(id) {
-    if (id === 'srv' && SRVPK && window.TSServerWallet) { SRVW.pk = SRVPK; return SRVW; }
-    if (id === 'quick' && SESSREC && SESSW.kp) { SESSW.pk = SESSREC.pk; return SESSW; }
-    if (id === 'ext' && S.ext) return S.ext;
-    return null;
-  }
-  let BOTQ = Promise.resolve();
-  // Achat (sol) ou vente (frac : part de ce que le wallet détient) sans fenêtre de confirmation, une opération à la fois
-  function botExec(mint, side, o) {
-    const job = BOTQ.then(async () => {
-      if (cfg.sim) throw new Error('Studio en démo : rien n\'est envoyé.');
-      const w = botWallet(o.wallet); if (!w) throw new Error('Wallet du bot indisponible.');
-      const slip = Math.max(cfg.slippage, o.slip || 0);
-      let tx = null, amount;
-      if (side === 'buy') {
-        amount = Math.min(o.sol, cfg.maxSol); if (!(amount > 0)) throw new Error('Mise invalide.');
-        try { tx = await directTrade(mint, 'buy', amount, slip, w.pk); } catch (e) { if (e.message !== 'MIGRATED') throw e; }
-        if (!tx) tx = await portalTx({ publicKey: w.pk, action: 'buy', mint, amount, denominatedInSol: 'true', slippage: slip, priorityFee: cfg.priorityFee, pool: 'auto' });
-      } else {
-        const raw = await tokenRaw(w.pk, mint); if (raw <= 0n) throw new Error('Plus aucun token à vendre.');
-        let sellRaw = o.frac >= 0.999 ? raw : raw * BigInt(Math.round(o.frac * 10000)) / 10000n; if (sellRaw <= 0n) sellRaw = raw;
-        try { tx = await directTrade(mint, 'sell', sellRaw.toString(), slip, w.pk); } catch (e) { if (e.message !== 'MIGRATED') throw e; }
-        if (!tx) tx = await portalTx({ publicKey: w.pk, action: 'sell', mint, amount: Number(sellRaw) / 1e6, denominatedInSol: 'false', slippage: slip, priorityFee: cfg.priorityFee, pool: 'auto' });
-      }
-      const sig = await signAndSend(tx, null, w);
-      await confirmSig(sig);
-      const d = await actualDeltas(sig, mint);
-      journalAdd({ type: side, mint, symbol: o.symbol || short(mint), sim: false, status: 'ok', sig, sol: d ? d.sol : (side === 'buy' ? -amount : 0), tokens: d ? d.tokens : 0, est: !d, bot: true });
-      refreshBal(); renderTop();
-      return { sig, sol: d ? d.sol : null, tokens: d ? d.tokens : null };
-    });
-    BOTQ = job.catch(() => {});
-    return job;
   }
 
   /* ================================================================ temps réel : abonnement à la courbe */
@@ -2329,11 +2251,11 @@
       const cy = W * 0.5, y = midY(g, txt, cy), paint = () => spaced(g, txt, W / 2, y, s * sp0);
       emboss(g, P, paint, 5 * u);
       g.fillStyle = metal(g, W / 2 - tw / 2, cy - s / 2, W / 2 + tw / 2, cy + s / 2, P); paint();
-      const top = cy - s * 0.62, bot = cy + s * 0.62, half = Math.min(tw / 2, W * 0.32);
+      const top = cy - s * 0.62, btm = cy + s * 0.62, half = Math.min(tw / 2, W * 0.32);
       g.fillStyle = hexA(P.m[1], 0.8);
       g.fillRect(W / 2 - half, top - 1.5 * u, half - 30 * u, 3 * u); g.fillRect(W / 2 + 30 * u, top - 1.5 * u, half - 30 * u, 3 * u); gem(g, W / 2, top, 14 * u);
-      g.fillRect(W / 2 - half, bot - 1.5 * u, half * 2, 3 * u);
-      g.fillStyle = hexA(P.m[1], 0.9); [-1, 0, 1].forEach((k) => gem(g, W / 2 + k * 36 * u, bot + 40 * u, 8 * u));
+      g.fillRect(W / 2 - half, btm - 1.5 * u, half * 2, 3 * u);
+      g.fillStyle = hexA(P.m[1], 0.9); [-1, 0, 1].forEach((k) => gem(g, W / 2 + k * 36 * u, btm + 40 * u, 8 * u));
     } else if (L.style === 'mascot') {
       const cx = W / 2, cy = W * 0.43, r = W * 0.29, f = r * 0.84;
       g.save(); dropShadow(g, u, P.light ? 0.25 : 0.55); g.fillStyle = metal(g, cx - r, cy - r, cx + r, cy + r, P); circle(g, cx, cy, r); g.fill(); g.restore();
@@ -2656,7 +2578,7 @@
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres, bot et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de tes wallets'], bot: ['Bot de trading', 'Terminal : 3 stratégies en parallèle sur le flux en direct'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de tes wallets'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     // le bouton wallet historique est remplacé par le menu de compte (React) ; on le met à jour s'il existe encore
@@ -2711,7 +2633,7 @@
     document.querySelectorAll('.page').forEach((s) => s.classList.toggle('active', s.id === 'p-' + p));
     $('pageTitle').textContent = PAGES[p][0]; $('pageSub').textContent = PAGES[p][1];
     try { window.dispatchEvent(new CustomEvent('pstudio-page', { detail: p })); } catch (e) {}
-    $('pageEyebrow').textContent = { account: 'Compte', dash: 'Vue d\'ensemble', wallet: 'Vue d\'ensemble', bot: 'Trader', launch: 'Créer', social: 'Créer', dist: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
+    $('pageEyebrow').textContent = { account: 'Compte', dash: 'Vue d\'ensemble', wallet: 'Vue d\'ensemble', launch: 'Créer', social: 'Créer', dist: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
     try { localStorage.setItem('pstudio_page', p); } catch (e) {}
     renderPage(); window.scrollTo(0, 0); ppSync(liveSet());
     if (p === 'launch') setLaunchTab(S.ltab);
@@ -2847,21 +2769,16 @@
     } else { $('dSolChg').textContent = ''; lineChart($('dSolCv'), null, { empty: 'Chargement de l\'historique du SOL…', fy: (v) => v, fx: () => '' }); $('dSolFoot').innerHTML = ''; }
     // tuiles
     const act = S.orders.filter((o) => o.active), kinds = { tp: 0, sl: 0, trail: 0 }; act.forEach((o) => { kinds[o.kind === 'trail' ? 'trail' : o.kind === 'sl' ? 'sl' : 'tp']++; });
-    const bot = window.PumpBotUI && window.PumpBotUI.summary ? window.PumpBotUI.summary() : null;
-    const botPnl = bot ? bot.strats.reduce((a, s) => a + s.bal - s.start + s.unreal, 0) : 0, botN = bot ? bot.strats.reduce((a, s) => a + s.n, 0) : 0, botOpen = bot ? bot.strats.reduce((a, s) => a + s.open, 0) : 0;
     const weeks = []; for (let i = 7; i >= 0; i--) { const a = Date.now() - (i + 1) * 6048e5, b = Date.now() - i * 6048e5; weeks.push(S.tokens.filter((t) => t.createdAt >= a && t.createdAt < b).length); }
     const okAsc = ok.slice().sort((a, b) => a.t - b.t); let cum = 0; const flowVals = [0].concat(okAsc.map((j) => (cum += j.sol || 0)));
-    const botEq = []; if (bot) { const all = []; bot.strats.forEach((s) => s.eq.forEach((v, i) => { all[i] = (all[i] || 0) + v - s.start; })); botEq.push(...all); }
     const tile = (id, ic, l, v, sub, c) => '<div class="d-tile"><div class="d-tl"><span class="d-ic">' + ic + '</span>' + l + '</div><div class="d-tv ' + (c || '') + '">' + v + '</div><div class="d-ts">' + sub + '</div><canvas id="' + id + '" height="38"></canvas></div>';
     $('dTiles').innerHTML =
       tile('dSpTok', IC.spark, 'Tokens lancés', String(S.tokens.length), S.tokens.filter((t) => Date.now() - t.createdAt < 6048e5).length + ' cette semaine') +
       tile('dSpOrd', IC.shield, 'Ordres actifs', String(act.length), act.length ? kinds.tp + ' objectifs · ' + kinds.sl + ' stops' + (kinds.trail ? ' · ' + kinds.trail + ' suiveurs' : '') : 'aucun ordre surveillé') +
-      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : '') + (m === 'all' ? '' : (m === 'real' ? ' réelle' : ' simulée') + (ok.length > 1 ? 's' : '')), cls(net)) +
-      tile('dSpBot', IC.wallet, 'Bot de trading', botN || botOpen ? (botPnl > 0 ? '+' : '') + fr(botPnl, 3) + '<small> SOL</small>' : '—', bot ? botN + ' trades fermés · ' + botOpen + ' ouvertes' : 'terminal non chargé', cls(botPnl));
+      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : '') + (m === 'all' ? '' : (m === 'real' ? ' réelle' : ' simulée') + (ok.length > 1 ? 's' : '')), cls(net));
     sparkline($('dSpTok'), weeks, K.accent);
     { const el = $('dSpOrd'), parts = [[kinds.tp, K.green], [kinds.sl, K.red], [kinds.trail, K.blue]]; const bar = document.createElement('div'); bar.className = 'd-split'; bar.innerHTML = act.length ? parts.filter((x) => x[0]).map((x) => '<i style="flex:' + x[0] + ';background:' + x[1] + '"></i>').join('') : '<i style="flex:1;background:var(--panel3)"></i>'; el.replaceWith(bar); }
     sparkline($('dSpFlow'), flowVals.length > 1 ? flowVals : null, net >= 0 ? K.green : K.red);
-    sparkline($('dSpBot'), botEq.length > 1 ? botEq : null, botPnl >= 0 ? K.green : K.red);
     // flux net cumulé
     let c2 = 0; const fpts = okAsc.length ? [{ t: okAsc[0].t - 1, v: 0 }].concat(okAsc.map((j) => ({ t: j.t, v: (c2 += j.sol || 0), j }))) : null;
     $('dFlowNote').textContent = 'SOL reçu moins SOL dépensé · opérations ' + (m === 'real' ? 'réelles' : m === 'sim' ? 'simulées' : 'réelles et simulées');
@@ -2876,12 +2793,6 @@
     const bk = [{ k: 'buy', l: 'Achats', c: K.green }, { k: 'sell', l: 'Ventes', c: K.red }, { k: 'create', l: 'Lancements', c: K.accent }];
     bars($('dActCv'), days, bk);
     $('dActLeg').innerHTML = bk.map((x) => '<div><i style="background:' + x.c + '"></i>' + x.l + '<b>' + days.reduce((a, d) => a + d[x.k], 0) + '</b></div>').join('');
-    // bot
-    { const bs = $('dBotSrc'); if (bs) { bs.textContent = 'démo'; bs.hidden = !cfg.sim; } }
-    $('dBotNote').innerHTML = bot ? (bot.demo ? 'Mode démo · données simulées' : bot.running ? '<span class="dot on"></span>En marche · ' + bot.rate + ' tokens / min · ' + bot.watched + ' suivis' : '<span class="dot"></span>À l\'arrêt · lance le terminal pour suivre le flux') : 'Le terminal se charge…';
-    $('dBot').innerHTML = bot ? '<div class="d-strats">' + bot.strats.map((s) => { const p = s.bal - s.start + s.unreal; return '<button class="d-strat" type="button" data-page="bot" style="--sc:' + s.color + '"><span class="d-sn"><i></i><b>' + esc(s.name) + '</b>' + (s.enabled ? '' : '<em>en pause</em>') + '</span><canvas data-eq="' + s.id + '" height="34"></canvas><span class="d-sv"><b class="' + cls(p) + '">' + (p > 0 ? '+' : '') + fr(p, 3) + ' SOL</b><small>' + fr(s.bal, 2) + ' / ' + fr(s.start, 2) + ' · ' + (s.winrate == null ? '—' : fr(s.winrate, 0) + ' % gagnants') + ' · ' + s.open + ' ouv.</small></span></button>'; }).join('') + '</div>' +
-      (bot.recent.length ? '<div class="d-sub-h">Dernières sorties</div><div class="d-recent">' + bot.recent.slice(0, 4).map((r) => { const st = bot.strats.find((x) => x.id === r.sid); return '<div><i style="background:' + (st ? st.color : K.dim) + '"></i><b>' + esc(r.sym || '?') + '</b><span>' + esc(r.why || '') + '</span><em class="' + cls(r.pnl) + '">' + (r.pnlPct > 0 ? '+' : '') + fr(r.pnlPct, 1) + ' %</em></div>'; }).join('') + '</div>' : '') : '<div class="d-empty">Chargement du terminal…</div>';
-    if (bot) document.querySelectorAll('#dBot canvas[data-eq]').forEach((cv) => { const s = bot.strats.find((x) => x.id === cv.dataset.eq); sparkline(cv, s.eq.length > 1 ? s.eq : null, s.eq[s.eq.length - 1] >= s.start ? K.green : K.red); });
     // ordres actifs
     $('dOrders').innerHTML = act.length ? act.slice(0, 6).map((o) => {
       const C = S.cache[o.mint], cur = C && C.stats ? C.stats.price : null, r = cur && o.ref ? (cur / o.ref - 1) * 100 : null;
@@ -3478,15 +3389,11 @@
     if (errs.length) { errs.forEach(([el, m]) => { el.classList.add('err'); const d = document.createElement('div'); d.className = 'ferr'; d.textContent = m; el.closest('.f').appendChild(d); }); toast('Valeurs invalides', 'Corrige les champs en rouge.', 'r'); return; }
     Object.assign(cfg, v); save(LS.cfg, cfg); fs.classList.remove('dirty');
     if ('notify' in v && v.notify && window.Notification && Notification.permission === 'default') Notification.requestPermission();
-    if ('ppLive' in v) { if (cfg.ppLive || PPX.on) ppSync(liveSet()); else ppClose(); }
+    if ('ppLive' in v) { if (cfg.ppLive) ppSync(liveSet()); else ppClose(); }
     if ('rpc' in v) { S.rpcOk = null; PST = { url: null }; Object.keys(LIVE).forEach((k) => delete LIVE[k]); BH = { at: 0, hash: null }; testRpc(true); }
     toast('Réglages enregistrés', FORMS.find((F) => F.id === fs.dataset.form).title, 'g'); renderTop();
   }
   function formCancel(fs) { fieldsOf(fs).forEach(([k, , type]) => { const el = fs.querySelector('[data-k="' + k + '"]'); if (type === 'bool') el.checked = !!cfg[k]; else el.value = cfg[k]; el.classList.remove('err'); }); fs.querySelectorAll('.ferr').forEach((e) => e.remove()); fs.classList.remove('dirty'); }
-  /* ================================================================ pont PumpPortal pour le terminal de trading (script PumpBot)
-     Une seule connexion WebSocket pour tout l'outil : le terminal y ajoute ses abonnements. */
-  const PPX = { on: false, keys: new Set(), ls: [], sl: [] };
-  function ppxEmit() { PPX.sl.forEach((fn) => { try { fn(PP.state); } catch (e) {} }); }
   /* ================================================================ temps réel : flux PumpPortal (gratuit, sans clé)
      Une seule connexion WebSocket pour tous les tokens suivis : PumpPortal bannit les clients qui en ouvrent plusieurs. */
   const PP = { ws: null, state: 'off', subs: new Set(), want: new Set(), retry: 0, timer: null, last: 0, msgs: 0, pending: new Set() };
@@ -3494,17 +3401,17 @@
   const VIRT_TOK = INIT_CURVE.vTok - INIT_CURVE.realTok; // part virtuelle de la courbe (unités brutes)
   function ppSend(o) { try { if (PP.ws && PP.ws.readyState === 1) { PP.ws.send(JSON.stringify(o)); return true; } } catch (e) {} return false; }
   function ppConnect() {
-    if (PP.ws || (!cfg.ppLive && !PPX.on) || !window.WebSocket) return;
+    if (PP.ws || !cfg.ppLive || !window.WebSocket) return;
     clearTimeout(PP.timer); PP.state = 'connecting'; ppStatus();
     let ws; try { ws = new WebSocket(PP_URL); } catch (e) { PP.state = 'error'; ppStatus(); return ppRetry(); }
     PP.ws = ws;
     ws.onopen = () => { PP.state = 'on'; PP.retry = 0; PP.subs = new Set(); PP.newSub = false; ppStatus(); ppDiff(); };
-    ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } if (m) PPX.ls.forEach((fn) => { try { fn(m); } catch (e) {} }); if (m && m.mint && m.txType && m.txType !== 'create') { try { ppApply(m); } catch (e) {} } };
+    ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } if (m && m.mint && m.txType && m.txType !== 'create') { try { ppApply(m); } catch (e) {} } };
     ws.onerror = () => { PP.state = 'error'; ppStatus(); };
     ws.onclose = () => { if (PP.ws === ws) { PP.ws = null; PP.subs = new Set(); if (PP.state !== 'off') { PP.state = 'error'; ppStatus(); ppRetry(); } } };
   }
   function ppRetry() {
-    if ((!cfg.ppLive && !PPX.on) || (!PP.want.size && !PPX.on)) return;
+    if (!cfg.ppLive || !PP.want.size) return;
     const wait = [1000, 2000, 5000, 10000, 30000][Math.min(PP.retry++, 4)];
     clearTimeout(PP.timer); PP.timer = setTimeout(ppConnect, wait);
   }
@@ -3515,14 +3422,12 @@
     const add = [...PP.want].filter((m) => !PP.subs.has(m)), del = [...PP.subs].filter((m) => !PP.want.has(m));
     if (add.length && ppSend({ method: 'subscribeTokenTrade', keys: add })) add.forEach((m) => PP.subs.add(m));
     if (del.length && ppSend({ method: 'unsubscribeTokenTrade', keys: del })) del.forEach((m) => PP.subs.delete(m));
-    if (PPX.on && !PP.newSub && ppSend({ method: 'subscribeNewToken' }) && ppSend({ method: 'subscribeMigration' })) PP.newSub = true;
-    if (!PPX.on && PP.newSub && ppSend({ method: 'unsubscribeNewToken' }) && ppSend({ method: 'unsubscribeMigration' })) PP.newSub = false;
     ppStatus();
   }
   function ppSync(set) {
     PP.ui = new Set([...set].filter(Boolean));               // tokens suivis par l'interface (fiches, ordres)
-    PP.want = new Set([...(cfg.ppLive ? PP.ui : []), ...PPX.keys]);
-    if (!PP.want.size && !PPX.on) { if (PP.ws && (PP.subs.size || PP.newSub)) ppDiff(); return; }
+    PP.want = new Set(cfg.ppLive ? PP.ui : []);
+    if (!PP.want.size) { if (PP.ws && (PP.subs.size || PP.newSub)) ppDiff(); return; }
     if (!PP.ws) ppConnect(); else ppDiff();
   }
   function ppApply(m) {
@@ -3547,14 +3452,13 @@
     onLive(mint);
   }
   function ppLabel() {
-    if (!cfg.ppLive && !PPX.on) return ['', 'coupé'];
-    if (PP.state === 'on' && PPX.on) return ['on', 'terminal · ' + PP.subs.size + ' suivis'];
+    if (!cfg.ppLive) return ['', 'coupé'];
     if (PP.state === 'on') return ['on', PP.subs.size ? PP.subs.size + ' suivi' + (PP.subs.size > 1 ? 's' : '') : 'prêt'];
     if (PP.state === 'connecting') return ['wait', 'connexion…'];
     if (PP.state === 'error') return ['bad', 'reconnexion'];
     return ['', 'prêt · rien à suivre']; // se connecte dès qu'un token est suivi (ordre actif ou fiche ouverte)
   }
-  function ppStatus() { ppxEmit(); const el = document.querySelector('[data-sc="pp"]'); if (!el) return; const l = ppLabel(); el.querySelector('.dot').className = 'dot ' + l[0]; el.querySelector('em').textContent = l[1]; }
+  function ppStatus() { const el = document.querySelector('[data-sc="pp"]'); if (!el) return; const l = ppLabel(); el.querySelector('.dot').className = 'dot ' + l[0]; el.querySelector('em').textContent = l[1]; }
   function liveSet() {
     const keep = new Set(S.orders.filter((o) => o.active).map((o) => o.mint));
     if (S.page === 'mine') { if (S.view.mine) keep.add(S.view.mine); S.tokens.slice(0, 20).forEach((t) => keep.add(t.mint)); }
@@ -3761,7 +3665,6 @@
     else if (S.page === 'mine') renderMine();
     else if (S.page === 'trade') { if (S.view.trade) { if (!S.cache[S.view.trade] || !S.cache[S.view.trade].curve) showToken('trade', S.view.trade); else renderTokenView('trade'); } }
     else if (S.page === 'orders') renderOrders();
-    else if (S.page === 'bot') { if (window.PumpBotUI) window.PumpBotUI.show(); }
     else if (S.page === 'journal') renderJournal();
     else if (S.page === 'social') renderSocial();
     else if (S.page === 'dist') renderDist();
@@ -4161,7 +4064,6 @@
     }
     Object.keys(PAGES).forEach((p) => out.push({ g: 'Aller à', ic: navIcon(p), label: PAGES[p][0], hint: PAGES[p][1], kw: p, run: () => setPage(p) }));
     out.push(
-      { g: 'Actions', ic: IC.pulse, label: 'Ouvrir le terminal de trading', hint: 'paper trading en direct', kw: 'bot trading automatique terminal', run: () => setPage('bot') },
       { g: 'Actions', ic: IC.pulse, label: 'Ouvrir le Radar des tendances', hint: 'tokens qui prennent de l\'élan', kw: 'radar tendance trend dexscreener', run: () => { setPage('launch'); setLaunchTab('radar'); } },
       { g: 'Actions', ic: IC.spark, label: 'Tout générer automatiquement', hint: 'nom, ticker, logo, description', kw: 'auto concept idee', run: () => { setPage('launch'); setLaunchTab('studio'); clickWhenReady('autoGo'); } },
       { g: 'Actions', ic: IC.spark, label: 'Générer de nouvelles idées', hint: 'étape Concept', kw: 'idee nom ticker', run: () => { S.step = 1; setPage('launch'); clickWhenReady('genGo'); } },
@@ -4246,8 +4148,7 @@
   }
   window.PumpStudio = { PP, S, cfg, setPage, openPanel, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
-    pp: { connect(on) { PPX.on = !!on; if (!on) { PPX.keys.clear(); } ppSync(PP.ui || new Set()); ppxEmit(); }, setKeys(set) { PPX.keys = new Set(set); ppSync(PP.ui || new Set()); }, onMsg(fn) { PPX.ls.push(fn); }, onState(fn) { PPX.sl.push(fn); }, state: () => PP.state },
-    SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, botWallets, botExec, botArm, isSim: () => !!cfg.sim, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
+    SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, isSim: () => !!cfg.sim, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
     // Menu de compte (React) : état du wallet et du mode, et actions associées
     hub: {
       state: () => {

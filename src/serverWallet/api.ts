@@ -10,7 +10,7 @@ export type SrvStatus = { address: string | null; daily_cap_sol?: number; alert_
 // retrait, export, hausse du plafond, suppression : le serveur peut demander un code de confirmation (fenêtre dédiée)
 const call = <T,>(action: string, body: Record<string, unknown> = {}): Promise<T> => invokeSecure<T>('server-wallet', { action, ...body });
 
-/* ---------- état partagé (menu, portefeuille, bot) ---------- */
+/* ---------- état partagé (menu, portefeuille, studio) ---------- */
 let state: SrvStatus | null = null;
 const subs = new Set<() => void>();
 const setState = (s: SrvStatus | null) => { state = s; subs.forEach((f) => f()); syncLegacy(); };
@@ -36,7 +36,7 @@ export function clearServerWallet() { setState(null); }
 
 export async function createServerWallet(password: string) { const r = await call<{ address: string }>('create', { password }); await refreshServerWallet(); return r.address; }
 export async function importServerWallet(password: string, secret: string) { const r = await call<{ address: string }>('import', { password, secret }); await refreshServerWallet(); return r.address; }
-// le bot place le wallet rapide existant sur le serveur avec son propre mot de passe
+// le studio place l'ancien wallet rapide du navigateur sur le serveur avec son propre mot de passe
 window.TSServerWalletImport = (password, secret) => importServerWallet(password ?? '', secret);
 export async function withdrawServerWallet(password: string, to: string, amount: number | 'max') { return call<{ signature: string; sol: number }>('withdraw', { password, to, amount }); }
 export async function exportServerWallet(password: string) { return (await call<{ secret: string }>('export', { password })).secret; }

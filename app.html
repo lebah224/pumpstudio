@@ -12,12 +12,12 @@
 <meta name="apple-mobile-web-app-title" content="TokenStudio">
 <meta name="color-scheme" content="dark">
 <title>TokenStudio · Outil</title>
-<meta name="description" content="Crée, lance et pilote tes tokens Solana : lancement vérifié sur pump.fun, ordres, alertes et bot de trading.">
+<meta name="description" content="Crée, lance et pilote tes tokens Solana : lancement vérifié sur pump.fun, trading, ordres et alertes.">
 <meta name="robots" content="noindex">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TokenStudio">
 <meta property="og:title" content="TokenStudio · Crée, lance et pilote tes tokens Solana">
-<meta property="og:description" content="Du concept au lancement sur pump.fun, puis les ordres et le bot. Tes clés restent dans ton wallet.">
+<meta property="og:description" content="Du concept au lancement sur pump.fun, puis le trading, les ordres et les alertes. Tes clés restent dans ton wallet.">
 <meta property="og:image" content="https://tokenstudio-sol.vercel.app/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -45,7 +45,6 @@
       <div class="menu-label">Suivre</div>
       <button data-page="mine" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Mes tokens<span class="count" id="cMine">0</span></button>
       <button data-page="trade" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Trader</button>
-      <button data-page="bot" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg>Bot de trading</button>
       <button data-page="orders" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Ordres préparés<span class="count" id="cOrders">0</span></button>
       <button data-page="journal" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Journal<span class="count" id="cJournal">0</span></button>
     </nav>
@@ -84,7 +83,6 @@
               <div class="d-actions">
                 <button class="btn primary" data-page="launch" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg>Lancer un token</button>
                 <button class="btn" data-page="trade" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Trader</button>
-                <button class="btn" data-page="bot" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg>Bot</button>
                 <button class="btn" data-dact="radar" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Radar</button>
               </div>
             </article>
@@ -102,11 +100,7 @@
               <div class="d-head"><div><div class="d-eye"><span>Répartition</span></div><div class="d-note">Opérations par type</div></div></div>
               <div class="d-mix"><canvas id="dMixCv" height="168" width="168"></canvas><div class="d-legend" id="dMixLeg"></div></div>
             </article>
-            <article class="dcard s7">
-              <div class="d-head"><div><div class="d-eye"><span>Bot de trading</span><span class="d-src" id="dBotSrc">démo</span></div><div class="d-note" id="dBotNote">Portefeuilles simulés des stratégies</div></div><div class="spacer"></div><button class="btn sm" data-page="bot" type="button">Ouvrir le terminal</button></div>
-              <div id="dBot"></div>
-            </article>
-            <article class="dcard s5">
+            <article class="dcard s12">
               <div class="d-head"><div><div class="d-eye"><span>Activité · 14 jours</span></div><div class="d-note">Opérations par jour</div></div></div>
               <canvas class="dcv" id="dActCv" height="200"></canvas>
               <div class="d-legend row" id="dActLeg"></div>
@@ -297,151 +291,6 @@
         <div class="page-head"><div><h1>Trader</h1><p>Colle l'adresse d'un token Solana (pump.fun, PumpSwap, Raydium…) : analyse de risque, puis achat ou vente signés dans ton wallet.</p></div></div>
         <div class="card"><div class="toolbar" style="margin:0"><input class="search" id="tradeMint" placeholder="Adresse du token (mint)" style="flex:1;font-family:var(--mono)"><button class="btn primary" id="tradeGo" type="button">Analyser</button></div></div>
         <div id="tradeDetail"></div>
-      </section>
-
-      <!-- BOT : terminal de trading (moteur PumpBot v2 : 3 stratégies en parallèle, paper trading) -->
-      <section class="page" id="p-bot">
-        <div class="pb-head">
-          <div class="pb-id">
-            <div class="pb-mark"><svg class="i" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
-            <div><h1>Terminal de trading</h1><p>Trois stratégies tournent en parallèle sur le flux pump.fun en direct, chacune avec son portefeuille : Équilibrée, Migration et Flash. En démo, le bot trade avec le wallet démo ; en réel, avec le wallet que tu lui confies.</p></div>
-          </div>
-          <div class="pb-ctl">
-            <label class="pb-view"><span>Vue</span><select class="sel" id="pb-viewStrat" aria-label="Stratégie affichée"></select></label>
-            <div class="status"><span class="dot" id="pb-connDot"></span><span id="pb-connTxt">Déconnecté</span></div>
-            <button class="btn" id="pb-btnDemo" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg><span>Démo</span></button>
-            <button class="btn primary" id="pb-btnConn" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0M12 19.5h.01"/></svg><span>Connecter</span></button>
-          </div>
-        </div>
-        <div class="pb-wal" id="pb-wallet"></div>
-        <div class="pb-sel"><div><b>Stratégie active</b><span id="pb-stratHint">Choisis la stratégie qui ouvre des positions.</span></div><div class="pb-selr"><div class="seg" id="pb-stratSel" role="radiogroup" aria-label="Stratégie active"></div><button class="btn" id="pb-stratTune" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Paramètres</button></div></div>
-        <div class="kpis pb-kpis">
-          <div class="kpi"><div class="l">Tokens / min</div><div class="v" id="pb-kRate">0</div><div class="s" id="pb-kRateS">—</div></div>
-          <div class="kpi"><div class="l">Suivis</div><div class="v" id="pb-kWatch">0</div><div class="s" id="pb-kWatchS">—</div></div>
-          <div class="kpi"><div class="l">Positions</div><div class="v" id="pb-kPos">0</div><div class="s" id="pb-kPosS">—</div></div>
-          <div class="kpi"><div class="l">Solde</div><div class="v" id="pb-kBal">0</div><div class="s" id="pb-kBalS">—</div></div>
-          <div class="kpi"><div class="l">P&amp;L</div><div class="v" id="pb-kPnl">0</div><div class="s" id="pb-kPnlS">—</div></div>
-          <div class="kpi"><div class="l">Winrate</div><div class="v" id="pb-kWin">—</div><div class="s" id="pb-kWinS">—</div></div>
-          <div class="kpi"><div class="l">Flux PumpPortal</div><div class="v" id="pb-kCost">—</div><div class="s" id="pb-kCostS">flux du studio</div></div>
-        </div>
-        <nav class="ltabs pb-tabs" id="pb-menu" aria-label="Sections du terminal">
-          <button class="on" data-pb="live" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Flux live<span class="n" id="pb-cLive">0</span></button>
-          <button data-pb="positions" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>Positions<span class="n" id="pb-cPos">0</span></button>
-          <button data-pb="journal" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5v14z"/><path d="M8 7h8M8 11h6"/></svg>Journal<span class="n" id="pb-cJournal">0</span></button>
-          <button data-pb="strategies" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Stratégies</button>
-          <button data-pb="settings" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Réglages</button>
-          <button data-pb="data" type="button"><svg class="i" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.7-4 3-9 3s-9-1.3-9-3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/></svg>Données</button>
-        </nav>
-
-        <div class="pb-body">
-          <div class="pb-main">
-            <!-- flux live -->
-            <div class="pb-pg on" id="pb-p-live">
-              <div class="notice" id="pb-noTrades" hidden></div>
-              <div class="toolbar">
-                <div class="chips" id="pb-feedFilter">
-                  <button class="chip on" data-f="all" type="button">Tous <span class="n" id="pb-nAll">0</span></button>
-                  <button class="chip" data-f="watch" type="button">Surveillés <span class="n" id="pb-nWatch">0</span></button>
-                  <button class="chip" data-f="cand" type="button">Score ≥ seuil <span class="n" id="pb-nCand">0</span></button>
-                  <button class="chip" data-f="entered" type="button">Entrés <span class="n" id="pb-nEntered">0</span></button>
-                  <button class="chip" data-f="rejected" type="button">Rejetés <span class="n" id="pb-nRejected">0</span></button>
-                </div>
-                <div class="spacer"></div>
-                <input class="search" id="pb-search" type="search" placeholder="Rechercher un token ou un mint" aria-label="Rechercher un token">
-              </div>
-              <div class="tablebox" tabindex="0" role="region" aria-label="Flux des tokens en direct">
-                <table class="pb-feed">
-                  <thead><tr>
-                    <th>Token</th><th class="num">Âge</th><th class="num">MC (SOL)</th><th>Bonding</th><th class="num">Acheteurs</th>
-                    <th class="num">Achats / ventes</th><th class="num">Top 10</th><th class="num">Dev</th><th class="num">Snipers / bundle</th><th>Score</th><th>Statut</th>
-                  </tr></thead>
-                  <tbody id="pb-feedBody"></tbody>
-                </table>
-                <div class="empty" id="pb-feedEmpty"><b>En attente de nouveaux tokens</b>Connecte le terminal au flux PumpPortal ou lance la démo.</div>
-              </div>
-            </div>
-
-            <!-- positions -->
-            <div class="pb-pg" id="pb-p-positions">
-              <div class="grid-stats" id="pb-posStats" style="margin-bottom:16px"></div>
-              <div class="tablebox" tabindex="0" role="region" aria-label="Positions ouvertes">
-                <table>
-                  <thead><tr>
-                    <th>Token</th><th>Stratégie</th><th class="num">Durée</th><th class="num">Mise</th><th class="num">MC entrée → actuel</th>
-                    <th class="num">P&amp;L latent</th><th>Stop loss ← → TP1</th><th class="num">Restant</th><th></th>
-                  </tr></thead>
-                  <tbody id="pb-posBody"></tbody>
-                </table>
-                <div class="empty" id="pb-posEmpty"><b>Aucune position ouverte</b>Le terminal entre automatiquement quand un token passe tous les filtres d'une stratégie.</div>
-              </div>
-            </div>
-
-            <!-- journal -->
-            <div class="pb-pg" id="pb-p-journal">
-              <div class="toolbar">
-                <select class="sel" id="pb-jStrat" aria-label="Filtrer par stratégie"></select>
-                <div class="chips" id="pb-jReason"></div>
-              </div>
-              <div class="card"><div class="card-h"><h3>Performance</h3><p id="pb-jScope"></p></div><div class="grid-stats" id="pb-perf"></div></div>
-              <div class="card"><div class="card-h"><h3>Évolution du solde</h3><p>Solde après chaque trade fermé. La ligne pointillée est le solde de départ.</p></div><canvas id="pb-equity" height="200"></canvas></div>
-              <div class="pb-2col">
-                <div class="card"><div class="card-h"><h3>Par score d'entrée</h3><p>Est-ce qu'un meilleur score gagne plus ?</p></div><div id="pb-byScore"></div></div>
-                <div class="card"><div class="card-h"><h3>Par motif de sortie</h3><p>Ce qui termine les trades.</p></div><div id="pb-byReason"></div></div>
-              </div>
-              <div class="card"><div class="card-h"><h3>Par heure (UTC)</h3><p>P&amp;L cumulé selon l'heure d'entrée.</p></div><canvas id="pb-byHour" height="140"></canvas></div>
-              <div class="tablebox" tabindex="0" role="region" aria-label="Par heure (UTC)">
-                <table>
-                  <thead><tr>
-                    <th>Fermé</th><th>Token</th><th>Stratégie</th><th class="num">Durée</th><th class="num">Score</th><th class="num">MC entrée / max</th>
-                    <th class="num">Mise → retour</th><th class="num">P&amp;L</th><th>Sortie</th>
-                  </tr></thead>
-                  <tbody id="pb-journalBody"></tbody>
-                </table>
-                <div class="empty" id="pb-journalEmpty"><b>Aucun trade fermé</b>Les trades apparaîtront ici dès qu'une position sera fermée.</div>
-              </div>
-            </div>
-
-            <!-- stratégies -->
-            <div class="pb-pg" id="pb-p-strategies">
-              <div class="card">
-                <div class="card-h"><h3>Comparaison</h3><p>Les stratégies tournent en même temps sur le même flux, chacune avec son propre portefeuille.</p></div>
-                <div class="tablebox" tabindex="0" role="region" aria-label="Comparaison" style="margin-bottom:14px">
-                  <table><thead><tr>
-                    <th>Stratégie</th><th>État</th><th class="num">Trades</th><th class="num">Winrate</th><th class="num">P&amp;L</th><th class="num">Gain moy.</th><th class="num">Perte moy.</th><th class="num">Drawdown</th><th class="num">Ouvertes</th><th class="num">Solde</th>
-                  </tr></thead><tbody id="pb-cmpBody"></tbody></table>
-                </div>
-                <canvas id="pb-cmpChart" height="200"></canvas>
-                <div class="legend" id="pb-cmpLegend"></div>
-              </div>
-              <div id="pb-stratCards"></div>
-            </div>
-
-            <!-- réglages -->
-            <div class="pb-pg" id="pb-p-settings">
-              <div class="notice info">Chaque bloc a ses boutons <b>Valider</b> et <b>Annuler</b> : rien n'est appliqué tant que tu ne valides pas. Les réglages restent dans ce navigateur. Les filtres et les sorties se règlent par stratégie dans l'onglet <b>Stratégies</b>.</div>
-              <div class="forms" id="pb-settingsForms"></div>
-            </div>
-
-            <!-- données -->
-            <div class="pb-pg" id="pb-p-data">
-              <div class="card"><div class="card-h"><h3>Collecte</h3><p>Ce que le terminal a vu et enregistré.</p></div><div class="grid-stats" id="pb-dataStats"></div></div>
-              <div class="card"><div class="card-h"><h3>Moteur</h3><p>Charge de calcul mesurée en direct.</p></div><div class="grid-stats" id="pb-engineStats"></div></div>
-              <div class="card">
-                <div class="card-h"><h3>Exports</h3><p>Pour analyser les données et ajuster les filtres. Le mode démo n'enregistre rien.</p></div>
-                <div class="pb-btns">
-                  <button class="btn" id="pb-expTokens" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Tokens (CSV)</button>
-                  <button class="btn" id="pb-expTrades" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Trades bruts (JSON)</button>
-                  <button class="btn" id="pb-expJournal" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Journal (CSV)</button>
-                </div>
-              </div>
-              <div class="card pb-danger">
-                <div class="card-h"><h3>Zone sensible</h3><p>Actions définitives, une confirmation est demandée.</p></div>
-                <button class="btn danger" id="pb-wipe" type="button">Effacer toutes les données enregistrées</button>
-              </div>
-            </div>
-          </div>
-          <aside class="detail hidden" id="pb-detail" aria-label="Fiche du token"></aside>
-        </div>
       </section>
 
       <!-- ORDRES -->

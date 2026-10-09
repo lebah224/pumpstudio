@@ -93,7 +93,7 @@ export function ServerWalletDialog() {
       <form className="ts-modal-box ts-srv" onSubmit={submit}>
         <button type="button" className="ts-x" aria-label="Fermer" onClick={close}>×</button>
         <div className="ts-si-h"><b>{TITLE[mode]}</b>
-          <span>{mode === 'create' ? 'Un wallet de trading rattaché à ton compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, sans fenêtre de confirmation, dans la limite de tes plafonds : ventes automatiques, ordres et bot.'
+          <span>{mode === 'create' ? 'Un wallet de trading rattaché à ton compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, sans fenêtre de confirmation, dans la limite de tes plafonds : trades et ventes automatiques de tes ordres.'
             : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à ton compte depuis plus de 24 heures. Un code de confirmation te sera demandé.'
             : mode === 'limits' ? 'Le serveur refuse toute dépense au-delà du plafond du jour.'
             : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Garde-la hors ligne et ne la partage avec personne.'

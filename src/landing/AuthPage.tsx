@@ -22,7 +22,7 @@ export function AuthPage({ signup }: { signup: boolean }) {
           <h1>{signup ? t('Ton studio de tokens, prêt en une signature.', 'Your token studio, ready in one signature.') : t('Bon retour sur TokenStudio.', 'Welcome back to TokenStudio.')}</h1>
           <ul>
             <li>{CHECK}{t('Lancements vérifiés sur la blockchain avant signature', 'Launches checked on-chain before you sign')}</li>
-            <li>{CHECK}{t('Ordres, alertes et bot avec plafonds', 'Orders, alerts and bot with caps')}</li>
+            <li>{CHECK}{t('Ordres automatiques et alertes, avec plafonds', 'Automatic orders and alerts, with caps')}</li>
             <li>{CHECK}{t('Tes clés restent dans ton wallet', 'Your keys stay in your wallet')}</li>
           </ul>
         </div>

@@ -179,7 +179,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         {srv && !srv.address && (
           <button type="button" className="ts-si-opt ts-si-srv" onClick={() => { close(); setTimeout(() => openServerWallet('create'), 0); }}>
             <QuickMark />
-            <span className="ts-si-n">Wallet rapide<small>Créé sur ton compte : il signe seul, sans fenêtre · recommandé pour le bot</small></span><em className="ts-si-tag ok">Conseillé</em>
+            <span className="ts-si-n">Wallet rapide<small>Créé sur ton compte : il signe seul, sans fenêtre · recommandé pour les ordres automatiques</small></span><em className="ts-si-tag ok">Conseillé</em>
           </button>
         )}
         {walletList}

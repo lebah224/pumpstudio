@@ -8,7 +8,6 @@ import './wallets/catalog';
 import './lib/password';
 // Studio historique : s'exécute après le chargement du kit Solana (public/vendor/pumpkit.js)
 import './legacy/studio.js';
-import './legacy/terminal.js';
 import { App } from './App';
 import { installSelectMenus } from './ui/selectMenu';
 import { installRpcRelay } from './lib/rpcRelay';
@@ -28,6 +27,10 @@ document.addEventListener('error', (e) => {
   const t = e.target as HTMLElement | null;
   if (t && t.tagName === 'IMG' && t.dataset.rmOnError) t.remove();
 }, true);
+
+// ancien module de trading automatique (retiré) : ses données restées dans le navigateur sont effacées
+try { Object.keys(localStorage).filter((k) => k.startsWith('pstudio_pb_') || k === 'pb-exec').forEach((k) => localStorage.removeItem(k)); } catch { /* navigation privée */ }
+try { indexedDB.deleteDatabase('pstudio_pumpbot'); } catch { /* navigateur sans IndexedDB */ }
 
 // listes de choix aux couleurs du studio, pour tout l'outil
 installSelectMenus();

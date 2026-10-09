@@ -24,7 +24,7 @@ document.title = path === '/connexion' ? t('Connexion', 'Sign in') + ' · TokenS
   : legal ? legalTitle(legal) + ' · TokenStudio'
   : t('TokenStudio · Crée, lance et pilote tes tokens Solana', 'TokenStudio · Create, launch and manage your Solana tokens');
 const desc = document.querySelector('meta[name="description"]');
-if (desc && !legal) desc.setAttribute('content', t(desc.getAttribute('content') ?? '', 'From concept to launch on pump.fun, then tracking, orders and the trading bot. Non-custodial: your keys stay in your wallet. Free demo, no account needed.'));
+if (desc && !legal) desc.setAttribute('content', t(desc.getAttribute('content') ?? '', 'From concept to launch on pump.fun, then tracking, trading and automatic orders. Non-custodial: your keys stay in your wallet. Free demo, no account needed.'));
 
 const root = document.getElementById('lp-root');
 if (root) createRoot(root).render(<StrictMode><AuthProvider>{page}</AuthProvider></StrictMode>);

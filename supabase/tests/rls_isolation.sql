@@ -8,7 +8,7 @@ create temp table if not exists rls_out (t text, other_rows int) on commit drop;
 do $$
 declare t text; n int; me text := current_setting('request.jwt.claims')::json->>'sub';
 begin
-  foreach t in array array['profiles','preferences','wallets','drafts','tokens','operations','orders','bot_strategies','bot_trades','distributions','audit_log','push_subscriptions','server_wallets'] loop
+  foreach t in array array['profiles','preferences','wallets','drafts','tokens','operations','orders','distributions','audit_log','push_subscriptions','server_wallets'] loop
     execute format('select count(*) from public.%I where %s <> %L', t, case when t='profiles' then 'id' else 'user_id' end, me) into n;
     insert into rls_out values (t, n);
   end loop;

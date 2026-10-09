@@ -8,13 +8,11 @@ import { fromRow, hash, toRow, type Obj } from './rows';
    À la connexion, tout est chargé depuis la base et gardé en mémoire dans le studio ; chaque changement est écrit
    dans la base quelques instants après (seules les lignes modifiées partent). Rien n'est copié dans le navigateur. */
 
-type Kind = 'tokens' | 'journal' | 'orders' | 'dist' | 'draft' | 'extra' | 'keys' | 'botStrats' | 'botTrade';
-type WriteKind = Kind | 'cfg' | 'botCfg';
+type Kind = 'tokens' | 'journal' | 'orders' | 'dist' | 'draft' | 'extra' | 'keys';
+type WriteKind = Kind | 'cfg';
 type Studio = { data?: { setCloud: (h: { write: (k: WriteKind, v: unknown) => void } | null) => void; cfg: () => Obj; loadCfg: (c: Obj) => void; guestCfg: () => void; dropLocalKeys: () => void; loadReal: (x: Obj) => void; replaceReal: (k: string, v: unknown) => void;
   clearReal: () => void; draft: () => Obj; legacyLocal: () => Obj; dropLegacyLocal: () => void } };
 const st = () => studio() as unknown as Studio | undefined;
-type Bot = { account?: { attach: (h: { write: (k: WriteKind, v: unknown) => void } | null, x: Obj) => Obj; detach: () => void; addTrades: (l: Obj[]) => void } };
-const bot = () => (window as unknown as { PumpBotUI?: Bot }).PumpBotUI;
 
 /* ---------- état visible par l'interface ---------- */
 export type CloudStatus = { userId: string | null; loading: boolean; saving: boolean; pending: number; lastSaved: number | null; error: string | null; cloud: Record<string, number> | null };
@@ -42,9 +40,8 @@ const base: Record<string, Record<string, string>> = {};   // empreinte de chaqu
 const latest: Partial<Record<Kind, unknown>> = {};         // dernière valeur à écrire, par type
 const timers: Partial<Record<Kind, number>> = {};
 let draftImg = '';                                          // empreinte du logo du brouillon déjà envoyé
-let prefExtra: Obj = {};                                    // préférences.extra du compte (réglages du studio et du bot)
+let prefExtra: Obj = {};                                    // préférences.extra du compte (réglages du studio)
 let keysHash = '';                                          // empreinte des clés API déjà enregistrées
-const tradeQueue: Obj[] = [];                               // trades réels du bot à écrire
 const inflight = new Set<Kind>();                           // écritures en cours d'envoi
 let retry = 0;
 
@@ -61,9 +58,7 @@ function write(kind0: WriteKind, value: unknown) {
     prefExtra = { ...prefExtra, studio: rest };
     if (hash({ rpc, pinataJwt }) !== keysHash) { latest.keys = { rpc, pinataJwt }; if (ready) schedule('keys', 600); }
     kind = 'extra'; value = prefExtra;
-  } else if (kind0 === 'botCfg') { prefExtra = { ...prefExtra, bot: value }; kind = 'extra'; value = prefExtra; }
-  else if (kind0 === 'botTrade') { tradeQueue.push(value as Obj); kind = 'botTrade'; value = true; }
-  else kind = kind0;
+  } else kind = kind0;
   latest[kind] = value; countPending();
   if (ready) schedule(kind, kind === 'draft' ? 1200 : 600);
 }
@@ -76,17 +71,6 @@ async function flushOther(kind: Kind, value: unknown) {
     const { error } = await supabase.functions.invoke('account-keys', { body: { action: 'set', keys: k } });
     if (error) throw new Error('clés API : ' + error.message);
     keysHash = hash({ rpc: k.rpc || '', pinataJwt: k.pinataJwt || '' });
-  } else if (kind === 'botStrats') {
-    const rows = ((value as Obj[]) ?? []).map(toRow.strategy).filter(Boolean) as Obj[];
-    if (rows.length) { const { error } = await supabase.from('bot_strategies').upsert(rows.map((r) => ({ ...r, user_id: uid })), { onConflict: 'user_id,strategy_id' }); if (error) throw new Error(error.message); }
-  } else if (kind === 'botTrade') {
-    const batch = tradeQueue.splice(0, 200);
-    const rows = batch.map(toRow.trade).filter(Boolean) as Obj[];
-    if (rows.length) {
-      const { error } = await supabase.from('bot_trades').upsert(rows.map((r) => ({ ...r, user_id: uid })), { onConflict: 'user_id,client_id' });
-      if (error) { tradeQueue.unshift(...batch); throw new Error(error.message); }
-    }
-    if (tradeQueue.length) latest.botTrade = true;
   }
 }
 
@@ -193,13 +177,11 @@ export async function attachCloud(userId: string) {
   const S = st();
   S?.data?.setCloud({ write });
   try {
-    const [tokens, ops, orders, dist, draft, prefs, keys, strats, trades] = await Promise.all([
+    const [tokens, ops, orders, dist, draft, prefs, keys] = await Promise.all([
       fetchAll('tokens', 'created_at'), fetchAll('operations', 'at', 2000), fetchAll('orders', 'created_at'), fetchAll('distributions', 'sent_at'),
       supabase.from('drafts').select('*').eq('user_id', userId).eq('client_id', 'current').maybeSingle().then((r) => r.data as Obj | null),
       supabase.from('preferences').select('extra').eq('user_id', userId).maybeSingle().then((r) => (r.data?.extra ?? {}) as Obj),
       supabase.functions.invoke('account-keys', { body: { action: 'get' } }).then((r) => { if (r.error) throw new Error('clés API : ' + r.error.message); return ((r.data as Obj)?.keys ?? {}) as Obj; }),
-      supabase.from('bot_strategies').select('*').eq('user_id', userId).then((r) => (r.data ?? []) as Obj[]),
-      fetchAll('bot_trades', 'closed_at', 2000),
     ]);
     if (uid !== userId) return;
     const d: Obj = {}; dist.forEach((r) => { (d[r.mint] ||= {})[r.platform] = { at: Date.parse(r.sent_at), done: r.status === 'accepted' || undefined }; });
@@ -223,9 +205,6 @@ export async function attachCloud(userId: string) {
     S?.data?.loadCfg({ ...(prefs.studio ?? localCfg), ...mergedKeys });
     const firstCfg = !prefs.studio, newKeys = hash(mergedKeys) !== keysHash;
     S?.data?.dropLocalKeys();
-    // bot : stratégies, réglages et trades réels du compte
-    const botOut = bot()?.account?.attach({ write }, { strats: strats.map(fromRow.strategy), cfg: (prefs.bot as Obj | undefined)?.cfg, exec: (prefs.bot as Obj | undefined)?.exec,
-      trades: trades.filter((r) => r.data?.live).map(fromRow.trade) }) ?? null;
     S?.data?.dropLegacyLocal();
     // traces de l'ancienne synchronisation
     try { Object.keys(localStorage).filter((k) => k.startsWith('ts-sync-') || k === 'pstudio_owner').forEach((k) => localStorage.removeItem(k)); } catch { /* rien */ }
@@ -234,11 +213,6 @@ export async function attachCloud(userId: string) {
     (['tokens', 'orders', 'journal', 'dist'] as const).forEach((k) => { latest[k] = x[k]; schedule(k, 50); });
     if (x.draft && !draft) { latest.draft = x.draft; schedule('draft', 50); }
     if (firstCfg || newKeys) write('cfg', { ...(S?.data?.cfg() ?? {}) });
-    if (botOut) {
-      if (!strats.length) write('botStrats', botOut.strats);
-      if (!prefs.bot) write('botCfg', { cfg: botOut.cfg, exec: botOut.exec });
-      ((botOut.legacy ?? []) as Obj[]).forEach((t) => write('botTrade', t));
-    }
     Object.keys(latest).forEach((k) => schedule(k as Kind, 50));
     set({ loading: false, lastSaved: Date.now() });
     listen(userId);
@@ -256,8 +230,7 @@ export async function detachCloud() {
   st()?.data?.setCloud(null);
   st()?.data?.clearReal();
   st()?.data?.guestCfg();
-  bot()?.account?.detach();
-  prefExtra = {}; keysHash = ''; tradeQueue.length = 0;
+  prefExtra = {}; keysHash = '';
   uid = null; ready = false; Object.keys(latest).forEach((k) => delete latest[k as Kind]);
   set({ userId: null, loading: false, saving: false, pending: 0, lastSaved: null, error: null, cloud: null });
 }
@@ -268,7 +241,7 @@ window.addEventListener('beforeunload', (e) => { if (ready && Object.keys(latest
 // Une table du compte change (autre appareil, autre onglet) : elle est relue et remplace l'affichage.
 // Nos propres écritures reviennent aussi : identiques à ce que l'on sait déjà, elles sont ignorées.
 let channel: ReturnType<typeof supabase.channel> | null = null;
-const TABLES: Record<string, 'tokens' | 'journal' | 'orders' | 'dist' | 'bot'> = { tokens: 'tokens', operations: 'journal', orders: 'orders', distributions: 'dist', bot_trades: 'bot' };
+const TABLES: Record<string, 'tokens' | 'journal' | 'orders' | 'dist'> = { tokens: 'tokens', operations: 'journal', orders: 'orders', distributions: 'dist' };
 const liveTimers: Record<string, number> = {};
 function listen(userId: string) {
   channel = supabase.channel('compte-' + userId);
@@ -280,7 +253,6 @@ function listen(userId: string) {
 async function refetch(table: string) {
   if (!uid || !ready) return;
   const kind = TABLES[table]!;
-  if (kind === 'bot') { const rows = await fetchAll('bot_trades', 'closed_at', 2000); bot()?.account?.addTrades(rows.filter((r) => r.data?.live).map(fromRow.trade)); return; }
   if (kind in latest) return;   // changements faits ici en attente : ils partent d'abord, puis l'écho sera reçu
   // envoi en cours : relu après, pour ne jamais remplacer un changement local par un état plus ancien
   if (inflight.has(kind)) { window.clearTimeout(liveTimers[table]); liveTimers[table] = window.setTimeout(() => { refetch(table).catch(() => {}); }, 1000); return; }
@@ -299,7 +271,7 @@ async function refetch(table: string) {
 
 /* ---------- compteurs et export (onglet Données) ---------- */
 export async function cloudCounts(userId: string) {
-  const tables = ['tokens', 'operations', 'orders', 'distributions', 'drafts', 'bot_strategies', 'bot_trades'];
+  const tables = ['tokens', 'operations', 'orders', 'distributions', 'drafts'];
   const res = await Promise.all(tables.map((t) => supabase.from(t).select('user_id', { count: 'exact', head: true }).eq('user_id', userId)));
   const out: Record<string, number> = {}; tables.forEach((t, i) => { out[t] = res[i]?.count ?? 0; });
   set({ cloud: out });
@@ -315,13 +287,13 @@ export async function exportCloud(userId: string) {
     }
     return out;
   };
-  const [profile, preferences, wallets, tokens, operations, orders, distributions, drafts, bot_strategies, bot_trades] = await Promise.all([
+  const [profile, preferences, wallets, tokens, operations, orders, distributions, drafts] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).single().then((r) => r.data),
     supabase.from('preferences').select('*').eq('user_id', userId).single().then((r) => r.data),
     all('wallets', 'created_at'), all('tokens', 'created_at'), all('operations', 'at'), all('orders', 'created_at'),
-    all('distributions', 'sent_at'), all('drafts', 'updated_at'), all('bot_strategies', 'updated_at'), all('bot_trades', 'closed_at'),
+    all('distributions', 'sent_at'), all('drafts', 'updated_at'),
   ]);
-  return { exported_at: new Date().toISOString(), profile, preferences, wallets, tokens, operations, orders, distributions, drafts, bot_strategies, bot_trades };
+  return { exported_at: new Date().toISOString(), profile, preferences, wallets, tokens, operations, orders, distributions, drafts };
 }
 export const replaceTable = (kind: string, v: unknown) => st()?.data?.replaceReal(kind, v);
 

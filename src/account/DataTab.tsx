@@ -6,8 +6,8 @@ import { disablePush } from '../notify/push';
 import { leaveDemoGuest, markLeaving } from '../lib/guest';
 import { invokeSecure } from '../security/stepUp';
 
-const ORDER = ['tokens', 'operations', 'orders', 'distributions', 'bot_trades'];
-const LABELS: Record<string, string> = { tokens: 'tokens', operations: 'opérations du journal', orders: 'ordres', distributions: 'demandes de référencement', bot_trades: 'trades du bot' };
+const ORDER = ['tokens', 'operations', 'orders', 'distributions'];
+const LABELS: Record<string, string> = { tokens: 'tokens', operations: 'opérations du journal', orders: 'ordres', distributions: 'demandes de référencement' };
 
 /** Onglet Données de Mon compte : sauvegarde automatique, export et suppression du compte */
 export function DataTab() {
@@ -65,11 +65,11 @@ export function DataTab() {
       <div className="card">
         <div className="card-h"><h3>Tes données</h3><p>Elles t'appartiennent : tu peux les récupérer ou supprimer ton compte quand tu veux. Détails dans la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a> et les <a href="/conditions" target="_blank" rel="noopener">conditions d'utilisation</a>.</p></div>
         <div className="ts-data-act">
-          <div><b>Exporter</b><span>Profil, préférences, wallets, tokens, journal, ordres et bot dans un fichier JSON.</span></div>
+          <div><b>Exporter</b><span>Profil, préférences, wallets, tokens, journal et ordres dans un fichier JSON.</span></div>
           <button type="button" className="btn sm" disabled={!!busy} onClick={download}>{busy === 'export' ? 'Préparation…' : 'Télécharger'}</button>
         </div>
         <div className="ts-data-act danger">
-          <div><b>Supprimer le compte</b><span>Efface définitivement ton compte et toutes ses données : profil, wallets liés, tokens, journal, ordres, alertes et bot. Impossible à annuler.</span></div>
+          <div><b>Supprimer le compte</b><span>Efface définitivement ton compte et toutes ses données : profil, wallets liés, tokens, journal, ordres et alertes. Impossible à annuler.</span></div>
           {confirm === null && <button type="button" className="btn sm danger" disabled={!!busy} onClick={() => { setConfirm(''); setDelErr(null); }}>Supprimer</button>}
         </div>
         {confirm !== null && (
