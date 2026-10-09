@@ -25,7 +25,7 @@ const ago = (t: number) => {
   return new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 };
 const fmtT = (r: Range) => (t: number) => (r === '1d' ? new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
-const copy = async (pk: string) => { try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk)); } catch { toast('Copie impossible', 'Sélectionne l\'adresse et copie-la à la main.', 'a'); } };
+const copy = async (pk: string) => { try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk)); } catch { toast('Copie impossible', 'Sélectionnez l\'adresse et copiez-la à la main.', 'a'); } };
 
 function useHub(): HubState | null {
   const read = () => studio()?.hub?.state() ?? null;
@@ -112,7 +112,7 @@ export function WalletPage() {
     <div className="card ts-wp-empty">
       <div className="ts-wp-empty-ic" aria-hidden="true"><svg className="i" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2" /><path d="M22 11h-6a2 2 0 000 4h6v-4z" /></svg></div>
       <h3>Aucun wallet connecté</h3>
-      <p>Connecte ton wallet ou crée un wallet rapide pour voir ton solde, tes tokens, ton activité, et déposer ou retirer des SOL.</p>
+      <p>Connectez votre wallet ou créez un wallet rapide pour voir votre solde, vos tokens, votre activité, et déposer ou retirer des SOL.</p>
       <div className="ts-row center">
         <button type="button" className="btn primary" onClick={() => window.dispatchEvent(new CustomEvent('ts-connect'))}>Connecter un wallet</button>
         <button type="button" className="btn" onClick={() => openServerWallet('create')}>Créer mon wallet rapide</button>
@@ -170,7 +170,7 @@ export function WalletPage() {
         <section className="card ts-wp-hero">
           <div className="ts-wp-h">
             <div>
-              <div className="ts-wp-eye">{name} · {signs ? <span className="ts-hub-pill ok">signe tes transactions</span> : <button type="button" className="ts-hub-pill" onClick={useIt}>Utiliser pour signer</button>}{isQuick && !quick!.unlocked && <span className="badge a">verrouillé</span>}</div>
+              <div className="ts-wp-eye">{name} · {signs ? <span className="ts-hub-pill ok">signe vos transactions</span> : <button type="button" className="ts-hub-pill" onClick={useIt}>Utiliser pour signer</button>}{isQuick && !quick!.unlocked && <span className="badge a">verrouillé</span>}</div>
               <div className="ts-wp-total mono">{total != null ? usd(total) : bal != null ? sol(bal) : '—'}</div>
               <div className="ts-wp-sub">
                 <span className="mono">{bal != null ? sol(bal) : '…'}</span>
@@ -185,8 +185,8 @@ export function WalletPage() {
             {isSrv ? <button type="button" className="ts-wp-act" onClick={() => openServerWallet('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
               : isQuick
               ? <button type="button" className="ts-wp-act" onClick={() => hub?.walletAction('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
-              : srv ? <button type="button" className="ts-wp-act" title={'Envoyer des SOL de ' + name + ' vers ton wallet rapide (signé dans ' + name + ')'} onClick={() => hub?.walletAction('fund')}><span className="ts-wp-aic">⇢</span>Alimenter</button>
-              : <button type="button" className="ts-wp-act" title="Wallet de ton compte qui signe seul, sans fenêtre : ventes automatiques de tes ordres" onClick={() => openServerWallet('create')}><span className="ts-wp-aic">ϟ</span>Wallet rapide</button>}
+              : srv ? <button type="button" className="ts-wp-act" title={'Envoyer des SOL de ' + name + ' vers votre wallet rapide (signé dans ' + name + ')'} onClick={() => hub?.walletAction('fund')}><span className="ts-wp-aic">⇢</span>Alimenter</button>
+              : <button type="button" className="ts-wp-act" title="Wallet de votre compte qui signe seul, sans fenêtre : ventes automatiques de vos ordres" onClick={() => openServerWallet('create')}><span className="ts-wp-aic">ϟ</span>Wallet rapide</button>}
             <button type="button" className="ts-wp-act" onClick={() => copy(pk)}><span className="ts-wp-aic">⧉</span>Copier</button>
             <a className="ts-wp-act" href={'https://solscan.io/account/' + pk} target="_blank" rel="noopener noreferrer"><span className="ts-wp-aic">↗</span>Solscan</a>
           </div>
@@ -240,12 +240,12 @@ export function WalletPage() {
         {/* gestion du wallet serveur */}
         {isSrv && srvSt?.address && (
           <section className="card ts-wp-sec">
-            <div className="card-h"><h3>Wallet rapide</h3><p>Clé chiffrée sur ton compte. Il signe seul, uniquement des opérations de trading, dans la limite de tes plafonds.</p></div>
+            <div className="card-h"><h3>Wallet rapide</h3><p>Clé chiffrée sur votre compte. Il signe seul, uniquement des opérations de trading, dans la limite de vos plafonds.</p></div>
             <div className="ts-cap">
               <div className="ts-cap-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(capPct)} aria-label="Plafond du jour utilisé"><i className={capPct > 80 ? 'hot' : ''} style={{ width: capPct + '%' }} /></div>
               <div className="ts-cap-t"><span>Dépensé aujourd'hui : <b className="mono">{nf(srvSt.spent_today ?? 0, 3)} SOL</b></span><span>plafond {nf(srvSt.daily_cap_sol ?? 10, 2)} SOL</span></div>
             </div>
-            {bal != null && srvSt.alert_balance_sol != null && bal > srvSt.alert_balance_sol && <div className="ts-note warn">Solde au-dessus de ton seuil d'alerte ({nf(srvSt.alert_balance_sol, 2)} SOL) : pense à retirer les gains vers ton wallet principal.</div>}
+            {bal != null && srvSt.alert_balance_sol != null && bal > srvSt.alert_balance_sol && <div className="ts-note warn">Solde au-dessus de votre seuil d'alerte ({nf(srvSt.alert_balance_sol, 2)} SOL) : pensez à retirer les gains vers votre wallet principal.</div>}
             <div className="ts-wp-secb">
               <button type="button" className="btn sm" onClick={() => openServerWallet('limits')}>Plafonds</button>
               <button type="button" className="btn sm ghost" onClick={() => openServerWallet('export')}>Exporter la clé</button>
@@ -256,7 +256,7 @@ export function WalletPage() {
         {/* ancien wallet rapide gardé dans ce navigateur : à transférer sur le compte */}
         {st.quickSaved && (
           <section className="card ts-wp-sec">
-            <div className="card-h"><h3>Ancien wallet rapide</h3><p>L'adresse <span className="mono">{short(st.quickSaved.pk)}</span> est encore gardée dans ce navigateur. Transfère-la sur ton compte pour la retrouver partout : même adresse, mêmes fonds.</p></div>
+            <div className="card-h"><h3>Ancien wallet rapide</h3><p>L'adresse <span className="mono">{short(st.quickSaved.pk)}</span> est encore gardée dans ce navigateur. Transférez-la sur votre compte pour la retrouver partout : même adresse, mêmes fonds.</p></div>
             <div className="ts-wp-secb">
               <button type="button" className="btn sm primary" onClick={() => hub?.legacyMigrate()}>{srv ? 'Transférer les SOL vers mon wallet rapide' : 'Transférer sur mon compte'}</button>
               <button type="button" className="btn sm ghost" onClick={() => hub?.legacyExport()}>Clé privée</button>
@@ -283,7 +283,7 @@ function ReceiveDialog({ pk, name, canFund, onClose }: { pk: string; name: strin
     <div className="ts-modal" role="dialog" aria-modal="true" aria-label="Déposer des SOL" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="ts-modal-box ts-recv">
         <button type="button" className="ts-x" aria-label="Fermer" onClick={onClose}>×</button>
-        <div className="ts-si-h"><b>Déposer sur {name}</b><span>Scanne ce QR code avec l'app de ton wallet ou de ton exchange, ou copie l'adresse. Envoie uniquement des SOL ou des tokens Solana.</span></div>
+        <div className="ts-si-h"><b>Déposer sur {name}</b><span>Scannez ce QR code avec l'app de votre wallet ou de votre exchange, ou copiez l'adresse. Envoyez uniquement des SOL ou des tokens Solana.</span></div>
         <div className="ts-recv-qr"><QrCode text={uri} /></div>
         <button type="button" className="ts-recv-addr mono" onClick={() => copy(pk)} title="Copier l'adresse">{pk}<span>Copier</span></button>
         <label className="field"><span className="ts-lbl">Montant demandé (facultatif)</span><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="ex. 0,5 SOL" /></label>

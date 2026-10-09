@@ -52,24 +52,24 @@ export function ServerWalletDialog() {
       if (mode === 'create') {
         const weak = pwError(pw); if (weak) throw new Error(weak);
         if (pw !== pw2) throw new Error('Les deux mots de passe sont différents.');
-        if (!ack) throw new Error('Coche la case pour confirmer.');
+        if (!ack) throw new Error('Cochez la case pour confirmer.');
         let addr: string;
         if (how === 'new') addr = await createServerWallet(pw);
         else if (how === 'move') {
           const h = studio()?.hub; let kp = h?.quickKeypair();
           if (!kp && (await h?.quickUnlock())) kp = h?.quickKeypair();
-          if (!kp) throw new Error('Déverrouille d\'abord ton wallet rapide.');
+          if (!kp) throw new Error('Déverrouillez d\'abord votre wallet rapide.');
           const b58 = (window.PumpStudio as unknown as { b58: (u: Uint8Array) => string }).b58;
           addr = await importServerWallet(pw, b58(kp.secretKey));
           h?.legacyDrop();   // un seul wallet rapide : la copie du navigateur est retirée
         } else addr = await importServerWallet(pw, secret.trim());
         await studio()?.hub?.useServer(true);
-        toast('Wallet rapide prêt', short(addr) + ' signe maintenant tes transactions, sans fenêtre de confirmation.');
+        toast('Wallet rapide prêt', short(addr) + ' signe maintenant vos transactions, sans fenêtre de confirmation.');
         close(); return;
       }
-      if (!pw) throw new Error('Saisis le mot de passe du wallet rapide.');
+      if (!pw) throw new Error('Saisissez le mot de passe du wallet rapide.');
       if (mode === 'withdraw') {
-        if (!to) throw new Error('Choisis un wallet de destination.');
+        if (!to) throw new Error('Choisissez un wallet de destination.');
         const n = Number(amount.replace(',', '.'));
         if (!all && !(n > 0)) throw new Error('Montant invalide.');
         const r = await withdrawServerWallet(pw, to, all ? 'max' : n);
@@ -86,17 +86,17 @@ export function ServerWalletDialog() {
   }
 
   const PW = (label = 'Mot de passe du wallet rapide', auto = 'current-password') => <label className="field"><span className="ts-lbl">{label}</span><input type="password" autoComplete={auto} value={pw} onChange={(e) => setPw(e.target.value)} autoFocus /></label>;
-  const TITLE: Record<SrvMode, string> = { create: 'Créer mon wallet rapide', withdraw: 'Retirer vers ton wallet', limits: 'Plafonds du wallet rapide', export: 'Exporter la clé privée', delete: 'Supprimer le wallet rapide' };
+  const TITLE: Record<SrvMode, string> = { create: 'Créer mon wallet rapide', withdraw: 'Retirer vers votre wallet', limits: 'Plafonds du wallet rapide', export: 'Exporter la clé privée', delete: 'Supprimer le wallet rapide' };
 
   return (
     <div className="ts-modal" role="dialog" aria-modal="true" aria-label={TITLE[mode]} onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
       <form className="ts-modal-box ts-srv" onSubmit={submit}>
         <button type="button" className="ts-x" aria-label="Fermer" onClick={close}>×</button>
         <div className="ts-si-h"><b>{TITLE[mode]}</b>
-          <span>{mode === 'create' ? 'Un wallet de trading rattaché à ton compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, sans fenêtre de confirmation, dans la limite de tes plafonds : trades et ventes automatiques de tes ordres.'
-            : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à ton compte depuis plus de 24 heures. Un code de confirmation te sera demandé.'
+          <span>{mode === 'create' ? 'Un wallet de trading rattaché à votre compte : sa clé est gardée chiffrée sur le serveur. Il signe seul, sans fenêtre de confirmation, dans la limite de vos plafonds : trades et ventes automatiques de vos ordres.'
+            : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à votre compte depuis plus de 24 heures. Un code de confirmation vous sera demandé.'
             : mode === 'limits' ? 'Le serveur refuse toute dépense au-delà du plafond du jour.'
-            : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Garde-la hors ligne et ne la partage avec personne.'
+            : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Gardez-la hors ligne et ne la partage avec personne.'
             : 'La clé chiffrée est effacée du serveur. Sans export préalable, les fonds restants seraient perdus.'}</span></div>
 
         {mode === 'create' && (<>
@@ -105,15 +105,15 @@ export function ServerWalletDialog() {
             <button type="button" className={how === 'new' ? 'on' : ''} onClick={() => setHow('new')}>Nouveau wallet</button>
             <button type="button" className={how === 'key' ? 'on' : ''} onClick={() => setHow('key')}>Clé privée</button>
           </div>
-          {how === 'move' && quick && <p className="muted ts-small">Ton ancien wallet rapide <b className="mono">{short(quick.pk)}</b> devient le wallet rapide de ton compte, à la même adresse et avec ses fonds. Rien n'est transféré sur la blockchain.</p>}
+          {how === 'move' && quick && <p className="muted ts-small">Votre ancien wallet rapide <b className="mono">{short(quick.pk)}</b> devient le wallet rapide de votre compte, à la même adresse et avec ses fonds. Rien n'est transféré sur la blockchain.</p>}
           {how === 'key' && <label className="field"><span className="ts-lbl">Clé privée (base58 ou tableau de 64 nombres)</span><input value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="off" spellCheck={false} /></label>}
           {PW('Mot de passe du wallet rapide', 'new-password')}
           <PasswordMeter value={pw} />
-          <label className="field"><span className="ts-lbl">Confirme le mot de passe</span><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
+          <label className="field"><span className="ts-lbl">Confirmez le mot de passe</span><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
           <ul className="ts-srv-rules">
             <li>Il ne signe que des achats, ventes, lancements et récupérations de frais : jamais de virement ni de transfert de tokens.</li>
-            <li>Plafond de dépense : 10 SOL par jour, réglable. Ta limite par achat s'applique aussi.</li>
-            <li>Retraits uniquement vers tes wallets liés depuis plus de 24 h, avec ce mot de passe et un code de confirmation.</li>
+            <li>Plafond de dépense : 10 SOL par jour, réglable. Votre limite par achat s'applique aussi.</li>
+            <li>Retraits uniquement vers vos wallets liés depuis plus de 24 h, avec ce mot de passe et un code de confirmation.</li>
           </ul>
           <label className="check"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} /><span>Je comprends que TokenStudio garde la clé de ce wallet. Je n'y laisse que ce que je suis prêt à risquer.</span></label>
         </>)}
@@ -121,7 +121,7 @@ export function ServerWalletDialog() {
         {mode === 'withdraw' && (<>
           {linked.length ? (
             <label className="field"><span className="ts-lbl">Vers</span><select value={to} onChange={(e) => setTo(e.target.value)}>{linked.map((a) => <option key={a.address} value={a.address} disabled={a.wait > 0}>{short(a.address) + (a.wait > 0 ? ' · disponible dans ' + a.wait + ' h' : '')}</option>)}</select></label>
-          ) : <div className="ts-note warn">Aucun wallet lié à ton compte. Ajoute d'abord ton Phantom (menu en haut à droite → Ajouter un wallet).</div>}
+          ) : <div className="ts-note warn">Aucun wallet lié à votre compte. Ajoutez d'abord votre Phantom (menu en haut à droite → Ajouter un wallet).</div>}
           <label className="field"><span className="ts-lbl">Montant (SOL)</span><input inputMode="decimal" value={all ? '' : amount} disabled={all} onChange={(e) => setAmount(e.target.value)} placeholder="ex. 0,5" /></label>
           <label className="check"><input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} /><span>Tout retirer</span></label>
           {PW()}
@@ -137,7 +137,7 @@ export function ServerWalletDialog() {
         </>)}
 
         {mode === 'export' && (shown
-          ? <div className="ts-srv-key"><code className="mono">{shown}</code><button type="button" className="btn sm" onClick={async () => { try { await navigator.clipboard.writeText(shown); toast('Clé copiée', 'Colle-la dans un endroit sûr, puis efface le presse-papiers.', 'a'); } catch { /* copie refusée */ } }}>Copier</button></div>
+          ? <div className="ts-srv-key"><code className="mono">{shown}</code><button type="button" className="btn sm" onClick={async () => { try { await navigator.clipboard.writeText(shown); toast('Clé copiée', 'Collez-la dans un endroit sûr, puis effacez le presse-papiers.', 'a'); } catch { /* copie refusée */ } }}>Copier</button></div>
           : PW())}
 
         {mode === 'delete' && (<>
@@ -148,7 +148,7 @@ export function ServerWalletDialog() {
         {err && <div className="ts-note bad" role="alert">{err}</div>}
         <div className="ts-row" style={{ marginTop: 12 }}>
           <button type="button" className="btn ghost" onClick={close}>{shown ? 'Fermer' : 'Annuler'}</button>
-          {!shown && <button className={'btn ' + (mode === 'delete' ? 'danger' : 'primary')} disabled={busy}>{busy ? 'Patiente…' : mode === 'create' ? (how === 'new' ? 'Créer le wallet serveur' : 'Placer sur le serveur') : mode === 'withdraw' ? 'Retirer' : mode === 'limits' ? 'Enregistrer' : mode === 'export' ? 'Afficher la clé' : 'Supprimer'}</button>}
+          {!shown && <button className={'btn ' + (mode === 'delete' ? 'danger' : 'primary')} disabled={busy}>{busy ? 'Patientez…' : mode === 'create' ? (how === 'new' ? 'Créer le wallet serveur' : 'Placer sur le serveur') : mode === 'withdraw' ? 'Retirer' : mode === 'limits' ? 'Enregistrer' : mode === 'export' ? 'Afficher la clé' : 'Supprimer'}</button>}
         </div>
       </form>
     </div>

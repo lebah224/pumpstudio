@@ -33,14 +33,14 @@ export function uaLabel(ua: string) {
 
 /** Abonne cet appareil : autorisation du navigateur, abonnement, puis enregistrement sur le compte */
 export async function enablePush(userId: string) {
-  if (!supported()) throw new Error(isIos() ? 'Sur iPhone, ajoute d\'abord TokenStudio à l\'écran d\'accueil (Partager → Sur l\'écran d\'accueil), puis ouvre-le depuis l\'icône.' : 'Ce navigateur ne gère pas les notifications.');
+  if (!supported()) throw new Error(isIos() ? 'Sur iPhone, ajoutez d\'abord TokenStudio à l\'écran d\'accueil (Partager → Sur l\'écran d\'accueil), puis ouvrez-le depuis l\'icône.' : 'Ce navigateur ne gère pas les notifications.');
   const perm = await Notification.requestPermission();
-  if (perm !== 'granted') throw new Error('Notifications refusées : autorise-les dans les réglages du navigateur pour ce site.');
+  if (perm !== 'granted') throw new Error('Notifications refusées : autorisez-les dans les réglages du navigateur pour ce site.');
   const reg = await registration(); await navigator.serviceWorker.ready;
   const sub = (await reg.pushManager.getSubscription()) ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUBLIC) });
   const row = { user_id: userId, endpoint: sub.endpoint, p256dh: toB64u(sub.getKey('p256dh')), auth: toB64u(sub.getKey('auth')), label: uaLabel(navigator.userAgent) };
   const { error } = await supabase.from('push_subscriptions').insert(row);
-  if (error && !/duplicate|unique/i.test(error.message)) { await sub.unsubscribe().catch(() => {}); throw new Error(/row-level|policy/i.test(error.message) ? 'Limite de 10 appareils atteinte : retire un ancien appareil.' : error.message); }
+  if (error && !/duplicate|unique/i.test(error.message)) { await sub.unsubscribe().catch(() => {}); throw new Error(/row-level|policy/i.test(error.message) ? 'Limite de 10 appareils atteinte : retirez un ancien appareil.' : error.message); }
 }
 
 /** Désabonne cet appareil (le compte et les autres appareils ne changent pas) */

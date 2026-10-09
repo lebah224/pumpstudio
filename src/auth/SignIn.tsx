@@ -60,7 +60,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     setSrc(s); setAddr(address);
     if (session) {
       await linkWallet(s);
-      toast(t('Wallet ajouté à ton compte', 'Wallet added to your account'), short(address));
+      toast(t('Wallet ajouté à votre compte', 'Wallet added to your account'), short(address));
       close(); return;
     }
     if ((await signInWithWallet(s, captcha)) === 'none') { if (signup) await createAccountWithWallet(s, captcha); else setStep('none'); }
@@ -102,7 +102,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     else if (intent.wallet) pickWallet(intent.wallet);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const simulate = () => { if (standalone) { location.href = '/app?demo=1'; return; } close(); hub?.goSim(); toast('Mode démo', 'Explore l\'outil avec un wallet démo de 10 SOL fictifs. Rien n\'est envoyé ; crée ton compte pour vérifier sur la blockchain.', 'g'); };
+  const simulate = () => { if (standalone) { location.href = '/app?demo=1'; return; } close(); hub?.goSim(); toast('Mode démo', 'Explorez l\'outil avec un wallet démo de 10 SOL fictifs. Rien n\'est envoyé ; créez votre compte pour vérifier sur la blockchain.', 'g'); };
 
   async function sendEmail(ev: FormEvent | null, createUser: boolean) {
     ev?.preventDefault(); setErr(null);
@@ -133,7 +133,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
 
   const walletList = (
     <>
-      {location.protocol === 'file:' && <div className="ts-note warn">{t('Les wallets ne fonctionnent pas sur une page ouverte comme fichier : utilise la version en ligne.', 'Wallets don\'t work on a page opened as a file: use the online version.')}</div>}
+      {location.protocol === 'file:' && <div className="ts-note warn">{t('Les wallets ne fonctionnent pas sur une page ouverte comme fichier : utilisez la version en ligne.', 'Wallets don\'t work on a page opened as a file: use the online version.')}</div>}
       <div className="ts-si-list" role="list">
         {found.map((x) => (
           <button key={x.id} type="button" role="listitem" className="ts-si-opt" disabled={!!busy || !robotOk} onClick={() => pickWallet(x.id)}>
@@ -164,8 +164,8 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
   return (
     <div className="ts-signin">
       {step === 'choose' && (<>
-        {signup ? head(t('Créer ton compte', 'Create your account'), t('Avec ton wallet ou ton e-mail. Une signature gratuite suffit : aucune transaction, aucun frais.', 'With your wallet or your email. One free signature is enough: no transaction, no fees.'))
-          : head(t('Connexion à TokenStudio', 'Sign in to TokenStudio'), t('Choisis comment te connecter. Tes clés privées ne quittent jamais ton wallet.', 'Choose how to sign in. Your private keys never leave your wallet.'))}
+        {signup ? head(t('Créer votre compte', 'Create your account'), t('Avec votre wallet ou votre e-mail. Une signature gratuite suffit : aucune transaction, aucun frais.', 'With your wallet or your email. One free signature is enough: no transaction, no fees.'))
+          : head(t('Connexion à TokenStudio', 'Sign in to TokenStudio'), t('Choisissez comment vous connecter. Vos clés privées ne quittent jamais votre wallet.', 'Choose how to sign in. Your private keys never leave your wallet.'))}
         {intent.reason === 'real' && <div className="ts-note warn">Le mode réel demande un compte. La démo reste ouverte sans compte.</div>}
         {robot}
         {walletList}
@@ -175,18 +175,18 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
       </>)}
 
       {step === 'add' && (<>
-        {head('Ajouter un wallet', 'Connecte un wallet puis signe un message gratuit : il est ajouté à ton compte. Aucune transaction n\'est autorisée.')}
+        {head('Ajouter un wallet', 'Connectez un wallet puis signez un message gratuit : il est ajouté à votre compte. Aucune transaction n\'est autorisée.')}
         {srv && !srv.address && (
           <button type="button" className="ts-si-opt ts-si-srv" onClick={() => { close(); setTimeout(() => openServerWallet('create'), 0); }}>
             <QuickMark />
-            <span className="ts-si-n">Wallet rapide<small>Créé sur ton compte : il signe seul, sans fenêtre · recommandé pour les ordres automatiques</small></span><em className="ts-si-tag ok">Conseillé</em>
+            <span className="ts-si-n">Wallet rapide<small>Créé sur votre compte : il signe seul, sans fenêtre · recommandé pour les ordres automatiques</small></span><em className="ts-si-tag ok">Conseillé</em>
           </button>
         )}
         {walletList}
       </>)}
 
       {step === 'quick' && (<>
-        {head('Ancien wallet rapide', 'Ce navigateur garde encore ton ancien wallet rapide. Connecte-toi avec lui, puis transfère-le sur ton compte depuis le menu : tu le retrouveras partout.')}
+        {head('Ancien wallet rapide', 'Ce navigateur garde encore votre ancien wallet rapide. Connectez-vous avec lui, puis transférez-le sur votre compte depuis le menu : vous le retrouverez partout.')}
         {robot}
         <div className="ts-si-list">
           {quick && (
@@ -208,13 +208,13 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
           <button type="button" className="btn" disabled={!!busy} onClick={() => { setErr(null); setStep('email'); }}>{t('J\'ai déjà un compte (e-mail)', 'I already have an account (email)')}</button>
           <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
-        <p className="muted ts-small">{t('Le compte garde tes préférences et ton historique sur tous tes appareils, et permet le mode réel. Connecté par e-mail, tu pourras ajouter ce wallet ensuite.', 'An account keeps your settings and history on all your devices, and unlocks live mode. Signed in by email, you can add this wallet afterwards.')}</p>
+        <p className="muted ts-small">{t('Le compte garde vos préférences et votre historique sur tous vos appareils, et permet le mode réel. Connecté par e-mail, vous pourrez ajouter ce wallet ensuite.', 'An account keeps your settings and history on all your devices, and unlocks live mode. Signed in by email, you can add this wallet afterwards.')}</p>
       </>)}
 
       {step === 'email' && (
         <form onSubmit={(e) => sendEmail(e, false)} className="ts-si-form">
-          {head(t('Connexion par e-mail', 'Sign in by email'), t('On t\'envoie un lien et un code de connexion. Pas de mot de passe à retenir.', 'We send you a sign-in link and code. No password to remember.'))}
-          <label className="field"><span className="ts-lbl">{t('Adresse e-mail', 'Email address')}</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('toi@exemple.com', 'you@example.com')} autoFocus /></label>
+          {head(t('Connexion par e-mail', 'Sign in by email'), t('On vous envoie un lien et un code de connexion. Pas de mot de passe à retenir.', 'We send you a sign-in link and code. No password to remember.'))}
+          <label className="field"><span className="ts-lbl">{t('Adresse e-mail', 'Email address')}</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('vous@exemple.com', 'you@example.com')} autoFocus /></label>
           {robot}
           <div className="ts-row">{back(src ? 'none' : 'choose')}<button className="btn primary" disabled={busy === 'email' || !robotOk}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Recevoir le code', 'Get the code')}</button></div>
         </form>
@@ -232,7 +232,7 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
 
       {step === 'code' && (
         <form onSubmit={verify} className="ts-si-form">
-          {head(t('Vérifie ta boîte mail', 'Check your inbox'), <>{t('Clique sur le lien reçu à', 'Click the link sent to')} <b>{email}</b>{t(', ou saisis le code qu\'il contient.', ', or enter the code it contains.')}</>)}
+          {head(t('Vérifiez votre boîte mail', 'Check your inbox'), <>{t('Cliquez sur le lien reçu à', 'Click the link sent to')} <b>{email}</b>{t(', ou saisissez le code qu\'il contient.', ', or enter the code it contains.')}</>)}
           <label className="field"><span className="ts-lbl">{t('Code reçu', 'Code received')}</span><input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" maxLength={10} autoFocus /></label>
           <div className="ts-row"><button type="button" className="btn ghost" onClick={() => setStep('email')}>{t('Changer d\'adresse', 'Change address')}</button><button className="btn primary" disabled={busy === 'code'}>{busy === 'code' ? t('Vérification…', 'Verifying…') : t('Se connecter', 'Sign in')}</button></div>
         </form>
@@ -265,8 +265,8 @@ export function readable(e: unknown): string {
   const m = (e as { message?: string })?.message || String(e);
   if (/rejected|denied|declined|cancel/i.test(m)) return t('Signature refusée dans le wallet.', 'Signature rejected in the wallet.');
   if (/web3.*(disabled|not enabled)|provider.*disabled|unsupported provider/i.test(m)) return t('La connexion par wallet n\'est pas encore activée sur le serveur.', 'Wallet sign-in isn\'t enabled on the server yet.');
-  if (/rate limit|too many/i.test(m)) return t('Trop de tentatives : réessaie dans quelques minutes.', 'Too many attempts: try again in a few minutes.');
-  if (/expired|invalid.*(otp|token)|otp.*invalid/i.test(m)) return t('Code invalide ou expiré : demande un nouveau code.', 'Invalid or expired code: request a new one.');
+  if (/rate limit|too many/i.test(m)) return t('Trop de tentatives : réessayez dans quelques minutes.', 'Too many attempts: try again in a few minutes.');
+  if (/expired|invalid.*(otp|token)|otp.*invalid/i.test(m)) return t('Code invalide ou expiré : demandez un nouveau code.', 'Invalid or expired code: request a new one.');
   if (/redirect|url.*not allowed|uri/i.test(m)) return t('Cette adresse de site n\'est pas autorisée dans la configuration du serveur.', 'This site address isn\'t allowed in the server configuration.');
   return m.slice(0, 200);
 }

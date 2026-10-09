@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
   if (!calls.length || calls.length > MAX_BATCH) return json(400, { error: 'Lot de requêtes invalide.' }, h);
   const bad = calls.find((c) => typeof c?.method !== 'string' || !METHODS.has(c.method));
   if (bad) return json(403, { error: 'Méthode RPC non relayée : ' + String(bad?.method).slice(0, 40) }, h);
-  if (limited(uid, calls.length)) return json(429, { error: 'Trop de requêtes : patiente une minute.' }, h);
+  if (limited(uid, calls.length)) return json(429, { error: 'Trop de requêtes : patientez une minute.' }, h);
 
   let last = 'aucun RPC joignable';
   for (const url of upstreams()) {

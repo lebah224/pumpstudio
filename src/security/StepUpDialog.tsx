@@ -4,12 +4,12 @@ import { readable } from '../auth/SignIn';
 import { security, stepUpStore, type StepUpPurpose } from './stepUp';
 
 const LABEL: Record<StepUpPurpose, string> = {
-  withdraw: 'Retrait depuis ton wallet rapide',
+  withdraw: 'Retrait depuis votre wallet rapide',
   limits_up: 'Hausse du plafond du wallet rapide',
   export_key: 'Export de la clé du wallet rapide',
   delete_wallet: 'Suppression du wallet rapide',
-  link_wallet: 'Ajout d\'un wallet à ton compte',
-  delete_account: 'Suppression de ton compte',
+  link_wallet: 'Ajout d\'un wallet à votre compte',
+  delete_account: 'Suppression de votre compte',
 };
 const SHIELD = <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>;
 
@@ -64,9 +64,9 @@ export function StepUpDialog() {
   return (
     <div className="ts-modal ts-stepup" role="dialog" aria-modal="true" aria-labelledby="ts-su-t" onMouseDown={(e) => { if (e.target === e.currentTarget) cancel(); }}>
       <form className="ts-modal-box" onSubmit={verify}>
-        <div className="ts-su-h"><span className="ts-su-ic">{SHIELD}</span><div><b id="ts-su-t">Confirme qu'il s'agit bien de toi</b><span>{LABEL[ask.purpose]}</span></div></div>
+        <div className="ts-su-h"><span className="ts-su-ic">{SHIELD}</span><div><b id="ts-su-t">Confirmez qu'il s'agit bien de vous</b><span>{LABEL[ask.purpose]}</span></div></div>
         {!methods && !err && <p className="muted">Chargement…</p>}
-        {none && <div className="ts-note warn">Pour confirmer cette action, ajoute une adresse e-mail à ton compte (Mon compte → Profil) ou active la double authentification (Mon compte → Sécurité).</div>}
+        {none && <div className="ts-note warn">Pour confirmer cette action, ajoutez une adresse e-mail à votre compte (Mon compte → Profil) ou activez la double authentification (Mon compte → Sécurité).</div>}
         {methods && !none && (<>
           {methods.email && methods.totp && (
             <div className="seg sm ts-su-via" role="group" aria-label="Moyen de confirmation">
@@ -79,7 +79,7 @@ export function StepUpDialog() {
             <button type="button" className="btn primary ts-su-send" disabled={!!busy} onClick={send}>{busy === 'send' ? 'Envoi…' : 'Envoyer le code'}</button>
           </>)}
           {(via === 'totp' || sentTo) && (<>
-            <p className="ts-su-p">{via === 'totp' ? 'Saisis le code affiché par ton application d\'authentification.' : <>Code envoyé à <b>{sentTo}</b>. Pense à regarder dans les indésirables.</>}</p>
+            <p className="ts-su-p">{via === 'totp' ? 'Saisissez le code affiché par votre application d\'authentification.' : <>Code envoyé à <b>{sentTo}</b>. Pensez à regarder dans les indésirables.</>}</p>
             <label className="field"><span className="ts-lbl">Code de sécurité</span>
               <input ref={input} className="ts-su-code mono" inputMode="numeric" autoComplete="one-time-code" maxLength={7} value={code} onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, ''))} placeholder="123456" />
             </label>
@@ -91,7 +91,7 @@ export function StepUpDialog() {
           <button type="button" className="btn ghost" onClick={cancel}>Annuler</button>
           {(via === 'totp' || sentTo) && !none && <button className="btn primary" disabled={!!busy || code.replace(/\D/g, '').length !== 6}>{busy === 'verify' ? 'Vérification…' : 'Confirmer'}</button>}
         </div>
-        <p className="ts-su-foot">TokenStudio ne te demandera jamais ce code par téléphone, message privé ou réseau social.</p>
+        <p className="ts-su-foot">TokenStudio ne vous demandera jamais ce code par téléphone, message privé ou réseau social.</p>
       </form>
     </div>
   );

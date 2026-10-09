@@ -30,7 +30,7 @@ export function AvatarPicker({ userId, value, onChange }: { userId: string; valu
         <div className="ts-row">
           <button type="button" className="btn sm" disabled={busy} onClick={() => file.current?.click()}>{busy ? 'Envoi…' : 'Importer une photo'}</button>
           <input ref={file} type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onChange={(e) => pick(e.target.files?.[0])} />
-          <span className="muted ts-small">Recadrée en carré, visible seulement par toi.</span>
+          <span className="muted ts-small">Recadrée en carré, visible seulement par vous.</span>
         </div>
         {err && <div className="ts-note bad" role="alert">{err}</div>}
       </div>
@@ -102,7 +102,7 @@ export function Onboarding() {
   async function save(ev: FormEvent) {
     ev.preventDefault(); setErr(null);
     const u = uname.trim(), n = name.trim();
-    if (!n) { setErr('Choisis un nom affiché.'); return; }
+    if (!n) { setErr('Choisissez un nom affiché.'); return; }
     if (!USERNAME_RE.test(u)) { setErr('Nom d\'utilisateur : 3 à 24 lettres, chiffres ou _.'); return; }
     if (ok === false) { setErr('Ce nom d\'utilisateur n\'est pas disponible.'); return; }
     setBusy(true);
@@ -118,11 +118,11 @@ export function Onboarding() {
       <form className="ts-modal-box" onSubmit={save}>
         <div className="ts-onb-h">
           <p className="ts-onb-k">Bienvenue sur TokenStudio</p>
-          <h2 id="ts-onb-t">Crée ton profil</h2>
-          <p>Choisis comment tu apparais dans l'outil. Tu pourras tout changer plus tard dans Mon compte.</p>
+          <h2 id="ts-onb-t">Créez votre profil</h2>
+          <p>Choisissez comment vous apparaissez dans l'outil. Vous pourrez tout changer plus tard dans Mon compte.</p>
         </div>
         <AvatarPicker userId={user.id} value={avatar} onChange={setAvatar} />
-        <label className="field"><span className="ts-lbl">Nom affiché</span><input ref={first} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoComplete="nickname" placeholder="Ton nom ou ton pseudo" /></label>
+        <label className="field"><span className="ts-lbl">Nom affiché</span><input ref={first} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoComplete="nickname" placeholder="Votre nom ou votre pseudo" /></label>
         <UsernameField value={uname} onChange={setUname} base={name || base} onState={setOk} />
         {err && <div className="ts-note bad" role="alert">{err}</div>}
         <div className="ts-row ts-onb-act">

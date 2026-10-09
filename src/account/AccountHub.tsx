@@ -103,7 +103,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
   const signIn = (wallet?: string) => act(() => openSignIn({ start: 'choose', wallet }));
   async function link(src: 'ext' | 'quick') {
     setBusy('link-' + src);
-    try { const r = await linkWallet(src === 'quick' ? { kind: 'quick' } : { kind: 'ext', id: ext!.id }); toast('Wallet ajouté à ton compte', short(r.address)); }
+    try { const r = await linkWallet(src === 'quick' ? { kind: 'quick' } : { kind: 'ext', id: ext!.id }); toast('Wallet ajouté à votre compte', short(r.address)); }
     catch (e) { toast('Ajout impossible', readable(e), 'r'); } finally { setBusy(null); }
   }
   // compte et wallets déconnectés, puis retour à la page de connexion
@@ -160,12 +160,12 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         </span>
         <span className="ts-hub-wb"><b className="mono">{bal(x.bal)}</b><small>{usd(x.bal)}</small></span>
         <div className="ts-hub-wa">
-          {activeW ? <span className="ts-hub-pill ok" title="Ce wallet signe tes transactions">Signe</span>
+          {activeW ? <span className="ts-hub-pill ok" title="Ce wallet signe vos transactions">Signe</span>
             : <button type="button" className="ts-hub-pill" data-hub-item onClick={() => use(kind)}>Utiliser</button>}
           {kind === 'quick' && (quick!.unlocked
             ? <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={() => hub?.quickLock()}>Verrouiller</button>
             : <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={act(() => hub?.quickUnlock())}>Déverrouiller</button>)}
-          {signed && !isLinked && kind !== 'srv' && <button type="button" className="ts-hub-pill warn" data-hub-item disabled={!!busy} title="Ajouter ce wallet à ton compte (signature gratuite)" onClick={() => link(kind)}>{busy === 'link-' + kind ? 'Signature…' : 'Lier au compte'}</button>}
+          {signed && !isLinked && kind !== 'srv' && <button type="button" className="ts-hub-pill warn" data-hub-item disabled={!!busy} title="Ajouter ce wallet à votre compte (signature gratuite)" onClick={() => link(kind)}>{busy === 'link-' + kind ? 'Signature…' : 'Lier au compte'}</button>}
           {kind === 'ext' && <button type="button" className="ts-hub-pill ghost" data-hub-item onClick={() => hub?.disconnect()}>Déconnecter</button>}
         </div>
       </div>
@@ -181,7 +181,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
           <span className="ts-hub-t"><b>{name}</b><small>{me?.username ? '@' + me.username + ' · ' : ''}{aal.current === 'aal2' ? 'compte protégé (2FA)' : 'compte TokenStudio'}</small></span>
           {aal.current === 'aal2' && <span className="ts-hub-shield" title="Double authentification active">{I.shield}</span>}
         </div>
-        <div className="ts-hub-row"><button type="button" className="btn sm" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}Modifier le profil</button>{!me?.username && <span className="ts-hub-note">Choisis ton nom d'utilisateur</span>}</div>
+        <div className="ts-hub-row"><button type="button" className="btn sm" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}Modifier le profil</button>{!me?.username && <span className="ts-hub-note">Choisissez votre nom d'utilisateur</span>}</div>
       </section>
       <section className="ts-hub-sec">
         <div className="ts-hub-h">Wallets{linked && <em>{linked.length} lié{linked.length > 1 ? 's' : ''} au compte</em>}</div>
@@ -189,7 +189,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         {quick && walletRow('quick')}
         {ext && walletRow('ext')}
         {!ext && !quick && !srv && <p className="ts-hub-note">Aucun wallet connecté.</p>}
-        {st.quickSaved && <div className="ts-hub-legacy"><small>Ton ancien wallet rapide <span className="mono">{short(st.quickSaved.pk)}</span> est encore dans ce navigateur.</small><button type="button" className="ts-hub-pill warn" data-hub-item onClick={act(() => hub?.legacyMigrate())}>Transférer sur mon compte</button></div>}
+        {st.quickSaved && <div className="ts-hub-legacy"><small>Votre ancien wallet rapide <span className="mono">{short(st.quickSaved.pk)}</span> est encore dans ce navigateur.</small><button type="button" className="ts-hub-pill warn" data-hub-item onClick={act(() => hub?.legacyMigrate())}>Transférer sur mon compte</button></div>}
         <div className="ts-hub-row">
           {!srv && <button type="button" className="btn sm primary" data-hub-item onClick={act(() => openServerWallet('create'))}>{I.bolt}Créer mon wallet rapide</button>}
           <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'add' }))}>{I.plus}Ajouter un wallet</button>
@@ -203,7 +203,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         <button type="button" data-hub-item onClick={act(() => openTab('prefs'))}>{I.sliders}<span>Préférences</span><em>trading, studio, notifications</em></button>
         <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}<span>Apparence</span><em>{(THEME_NAMES[st.theme] ?? st.theme) + ' · ' + (DEPTH_NAMES[st.depth] ?? st.depth)}</em></button>
         <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}<span>Réglages avancés</span><em>RPC, vitesse, frais</em></button>
-        <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.loading ? 'chargement…' : sync.error ? 'enregistrement en attente' : sync.saving || sync.pending ? 'enregistrement…' : 'à jour sur ton compte'}</em></button>
+        <button type="button" data-hub-item onClick={act(() => openTab('data'))}>{I.cloud}<span>Données</span><em>{sync.loading ? 'chargement…' : sync.error ? 'enregistrement en attente' : sync.saving || sync.pending ? 'enregistrement…' : 'à jour sur votre compte'}</em></button>
         <button type="button" data-hub-item onClick={act(() => openTab('security'))}>{I.shield}<span>Sécurité</span><em>{aal.current === 'aal2' ? '2FA active' : 'activer la 2FA'}</em></button>
         <button type="button" data-hub-item onClick={act(() => document.getElementById('cmdkBtn')?.click())}>{I.search}<span>Rechercher</span><kbd>Ctrl K</kbd></button>
       </nav>
@@ -215,7 +215,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     body = (<>
       <section className="ts-hub-sec ts-hub-guest">
         <b>Code de sécurité requis</b>
-        <small>Valide ta double authentification pour ouvrir ton compte.</small>
+        <small>Validez votre double authentification pour ouvrir votre compte.</small>
       </section>
       <section className="ts-hub-sec ts-hub-foot"><button type="button" className="ts-hub-out" data-hub-item onClick={act(logout)}>{I.out}<span>Se déconnecter</span></button></section>
     </>);
@@ -230,14 +230,14 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         {status === null ? <small>Recherche d'un compte pour ce wallet…</small>
           : status === 'none' ? (<>
             <b>Aucun compte pour ce wallet</b>
-            <small>Crée ton compte pour enregistrer tes données et passer en mode réel. Rien n'est créé sans ton accord.</small>
+            <small>Créez votre compte pour enregistrer vos données et passer en mode réel. Rien n'est créé sans votre accord.</small>
             <div className="ts-hub-row">
               <button type="button" className="btn primary sm" data-hub-item onClick={signIn(src)}>Créer mon compte</button>
               <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'email' }))}>{I.mail}J'ai un compte e-mail</button>
             </div>
           </>) : (<>
             <b>Un compte est lié à ce wallet</b>
-            <small>Signe un message gratuit pour l'ouvrir : aucune transaction n'est autorisée.</small>
+            <small>Signez un message gratuit pour l'ouvrir : aucune transaction n'est autorisée.</small>
             <button type="button" className="btn primary sm" data-hub-item onClick={signIn(src)}>Se connecter au compte</button>
           </>)}
       </section>
@@ -249,7 +249,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     body = (<>
       <section className="ts-hub-sec ts-hub-guest">
         <b>Connexion à TokenStudio</b>
-        <small>Avec ton wallet ou ton e-mail. Aucun compte n'est créé sans ton accord.</small>
+        <small>Avec votre wallet ou votre e-mail. Aucun compte n'est créé sans votre accord.</small>
         <div className="ts-hub-opts">
           {found.map((x) => <button key={x.id} type="button" className="ts-si-opt" data-hub-item onClick={signIn(x.id)}><WalletMark w={x} /><span className="ts-si-n">{x.name}</span><em className="ts-si-tag ok">Détecté</em></button>)}
           {st.quickSaved && <button type="button" className="ts-si-opt" data-hub-item onClick={act(() => openSignIn({ start: 'quick' }))}><span className="ts-wmark quick" aria-hidden="true">{I.bolt}</span><span className="ts-si-n">Ancien wallet rapide<small>{short(st.quickSaved.pk)} · dans ce navigateur</small></span></button>}

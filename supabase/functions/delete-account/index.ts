@@ -69,20 +69,20 @@ Deno.serve(async (req) => {
   try {
     const claims = JSON.parse(atob(token.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/')));
     const { data: f } = await admin.auth.admin.mfa.listFactors({ userId: user.id });
-    if ((f?.factors ?? []).some((x) => x.status === 'verified') && claims.aal !== 'aal2') return json(403, { error: 'Valide d\'abord ta double authentification.' }, h);
+    if ((f?.factors ?? []).some((x) => x.status === 'verified') && claims.aal !== 'aal2') return json(403, { error: 'Validez d\'abord votre double authentification.' }, h);
   } catch { return json(401, { error: 'Session invalide.' }, h); }
 
   let body: { confirm?: string } = {};
   try { body = await req.json(); } catch { /* corps vide */ }
-  if (body.confirm !== 'SUPPRIMER') return json(400, { error: 'Confirmation manquante : écris SUPPRIMER.' }, h);
+  if (body.confirm !== 'SUPPRIMER') return json(400, { error: 'Confirmation manquante : écrivez SUPPRIMER.' }, h);
   try { await rate('delete_account:' + user.id, 5, 3600); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
 
   // garde-fou des fonds du wallet rapide serveur
   const { data: w } = await admin.from('server_wallets').select('address').eq('user_id', user.id).maybeSingle();
   if (w?.address) {
     const st = await walletEmpty(w.address);
-    if (!st) return json(503, { error: 'Impossible de vérifier le solde de ton wallet rapide. Réessaie dans un instant.' }, h);
-    if (!st.empty) return json(409, { error: 'Ton wallet rapide contient encore ' + (st.sol >= 0.001 ? st.sol.toFixed(4).replace('.', ',') + ' SOL' : '') + (st.sol >= 0.001 && st.tokens ? ' et ' : '') + (st.tokens ? st.tokens + ' token' + (st.tokens > 1 ? 's' : '') : '') + '. Vends tes tokens et retire tes SOL avant de supprimer le compte : sinon ils seraient perdus.', code: 'wallet_not_empty' }, h);
+    if (!st) return json(503, { error: 'Impossible de vérifier le solde de votre wallet rapide. Réessayez dans un instant.' }, h);
+    if (!st.empty) return json(409, { error: 'Votre wallet rapide contient encore ' + (st.sol >= 0.001 ? st.sol.toFixed(4).replace('.', ',') + ' SOL' : '') + (st.sol >= 0.001 && st.tokens ? ' et ' : '') + (st.tokens ? st.tokens + ' token' + (st.tokens > 1 ? 's' : '') : '') + '. Vendez vos tokens et retirez vos SOL avant de supprimer le compte : sinon ils seraient perdus.', code: 'wallet_not_empty' }, h);
   }
 
   // code de confirmation (e-mail ou double authentification), demandé en dernier : rien n'est consommé si le wallet bloque

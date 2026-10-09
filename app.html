@@ -12,12 +12,12 @@
 <meta name="apple-mobile-web-app-title" content="TokenStudio">
 <meta name="color-scheme" content="dark">
 <title>TokenStudio · Outil</title>
-<meta name="description" content="Crée, lance et pilote tes tokens Solana : lancement vérifié sur pump.fun, trading, ordres et alertes.">
+<meta name="description" content="Créez, lancez et pilotez vos tokens Solana : lancement vérifié sur pump.fun, trading, ordres et alertes.">
 <meta name="robots" content="noindex">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TokenStudio">
-<meta property="og:title" content="TokenStudio · Crée, lance et pilote tes tokens Solana">
-<meta property="og:description" content="Du concept au lancement sur pump.fun, puis le trading, les ordres et les alertes. Tes clés restent dans ton wallet.">
+<meta property="og:title" content="TokenStudio · Créez, lancez et pilotez vos tokens Solana">
+<meta property="og:description" content="Du concept au lancement sur pump.fun, puis le trading, les ordres et les alertes. Vos clés restent dans votre wallet.">
 <meta property="og:image" content="https://tokenstudio-sol.vercel.app/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -49,7 +49,7 @@
       <button data-page="journal" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Journal<span class="count" id="cJournal">0</span></button>
     </nav>
     <button class="side-col" id="sideCol" type="button" title="Réduire le menu"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg><span>Réduire le menu</span></button>
-    <div class="side-foot"><div class="mode" id="footMode">● Simulation</div><div class="sc-title">État du studio</div><div class="sc-list" id="sideCheck"></div><div class="sc-note">Ta clé privée ne quitte jamais ton wallet.</div></div>
+    <div class="side-foot"><div class="mode" id="footMode">● Simulation</div><div class="sc-title">État du studio</div><div class="sc-list" id="sideCheck"></div><div class="sc-note">Votre clé privée ne quitte jamais votre wallet.</div></div>
   </aside>
 
   <div>
@@ -125,20 +125,20 @@
       <section class="page" id="p-launch">
         <div class="ltabs" id="launchTabs" role="tablist"><button data-ltab="create" type="button" role="tab" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Créer</button><button class="on" data-ltab="studio" type="button" role="tab" aria-selected="true"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.1 4.9L19 10l-4.9 2.1L12 17l-2.1-4.9L5 10l4.9-2.1z"/></svg>Studio de création</button><button data-ltab="radar" type="button" role="tab" aria-selected="false">Radar des tendances<span class="new">nouveau</span></button></div>
         <div id="lt-create" hidden>
-          <div class="cr-intro"><b>Crée ton token toi-même</b><span>Trois blocs, dans l'ordre. Rien n'est publié ici : à la fin, tu passes à l'écran de lancement pour vérifier et signer.</span></div>
+          <div class="cr-intro"><b>Créez votre token vous-même</b><span>Trois blocs, dans l'ordre. Rien n'est publié ici : à la fin, vous passez à l'écran de lancement pour vérifier et signer.</span></div>
           <div class="cr-grid">
             <div class="cr-main">
               <section class="card cr-step" id="crS1">
-                <div class="cr-h"><span class="cr-n">1</span><div><h3>Ton token</h3><p>Le nom et le ticker que tout le monde verra sur pump.fun.</p></div><span class="cr-ok" id="crOk1"></span></div>
+                <div class="cr-h"><span class="cr-n">1</span><div><h3>Votre token</h3><p>Le nom et le ticker que tout le monde verra sur pump.fun.</p></div><span class="cr-ok" id="crOk1"></span></div>
                 <div class="row2">
                   <div class="field"><label for="crName">Nom</label><input id="crName" maxlength="32" placeholder="ex. Lucky Otter" autocomplete="off"><div class="cr-help">32 caractères max. Court et facile à retenir.</div></div>
                   <div class="field"><label for="crSym">Ticker</label><div class="cr-sym"><span>$</span><input id="crSym" maxlength="10" placeholder="LOTTER" autocomplete="off"></div><div class="cr-help" id="crSymHelp">Rempli tout seul à partir du nom, modifiable.</div></div>
                 </div>
-                <div class="field"><label for="crDesc">Description</label><textarea id="crDesc" maxlength="1000" rows="3" placeholder="En une ou deux phrases : de quoi parle ton token ?"></textarea>
+                <div class="field"><label for="crDesc">Description</label><textarea id="crDesc" maxlength="1000" rows="3" placeholder="En une ou deux phrases : de quoi parle votre token ?"></textarea>
                   <div class="cr-row"><button class="btn sm" data-cr="desc" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.1 4.9L19 10l-4.9 2.1L12 17l-2.1-4.9L5 10l4.9-2.1z"/></svg>Écrire pour moi</button><span class="cr-help" id="crDescCnt"></span></div></div>
               </section>
               <section class="card cr-step" id="crS2">
-                <div class="cr-h"><span class="cr-n">2</span><div><h3>Ton logo</h3><p>Importe ton image, ou laisse le studio t'en proposer six.</p></div><span class="cr-ok" id="crOk2"></span></div>
+                <div class="cr-h"><span class="cr-n">2</span><div><h3>Votre logo</h3><p>Importez votre image, ou laissez le studio vous en proposer six.</p></div><span class="cr-ok" id="crOk2"></span></div>
                 <div class="cr-logo">
                   <div class="cr-lp" id="crLogo"></div>
                   <div class="cr-la">
@@ -151,7 +151,7 @@
                 <div class="logo-vars cr-vars" id="crVars" hidden></div>
               </section>
               <section class="card cr-step" id="crS3">
-                <div class="cr-h"><span class="cr-n">3</span><div><h3>Tes liens <small>facultatif, mais conseillé</small></h3><p>Un token avec une communauté visible inspire plus confiance.</p></div><span class="cr-ok" id="crOk3"></span></div>
+                <div class="cr-h"><span class="cr-n">3</span><div><h3>Vos liens <small>facultatif, mais conseillé</small></h3><p>Un token avec une communauté visible inspire plus confiance.</p></div><span class="cr-ok" id="crOk3"></span></div>
                 <div class="row3">
                   <div class="field"><label for="crTw">X (Twitter)</label><input id="crTw" placeholder="https://x.com/…" autocomplete="off"></div>
                   <div class="field"><label for="crTg">Telegram</label><input id="crTg" placeholder="https://t.me/…" autocomplete="off"></div>
@@ -163,10 +163,10 @@
               <div class="card cr-prev">
                 <div class="cr-pv-t">Aperçu</div>
                 <div class="cr-pv"><div class="cr-pv-img" id="crPvImg"></div><div><b id="crPvName">Nom du token</b><small id="crPvSym">$TICKER</small></div></div>
-                <p class="cr-pv-d" id="crPvDesc">Ta description apparaîtra ici.</p>
+                <p class="cr-pv-d" id="crPvDesc">Votre description apparaîtra ici.</p>
                 <div class="cr-check" id="crCheck"></div>
                 <button class="btn primary cr-go" data-cr="launch" type="button">Continuer vers le lancement</button>
-                <div class="cr-help" style="text-align:center">Tu choisiras l'achat du créateur et ton plan de vente avant de signer.</div>
+                <div class="cr-help" style="text-align:center">Vous choisirez l'achat du créateur et votre plan de vente avant de signer.</div>
               </div>
             </aside>
           </div>
@@ -174,7 +174,7 @@
         <div id="lt-studio">
         <div class="autogen" id="autogen">
           <div class="ag-ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z"/></svg></div>
-          <div><b>Génération automatique</b><span>Nom, ticker, description, logo et plan de prise de profit en un clic. Tu vérifies, puis tu lances.</span></div>
+          <div><b>Génération automatique</b><span>Nom, ticker, description, logo et plan de prise de profit en un clic. Vous vérifiez, puis vous lancez.</span></div>
           <div class="spacer"></div>
           <button class="btn primary" id="autoGo" type="button">Tout générer</button>
         </div>
@@ -188,14 +188,14 @@
           <div>
             <!-- étape 1 -->
             <div class="card" data-stepcard="1">
-              <div class="card-h"><h3>Générateur de concept</h3><p>Choisis un univers, un ton et éventuellement un mot à toi. Chaque idée est notée selon des critères visibles.</p></div>
+              <div class="card-h"><h3>Générateur de concept</h3><p>Choisissez un univers, un ton et éventuellement un mot à vous. Chaque idée est notée selon des critères visibles.</p></div>
               <div class="field"><label>Univers</label><div class="univ" id="genThemes"></div></div>
               <div class="row3">
                 <div class="field"><label>Ton</label><div class="chips" id="genTones"></div></div>
                 <div class="field"><label>Langue des textes</label><div class="chips" id="genLangs"></div></div>
-                <div class="field"><label for="genWord">Ton mot-clé <small>facultatif</small></label><input id="genWord" maxlength="20" placeholder="ex. Nova"></div>
+                <div class="field"><label for="genWord">Votre mot-clé <small>facultatif</small></label><input id="genWord" maxlength="20" placeholder="ex. Nova"></div>
               </div>
-              <div class="toolbar"><button class="btn" id="genGo" type="button">Autres idées</button><span class="muted" style="font-size:13px">Clique sur une idée : elle est reprise et tu passes au logo.</span></div>
+              <div class="toolbar"><button class="btn" id="genGo" type="button">Autres idées</button><span class="muted" style="font-size:13px">Cliquez sur une idée : elle est reprise et vous passez au logo.</span></div>
               <div class="ideas" id="ideas"></div>
             </div>
             <!-- étape 2 -->
@@ -220,7 +220,7 @@
                     <div class="field"><label for="logoEmoji">Symbole <small>style Mascotte</small></label><input id="logoEmoji" maxlength="4" placeholder="🦦"></div>
                     <div class="field"><label for="logoText">Texte</label><input id="logoText" maxlength="8" placeholder="TICKER"></div>
                   </div>
-                  <label class="drop" id="logoDrop"><b>Importer ton image</b><span>Glisse un fichier ici ou clique. PNG, JPG, GIF ou WEBP, 4 Mo max. Elle remplace le logo actuel, recadrée en carré.</span><input type="file" id="logoFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                  <label class="drop" id="logoDrop"><b>Importer votre image</b><span>Glissez un fichier ici ou cliquez. PNG, JPG, GIF ou WEBP, 4 Mo max. Elle remplace le logo actuel, recadrée en carré.</span><input type="file" id="logoFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
                   <button class="btn sm ghost" id="logoBackGen" type="button" hidden>Revenir au logo généré</button>
                 </div>
               </div>
@@ -242,7 +242,7 @@
             </div>
             <!-- étape 4 -->
             <div class="card" data-stepcard="4" hidden>
-              <div class="card-h"><h3>Lancement</h3><p>Un token à la fois, créé et signé par toi. Le studio ne revend jamais tout seul.</p></div>
+              <div class="card-h"><h3>Lancement</h3><p>Un token à la fois, créé et signé par vous. Le studio ne revend jamais tout seul.</p></div>
               <div class="row2">
                 <div class="field"><label for="fDev">Achat du créateur à la création <small>en SOL, 0 pour aucun</small></label>
                   <div class="amt"><input id="fDev" type="number" min="0" step="0.01" value="0.1"><em>SOL</em></div>
@@ -269,7 +269,7 @@
         </div>
         </div>
         <div id="lt-radar" hidden>
-          <div class="radar-intro"><div><b>Radar des tendances</b><span>Les tokens qui prennent de l'élan en ce moment sur Solana, Base, BNB Chain et Ethereum. Repère les thèmes qui montent, puis génère un concept original dans le même filon.</span></div></div>
+          <div class="radar-intro"><div><b>Radar des tendances</b><span>Les tokens qui prennent de l'élan en ce moment sur Solana, Base, BNB Chain et Ethereum. Repérez les thèmes qui montent, puis générez un concept original dans le même filon.</span></div></div>
           <div class="toolbar"><div class="chips" id="rChains"></div><div class="spacer"></div><label class="rsort" for="rSort">Trier par <select id="rSort" class="sel"><option value="el">Élan</option><option value="vol">Volume 24 h</option><option value="pc1">Hausse sur 1 h</option><option value="new">Plus récents</option></select></label><span class="muted" id="rAt"></span><button class="btn sm" data-rload="1" type="button">Actualiser</button></div>
           <div id="rThemesWrap" hidden><div class="r-lbl">Thèmes qui montent</div><div class="rthemes" id="rThemes"></div></div>
           <div class="card" id="rInspire" hidden></div>
@@ -288,14 +288,14 @@
 
       <!-- TRADER -->
       <section class="page" id="p-trade">
-        <div class="page-head"><div><h1>Trader</h1><p>Colle l'adresse d'un token Solana (pump.fun, PumpSwap, Raydium…) : analyse de risque, puis achat ou vente signés dans ton wallet.</p></div></div>
+        <div class="page-head"><div><h1>Trader</h1><p>Collez l'adresse d'un token Solana (pump.fun, PumpSwap, Raydium…) : analyse de risque, puis achat ou vente signés dans votre wallet.</p></div></div>
         <div class="card"><div class="toolbar" style="margin:0"><input class="search" id="tradeMint" placeholder="Adresse du token (mint)" style="flex:1;font-family:var(--mono)"><button class="btn primary" id="tradeGo" type="button">Analyser</button></div></div>
         <div id="tradeDetail"></div>
       </section>
 
       <!-- ORDRES -->
       <section class="page" id="p-orders">
-        <div class="page-head"><div><h1>Ordres préparés</h1><p>Le studio surveille le prix en temps réel. Quand une condition est atteinte, il vend automatiquement avec le wallet rapide, ou te prépare la vente à signer avec Phantom.</p></div></div>
+        <div class="page-head"><div><h1>Ordres préparés</h1><p>Le studio surveille le prix en temps réel. Quand une condition est atteinte, il vend automatiquement avec le wallet rapide, ou vous prépare la vente à signer avec Phantom.</p></div></div>
         <div class="notice info" id="ordersNote"></div>
         <div id="ordersBody"></div>
       </section>
@@ -311,7 +311,7 @@
 
       <!-- COMMUNICATION -->
       <section class="page" id="p-social">
-        <div class="page-head"><div><h1>Communication</h1><p>Un token ne décolle presque jamais seul. Prépare tes messages de lancement pour X et Telegram.</p></div></div>
+        <div class="page-head"><div><h1>Communication</h1><p>Un token ne décolle presque jamais seul. Préparez vos messages de lancement pour X et Telegram.</p></div></div>
         <div class="card"><div class="row3">
           <div class="field"><label for="soTok">Token</label><select id="soTok"></select></div>
           <div class="field"><label>Ton</label><div class="chips" id="soTone"></div></div>
@@ -322,8 +322,8 @@
 
       <!-- DIFFUSION -->
       <section class="page" id="p-dist">
-        <div class="page-head"><div><h1>Diffusion</h1><p>Rends ton token visible sur les grandes plateformes : DEX Screener, GeckoTerminal, Birdeye, Jupiter, CoinGecko, CoinMarketCap, Solscan et RugCheck. Le studio détecte où il apparaît déjà et prépare tes demandes.</p></div></div>
-        <div class="card"><div class="row2"><div class="field"><label for="distTok">Token</label><select id="distTok"></select></div><div class="notice info" style="margin:0">Ces plateformes n'acceptent pas d'envoi automatique : chaque demande se fait sur leur formulaire officiel, avec ton compte. Personne ne peut « garantir » un listing ; méfie-toi des intermédiaires payants.</div></div></div>
+        <div class="page-head"><div><h1>Diffusion</h1><p>Rendez votre token visible sur les grandes plateformes : DEX Screener, GeckoTerminal, Birdeye, Jupiter, CoinGecko, CoinMarketCap, Solscan et RugCheck. Le studio détecte où il apparaît déjà et prépare vos demandes.</p></div></div>
+        <div class="card"><div class="row2"><div class="field"><label for="distTok">Token</label><select id="distTok"></select></div><div class="notice info" style="margin:0">Ces plateformes n'acceptent pas d'envoi automatique : chaque demande se fait sur leur formulaire officiel, avec votre compte. Personne ne peut « garantir » un listing ; méfiez-vous des intermédiaires payants.</div></div></div>
         <div id="distBody"></div>
       </section>
 
@@ -337,9 +337,9 @@
         <div class="forms" id="setForms"></div>
         <div class="card" style="margin-top:16px"><div class="card-h"><h3>Sécurité</h3></div>
           <ul class="steps">
-            <li>Le studio ne demande jamais la phrase secrète ni la clé privée de ton wallet principal. Si une page te la demande, c'est une arnaque.</li><li>Le wallet rapide a sa propre clé, créée ici et chiffrée par ton mot de passe. Garde son code de sauvegarde pour le restaurer ailleurs. N'y garde que le nécessaire et retire régulièrement vers Phantom.</li>
-            <li>Utilise un wallet dédié, avec seulement le SOL nécessaire. L'ancien wallet dont la clé a été affichée doit être abandonné.</li>
-            <li>Ta clé RPC et ton jeton Pinata restent dans ce navigateur uniquement.</li>
+            <li>Le studio ne demande jamais la phrase secrète ni la clé privée de votre wallet principal. Si une page vous la demande, c'est une arnaque.</li><li>Le wallet rapide a sa propre clé, créée ici et chiffrée par votre mot de passe. Gardez son code de sauvegarde pour le restaurer ailleurs. N'y gardez que le nécessaire et retirez régulièrement vers Phantom.</li>
+            <li>Utilisez un wallet dédié, avec seulement le SOL nécessaire. L'ancien wallet dont la clé a été affichée doit être abandonné.</li>
+            <li>Votre clé RPC et votre jeton Pinata restent dans ce navigateur uniquement.</li>
           </ul></div>
       </section>
 

@@ -50,7 +50,7 @@ export function SecurityTab() {
     catch (e) { toast('Déconnexion impossible', readable(e), 'r'); } finally { setBusy(null); }
   }
   async function revokeOthers() {
-    if (!window.confirm('Déconnecter tous tes autres appareils ? Cet appareil reste connecté.')) return;
+    if (!window.confirm('Déconnecter tous vos autres appareils ? Cet appareil reste connecté.')) return;
     setBusy('others');
     try { const r = await security<{ revoked: number }>('revoke_others'); toast('Autres appareils déconnectés', r.revoked + ' session' + (r.revoked > 1 ? 's' : '') + ' fermée' + (r.revoked > 1 ? 's' : '') + '.'); loadSessions(); }
     catch (e) { toast('Déconnexion impossible', readable(e), 'r'); } finally { setBusy(null); }
@@ -62,29 +62,29 @@ export function SecurityTab() {
   }
   async function mailTest() {
     setBusy('mail');
-    try { await security('mail_test'); toast('E-mail d\'essai envoyé', 'Regarde ta boîte de réception (et les indésirables).'); }
+    try { await security('mail_test'); toast('E-mail d\'essai envoyé', 'Regardez votre boîte de réception (et les indésirables).'); }
     catch (e) { toast('Envoi impossible', readable(e), 'r'); } finally { setBusy(null); }
   }
 
   return (
     <div className="ts-grid2">
       <div className="card">
-        <div className="card-h"><h3>Double authentification</h3><p>Un code de ton téléphone en plus du wallet ou de l'e-mail. Il sert aussi à confirmer les actions sensibles.</p></div>
+        <div className="card-h"><h3>Double authentification</h3><p>Un code de votre téléphone en plus du wallet ou de l'e-mail. Il sert aussi à confirmer les actions sensibles.</p></div>
         <MfaSettings />
       </div>
 
       <div className="card">
-        <div className="card-h"><h3>Code anti-hameçonnage</h3><p>Un mot que toi seul connais, affiché en haut de tous nos e-mails. Un e-mail sans ce code ne vient pas de TokenStudio.</p></div>
+        <div className="card-h"><h3>Code anti-hameçonnage</h3><p>Un mot que vous seul connaissez, affiché en haut de tous nos e-mails. Un e-mail sans ce code ne vient pas de TokenStudio.</p></div>
         <form className="ts-row" onSubmit={saveAnti}>
           <input value={anti} onChange={(e) => setAnti(e.target.value)} maxLength={24} placeholder="ex. Lune bleue 42" aria-label="Code anti-hameçonnage" autoComplete="off" />
           <button className="btn" disabled={busy === 'anti'}>{busy === 'anti' ? 'Enregistrement…' : 'Enregistrer'}</button>
         </form>
         {antiErr && <div className="ts-note bad" role="alert" style={{ marginTop: 10 }}>{antiErr}</div>}
-        <p className="muted ts-small">4 à 24 lettres ou chiffres. Ne choisis pas un mot de passe.</p>
+        <p className="muted ts-small">4 à 24 lettres ou chiffres. Ne choisissez pas un mot de passe.</p>
       </div>
 
       <div className="card ts-span2">
-        <div className="card-h ts-row spread"><div><h3>Appareils connectés</h3><p>Les sessions ouvertes sur ton compte. Déconnecte celles que tu ne reconnais pas.</p></div>
+        <div className="card-h ts-row spread"><div><h3>Appareils connectés</h3><p>Les sessions ouvertes sur votre compte. Déconnectez celles que vous ne reconnaissez pas.</p></div>
           {sess && sess.sessions.length > 1 && <button type="button" className="btn sm" disabled={!!busy} onClick={revokeOthers}>{busy === 'others' ? 'Déconnexion…' : 'Déconnecter les autres appareils'}</button>}</div>
         {sessErr ? <div className="ts-note bad">{sessErr}</div> : !sess ? <div className="empty"><b>Chargement…</b></div> : (
           <ul className="ts-sess">{sess.sessions.map((x) => {
@@ -105,28 +105,28 @@ export function SecurityTab() {
       </div>
 
       <div className="card">
-        <div className="card-h"><h3>Alertes de sécurité</h3><p>Tu reçois un e-mail à chaque événement important de ton compte.</p></div>
+        <div className="card-h"><h3>Alertes de sécurité</h3><p>Vous recevez un e-mail à chaque événement important de votre compte.</p></div>
         <ul className="ts-promise">
           <li>Connexion depuis un nouvel appareil</li>
           <li>Retrait, export de clé, plafond ou suppression du wallet rapide</li>
           <li>Ajout d'un wallet (il ne reçoit des retraits qu'après 24 h)</li>
         </ul>
-        <div className="toolbar"><button type="button" className="btn sm" disabled={!!busy || !user?.email} onClick={mailTest}>{busy === 'mail' ? 'Envoi…' : 'Envoyer un e-mail d\'essai'}</button>{!user?.email && <span className="muted ts-small">Ajoute un e-mail dans Profil pour recevoir les alertes.</span>}</div>
+        <div className="toolbar"><button type="button" className="btn sm" disabled={!!busy || !user?.email} onClick={mailTest}>{busy === 'mail' ? 'Envoi…' : 'Envoyer un e-mail d\'essai'}</button>{!user?.email && <span className="muted ts-small">Ajoutez un e-mail dans Profil pour recevoir les alertes.</span>}</div>
       </div>
 
       <div className="card">
-        <div className="card-h"><h3>Protections actives</h3><p>Ce que TokenStudio fait pour garder ton compte et tes fonds.</p></div>
+        <div className="card-h"><h3>Protections actives</h3><p>Ce que TokenStudio fait pour garder votre compte et vos fonds.</p></div>
         <ul className="ts-promise">
-          <li>Aucune clé privée de tes wallets n'est envoyée au serveur.</li>
-          <li>La clé du wallet rapide est chiffrée sur le serveur et ne signe que dans tes plafonds.</li>
+          <li>Aucune clé privée de vos wallets n'est envoyée au serveur.</li>
+          <li>La clé du wallet rapide est chiffrée sur le serveur et ne signe que dans vos plafonds.</li>
           <li>Retrait, export et hausse de plafond : mot de passe + code de confirmation.</li>
-          <li>Chaque table de la base est privée à ton compte (règles RLS).</li>
+          <li>Chaque table de la base est privée à votre compte (règles RLS).</li>
         </ul>
-        <div className="toolbar"><button className="btn danger sm" type="button" onClick={() => { if (window.confirm('Déconnecter tous tes appareils, y compris celui-ci ?')) logoutEverywhere(signOut, true); }}>Déconnecter tous les appareils</button></div>
+        <div className="toolbar"><button className="btn danger sm" type="button" onClick={() => { if (window.confirm('Déconnecter tous vos appareils, y compris celui-ci ?')) logoutEverywhere(signOut, true); }}>Déconnecter tous les appareils</button></div>
       </div>
 
       <div className="card ts-span2">
-        <div className="card-h"><h3>Journal de sécurité</h3><p>Les actions sensibles de ton compte, enregistrées par le serveur. Personne ne peut les modifier, pas même toi.</p></div>
+        <div className="card-h"><h3>Journal de sécurité</h3><p>Les actions sensibles de votre compte, enregistrées par le serveur. Personne ne peut les modifier, pas même vous.</p></div>
         {!log ? <div className="empty"><b>Chargement…</b></div> : !log.length ? <div className="empty"><b>Rien pour l'instant</b></div> : (
           <div className="ts-log">{log.map((e) => (
             <div key={e.id}><span className="mono dim">{new Date(e.created_at).toLocaleString('fr-FR')}</span><b>{EVENTS[e.event] || e.event}</b><span className="dim mono">{typeof e.detail?.address === 'string' ? (e.detail.address as string).slice(0, 4) + '…' + (e.detail.address as string).slice(-4) : typeof e.detail?.device === 'string' ? String(e.detail.device) + (e.detail.ip ? ' · ' + e.detail.ip : '') : e.detail?.apres != null ? e.detail.avant + ' → ' + e.detail.apres + ' SOL' : e.detail?.after != null ? e.detail.before + ' → ' + e.detail.after + ' SOL' : e.detail?.sol != null ? e.detail.sol + ' SOL' : ''}</span></div>

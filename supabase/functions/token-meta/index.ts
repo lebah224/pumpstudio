@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
   // limite : 30 envois par heure et par compte
   const since = new Date(Date.now() - 3600_000).toISOString();
   const { count } = await admin.from('audit_log').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('event', 'token_meta_upload').gte('created_at', since);
-  if ((count ?? 0) >= 30) return json(429, { error: 'Trop d\'envois en une heure : réessaie un peu plus tard.' }, h);
+  if ((count ?? 0) >= 30) return json(429, { error: 'Trop d\'envois en une heure : réessayez un peu plus tard.' }, h);
 
   let f: FormData;
   try { f = await req.formData(); } catch { return json(400, { error: 'Envoi illisible.' }, h); }
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
   out.append('showName', 'true');
   let r: Response;
   try { r = await fetch('https://pump.fun/api/ipfs', { method: 'POST', body: out, signal: AbortSignal.timeout(30_000) }); }
-  catch { return json(502, { error: 'pump.fun ne répond pas. Réessaie dans un instant.' }, h); }
+  catch { return json(502, { error: 'pump.fun ne répond pas. Réessayez dans un instant.' }, h); }
   if (!r.ok) return json(502, { error: 'pump.fun a refusé la fiche du token (' + r.status + ').' }, h);
   const j = await r.json().catch(() => ({}));
   if (typeof j.metadataUri !== 'string' || !/^https:\/\//.test(j.metadataUri)) return json(502, { error: 'Réponse inattendue de pump.fun.' }, h);

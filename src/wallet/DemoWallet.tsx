@@ -71,12 +71,12 @@ export function DemoWallet({ visible }: { visible: boolean }) {
               <button type="button" className="ts-wp-act" onClick={() => hub?.demoMove('withdraw')}><span className="ts-wp-aic">↑</span>Retirer</button>
               <button type="button" className="ts-wp-act" onClick={() => hub?.demoReset()}><span className="ts-wp-aic">↺</span>Réinitialiser</button>
             </div>
-            <p className="ts-wp-foot">Dépôts, retraits, achats et lancements sont simulés. L'adresse du wallet démo n'existe pas sur Solana : n'y envoie jamais de vrais SOL.</p>
+            <p className="ts-wp-foot">Dépôts, retraits, achats et lancements sont simulés. L'adresse du wallet démo n'existe pas sur Solana : n'y envoyez jamais de vrais SOL.</p>
           </section>
 
           <section className="card ts-wp-acts">
             <div className="card-h"><h3>Activité démo</h3><p>Opérations fictives de la démo.</p></div>
-            {!info.acts.length ? <div className="empty"><b>Aucune opération</b>Lance un token ou fais un achat en démo : il apparaîtra ici.</div> : (
+            {!info.acts.length ? <div className="empty"><b>Aucune opération</b>Lancez un token ou faites un achat en démo : il apparaîtra ici.</div> : (
               <ul className="ts-wp-list">
                 {info.acts.map((x, i) => {
                   const k = TYPE[x.type] ?? { l: 'Opération', ic: '•', c: 'other' };

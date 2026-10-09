@@ -45,7 +45,7 @@ export async function requireUser(req: Request): Promise<User> {
 }
 
 /* ---------- limites d'appels (compteur en base, fenêtre fixe) ---------- */
-export async function rate(key: string, max: number, windowSec: number, msg = 'Trop de demandes : réessaie dans quelques minutes.') {
+export async function rate(key: string, max: number, windowSec: number, msg = 'Trop de demandes : réessayez dans quelques minutes.') {
   const { data, error } = await admin.rpc('sec_rate', { p_key: key, p_max: max, p_window: windowSec });
   if (error) return; // compteur indisponible : on ne bloque pas le service
   if (data === false) throw new Fail(429, msg);
@@ -62,7 +62,7 @@ export async function requireStepUp(uid: string, purpose: StepUpPurpose) {
   if (!mailReady()) return;
   const { data, error } = await admin.rpc('sec_grant_consume', { uid, p_purpose: purpose });
   if (error) throw new Fail(500, 'Vérification de sécurité indisponible.');
-  if (!data) throw new Fail(428, 'Confirme cette action avec le code de sécurité.', { code: 'step_up', purpose });
+  if (!data) throw new Fail(428, 'Confirmez cette action avec le code de sécurité.', { code: 'step_up', purpose });
 }
 
 /* ---------- case anti-robot (Turnstile) : vérifiée seulement si la clé secrète est configurée ---------- */
@@ -108,13 +108,13 @@ function layout(lang: 'fr' | 'en', m: Mail, anti: string | null) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f1ea"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fff;border:1px solid #e6dfd1;border-radius:16px">
 <tr><td style="padding:24px 28px 0;font-size:19px;font-weight:700;color:#1b1407">Token<span style="color:#a8823c">Studio</span></td></tr>
-${anti ? `<tr><td style="padding:14px 28px 0"><div style="padding:10px 12px;border-radius:10px;background:#f6efe0;border:1px solid #e6d3a8;font-size:13px;color:#5a3d12">${L ? 'Your anti-phishing code' : 'Ton code anti-hameçonnage'} : <b>${esc(anti)}</b></div></td></tr>` : ''}
+${anti ? `<tr><td style="padding:14px 28px 0"><div style="padding:10px 12px;border-radius:10px;background:#f6efe0;border:1px solid #e6d3a8;font-size:13px;color:#5a3d12">${L ? 'Your anti-phishing code' : 'Votre code anti-hameçonnage'} : <b>${esc(anti)}</b></div></td></tr>` : ''}
 <tr><td style="padding:20px 28px 28px">
 <h1 style="margin:0 0 12px;font-size:21px;line-height:1.3;color:#1b1407">${esc(m.title)}</h1>
 <p style="margin:0;font-size:15px;line-height:1.6;color:#3d382f">${m.lead}</p>
-${m.code ? `<p style="margin:22px 0 4px;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#8b8375">${L ? 'Your code' : 'Ton code'}</p><p style="margin:0;font:600 32px/1.2 'SFMono-Regular',Menlo,Consolas,monospace;letter-spacing:6px;color:#1b1407">${esc(m.code)}</p>` : ''}
+${m.code ? `<p style="margin:22px 0 4px;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#8b8375">${L ? 'Your code' : 'Votre code'}</p><p style="margin:0;font:600 32px/1.2 'SFMono-Regular',Menlo,Consolas,monospace;letter-spacing:6px;color:#1b1407">${esc(m.code)}</p>` : ''}
 ${rows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border-top:1px solid #eee6d6">${rows}</table>` : ''}
-<p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6b6457">${m.foot ?? (L ? 'If this wasn\'t you, sign in now, disconnect all your devices (Security tab) and contact us.' : 'Si ce n\'est pas toi, connecte-toi tout de suite, déconnecte tous tes appareils (onglet Sécurité) et préviens-nous.')}</p>
+<p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6b6457">${m.foot ?? (L ? 'If this wasn\'t you, sign in now, disconnect all your devices (Security tab) and contact us.' : 'Si ce n\'est pas vous, connectez-vous tout de suite, déconnectez tous vos appareils (onglet Sécurité) et prévenez-nous.')}</p>
 </td></tr></table>
 <p style="margin:16px 0 0;font-size:12px;color:#8b8375">TokenStudio · ${L ? 'security message, sent automatically' : 'message de sécurité, envoyé automatiquement'}</p>
 </td></tr></table></body></html>`;
@@ -143,11 +143,11 @@ const shortAddr = (a: string) => a.slice(0, 6) + '…' + a.slice(-6);
 export type AlertKind = 'login_new_device' | 'withdraw' | 'wallet_added' | 'limits' | 'export_key' | 'delete_wallet' | 'anti_phishing';
 export function alertMail(u: User, kind: AlertKind, d: Record<string, string | number> = {}) {
   const S: Record<AlertKind, { fr: string; en: string }> = {
-    login_new_device: { fr: 'Nouvelle connexion à ton compte TokenStudio', en: 'New sign-in to your TokenStudio account' },
-    withdraw: { fr: 'Retrait depuis ton wallet rapide', en: 'Withdrawal from your quick wallet' },
-    wallet_added: { fr: 'Nouveau wallet ajouté à ton compte', en: 'New wallet added to your account' },
-    limits: { fr: 'Plafond de ton wallet rapide modifié', en: 'Quick wallet cap changed' },
-    export_key: { fr: 'Clé de ton wallet rapide exportée', en: 'Quick wallet key exported' },
+    login_new_device: { fr: 'Nouvelle connexion à votre compte TokenStudio', en: 'New sign-in to your TokenStudio account' },
+    withdraw: { fr: 'Retrait depuis votre wallet rapide', en: 'Withdrawal from your quick wallet' },
+    wallet_added: { fr: 'Nouveau wallet ajouté à votre compte', en: 'New wallet added to your account' },
+    limits: { fr: 'Plafond de votre wallet rapide modifié', en: 'Quick wallet cap changed' },
+    export_key: { fr: 'Clé de votre wallet rapide exportée', en: 'Quick wallet key exported' },
     delete_wallet: { fr: 'Wallet rapide supprimé', en: 'Quick wallet deleted' },
     anti_phishing: { fr: 'Code anti-hameçonnage modifié', en: 'Anti-phishing code changed' },
   };
@@ -156,13 +156,13 @@ export function alertMail(u: User, kind: AlertKind, d: Record<string, string | n
     const t = (fr: string, en: string) => (L ? en : fr);
     const date: [string, string] = [t('Date', 'Date'), when(lang)];
     switch (kind) {
-      case 'login_new_device': return { title: t('Nouvelle connexion', 'New sign-in'), lead: t('Ton compte vient d\'être ouvert depuis un appareil que nous ne connaissions pas.', 'Your account was just opened from a device we didn\'t know.'), rows: [[t('Appareil', 'Device'), String(d.device ?? '—')], [t('Adresse IP', 'IP address'), String(d.ip ?? '—')], date] };
-      case 'withdraw': return { title: t('Retrait envoyé', 'Withdrawal sent'), lead: t('Un retrait vient de partir de ton wallet rapide.', 'A withdrawal just left your quick wallet.'), rows: [[t('Montant', 'Amount'), d.sol + ' SOL'], [t('Vers', 'To'), shortAddr(String(d.to))], [t('Transaction', 'Transaction'), shortAddr(String(d.signature))], date] };
-      case 'wallet_added': return { title: t('Wallet ajouté', 'Wallet added'), lead: t('Un nouveau wallet a été lié à ton compte. Par sécurité, il ne pourra recevoir de retraits du wallet rapide que dans 24 heures.', 'A new wallet was linked to your account. For security, it can only receive withdrawals from the quick wallet in 24 hours.'), rows: [[t('Wallet', 'Wallet'), shortAddr(String(d.address))], date] };
-      case 'limits': return { title: t('Plafond modifié', 'Cap changed'), lead: t('Le plafond de dépense de ton wallet rapide a changé.', 'Your quick wallet spending cap changed.'), rows: [[t('Avant', 'Before'), d.before + ' SOL / ' + t('jour', 'day')], [t('Après', 'After'), d.after + ' SOL / ' + t('jour', 'day')], date] };
-      case 'export_key': return { title: t('Clé exportée', 'Key exported'), lead: t('La clé privée de ton wallet rapide vient d\'être affichée. Quiconque la possède contrôle les fonds de ce wallet.', 'Your quick wallet private key was just displayed. Anyone who has it controls this wallet\'s funds.'), rows: [date] };
-      case 'delete_wallet': return { title: t('Wallet rapide supprimé', 'Quick wallet deleted'), lead: t('Le wallet rapide de ton compte a été supprimé du serveur.', 'Your account\'s quick wallet was deleted from the server.'), rows: [date] };
-      case 'anti_phishing': return { title: t('Code anti-hameçonnage modifié', 'Anti-phishing code changed'), lead: t('Ton code anti-hameçonnage a changé. Il apparaît désormais en haut de chacun de nos e-mails : un message sans ce code ne vient pas de nous.', 'Your anti-phishing code changed. It now appears at the top of every email we send: a message without it is not from us.'), rows: [date] };
+      case 'login_new_device': return { title: t('Nouvelle connexion', 'New sign-in'), lead: t('Votre compte vient d\'être ouvert depuis un appareil que nous ne connaissions pas.', 'Your account was just opened from a device we didn\'t know.'), rows: [[t('Appareil', 'Device'), String(d.device ?? '—')], [t('Adresse IP', 'IP address'), String(d.ip ?? '—')], date] };
+      case 'withdraw': return { title: t('Retrait envoyé', 'Withdrawal sent'), lead: t('Un retrait vient de partir de votre wallet rapide.', 'A withdrawal just left your quick wallet.'), rows: [[t('Montant', 'Amount'), d.sol + ' SOL'], [t('Vers', 'To'), shortAddr(String(d.to))], [t('Transaction', 'Transaction'), shortAddr(String(d.signature))], date] };
+      case 'wallet_added': return { title: t('Wallet ajouté', 'Wallet added'), lead: t('Un nouveau wallet a été lié à votre compte. Par sécurité, il ne pourra recevoir de retraits du wallet rapide que dans 24 heures.', 'A new wallet was linked to your account. For security, it can only receive withdrawals from the quick wallet in 24 hours.'), rows: [[t('Wallet', 'Wallet'), shortAddr(String(d.address))], date] };
+      case 'limits': return { title: t('Plafond modifié', 'Cap changed'), lead: t('Le plafond de dépense de votre wallet rapide a changé.', 'Your quick wallet spending cap changed.'), rows: [[t('Avant', 'Before'), d.before + ' SOL / ' + t('jour', 'day')], [t('Après', 'After'), d.after + ' SOL / ' + t('jour', 'day')], date] };
+      case 'export_key': return { title: t('Clé exportée', 'Key exported'), lead: t('La clé privée de votre wallet rapide vient d\'être affichée. Quiconque la possède contrôle les fonds de ce wallet.', 'Your quick wallet private key was just displayed. Anyone who has it controls this wallet\'s funds.'), rows: [date] };
+      case 'delete_wallet': return { title: t('Wallet rapide supprimé', 'Quick wallet deleted'), lead: t('Le wallet rapide de votre compte a été supprimé du serveur.', 'Your account\'s quick wallet was deleted from the server.'), rows: [date] };
+      case 'anti_phishing': return { title: t('Code anti-hameçonnage modifié', 'Anti-phishing code changed'), lead: t('Votre code anti-hameçonnage a changé. Il apparaît désormais en haut de chacun de nos e-mails : un message sans ce code ne vient pas de nous.', 'Your anti-phishing code changed. It now appears at the top of every email we send: a message without it is not from us.'), rows: [date] };
     }
   });
 }

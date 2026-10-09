@@ -52,7 +52,7 @@ export function usePrefsSync() {
         const local = st?.prefs?.get();
         if (local) { try { await savePrefs(user.id, local); } catch { /* valeurs locales hors limites : on garde celles du compte */ } }
         await supabase.from('profiles').update({ onboarded: true }).eq('id', user.id);
-        toast('Compte prêt', 'Tes réglages de ce navigateur sont maintenant enregistrés sur ton compte.');
+        toast('Compte prêt', 'Vos réglages de ce navigateur sont maintenant enregistrés sur votre compte.');
       } else {
         st?.prefs?.apply(prefs);
       }

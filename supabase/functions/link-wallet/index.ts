@@ -45,17 +45,17 @@ Deno.serve(async (req) => {
   const url = Deno.env.get('SUPABASE_URL')!;
   const userClient = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
   const { data: { user }, error: uerr } = await userClient.auth.getUser();
-  if (uerr || !user) return json(401, { error: 'Session invalide : reconnecte-toi.' }, h);
+  if (uerr || !user) return json(401, { error: 'Session invalide : reconnectez-vous.' }, h);
 
   // Double authentification activée : la session doit l'avoir validée (niveau aal2)
   const hasMfa = (user.factors ?? []).some((f) => f.status === 'verified');
   if (hasMfa) {
     let aal = '';
     try { aal = JSON.parse(atob(auth.slice(7).split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/'))).aal; } catch { aal = ''; }
-    if (aal !== 'aal2') return json(403, { error: 'Valide d\'abord ta double authentification.' }, h);
+    if (aal !== 'aal2') return json(403, { error: 'Validez d\'abord votre double authentification.' }, h);
   }
 
-  try { await rate('link:' + user.id, 10, 3600, 'Trop d\'ajouts de wallets : réessaie dans une heure.'); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
+  try { await rate('link:' + user.id, 10, 3600, 'Trop d\'ajouts de wallets : réessayez dans une heure.'); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
 
   let body: { address?: unknown; message?: unknown; signature?: unknown };
   try { body = await req.json(); } catch { return json(400, { error: 'Requête invalide.' }, h); }
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
   if (field('Wallet') !== address) return json(400, { error: 'Le message vise un autre wallet.' }, h);
   if (!allowedHost(field('Domaine') ?? '')) return json(403, { error: 'Domaine non autorisé.' }, h);
   const at = Date.parse(field('Date') ?? '');
-  if (!Number.isFinite(at) || Date.now() - at > 5 * 60_000 || at - Date.now() > 60_000) return json(400, { error: 'Signature expirée : recommence.' }, h);
+  if (!Number.isFinite(at) || Date.now() - at > 5 * 60_000 || at - Date.now() > 60_000) return json(400, { error: 'Signature expirée : recommencez.' }, h);
 
   let pk: Uint8Array, sig: Uint8Array;
   try { pk = bs58.decode(address); sig = b64decode(signature); } catch { return json(400, { error: 'Format de signature invalide.' }, h); }

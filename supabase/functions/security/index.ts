@@ -6,12 +6,12 @@ const enc = new TextEncoder();
 const sha = async (s: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(s)))].map((b) => b.toString(16).padStart(2, '0')).join('');
 const code6 = () => String(crypto.getRandomValues(new Uint32Array(1))[0]! % 1_000_000).padStart(6, '0');
 const PURPOSE_LABEL: Record<StepUpPurpose, { fr: string; en: string }> = {
-  withdraw: { fr: 'un retrait depuis ton wallet rapide', en: 'a withdrawal from your quick wallet' },
-  limits_up: { fr: 'la hausse du plafond de ton wallet rapide', en: 'raising your quick wallet cap' },
-  export_key: { fr: 'l\'export de la clé de ton wallet rapide', en: 'exporting your quick wallet key' },
-  delete_wallet: { fr: 'la suppression de ton wallet rapide', en: 'deleting your quick wallet' },
-  link_wallet: { fr: 'l\'ajout d\'un wallet à ton compte', en: 'adding a wallet to your account' },
-  delete_account: { fr: 'la suppression de ton compte', en: 'deleting your account' },
+  withdraw: { fr: 'un retrait depuis votre wallet rapide', en: 'a withdrawal from your quick wallet' },
+  limits_up: { fr: 'la hausse du plafond de votre wallet rapide', en: 'raising your quick wallet cap' },
+  export_key: { fr: 'l\'export de la clé de votre wallet rapide', en: 'exporting your quick wallet key' },
+  delete_wallet: { fr: 'la suppression de votre wallet rapide', en: 'deleting your quick wallet' },
+  link_wallet: { fr: 'l\'ajout d\'un wallet à votre compte', en: 'adding a wallet to your account' },
+  delete_account: { fr: 'la suppression de votre compte', en: 'deleting your account' },
 };
 const isPurpose = (p: unknown): p is StepUpPurpose => typeof p === 'string' && (STEP_UP_PURPOSES as readonly string[]).includes(p);
 
@@ -34,18 +34,18 @@ Deno.serve(async (req) => {
       /* --- envoi du code par e-mail (10 minutes, 5 essais) --- */
       case 'stepup_send': {
         if (!isPurpose(body.purpose)) throw new Fail(400, 'Action inconnue.');
-        if (!user.email) throw new Fail(409, 'Ajoute une adresse e-mail à ton compte (Mon compte → Profil) ou active la double authentification pour confirmer cette action.', { code: 'no_method' });
-        await rate('stepup_send:' + uid, 5, 3600, 'Trop de codes demandés : réessaie dans une heure.');
-        await rate('stepup_send30:' + uid, 1, 30, 'Un code vient d\'être envoyé : attends 30 secondes avant d\'en demander un autre.');
+        if (!user.email) throw new Fail(409, 'Ajoutez une adresse e-mail à votre compte (Mon compte → Profil) ou activez la double authentification pour confirmer cette action.', { code: 'no_method' });
+        await rate('stepup_send:' + uid, 5, 3600, 'Trop de codes demandés : réessayez dans une heure.');
+        await rate('stepup_send30:' + uid, 1, 30, 'Un code vient d\'être envoyé : attendez 30 secondes avant d\'en demander un autre.');
         const code = code6(), purpose = body.purpose;
         await admin.rpc('sec_stepup_set', { uid, p_purpose: purpose, p_hash: await sha(uid + ':' + purpose + ':' + code), p_ttl: 600 });
         const ok = await sendMail(user, { fr: 'Code TokenStudio : ' + code, en: 'TokenStudio code: ' + code }, (lang) => ({
-          title: lang === 'en' ? 'Confirm this action' : 'Confirme cette action',
-          lead: (lang === 'en' ? 'Enter this code in TokenStudio to confirm ' : 'Saisis ce code dans TokenStudio pour confirmer ') + PURPOSE_LABEL[purpose][lang] + '.',
+          title: lang === 'en' ? 'Confirm this action' : 'Confirmez cette action',
+          lead: (lang === 'en' ? 'Enter this code in TokenStudio to confirm ' : 'Saisissez ce code dans TokenStudio pour confirmer ') + PURPOSE_LABEL[purpose][lang] + '.',
           code,
-          foot: lang === 'en' ? 'The code expires in 10 minutes. Never share it: TokenStudio will never ask for it by phone or message. If you didn\'t request it, someone may be using your account: disconnect all your devices.' : 'Le code expire dans 10 minutes. Ne le transmets à personne : TokenStudio ne te le demandera jamais par téléphone ou par message. Si tu n\'as rien demandé, quelqu\'un utilise peut-être ton compte : déconnecte tous tes appareils.',
+          foot: lang === 'en' ? 'The code expires in 10 minutes. Never share it: TokenStudio will never ask for it by phone or message. If you didn\'t request it, someone may be using your account: disconnect all your devices.' : 'Le code expire dans 10 minutes. Ne le transmettez à personne : TokenStudio ne vous le demandera jamais par téléphone ou par message. Si vous n\'avez rien demandé, quelqu\'un utilise peut-être votre compte : déconnectez tous vos appareils.',
         }));
-        if (!ok) throw new Fail(503, 'Envoi de l\'e-mail impossible pour le moment. Réessaie, ou utilise la double authentification.');
+        if (!ok) throw new Fail(503, 'Envoi de l\'e-mail impossible pour le moment. Réessayez, ou utilisez la double authentification.');
         return json(200, { sent: true, to: maskEmail(user.email) }, h);
       }
 
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
           // le navigateur vient de valider un code de l'application (session aal2, méthode totp horodatée dans le jeton)
           const amr = Array.isArray(cl.amr) ? cl.amr as { method?: string; timestamp?: number }[] : [];
           const fresh = cl.aal === 'aal2' && amr.some((a) => a.method === 'totp' && typeof a.timestamp === 'number' && Date.now() / 1000 - a.timestamp < 300);
-          if (!hasTotp || !fresh) throw new Fail(403, 'Code de double authentification non validé : recommence.');
+          if (!hasTotp || !fresh) throw new Fail(403, 'Code de double authentification non validé : recommencez.');
           await admin.rpc('sec_grant_add', { uid, p_purpose: purpose });
           return json(200, { ok: true }, h);
         }
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
         if (c.length !== 6) throw new Fail(400, 'Le code fait 6 chiffres.');
         const { data: r } = await admin.rpc('sec_stepup_check', { uid, p_purpose: purpose, p_hash: await sha(uid + ':' + purpose + ':' + c) });
         if (r === 'ok') return json(200, { ok: true }, h);
-        throw new Fail(r === 'bad' ? 403 : 410, r === 'bad' ? 'Code incorrect.' : r === 'locked' ? 'Trop d\'essais : demande un nouveau code.' : 'Code expiré : demande un nouveau code.');
+        throw new Fail(r === 'bad' ? 403 : 410, r === 'bad' ? 'Code incorrect.' : r === 'locked' ? 'Trop d\'essais : demandez un nouveau code.' : 'Code expiré : demandez un nouveau code.');
       }
 
       /* --- appareil : alerte à la première connexion depuis un nouvel appareil --- */
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         await rate('revoke:' + uid, 30, 3600);
         const sid = String(body.session_id ?? '');
         if (!/^[0-9a-f-]{36}$/.test(sid)) throw new Fail(400, 'Session invalide.');
-        if (sid === cl.session_id) throw new Fail(400, 'C\'est cet appareil : utilise « Se déconnecter ».');
+        if (sid === cl.session_id) throw new Fail(400, 'C\'est cet appareil : utilisez « Se déconnecter ».');
         const { data: ok } = await admin.rpc('sec_session_revoke', { uid, sid });
         if (ok) await audit(uid, 'session_revoked', { session: sid.slice(0, 8) });
         return json(200, { ok: !!ok }, h);
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         await rate('mail_test:' + uid, 3, 3600);
         const ok = await sendMail(user, { fr: 'TokenStudio : e-mail d\'essai', en: 'TokenStudio: test email' }, (lang) => ({
           title: lang === 'en' ? 'Security emails work' : 'Les e-mails de sécurité fonctionnent',
-          lead: lang === 'en' ? 'You will receive your confirmation codes and security alerts at this address.' : 'Tu recevras tes codes de confirmation et tes alertes de sécurité à cette adresse.',
+          lead: lang === 'en' ? 'You will receive your confirmation codes and security alerts at this address.' : 'Vous recevrez vos codes de confirmation et vos alertes de sécurité à cette adresse.',
           foot: lang === 'en' ? 'Nothing to do.' : 'Rien à faire.',
         }));
         if (!ok) throw new Fail(503, 'Envoi impossible : la configuration des e-mails du serveur est incomplète.');

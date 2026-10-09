@@ -7,7 +7,7 @@ export function CloudNotice() {
   return (
     <div className={'ts-cloud' + (s.error ? ' warn' : '')} role="status" aria-live="polite">
       <span className={'ts-cloud-dot' + (s.loading ? ' spin' : '')} aria-hidden="true" />
-      <span>{s.loading ? 'Chargement de ton compte…' : 'Connexion au compte perdue : tes changements partiront dès son retour.'}</span>
+      <span>{s.loading ? 'Chargement de votre compte…' : 'Connexion au compte perdue : vos changements partiront dès son retour.'}</span>
     </div>
   );
 }

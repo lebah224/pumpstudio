@@ -138,7 +138,7 @@ async function watch(watchKey: string) {
   for (const { o, why } of hits) {
     const sym = o.symbol || o.mint.slice(0, 4);
     const label = why[0]!.toUpperCase() + why.slice(1);
-    let body = label + '. Ouvre TokenStudio pour vendre ' + pctTxt(Number(o.pct)) + ' % : rien n\'est vendu sans toi.';
+    let body = label + '. Ouvrez TokenStudio pour vendre ' + pctTxt(Number(o.pct)) + ' % : rien n\'est vendu sans vous.';
     let title = 'Ordre déclenché · ' + sym;
     // wallet rapide du compte : le serveur vend lui-même, une seule fois (verrou partagé avec l'onglet ouvert)
     if (o.server_address && o.auto_exec) {
@@ -153,11 +153,11 @@ async function watch(watchKey: string) {
           await admin.from('operations').insert({ user_id: o.user_id, client_id: 'srv-' + o.order_id.slice(0, 8) + '-' + Date.now().toString(36), type: 'sell', status: 'ok', sim: false,
             mint: o.mint, symbol: o.symbol, sol: r.sol ?? 0, tokens: -(r.tokens ?? 0), estimated: !r.confirmed, auto: true, signature: r.signature, at: new Date().toISOString() });
           title = 'Vendu automatiquement · ' + sym;
-          body = label + '. Ton wallet rapide a vendu ' + pctTxt(Number(o.pct)) + ' %' + (r.sol ? ' : +' + solTxt(r.sol) + ' SOL' : '') + '.';
+          body = label + '. Votre wallet rapide a vendu ' + pctTxt(Number(o.pct)) + ' %' + (r.sol ? ' : +' + solTxt(r.sol) + ' SOL' : '') + '.';
         } else {
           await admin.rpc('order_release_srv', { p_id: o.order_id });
           // tokens gardés ailleurs (Phantom…) : simple alerte ; vraie panne : on le dit
-          if (r.error && r.error !== 'no_tokens' && r.error !== 'no_wallet') body = label + '. Vente automatique impossible (' + r.error.slice(0, 80) + ') : ouvre TokenStudio pour vendre.';
+          if (r.error && r.error !== 'no_tokens' && r.error !== 'no_wallet') body = label + '. Vente automatique impossible (' + r.error.slice(0, 80) + ') : ouvrez TokenStudio pour vendre.';
         }
       }
     }

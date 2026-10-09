@@ -33,15 +33,15 @@ export function AccountPage() {
       <div className="card ts-why">
         <h3>Pourquoi un compte ?</h3>
         <ul>
-          <li><b>Tes réglages partout</b> : palette, slippage, limites et préférences du studio sur tous tes appareils.</li>
-          <li><b>Tes wallets</b> : plusieurs wallets liés, chacun prouvé par une signature gratuite.</li>
+          <li><b>Vos réglages partout</b> : palette, slippage, limites et préférences du studio sur tous vos appareils.</li>
+          <li><b>Vos wallets</b> : plusieurs wallets liés, chacun prouvé par une signature gratuite.</li>
           <li><b>Sécurité</b> : double authentification et journal des actions sensibles.</li>
           <li><b>Non-custodial</b> : aucune clé privée n'est envoyée, jamais. Le studio continue de fonctionner sans compte.</li>
         </ul>
       </div>
     </div>
   );
-  if (needsMfa) return <div className="card"><div className="empty"><b>Double authentification requise</b>Saisis ton code pour accéder à ton compte.</div></div>;
+  if (needsMfa) return <div className="card"><div className="empty"><b>Double authentification requise</b>Saisissez votre code pour accéder à votre compte.</div></div>;
 
   return (
     <div className="ts-account">
@@ -94,14 +94,14 @@ function ProfileTab() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { setErr('Adresse e-mail invalide.'); return; }
     const { error } = await supabase.auth.updateUser({ email: v }, { emailRedirectTo: location.origin + location.pathname });
     if (error) { setErr(readable(error)); return; }
-    setEmail(''); toast('Vérifie ta boîte mail', 'Clique sur le lien envoyé à ' + v + ' pour confirmer l\'adresse.');
+    setEmail(''); toast('Vérifiez votre boîte mail', 'Cliquez sur le lien envoyé à ' + v + ' pour confirmer l\'adresse.');
   }
 
   if (!user || !p) return <div className="card"><div className="empty"><b>Chargement…</b></div></div>;
   return (
     <div className="ts-grid2">
       <form className="card" onSubmit={save}>
-        <div className="card-h"><h3>Profil</h3><p>Ton nom et ton avatar dans TokenStudio. Rien n'est public : ils ne sont visibles que par toi.</p></div>
+        <div className="card-h"><h3>Profil</h3><p>Votre nom et votre avatar dans TokenStudio. Rien n'est public : ils ne sont visibles que par vous.</p></div>
         <div className="ts-avatar-row"><UserAvatar profile={{ id: user.id, avatar_url: avatar }} size={52} /><div><b>{form.display_name || form.username || userLabel(user)}</b><small>{form.username ? '@' + form.username + ' · ' : ''}membre depuis le {new Date(p.created_at).toLocaleDateString('fr-FR')}</small></div></div>
         <div className="field"><span className="ts-lbl">Avatar</span><AvatarPicker userId={user.id} value={avatar} onChange={setAvatar} /></div>
         <div className="row2">
@@ -117,15 +117,15 @@ function ProfileTab() {
         <div className="toolbar"><button className="btn primary" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</button></div>
       </form>
       <div className="card">
-        <div className="card-h"><h3>Identifiants de connexion</h3><p>Tu peux te connecter avec l'un ou l'autre.</p></div>
+        <div className="card-h"><h3>Identifiants de connexion</h3><p>Vous pouvez vous connecter avec l'un ou l'autre.</p></div>
         <div className="ts-kv"><span>E-mail</span><b>{user.email || 'aucun'}</b></div>
         <div className="ts-kv"><span>Wallet de connexion</span><b className="mono">{walletOf(user) || 'aucun'}</b></div>
-        {user.new_email && <div className="ts-note">Confirmation en attente pour <b>{user.new_email}</b> : clique sur le lien reçu.</div>}
+        {user.new_email && <div className="ts-note">Confirmation en attente pour <b>{user.new_email}</b> : cliquez sur le lien reçu.</div>}
         <form onSubmit={addEmail} className="ts-row" style={{ marginTop: 12 }}>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={user.email ? 'Nouvelle adresse e-mail' : 'Ajouter un e-mail'} aria-label="Adresse e-mail" />
           <button className="btn">{user.email ? 'Changer' : 'Ajouter'}</button>
         </form>
-        <p className="muted ts-small">Un e-mail permet de récupérer ton compte et de recevoir les alertes de tes ordres.</p>
+        <p className="muted ts-small">Un e-mail permet de récupérer votre compte et de recevoir les alertes de vos ordres.</p>
       </div>
     </div>
   );
@@ -149,12 +149,12 @@ function PrefsTab() {
 
   async function save(ev: FormEvent) {
     ev.preventDefault(); if (!user || !p) return; setErr(null);
-    if (!p.sim_mode && !window.confirm('Mode réel : les transactions que tu signes partiront vraiment sur la blockchain. Confirmer ?')) return;
+    if (!p.sim_mode && !window.confirm('Mode réel : les transactions que vous signez partiront vraiment sur la blockchain. Confirmer ?')) return;
     setBusy(true);
     try {
       const saved = await savePrefs(user.id, p);
       if (saved) { setP(saved); studio()?.prefs?.apply(saved); }
-      toast('Préférences enregistrées', 'Appliquées au studio et sur tous tes appareils.');
+      toast('Préférences enregistrées', 'Appliquées au studio et sur tous vos appareils.');
     } catch (e) { setErr(readable(e)); } finally { setBusy(false); }
   }
   const seg = <T extends string>(list: [T, string][], v: T, on: (x: T) => void) => (
@@ -189,7 +189,7 @@ function PrefsTab() {
           </div>
         </div>
         <div className="card">
-          <div className="card-h"><h3>Notifications</h3><p>Alertes quand un prix atteint la condition d'un de tes ordres.</p></div>
+          <div className="card-h"><h3>Notifications</h3><p>Alertes quand un prix atteint la condition d'un de vos ordres.</p></div>
           <label className="check"><input type="checkbox" checked={p.notify_orders} onChange={(e) => set({ notify_orders: e.target.checked })} /><span>M'alerter quand un ordre se déclenche</span></label>
           <PushCard enabled={p.notify_orders} />
           <label className="check"><input type="checkbox" checked={false} disabled /><span>Par e-mail <small className="muted">(bientôt : arrive avec l'envoi d'e-mails du domaine TokenStudio)</small></span></label>
@@ -228,15 +228,15 @@ function WalletsTab() {
     setBusy(null); if (error) setErr(readable(error)); load();
   }
   async function remove(w: Wallet) {
-    if (!window.confirm('Retirer ' + w.address.slice(0, 6) + '… de ton compte ? Les fonds ne sont pas touchés.')) return;
+    if (!window.confirm('Retirer ' + w.address.slice(0, 6) + '… de votre compte ? Les fonds ne sont pas touchés.')) return;
     const { error } = await supabase.from('wallets').delete().eq('id', w.id);
     if (error) setErr(readable(error)); else { toast('Wallet retiré', '', 'a'); load(); }
   }
 
   return (
     <div className="card">
-      <div className="card-h"><h3>Wallets liés</h3><p>Seules les adresses publiques sont enregistrées. Chaque wallet est ajouté après une signature gratuite qui prouve qu'il t'appartient.</p></div>
-      {!list ? <div className="empty"><b>Chargement…</b></div> : !list.length ? <div className="empty"><b>Aucun wallet lié</b>Lie ton wallet pour retrouver tes tokens sur tous tes appareils.</div> : (
+      <div className="card-h"><h3>Wallets liés</h3><p>Seules les adresses publiques sont enregistrées. Chaque wallet est ajouté après une signature gratuite qui prouve qu'il vous appartient.</p></div>
+      {!list ? <div className="empty"><b>Chargement…</b></div> : !list.length ? <div className="empty"><b>Aucun wallet lié</b>Liez votre wallet pour retrouver vos tokens sur tous vos appareils.</div> : (
         <div className="ts-wallets">{list.map((w) => (
           <div key={w.id} className="ts-wallet">
             <div className="ts-w-main"><b>{w.label || 'Wallet'} {w.is_primary && <span className="badge v">principal</span>}</b><code className="mono">{w.address}</code><small>Vérifié le {new Date(w.verified_at).toLocaleDateString('fr-FR')}</small></div>
@@ -250,7 +250,7 @@ function WalletsTab() {
         ))}</div>
       )}
       {err && <div className="ts-note bad" role="alert">{err}</div>}
-      <div className="toolbar"><button className="btn primary" type="button" onClick={() => openSignIn({ start: 'add' })}>Ajouter un wallet</button><span className="muted ts-small">Phantom, Solflare, Backpack, Coinbase, OKX, Trust… ou ton wallet rapide. Une signature gratuite prouve qu'il t'appartient.</span></div>
+      <div className="toolbar"><button className="btn primary" type="button" onClick={() => openSignIn({ start: 'add' })}>Ajouter un wallet</button><span className="muted ts-small">Phantom, Solflare, Backpack, Coinbase, OKX, Trust… ou votre wallet rapide. Une signature gratuite prouve qu'il vous appartient.</span></div>
     </div>
   );
 }

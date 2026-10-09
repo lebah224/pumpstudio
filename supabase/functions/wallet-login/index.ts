@@ -43,8 +43,8 @@ Deno.serve(async (req) => {
   const { address, message, signature } = body;
   // limite par adresse IP et case « Je ne suis pas un robot »
   const ip = clientIp(req);
-  try { await rate('wallet_login:' + (ip || 'inconnue'), 30, 600, 'Trop de tentatives de connexion : réessaie dans 10 minutes.'); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
-  if (!(await verifyCaptcha(body.captchaToken, ip))) return json(403, { error: 'Vérification anti-robot échouée : coche de nouveau la case.', code: 'captcha' }, h);
+  try { await rate('wallet_login:' + (ip || 'inconnue'), 30, 600, 'Trop de tentatives de connexion : réessayez dans 10 minutes.'); } catch (e) { return json((e as Fail).status, { error: (e as Fail).message }, h); }
+  if (!(await verifyCaptcha(body.captchaToken, ip))) return json(403, { error: 'Vérification anti-robot échouée : cochez de nouveau la case.', code: 'captcha' }, h);
   if (typeof address !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) return json(400, { error: 'Adresse invalide.' }, h);
   if (typeof message !== 'string' || message.length > 600) return json(400, { error: 'Message invalide.' }, h);
   if (typeof signature !== 'string' || signature.length > 200) return json(400, { error: 'Signature invalide.' }, h);
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
   if (field('Wallet') !== address) return json(400, { error: 'Le message vise un autre wallet.' }, h);
   if (!allowedHost(field('Domaine') ?? '')) return json(403, { error: 'Domaine non autorisé.' }, h);
   const at = Date.parse(field('Date') ?? '');
-  if (!Number.isFinite(at) || Date.now() - at > 2 * 60_000 || at - Date.now() > 60_000) return json(400, { error: 'Signature expirée : recommence.' }, h);
+  if (!Number.isFinite(at) || Date.now() - at > 2 * 60_000 || at - Date.now() > 60_000) return json(400, { error: 'Signature expirée : recommencez.' }, h);
   const nonce = field('Nonce') ?? '';
   if (!/^[0-9a-f]{32}$/.test(nonce)) return json(400, { error: 'Message invalide.' }, h);
 
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
   const { data: fresh, error: nerr } = await admin.rpc('consume_login_nonce', { n: nonce });
   if (nerr) return json(500, { error: 'Connexion impossible pour le moment.' }, h);
-  if (!fresh) return json(409, { error: 'Signature déjà utilisée : recommence.' }, h);
+  if (!fresh) return json(409, { error: 'Signature déjà utilisée : recommencez.' }, h);
 
   const { data: row } = await admin.from('wallets').select('user_id').eq('address', address).maybeSingle();
   if (!row) return json(404, { error: 'Aucun compte n\'est lié à ce wallet.' }, h);
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
   if (user.banned_until && Date.parse(user.banned_until) > Date.now()) return json(403, { error: 'Compte suspendu.' }, h);
   if (!user.email) {
     // compte créé avec un autre wallet et sans e-mail : la session ne peut s'ouvrir qu'avec ce wallet de connexion
-    return json(409, { error: 'Ce wallet est lié à un compte qui se connecte avec son wallet principal. Connecte-toi avec celui-ci.' }, h);
+    return json(409, { error: 'Ce wallet est lié à un compte qui se connecte avec son wallet principal. Connectez-vous avec celui-ci.' }, h);
   }
   // lien de connexion à usage unique, jamais envoyé par e-mail : son jeton est échangé aussitôt par le navigateur
   const { data: link, error: lerr } = await admin.auth.admin.generateLink({ type: 'magiclink', email: user.email });

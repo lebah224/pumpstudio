@@ -50,7 +50,7 @@ export function useCaptchaToken(): string | null {
   return v;
 }
 export function captchaMissing(): string | null {
-  return captchaOn() && !token ? t('Coche d\'abord la case « Je ne suis pas un robot ».', 'First tick the “I am not a robot” box.') : null;
+  return captchaOn() && !token ? t('Cochez d\'abord la case « Je ne suis pas un robot ».', 'First tick the “I am not a robot” box.') : null;
 }
 
 /** La case elle-même */
@@ -76,7 +76,7 @@ export function Captcha() {
   return (
     <div className="ts-captcha">
       <div ref={el} className="ts-captcha-box" />
-      {failed && <p className="ts-captcha-err" role="alert">{t('La vérification anti-robot ne se charge pas. Désactive ton bloqueur de contenu pour ce site, puis recharge la page.', 'The anti-robot check didn\'t load. Disable your content blocker for this site, then reload the page.')}</p>}
+      {failed && <p className="ts-captcha-err" role="alert">{t('La vérification anti-robot ne se charge pas. Désactivez votre bloqueur de contenu pour ce site, puis rechargez la page.', 'The anti-robot check didn\'t load. Disable your content blocker for this site, then reload the page.')}</p>}
     </div>
   );
 }

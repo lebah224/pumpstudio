@@ -19,12 +19,12 @@ const nonce = () => [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b
 export function signerFor(src: Source): Signer {
   if (src.kind === 'quick') {
     const kp = studio()?.hub?.quickKeypair();
-    if (!kp) throw new Error('Déverrouille d\'abord ton wallet rapide.');
+    if (!kp) throw new Error('Déverrouillez d\'abord votre wallet rapide.');
     return { address: kp.publicKey.toBase58(), provider: null, signMessage: (m) => signAsync(m, kp.secretKey.slice(0, 32)) };
   }
   const p = detect().find((x) => x.id === src.id)?.p;
   const address = p?.publicKey?.toString();
-  if (!p || !address) throw new Error(t('Wallet non connecté : reconnecte-le puis réessaie.', 'Wallet not connected: reconnect it and try again.'));
+  if (!p || !address) throw new Error(t('Wallet non connecté : reconnectez-le puis réessayez.', 'Wallet not connected: reconnect it and try again.'));
   return {
     address, provider: p,
     signMessage: async (m) => { const r = await p.signMessage(m, 'utf8'); return r instanceof Uint8Array ? r : r.signature; },
@@ -38,7 +38,7 @@ export async function accountStatus(address: string): Promise<AccountStatus> {
   return data === 'web3' || data === 'linked' ? data : 'none';
 }
 
-const STATEMENT = () => t('Connexion à TokenStudio. Cette signature est gratuite : elle prouve que ce wallet t\'appartient et n\'autorise aucune transaction.', 'Sign in to TokenStudio. This signature is free: it proves this wallet is yours and authorizes no transaction.');
+const STATEMENT = () => t('Connexion à TokenStudio. Cette signature est gratuite : elle prouve que ce wallet vous appartient et n\'autorise aucune transaction.', 'Sign in to TokenStudio. This signature is free: it proves this wallet is yours and authorizes no transaction.');
 
 /** Connexion Supabase native (Sign-In With Solana) : crée le compte s'il n'existe pas, donc appelée seulement après accord */
 async function web3SignIn(s: Signer, captchaToken?: string) {
@@ -91,7 +91,7 @@ export async function createAccountWithWallet(src: Source, captchaToken?: string
  */
 export async function linkWallet(src: Source): Promise<Wallet> {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('Connecte-toi d\'abord.');
+  if (!session) throw new Error('Connectez-vous d\'abord.');
   const s = signerFor(src);
   const message = [
     'TokenStudio : lier ce wallet à mon compte.',

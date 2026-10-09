@@ -28,7 +28,7 @@ export function MfaChallenge() {
   return (
     <div className="ts-modal" role="dialog" aria-modal="true" aria-label={t('Double authentification', 'Two-factor authentication')}>
       <form className="ts-modal-box" onSubmit={submit}>
-        <div className="ts-si-h"><b>{t('Double authentification', 'Two-factor authentication')}</b><span>{t('Saisis le code à 6 chiffres affiché par ton application (Google Authenticator, 1Password, Authy…).', 'Enter the 6-digit code shown by your app (Google Authenticator, 1Password, Authy…).')}</span></div>
+        <div className="ts-si-h"><b>{t('Double authentification', 'Two-factor authentication')}</b><span>{t('Saisissez le code à 6 chiffres affiché par votre application (Google Authenticator, 1Password, Authy…).', 'Enter the 6-digit code shown by your app (Google Authenticator, 1Password, Authy…).')}</span></div>
         <label className="field"><span className="ts-lbl">{t('Code', 'Code')}</span><input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} autoFocus /></label>
         {err && <div className="ts-note bad" role="alert">{err}</div>}
         <div className="ts-row"><button type="button" className="btn ghost" onClick={() => logoutEverywhere(signOut)}>{t('Se déconnecter', 'Sign out')}</button><button className="btn primary" disabled={busy}>{busy ? t('Vérification…', 'Verifying…') : t('Valider', 'Confirm')}</button></div>
@@ -73,8 +73,8 @@ export function MfaSettings() {
   }
   async function disable() {
     if (!active) return;
-    if (aal.current !== 'aal2') { setErr('Valide d\'abord un code dans cette session pour pouvoir désactiver la protection.'); return; }
-    if (!window.confirm('Désactiver la double authentification ? Ton compte sera moins protégé.')) return;
+    if (aal.current !== 'aal2') { setErr('Validez d\'abord un code dans cette session pour pouvoir désactiver la protection.'); return; }
+    if (!window.confirm('Désactiver la double authentification ? Votre compte sera moins protégé.')) return;
     setBusy(true);
     const { error } = await supabase.auth.mfa.unenroll({ factorId: active.id });
     setBusy(false);
@@ -88,14 +88,14 @@ export function MfaSettings() {
         <div className="ts-row spread"><div><span className="badge g">Activée</span> <span className="muted">depuis le {new Date(active.created_at).toLocaleDateString('fr-FR')}</span></div><button className="btn sm ghost" type="button" disabled={busy} onClick={disable}>Désactiver</button></div>
       ) : enroll ? (
         <form onSubmit={confirm} className="ts-mfa-enroll">
-          <img src={enroll.qr} alt="QR code à scanner avec ton application d'authentification" width={168} height={168} />
+          <img src={enroll.qr} alt="QR code à scanner avec votre application d'authentification" width={168} height={168} />
           <div>
-            <ol className="ts-steps"><li>Scanne ce QR code avec ton application d'authentification.</li><li>Ou saisis la clé : <code className="ts-secret">{enroll.secret}</code></li><li>Entre le code à 6 chiffres affiché.</li></ol>
+            <ol className="ts-steps"><li>Scannez ce QR code avec votre application d'authentification.</li><li>Ou saisissez la clé : <code className="ts-secret">{enroll.secret}</code></li><li>Entrez le code à 6 chiffres affiché.</li></ol>
             <div className="ts-row"><input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" aria-label="Code à 6 chiffres" /><button className="btn primary" disabled={busy}>Activer</button></div>
           </div>
         </form>
       ) : (
-        <div className="ts-row spread"><span className="muted">Un code de ton téléphone sera demandé à chaque connexion, en plus du wallet ou de l'e-mail.</span><button className="btn primary sm" type="button" disabled={busy} onClick={start}>Activer</button></div>
+        <div className="ts-row spread"><span className="muted">Un code de votre téléphone sera demandé à chaque connexion, en plus du wallet ou de l'e-mail.</span><button className="btn primary sm" type="button" disabled={busy} onClick={start}>Activer</button></div>
       )}
       {err && <div className="ts-note bad" role="alert">{err}</div>}
     </div>

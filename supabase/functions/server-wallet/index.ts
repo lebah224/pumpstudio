@@ -84,7 +84,7 @@ async function load(uid: string): Promise<Row | null> {
   return (data as Row[])?.[0] ?? null;
 }
 async function checkPw(uid: string, row: Row, pw: unknown) {
-  if (row.locked_until && Date.parse(row.locked_until) > Date.now()) throw new Fail(429, 'Trop d\'essais : réessaie dans 15 minutes.');
+  if (row.locked_until && Date.parse(row.locked_until) > Date.now()) throw new Fail(429, 'Trop d\'essais : réessayez dans 15 minutes.');
   const ok = typeof pw === 'string' && same(await pwHash(pw, unb64(row.pw_salt), row.pw_iter), row.pw_hash);
   await admin.rpc('srvw_pw_result', { uid, ok });
   if (!ok) throw new Fail(403, 'Mot de passe incorrect.');
@@ -142,12 +142,12 @@ async function signSend(uid: string, row: Row, raw: unknown, sell = false) {
   ]);
   if (sim.value.err) throw new Fail(422, 'La blockchain refuse cette transaction (' + JSON.stringify(sim.value.err).slice(0, 120) + ').');
   const post = sim.value.accounts?.[0]?.lamports;
-  if (post == null) throw new Fail(502, 'Simulation incomplète : réessaie.');
+  if (post == null) throw new Fail(502, 'Simulation incomplète : réessayez.');
   const spent = Math.max(0, (pre.value - post) / 1e9);
   if (sell && pre.value - post > 10_000_000) throw new Fail(403, 'Vente refusée : elle ferait perdre du SOL au wallet.');
   const { data: pref } = await admin.from('preferences').select('max_buy_sol').eq('user_id', uid).maybeSingle();
   const maxBuy = Number(pref?.max_buy_sol ?? 1);
-  if (spent > maxBuy + 0.05) throw new Fail(403, 'Au-delà de ta limite par achat (' + maxBuy + ' SOL). Modifie-la dans Préférences si c\'est voulu.');
+  if (spent > maxBuy + 0.05) throw new Fail(403, 'Au-delà de votre limite par achat (' + maxBuy + ' SOL). Modifiez-la dans Préférences si c\'est voulu.');
   const counted = spent > 0.001 ? spent : 0;
   if (counted) { const { error } = await admin.rpc('srvw_reserve', { uid, sol: counted }); if (error) throw new Fail(403, error.message); }
   try {
@@ -215,7 +215,7 @@ async function withdraw(user: User, row: Row, to: unknown, amount: unknown) {
   const uid = user.id;
   if (typeof to !== 'string') throw new Fail(400, 'Adresse de destination manquante.');
   const { data: w } = await admin.from('wallets').select('address, verified_at').eq('user_id', uid).eq('address', to).maybeSingle();
-  if (!w) throw new Fail(403, 'Retrait refusé : la destination doit être un wallet lié à ton compte (Mon compte → Wallets).');
+  if (!w) throw new Fail(403, 'Retrait refusé : la destination doit être un wallet lié à votre compte (Mon compte → Wallets).');
   // un wallet ajouté récemment ne reçoit rien pendant 24 h : une session volée ne peut pas vider le wallet rapide
   const age = (Date.now() - Date.parse(w.verified_at)) / 3600_000;
   if (to !== loginWallet(user) && age < DELAY_H) throw new Fail(403, 'Ce wallet a été ajouté il y a moins de 24 heures : par sécurité, il pourra recevoir des retraits dans ' + Math.ceil(DELAY_H - age) + ' h.', { code: 'cooldown' });
@@ -252,7 +252,7 @@ async function create(uid: string, pw: unknown, kp: Keypair) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const s = await seal(kp.secretKey, uid + ':' + addr);
   const { error } = await admin.rpc('srvw_create', { uid, addr, p_enc: s.enc, p_iv: s.iv, p_hash: await pwHash(pw as string, salt, ITER), p_salt: b64(salt), p_iter: ITER });
-  if (error) throw new Fail(/duplicate|unique/i.test(error.message) ? 409 : 500, /duplicate|unique/i.test(error.message) ? 'Tu as déjà un wallet rapide serveur, ou cette adresse est déjà utilisée.' : 'Création impossible.');
+  if (error) throw new Fail(/duplicate|unique/i.test(error.message) ? 409 : 500, /duplicate|unique/i.test(error.message) ? 'Vous avez déjà un wallet rapide serveur, ou cette adresse est déjà utilisée.' : 'Création impossible.');
   return { address: addr };
 }
 
@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'delete') {
       const bal = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
-      if (bal > 1_000_000 && body.force !== true) throw new Fail(409, 'Le wallet contient encore ' + (bal / 1e9).toFixed(4) + ' SOL : retire-les d\'abord.');
+      if (bal > 1_000_000 && body.force !== true) throw new Fail(409, 'Le wallet contient encore ' + (bal / 1e9).toFixed(4) + ' SOL : retirez-les d\'abord.');
       await requireStepUp(uid, 'delete_wallet');
       await admin.rpc('srvw_delete', { uid }); await audit(uid, 'server_wallet_deleted', { address: row.address });
       alertMail(user, 'delete_wallet').catch(() => {});

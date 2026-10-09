@@ -31,7 +31,7 @@ export function DataTab() {
   }
   async function deleteAccount() {
     if (confirm !== 'SUPPRIMER') return;
-    if (aal.next === 'aal2' && aal.current !== 'aal2') { setDelErr('Valide d\'abord ta double authentification.'); return; }
+    if (aal.next === 'aal2' && aal.current !== 'aal2') { setDelErr('Validez d\'abord votre double authentification.'); return; }
     setBusy('delete'); setDelErr(null);
     try {
       // code de confirmation demandé par le serveur (e-mail ou double authentification) avant la suppression
@@ -50,31 +50,31 @@ export function DataTab() {
   return (
     <div className="ts-grid2">
       <div className="card">
-        <div className="card-h"><h3>Enregistrées sur ton compte</h3><p>Tes données vivent dans la base de TokenStudio : chaque changement y est écrit aussitôt, et tu les retrouves sur chacun de tes appareils. Rien n'est gardé dans ce navigateur.</p></div>
+        <div className="card-h"><h3>Enregistrées sur votre compte</h3><p>Vos données vivent dans la base de TokenStudio : chaque changement y est écrit aussitôt, et vous les retrouvez sur chacun de vos appareils. Rien n'est gardé dans ce navigateur.</p></div>
         <div className="ts-row spread">
           <div><span className={'badge ' + (s.error ? 'a' : 'g')}>{s.error ? 'En attente' : 'À jour'}</span> <span className="muted ts-small">{s.loading ? 'chargement…' : s.saving || s.pending ? 'enregistrement…' : s.lastSaved ? 'dernier enregistrement : ' + new Date(s.lastSaved).toLocaleTimeString('fr-FR') : ''}</span></div>
           {s.error && <button type="button" className="btn sm" disabled={s.saving} onClick={() => flushAll()}>Réessayer</button>}
         </div>
         {s.error && <div className="ts-note bad" style={{ marginTop: 10 }}>{s.error}</div>}
         <table className="ts-sync-table">
-          <thead><tr><th>Donnée</th><th>Sur ton compte</th></tr></thead>
+          <thead><tr><th>Donnée</th><th>Sur votre compte</th></tr></thead>
           <tbody>{ORDER.map((k) => <tr key={k}><td>{LABELS[k] ?? k}</td><td className="mono">{s.cloud ? s.cloud[k] ?? 0 : '…'}</td></tr>)}</tbody>
         </table>
-        <p className="muted ts-small">Jamais enregistrés : les clés privées de tes wallets (sauf celle du wallet rapide, chiffrée) et les opérations de la démo.</p>
+        <p className="muted ts-small">Jamais enregistrés : les clés privées de vos wallets (sauf celle du wallet rapide, chiffrée) et les opérations de la démo.</p>
       </div>
       <div className="card">
-        <div className="card-h"><h3>Tes données</h3><p>Elles t'appartiennent : tu peux les récupérer ou supprimer ton compte quand tu veux. Détails dans la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a> et les <a href="/conditions" target="_blank" rel="noopener">conditions d'utilisation</a>.</p></div>
+        <div className="card-h"><h3>Vos données</h3><p>Elles vous appartiennent : vous pouvez les récupérer ou supprimer votre compte quand vous voulez. Détails dans la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a> et les <a href="/conditions" target="_blank" rel="noopener">conditions d'utilisation</a>.</p></div>
         <div className="ts-data-act">
           <div><b>Exporter</b><span>Profil, préférences, wallets, tokens, journal et ordres dans un fichier JSON.</span></div>
           <button type="button" className="btn sm" disabled={!!busy} onClick={download}>{busy === 'export' ? 'Préparation…' : 'Télécharger'}</button>
         </div>
         <div className="ts-data-act danger">
-          <div><b>Supprimer le compte</b><span>Efface définitivement ton compte et toutes ses données : profil, wallets liés, tokens, journal, ordres et alertes. Impossible à annuler.</span></div>
+          <div><b>Supprimer le compte</b><span>Efface définitivement votre compte et toutes ses données : profil, wallets liés, tokens, journal, ordres et alertes. Impossible à annuler.</span></div>
           {confirm === null && <button type="button" className="btn sm danger" disabled={!!busy} onClick={() => { setConfirm(''); setDelErr(null); }}>Supprimer</button>}
         </div>
         {confirm !== null && (
           <div className="ts-del-confirm">
-            <p>Si ton wallet rapide contient encore des SOL ou des tokens, retire-les d'abord : la suppression est refusée tant qu'il n'est pas vide, pour que rien ne soit perdu.</p>
+            <p>Si votre wallet rapide contient encore des SOL ou des tokens, retirez-les d'abord : la suppression est refusée tant qu'il n'est pas vide, pour que rien ne soit perdu.</p>
             <label className="field"><span className="ts-lbl">Écris <b>SUPPRIMER</b> pour confirmer</span><input value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="off" spellCheck={false} autoFocus /></label>
             {delErr && <div className="ts-note bad">{delErr}</div>}
             <div className="ts-row">
