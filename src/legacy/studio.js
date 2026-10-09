@@ -4232,6 +4232,8 @@
       },
       position: (mint) => { const C = S.cache[mint]; return C && C.stats ? Object.assign(myPosition(mint, C), { price: C.stats.price }) : null; },
       newOrder: (mint) => newOrder(mint),
+      // frais de créateur non réclamés d'un wallet (tous ses tokens, courbe et PumpSwap), en SOL
+      creatorFees: async (pk) => { const { web3 } = KIT(), bn = await pumpConn().online.getCreatorVaultBalanceBothPrograms(new web3.PublicKey(pk)); return Number(bn.toString()) / 1e9; },
     },
     SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, isSim: () => !!cfg.sim, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
     // Menu de compte (React) : état du wallet et du mode, et actions associées

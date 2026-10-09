@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { studio, toast } from '../legacy/bridge';
 import { MINT_RE, type Row } from './api';
 import { MarketList } from './MarketList';
 import { TokenView } from './TokenView';
 import { useLiveState } from './live';
+import { useAlertWatcher } from './alerts';
 import '../styles/trader.css';
 
 function useVisible() {
@@ -18,6 +19,14 @@ export function TraderPage() {
   const [open, setOpen] = useState<{ mint: string; seed: Row | null } | null>(null);
   const [q, setQ] = useState('');
   const live = useLiveState();
+  const search = useRef<HTMLInputElement>(null);
+  useAlertWatcher();
+  // « / » place le curseur dans la recherche, comme sur les grandes plateformes
+  useEffect(() => {
+    if (!visible) return;
+    const f = (e: KeyboardEvent) => { const t = e.target as HTMLElement; if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(t.tagName) && !t.isContentEditable) { e.preventDefault(); search.current?.focus(); } };
+    window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f);
+  }, [visible]);
 
   const openMint = useCallback((mint: string, seed: Row | null = null) => {
     setOpen({ mint, seed }); setQ('');
@@ -45,11 +54,11 @@ export function TraderPage() {
       </div>
       <form className="tr-search" onSubmit={submit} role="search">
         <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={open ? 'Coller l\'adresse d\'un autre token' : 'Rechercher un nom, un ticker, ou coller une adresse de token'} aria-label="Rechercher un token" spellCheck={false} autoComplete="off" />
+        <input ref={search} value={q} onChange={(e) => setQ(e.target.value)} placeholder={open ? 'Coller l\'adresse d\'un autre token' : 'Rechercher un nom, un ticker, ou coller une adresse de token  ( / )'} aria-label="Rechercher un token" spellCheck={false} autoComplete="off" />
         {MINT_RE.test(q.trim()) && <button className="btn sm primary" type="submit">Ouvrir</button>}
       </form>
       {/* hors de la page, rien n'est suivi ni relu : la fiche se recharge au retour */}
-      {!visible ? null : open ? <TokenView key={open.mint} mint={open.mint} seed={open.seed} onBack={() => setOpen(null)} />
+      {!visible ? null : open ? <TokenView key={open.mint} mint={open.mint} seed={open.seed} onBack={() => setOpen(null)} onOpen={(m) => openMint(m)} />
         : <MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} />}
     </div>
   );

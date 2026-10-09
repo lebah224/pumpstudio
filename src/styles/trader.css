@@ -120,7 +120,7 @@
 .tr-stats .tr-stats-prog{grid-column:1/-1;border-right:none;border-bottom:none}
 
 .tr-tape{padding-bottom:6px}
-.tr-tape-wrap{max-height:520px;overflow-y:auto;margin:0 -20px}
+.tr-tape-wrap{max-height:520px;overflow-y:auto}
 .tr-tape-t td{cursor:default}
 .tr-tape-t tbody tr{cursor:default}
 .tr-tape-t td small{font-size:11.5px}
@@ -199,6 +199,85 @@
   .tr-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .tr-stats>div:nth-child(3n){border-right:1px solid var(--line)}
   .tr-stats>div:nth-child(2n){border-right:none}
-  .tr-tape-wrap{margin:0 -16px}
+
   .tr-page-head .tr-live{display:none}
+}
+
+/* ---------- filtres de la liste */
+.tr-filters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.tr-filters .chip{min-height:30px;padding:4px 11px;font-size:12.5px}
+.tr-filters-x{background:none;border:none;color:var(--muted);font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer;padding:6px}
+.tr-count{margin-left:auto;font-size:12.5px;font-variant-numeric:tabular-nums}
+
+/* ---------- onglets d'analyse de la fiche */
+.tr-tape{padding:0;overflow:hidden}
+.tr-tok-tabs{border-bottom:1px solid var(--line)}
+.tr-tok-tabs button{position:relative}
+.tr-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:2px}
+.tr-dot.g{background:var(--green)} .tr-dot.a{background:var(--amber)} .tr-dot.r{background:var(--red)}
+.tr-tab-body{padding:14px 18px 16px}
+.tr-tab-body .tr-tape-wrap{margin:-14px -18px -16px;max-height:560px}
+.tr-tab-body>.tr-table-wrap,.an-creator .tr-table-wrap,.tr-tab-body>div>.tr-table-wrap{margin:0 -18px}
+.tr-verdict{cursor:pointer;font:inherit;font-size:11px;font-weight:700}
+.tr-verdict.g{color:var(--green-ink);background:var(--green-bg);border-color:var(--green-line)}
+.tr-verdict.a{color:var(--amber-ink);background:var(--amber-bg);border-color:var(--amber-line)}
+.tr-verdict.r{color:var(--red-ink);background:var(--red-bg);border-color:var(--red-line)}
+
+.an-verdict{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--line2);margin-bottom:14px}
+.an-verdict b{display:block;font-size:16px}
+.an-verdict small{color:var(--muted);font-size:12.5px}
+.an-verdict.g{background:var(--green-bg);border-color:var(--green-line)} .an-verdict.a{background:var(--amber-bg);border-color:var(--amber-line)} .an-verdict.r{background:var(--red-bg);border-color:var(--red-line)}
+.an-score{margin-left:auto;font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.an-score b{display:block;font-size:18px;color:var(--text)}
+.an-ic{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;flex:none}
+.an-ic .i{width:15px;height:15px;stroke-width:2.2}
+.g>.an-ic,.an-chk.g .an-ic{color:var(--green);background:color-mix(in oklab,var(--green) 16%,transparent)}
+.a>.an-ic,.an-chk.a .an-ic{color:var(--amber);background:color-mix(in oklab,var(--amber) 16%,transparent)}
+.r>.an-ic,.an-chk.r .an-ic{color:var(--red);background:color-mix(in oklab,var(--red) 16%,transparent)}
+.b>.an-ic,.an-chk.b .an-ic{color:var(--blue);background:color-mix(in oklab,var(--blue) 16%,transparent)}
+.an-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.an-chk{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);min-width:0}
+.an-chk b{display:block;font-size:13.5px;font-weight:600}
+.an-chk small{display:block;color:var(--muted);font-size:12.5px;line-height:1.4;margin-top:2px;overflow-wrap:anywhere}
+.an-h{margin:18px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
+.an-foot{font-size:12px;margin:12px 0 0}
+.an-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+.an-kpis>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);min-width:0}
+.an-kpis span{font-size:12px;color:var(--dim)}
+.an-kpis b{font-size:15px;font-weight:600}
+.an-kpis small{font-size:11.5px}
+.an-kpis .up{color:var(--green)} .an-kpis .down{color:var(--red)}
+.an-holders td{cursor:default}
+.an-holders tbody tr{cursor:default}
+.an-holders .tr-badge{margin-left:6px}
+.an-holders tr.an-pool td{color:var(--muted)}
+.an-pct{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}
+.an-pct .tr-bar{width:70px}
+.an-pct b{min-width:56px;font-weight:500}
+.an-holders a{color:var(--text)}
+.an-who{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px;font-size:14px}
+.an-who a{color:var(--text)}
+.an-who .tr-badge{text-decoration:none}
+.an-coins{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.an-coins button{display:flex;width:100%;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.an-coins button:hover{border-color:var(--line2);background:var(--panel3)}
+.an-coin-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.an-coin-t small,.an-coin-v small{color:var(--dim);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-coin-v{display:flex;flex-direction:column;align-items:flex-end;font-size:13px}
+
+/* ---------- alertes de prix */
+.tr-alerts h3{margin:0 0 4px;font-size:14px}
+.tr-alert-f{display:flex;gap:8px;margin-top:10px}
+.tr-amt-in.sm{flex:1;min-width:0;padding:0 10px}
+.tr-amt-in.sm input{font-size:15px;padding:8px 0}
+.tr-alert-l{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.tr-alert-l li{display:flex;align-items:center;gap:6px;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:8px}
+.tr-alert-l li .tr-copy{margin-left:auto}
+.tr-alert-l .up{color:var(--green)} .tr-alert-l .down{color:var(--red)}
+@media (max-width:700px){
+  .an-list,.an-coins{grid-template-columns:1fr}
+  .tr-tab-body{padding:12px 14px 14px}
+  .tr-tab-body .tr-tape-wrap{margin:-12px -14px -14px}
+  .tr-tab-body>.tr-table-wrap,.an-creator .tr-table-wrap,.tr-tab-body>div>.tr-table-wrap{margin:0 -14px}
+  .tr-count{display:none}
 }

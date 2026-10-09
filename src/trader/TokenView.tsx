@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
-import { tokenInfo, tradesOf, type Row, type TokenInfo, type Trade } from './api';
+import { analysis as fetchAnalysis, tokenInfo, tradesOf, type Analysis, type Row, type TokenInfo, type Trade } from './api';
 import { age, fCompact, fNum, fPct, fPrice, fTok, short, tone } from './format';
 import { solUsd, useLiveTrades, type LiveMsg } from './live';
 import { PriceChart } from './Chart';
 import { TradePanel } from './TradePanel';
 import { CopyBtn, Star, TokenLogo, useFavs } from './bits';
 import { dexLabel } from './MarketList';
+import { CreatorPanel, HoldersPanel, SecurityPanel, verdict } from './Analysis';
+import { PriceAlerts } from './alerts';
 
 const EXT = <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5" /></svg>;
 const solscan = (k: 'tx' | 'account' | 'token', id: string) => 'https://solscan.io/' + k + '/' + id;
 
 /** Fiche d'un token : en-tête, graphique en direct, chiffres clés, transactions et panneau de trading */
-export function TokenView({ mint, seed, onBack }: { mint: string; seed: Row | null; onBack: () => void }) {
+type Tab = 'tx' | 'sec' | 'holders' | 'creator';
+const TABS: { id: Tab; l: string }[] = [{ id: 'tx', l: 'Transactions' }, { id: 'sec', l: 'Sécurité' }, { id: 'holders', l: 'Détenteurs' }, { id: 'creator', l: 'Créateur' }];
+
+export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: Row | null; onBack: () => void; onOpen: (mint: string) => void }) {
   const [info, setInfo] = useState<TokenInfo | null>(seed ? { ...seed, description: '', koth: null, curve: null, dexPair: null } : null);
   const [err, setErr] = useState<string | null>(null);
   const [trades, setTrades] = useState<Trade[] | null>(null);
@@ -19,6 +24,9 @@ export function TokenView({ mint, seed, onBack }: { mint: string; seed: Row | nu
   const [avg, setAvg] = useState<number | null>(null);
   const [, tick] = useState(0);
   const favs = useFavs();
+  const [tab, setTab] = useState<Tab>('tx');
+  const [an, setAn] = useState<Analysis | null>(null);
+  const [anErr, setAnErr] = useState<string | null>(null);
 
   useEffect(() => {
     let off = false;
@@ -26,9 +34,13 @@ export function TokenView({ mint, seed, onBack }: { mint: string; seed: Row | nu
     const load = () => tokenInfo(mint).then((t) => { if (!off) setInfo(t); }).catch((e) => { if (!off) setErr((e as Error).message); });
     load();
     tradesOf(mint, 60).then((t) => { if (!off) setTrades(t); }).catch(() => { if (!off) setTrades([]); });
+    setAn(null); setAnErr(null);
+    const loadAn = () => fetchAnalysis(mint).then((x) => { if (!off) { setAn(x); setAnErr(null); } }).catch((e) => { if (!off) setAnErr((e as Error).message); });
+    loadAn();
+    const ia = setInterval(() => { if (!document.hidden) loadAn(); }, 60_000);
     const id = setInterval(() => { if (!document.hidden) load(); }, 15_000);
     const t = setInterval(() => tick((x) => x + 1), 1000);
-    return () => { off = true; clearInterval(id); clearInterval(t); };
+    return () => { off = true; clearInterval(id); clearInterval(t); clearInterval(ia); };
   }, [mint]);
 
   const pump = info ? info.pump : mint.endsWith('pump');
@@ -76,6 +88,7 @@ export function TokenView({ mint, seed, onBack }: { mint: string; seed: Row | nu
             <span className="mono tr-addr">{short(mint, 6)}<CopyBtn text={mint} /></span>
             {info?.created && <span title={new Date(info.created).toLocaleString('fr-FR')}>Créé il y a {age(info.created)} · {new Date(info.created).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
             {info && <span className="tr-badge b">{info.complete ? dexLabel(info.dexPair?.dex ?? info.dex) : 'Courbe pump.fun'}</span>}
+            {(() => { const v = verdict(an, info); return v ? <button type="button" className={'tr-badge tr-verdict ' + v.lvl} onClick={() => setTab('sec')} title="Voir l'analyse de sécurité">{v.label}</button> : null; })()}
           </div>
         </div>
         <div className={'tr-head-p ' + (live ? 'fl-' + live.dir : '')} key={live?.at}>
@@ -113,7 +126,14 @@ export function TokenView({ mint, seed, onBack }: { mint: string; seed: Row | nu
           </div>
 
           <div className="card tr-tape">
-            <div className="card-h ts-row spread"><div><h3>Transactions</h3><p>{pump ? 'En direct, au moment où elles passent sur la blockchain.' : 'Actualisées toutes les 5 secondes.'}</p></div></div>
+            <div className="tr-tabs tr-tok-tabs" role="tablist" aria-label="Analyse du token">
+              {TABS.map((x) => <button key={x.id} type="button" role="tab" aria-selected={tab === x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>{x.l}{x.id === 'sec' && (() => { const v = verdict(an, info); return v ? <i className={'tr-dot ' + v.lvl} aria-hidden="true" /> : null; })()}</button>)}
+              <span className="tr-tabs-hint">{tab === 'tx' ? (pump ? 'En direct, au moment où elles passent sur la blockchain.' : 'Actualisées toutes les 5 secondes.') : 'Analyse actualisée chaque minute.'}</span>
+            </div>
+            <div className="tr-tab-body">
+            {tab !== 'tx' ? (!an ? (anErr ? <div className="empty"><b>Analyse indisponible</b><span>{anErr}</span></div> : <div className="empty"><b>Analyse en cours…</b><span>Sécurité, détenteurs et historique du créateur.</span></div>)
+              : tab === 'sec' ? <SecurityPanel a={an} info={info} /> : tab === 'holders' ? <HoldersPanel a={an} priceUsd={priceUsd} creator={info?.creator ?? null} /> : <CreatorPanel a={an} info={info} onOpen={onOpen} />)
+            : <>
             {!trades ? <div className="empty"><b>Chargement…</b></div> : !trades.length ? <div className="empty"><b>Aucune transaction récente</b>{!pump && <span>Le détail des transactions est disponible pour les tokens pump.fun et PumpSwap.</span>}</div> : (
               <div className="tr-table-wrap tr-tape-wrap">
                 <table className="tr-table tr-tape-t">
@@ -134,15 +154,15 @@ export function TokenView({ mint, seed, onBack }: { mint: string; seed: Row | nu
                 </table>
               </div>
             )}
+            </>}
+            </div>
           </div>
         </div>
 
         <aside className="tr-aside">
           <TradePanel mint={mint} symbol={sym} priceSol={priceSol} onPosition={onPosition} />
           {info?.description && <div className="card tr-desc"><h3>À propos</h3><p>{info.description}</p></div>}
-          {info?.creator && (
-            <div className="card tr-desc"><h3>Créateur</h3><p className="mono"><a href={solscan('account', info.creator)} target="_blank" rel="noopener noreferrer">{short(info.creator, 6)}</a> <CopyBtn text={info.creator} label="Copier l'adresse du créateur" /></p></div>
-          )}
+          <PriceAlerts mint={mint} symbol={sym} mcUsd={mcUsd} />
         </aside>
       </div>
     </div>

@@ -30,4 +30,19 @@ export const candles = (mint: string, tf: Tf, cur: 'USD' | 'SOL', created: Num, 
   call<{ src: string; tf: Tf; cur: string; c: Candle[] }>({ action: 'candles', mint, tf, cur, created, limit });
 export const tradesOf = (mint: string, limit = 60) => call<{ trades: Trade[] }>({ action: 'trades', mint, limit }).then((r) => r.trades);
 
+export type Holder = { owner: string; account: string; pct: number; amount: number; insider: boolean; label: string | null; kind: string | null };
+export type CreatorTrade = { sig: string; t: number; side: 'buy' | 'sell'; sol: number; usd: Num; tok: number };
+export type Analysis = {
+  source: string | null; score: Num; rugged: boolean; risks: { name: string; value: string; description: string; level: string }[];
+  program: string | null; mintAuthority?: string | null; freezeAuthority?: string | null; mutable: boolean | null; transferFee: number;
+  danger: { permanentDelegate: boolean; transferHook: boolean; nonTransferable: boolean; frozenDefault: boolean };
+  lpLockedPct: Num; liqUsd: Num; totalHolders: Num; insiders: { networks: number; wallets: number }; supply: number; holders: Holder[]; top10: number;
+  creator: null | {
+    address: string; balance: Num; pct: Num; bought: { n: number; sol: number; tok: number }; sold: { n: number; sol: number; tok: number };
+    first: CreatorTrade | null; trades: CreatorTrade[]; coinsCount: number;
+    coins: { mint: string; name: string; symbol: string; image: string | null; created: Num; mcUsd: Num; complete: boolean; ath: Num }[];
+  };
+};
+export const analysis = (mint: string) => call<Analysis>({ action: 'analysis', mint });
+
 export const MINT_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;

@@ -12,6 +12,14 @@ const TABS: { id: View; l: string; hint: string }[] = [
   { id: 'migrated', l: 'Migrés', hint: 'Tokens récents dont la courbe est terminée : ils s\'échangent sur PumpSwap.' },
   { id: 'favs', l: 'Favoris', hint: 'Vos tokens suivis, enregistrés dans ce navigateur.' },
 ];
+type Filter = 'liq' | 'mc' | 'social' | 'young' | 'clean';
+const FILTERS: { id: Filter; l: string; test: (r: Row, now: number) => boolean }[] = [
+  { id: 'liq', l: 'Liquidité ≥ 10 k $', test: (r) => !r.complete || (r.liqUsd ?? 0) >= 10_000 },
+  { id: 'mc', l: 'Capi. ≥ 50 k $', test: (r) => (r.mcUsd ?? 0) >= 50_000 },
+  { id: 'social', l: 'Avec réseaux', test: (r) => !!(r.links.twitter || r.links.telegram || r.links.website) },
+  { id: 'young', l: 'Moins d\'1 h', test: (r, now) => !!r.created && now - r.created < 3_600_000 },
+  { id: 'clean', l: 'Sans signal rouge', test: (r, now) => !badges(r, now).some((b) => b.k === 'r') },
+];
 type SortKey = 'age' | 'price' | 'mc' | 'liq' | 'vol' | 'm5' | 'h1' | 'h24' | 'tx' | 'prog';
 const COLS: { k: SortKey; l: string; cls?: string; title: string }[] = [
   { k: 'age', l: 'Âge', title: 'Âge du token' }, { k: 'price', l: 'Prix', cls: 'hide-s', title: 'Prix en dollars' },
@@ -42,6 +50,8 @@ export function MarketList({ onOpen, visible, query }: { onOpen: (r: Row) => voi
   const [data, setData] = useState<Partial<Record<View, Row[]>>>({});
   const [err, setErr] = useState<string | null>(null);
   const [sort, setSort] = useState<{ k: SortKey; d: 1 | -1 } | null>(null);
+  const [filters, setFilters] = useState<Filter[]>(() => { try { const v = JSON.parse(localStorage.getItem('ts-trader-filters') || '[]'); return Array.isArray(v) ? v.filter((x) => FILTERS.some((f) => f.id === x)) : []; } catch { return []; } });
+  const toggleFilter = (f: Filter) => setFilters((L) => { const n = L.includes(f) ? L.filter((x) => x !== f) : [...L, f]; try { localStorage.setItem('ts-trader-filters', JSON.stringify(n)); } catch { /* stockage indisponible */ } return n; });
   const [now, setNow] = useState(Date.now());
   const [flash, setFlash] = useState<Record<string, 'up' | 'down'>>({});
   const favs = useFavs();
@@ -76,9 +86,10 @@ export function MarketList({ onOpen, visible, query }: { onOpen: (r: Row) => voi
     }
     const q = query.trim().toLowerCase();
     if (q) list = list.filter((r) => r.name.toLowerCase().includes(q) || r.symbol.toLowerCase().includes(q) || r.mint.toLowerCase() === q);
+    if (filters.length) { const F = FILTERS.filter((f) => filters.includes(f.id)); list = list.filter((r) => F.every((f) => f.test(r, now))); }
     if (sort) list.sort((a, b) => (val(a, sort.k) - val(b, sort.k)) * sort.d);
     return list;
-  }, [base, view, query, sort, now]);
+  }, [base, view, query, sort, now, filters]);
 
   // transactions en direct des 40 premières lignes : prix et capitalisation à jour à chaque échange
   const top = useMemo(() => rows.slice(0, 40).filter((r) => r.pump).map((r) => r.mint), [rows]);
@@ -126,6 +137,11 @@ export function MarketList({ onOpen, visible, query }: { onOpen: (r: Row) => voi
         ))}
         <span className="tr-tabs-hint">{hint}</span>
       </div>
+      <div className="tr-filters" role="group" aria-label="Filtres">
+        {FILTERS.map((f) => <button key={f.id} type="button" className={'chip' + (filters.includes(f.id) ? ' on' : '')} aria-pressed={filters.includes(f.id)} onClick={() => toggleFilter(f.id)}>{f.l}</button>)}
+        {filters.length > 0 && <button type="button" className="tr-filters-x" onClick={() => { setFilters([]); try { localStorage.removeItem('ts-trader-filters'); } catch { /* stockage indisponible */ } }}>Effacer</button>}
+        {base && <span className="tr-count dim">{rows.length} token{rows.length > 1 ? 's' : ''}</span>}
+      </div>
       {err && <div className="ts-note bad" role="alert" style={{ margin: '0 0 10px' }}>{err}</div>}
       <div className="tr-table-wrap">
         <table className="tr-table">
@@ -142,7 +158,7 @@ export function MarketList({ onOpen, visible, query }: { onOpen: (r: Row) => voi
           </thead>
           <tbody>
             {!base && !err && Array.from({ length: 8 }, (_, i) => <tr key={i} className="tr-skel"><td colSpan={12}><span /></td></tr>)}
-            {base && !rows.length && <tr><td colSpan={12} className="tr-empty">{view === 'favs' ? 'Aucun favori : cliquez sur l\'étoile d\'un token pour le suivre ici.' : query ? 'Aucun token ne correspond à « ' + query + ' ».' : 'Aucun token pour l\'instant.'}</td></tr>}
+            {base && !rows.length && <tr><td colSpan={12} className="tr-empty">{view === 'favs' ? 'Aucun favori : cliquez sur l\'étoile d\'un token pour le suivre ici.' : query ? 'Aucun token ne correspond à « ' + query + ' ».' : filters.length ? 'Aucun token ne passe ces filtres.' : 'Aucun token pour l\'instant.'}</td></tr>}
             {rows.map((r) => {
               const f = flash[r.mint], b = badges(r, now);
               return (

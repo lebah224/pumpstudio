@@ -234,6 +234,63 @@ async function trades(mint: string, limit: number) {
   })).filter((x) => x.sig && x.t);
 }
 
+/* ---------- analyse : sécurité (RugCheck), détenteurs, créateur ---------- */
+const KNOWN_FR: Record<string, string> = { 'Pump Fun AMM': 'Pool PumpSwap', 'Pump Fun': 'Courbe pump.fun', Creator: 'Créateur', 'Raydium Authority V4': 'Pool Raydium', 'Meteora DLMM Pool': 'Pool Meteora', 'Meteora DAMM v2 Pool': 'Pool Meteora', 'Meteora DAMM v2 Position': 'Position Meteora' };
+async function analysis(mint: string) {
+  const [rc, c] = await Promise.all([
+    cached('rc:' + mint, 60_000, () => get('https://api.rugcheck.xyz/v1/tokens/' + mint + '/report', { Accept: 'application/json' }, 12_000) as Promise<Any | null>).catch(() => null),
+    coin(mint).catch(() => null),
+  ]);
+  const creator = s(c?.creator, 50) || s(rc?.creator, 50) || null;
+  const [ctr, ccoins] = await Promise.all([
+    creator ? get('https://swap-api.pump.fun/v2/coins/' + mint + '/trades?limit=100&userAddress=' + creator, PUMP_H).catch(() => null) as Promise<Any | null> : null,
+    creator ? cached('cc:' + creator, 60_000, () => get(PUMP + '/coins-v2/user-created-coins/' + creator + '?offset=0&limit=30&includeNsfw=false', PUMP_H) as Promise<Any | null>).catch(() => null) : null,
+  ]);
+  const decimals = n(rc?.token?.decimals) ?? 6;
+  const supply = (n(rc?.token?.supply) ?? n(c?.total_supply) ?? 1e15) / 10 ** decimals;
+  const known: Record<string, { name: string; type: string }> = {};
+  for (const [k, v] of Object.entries((rc?.knownAccounts ?? {}) as Record<string, Any>)) known[k] = { name: KNOWN_FR[s(v?.name, 60)] ?? s(v?.name, 60), type: s(v?.type, 20) };
+  if (c?.bonding_curve) known[c.bonding_curve] = known[c.bonding_curve] ?? { name: 'Courbe pump.fun', type: 'AMM' };
+  if (c?.pump_swap_pool) known[c.pump_swap_pool] = known[c.pump_swap_pool] ?? { name: 'Pool PumpSwap', type: 'AMM' };
+  if (creator) known[creator] = { name: 'Créateur', type: 'CREATOR' };
+  const holders = ((rc?.topHolders ?? []) as Any[]).slice(0, 20).map((h) => {
+    const owner = s(h.owner, 50), k = known[owner];
+    return { owner, account: s(h.address, 50), pct: n(h.pct) ?? 0, amount: n(h.uiAmount) ?? 0, insider: !!h.insider, label: k?.name ?? null, kind: k?.type ?? null };
+  });
+  const people = holders.filter((h) => h.kind !== 'AMM' && h.kind !== 'LOCKER');
+  const ext = rc?.token_extensions ?? {};
+  // liquidité verrouillée ou brûlée : celle du pool principal (le plus liquide)
+  const main = ((rc?.markets ?? []) as Any[]).reduce((a: Any | null, m: Any) => ((n(m?.lp?.quoteUSD) ?? 0) + (n(m?.lp?.baseUSD) ?? 0) > ((n(a?.lp?.quoteUSD) ?? 0) + (n(a?.lp?.baseUSD) ?? 0)) ? m : a), null);
+  const trades = ((ctr?.trades ?? []) as Any[]).filter((x) => x.userAddress === creator).map((x) => ({
+    sig: s(x.tx, 100), t: Date.parse(x.timestamp) || 0, side: x.type === 'sell' ? 'sell' : 'buy', sol: n(x.amountSol) ?? 0, usd: n(x.amountUsd), tok: n(x.baseAmount) ?? 0,
+  }));
+  const bought = trades.filter((x) => x.side === 'buy'), sold = trades.filter((x) => x.side === 'sell');
+  const sum = (L: { sol: number }[]) => L.reduce((a, x) => a + x.sol, 0), sumT = (L: { tok: number }[]) => L.reduce((a, x) => a + x.tok, 0);
+  const coins = ((ccoins?.coins ?? []) as Any[]).filter((x) => MINT.test(x?.mint ?? '')).map((x) => { const r = fromPump(x); return { mint: r.mint, name: r.name, symbol: r.symbol, image: r.image, created: r.created, mcUsd: r.mcUsd, complete: r.complete, ath: r.ath }; });
+  const creatorBal = rc?.creatorBalance != null ? (n(rc.creatorBalance) ?? 0) / 10 ** decimals : null;
+  return {
+    source: rc ? 'RugCheck' : null,
+    score: n(rc?.score_normalised), rugged: !!rc?.rugged,
+    risks: ((rc?.risks ?? []) as Any[]).slice(0, 20).map((r) => ({ name: s(r.name, 80), value: s(r.value, 40), description: s(r.description, 300), level: s(r.level, 10) })),
+    program: rc?.tokenProgram === 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' ? 'Token-2022' : rc ? 'SPL Token' : null,
+    mintAuthority: rc ? s(rc.mintAuthority ?? rc.token?.mintAuthority, 50) || null : undefined,
+    freezeAuthority: rc ? s(rc.freezeAuthority ?? rc.token?.freezeAuthority, 50) || null : undefined,
+    mutable: rc?.tokenMeta ? !!rc.tokenMeta.mutable : null,
+    transferFee: n(rc?.transferFee?.pct) ?? 0,
+    danger: { permanentDelegate: !!ext.permanentDelegate, transferHook: !!ext.transferHook, nonTransferable: !!ext.nonTransferable, frozenDefault: s(ext.defaultAccountState?.state ?? ext.defaultAccountState, 20) === 'frozen' },
+    lpLockedPct: n(main?.lp?.lpLockedPct), liqUsd: n(rc?.totalMarketLiquidity),
+    totalHolders: n(rc?.totalHolders), insiders: { networks: ((rc?.insiderNetworks ?? []) as Any[]).length, wallets: n(rc?.graphInsidersDetected) ?? 0 },
+    supply, holders,
+    top10: people.slice(0, 10).reduce((a, h) => a + h.pct, 0),
+    creator: creator ? {
+      address: creator, balance: creatorBal, pct: creatorBal != null && supply ? (creatorBal / supply) * 100 : null,
+      bought: { n: bought.length, sol: sum(bought), tok: sumT(bought) }, sold: { n: sold.length, sol: sum(sold), tok: sumT(sold) },
+      first: trades.length ? trades.reduce((a, x) => (x.t < a.t ? x : a)) : null, trades: trades.slice(0, 50),
+      coins, coinsCount: n(ccoins?.count) ?? coins.length,
+    } : null,
+  };
+}
+
 Deno.serve(async (req) => {
   const h = cors(req.headers.get('Origin'));
   if (req.method === 'OPTIONS') return new Response('ok', { headers: h });
@@ -265,6 +322,10 @@ Deno.serve(async (req) => {
         if (!mint) throw new Fail(400, 'Adresse de token invalide.');
         const limit = Math.max(10, Math.min(100, Math.round(+b.limit || 50)));
         return json(200, { trades: await cached('t:' + mint + limit, 2_500, () => trades(mint, limit)) }, h);
+      }
+      case 'analysis': {
+        if (!mint) throw new Fail(400, 'Adresse de token invalide.');
+        return json(200, await cached('an:' + mint, 20_000, () => analysis(mint)), h);
       }
       default: throw new Fail(400, 'Action inconnue.');
     }
