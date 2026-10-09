@@ -3210,7 +3210,8 @@
       (isDemoMint(mint) ? '<div class="links"><span class="badge v">token démo</span><span class="dim">Marché simulé : il n\'existe pas sur la blockchain.</span></div>'
         : '<div class="links">' + (plat ? '<a href="' + plat.url(mint) + '" target="_blank" rel="noopener">' + plat.n + '</a>' : '') + '<a href="https://solscan.io/token/' + mint + '" target="_blank" rel="noopener">Solscan</a><a href="https://dexscreener.com/solana/' + mint + '" target="_blank" rel="noopener">DEX Screener</a></div>') +
       (C.live && Date.now() - C.live < 60000 ? '<span class="badge g" title="Prix reçu en direct (' + esc(C.liveSrc || 'blockchain') + ')">● temps réel</span>' : LIVE[mint] ? '<span class="badge b" title="Abonnement actif, en attente d\'une transaction">● à l\'écoute</span>' : '<span class="badge" title="Ajoutez un RPC Helius pour le temps réel">actualisation ' + cfg.pollSec + ' s</span>') +
-      '<button class="btn sm" data-refresh="' + ctx + '" type="button">Actualiser</button></div>' +
+      '<button class="btn sm" data-refresh="' + ctx + '" type="button">Actualiser</button>' +
+      (ctx === 'mine' && C.myBal != null && !(C.myBal > 0) ? '<button class="btn sm ghost" data-unmine="' + mint + '" type="button" title="Retirer ce token de votre liste (rien n\'est vendu ni modifié sur la blockchain)">Retirer de la liste</button>' : '') + '</div>' +
       '<div class="grid-stats" style="margin-top:14px">' +
       '<div class="stat"><div class="l">Capitalisation</div><div class="v">' + usd(st.mcapSol) + '</div><div class="s">' + fSol(st.mcapSol, 1) + '</div></div>' +
       '<div class="stat"><div class="l">Prix</div><div class="v">' + fPrice(st.price) + '</div><div class="s">SOL par token</div></div>' +
@@ -3295,7 +3296,34 @@
   function renderMine() { renderMineList();
     if (S.view.mine) { if (!S.cache[S.view.mine] || !S.cache[S.view.mine].curve) showToken('mine', S.view.mine); else renderTokenView('mine'); } else if (S.tokens.length) showToken('mine', S.tokens[0].mint); else $('mineDetail').innerHTML = '';
   }
+  /* ---------- Mes tokens : retirer de la liste les tokens que l'on ne détient plus (rien n'est vendu ni modifié sur la blockchain) */
+  async function unMine(mints, skipAsk) {
+    const set = new Set(mints), L = S.tokens.filter((t) => set.has(t.mint)); if (!L.length) return;
+    if (!skipAsk) {
+      const names = L.map((t) => '<b>' + esc(t.symbol || short(t.mint)) + '</b>').join(', ');
+      if (!(await confirmBox(L.length > 1 ? 'Retirer ' + L.length + ' tokens de votre liste ?' : 'Retirer ' + (L[0].symbol || short(L[0].mint)) + ' de votre liste ?',
+        '<p>' + names + '</p><p>' + (L.length > 1 ? 'Ils disparaissent' : 'Il disparaît') + ' seulement de « Mes tokens » : rien n\'est vendu ni modifié sur la blockchain. Vous pourrez ' + (L.length > 1 ? 'les' : 'le') + ' rajouter avec « Ajouter un token existant ».</p>', 'Retirer'))) return;
+    }
+    for (let i = S.tokens.length - 1; i >= 0; i--) if (set.has(S.tokens[i].mint)) S.tokens.splice(i, 1);   // même tableau : le compte reste synchronisé
+    save(LS.tokens, S.tokens);
+    if (set.has(S.view.mine)) { S.view.mine = null; $('mineDetail').innerHTML = ''; }
+    toast(L.length > 1 ? L.length + ' tokens retirés' : 'Token retiré', 'Rien n\'a été vendu ni modifié sur la blockchain.', 'g');
+    renderAll();
+  }
+  async function pruneMine() {
+    if (!S.tokens.length) return;
+    if (!cfg.sim && !S.wallet) { toast('Wallet non connecté', 'Connectez votre wallet : le studio vérifie vos soldes avant de retirer un token.', 'a'); return; }
+    const btn = $('minePrune'); if (btn) { btn.disabled = true; btn.textContent = 'Vérification des soldes…'; }
+    try {
+      await Promise.all(S.tokens.map((t) => { const C = S.cache[t.mint]; return C && C.myBal != null && Date.now() - C.at < 60000 ? null : loadToken(t.mint, false).catch(() => null); }));
+      const empty = S.tokens.filter((t) => { const C = S.cache[t.mint]; return C && C.myBal != null && !(C.myBal > 0); });
+      const unknown = S.tokens.filter((t) => { const C = S.cache[t.mint]; return !C || C.myBal == null; }).length;
+      if (!empty.length) { toast('Rien à retirer', unknown ? 'Solde illisible pour ' + unknown + ' token' + (unknown > 1 ? 's' : '') + ' : réessayez dans un instant.' : 'Vous détenez encore chacun de vos tokens.', unknown ? 'a' : 'g'); return; }
+      await unMine(empty.map((t) => t.mint));
+    } finally { if (btn) { btn.disabled = false; btn.textContent = 'Retirer ceux que je ne détiens pas'; } }
+  }
   function renderMineList() {
+    { const pb = $('minePrune'); if (pb) pb.hidden = !S.tokens.length; }
     $('mineList').innerHTML = S.tokens.length ? S.tokens.map((t) => {
       const C = S.cache[t.mint], st = C && C.stats;
       return '<button class="tok-card ' + (S.view.mine === t.mint ? 'on' : '') + '" data-mine="' + t.mint + '" type="button"><div class="tk"><div class="av">' + (t.image ? '<img src="' + esc(t.image) + '" alt="">' : esc(t.symbol.slice(0, 3))) + '</div><div class="nm"><b>' + esc(t.name) + '</b><small>$' + esc(t.symbol) + ' · ' + esc((PLATFORMS[t.platform] || PLATFORMS.pump).n) + ' · ' + fAgo(t.createdAt) + '</small></div></div>' +
@@ -3419,6 +3447,8 @@
   /* ================================================================ temps réel : flux PumpPortal (gratuit, sans clé)
      Une seule connexion WebSocket pour tous les tokens suivis : PumpPortal bannit les clients qui en ouvrent plusieurs. */
   const PP = { ws: null, state: 'off', subs: new Set(), want: new Set(), retry: 0, timer: null, last: 0, msgs: 0, pending: new Set() };
+  // page Trader (React) : tokens affichés, écouteurs des transactions brutes, flux des nouveaux tokens (même connexion unique)
+  const PPX = { mints: new Set(), fns: new Set(), news: false };
   const PP_URL = 'wss://pumpportal.fun/api/data';
   const VIRT_TOK = INIT_CURVE.vTok - INIT_CURVE.realTok; // part virtuelle de la courbe (unités brutes)
   function ppSend(o) { try { if (PP.ws && PP.ws.readyState === 1) { PP.ws.send(JSON.stringify(o)); return true; } } catch (e) {} return false; }
@@ -3428,12 +3458,17 @@
     let ws; try { ws = new WebSocket(PP_URL); } catch (e) { PP.state = 'error'; ppStatus(); return ppRetry(); }
     PP.ws = ws;
     ws.onopen = () => { PP.state = 'on'; PP.retry = 0; PP.subs = new Set(); PP.newSub = false; ppStatus(); ppDiff(); };
-    ws.onmessage = (ev) => { PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } if (m && m.mint && m.txType && m.txType !== 'create') { try { ppApply(m); } catch (e) {} } };
+    ws.onmessage = (ev) => {
+      PP.last = Date.now(); PP.msgs++; let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (!m || !m.mint || !m.txType) return;
+      PPX.fns.forEach((f) => { try { f(m); } catch (e) {} });
+      if (m.txType !== 'create') { try { ppApply(m); } catch (e) {} }
+    };
     ws.onerror = () => { PP.state = 'error'; ppStatus(); };
     ws.onclose = () => { if (PP.ws === ws) { PP.ws = null; PP.subs = new Set(); if (PP.state !== 'off') { PP.state = 'error'; ppStatus(); ppRetry(); } } };
   }
   function ppRetry() {
-    if (!cfg.ppLive || !PP.want.size) return;
+    if (!cfg.ppLive || (!PP.want.size && !PPX.news)) return;
     const wait = [1000, 2000, 5000, 10000, 30000][Math.min(PP.retry++, 4)];
     clearTimeout(PP.timer); PP.timer = setTimeout(ppConnect, wait);
   }
@@ -3444,12 +3479,14 @@
     const add = [...PP.want].filter((m) => !PP.subs.has(m)), del = [...PP.subs].filter((m) => !PP.want.has(m));
     if (add.length && ppSend({ method: 'subscribeTokenTrade', keys: add })) add.forEach((m) => PP.subs.add(m));
     if (del.length && ppSend({ method: 'unsubscribeTokenTrade', keys: del })) del.forEach((m) => PP.subs.delete(m));
+    const news = !!(cfg.ppLive && PPX.news);
+    if (news !== !!PP.newSub && ppSend({ method: news ? 'subscribeNewToken' : 'unsubscribeNewToken' })) PP.newSub = news;
     ppStatus();
   }
   function ppSync(set) {
     PP.ui = new Set([...set].filter(Boolean));               // tokens suivis par l'interface (fiches, ordres)
-    PP.want = new Set(cfg.ppLive ? PP.ui : []);
-    if (!PP.want.size) { if (PP.ws && (PP.subs.size || PP.newSub)) ppDiff(); return; }
+    PP.want = new Set(cfg.ppLive ? [...PP.ui, ...PPX.mints] : []);
+    if (!PP.want.size && !(cfg.ppLive && PPX.news)) { if (PP.ws && (PP.subs.size || PP.newSub)) ppDiff(); return; }
     if (!PP.ws) ppConnect(); else ppDiff();
   }
   function ppApply(m) {
@@ -3484,7 +3521,6 @@
   function liveSet() {
     const keep = new Set(S.orders.filter((o) => o.active).map((o) => o.mint));
     if (S.page === 'mine') { if (S.view.mine) keep.add(S.view.mine); S.tokens.slice(0, 20).forEach((t) => keep.add(t.mint)); }
-    if (S.page === 'trade' && S.view.trade) keep.add(S.view.trade);
     keep.forEach((m) => { if (isDemoMint(m)) keep.delete(m); });   // tokens démo : marché simulé, aucun abonnement
     return keep;
   }
@@ -3685,7 +3721,6 @@
     if (S.page === 'dash') renderDash();
     else if (S.page === 'launch') renderLaunch();
     else if (S.page === 'mine') renderMine();
-    else if (S.page === 'trade') { if (S.view.trade) { if (!S.cache[S.view.trade] || !S.cache[S.view.trade].curve) showToken('trade', S.view.trade); else renderTokenView('trade'); } }
     else if (S.page === 'orders') renderOrders();
     else if (S.page === 'journal') renderJournal();
     else if (S.page === 'social') renderSocial();
@@ -3704,7 +3739,9 @@
     else { S.tokens = REAL.tokens; S.orders = REAL.orders; S.journal = REAL.journal; DS.rec = REAL.dist; }
   }
   function renderAll() { syncModeData(); renderPage(); }
-  function refreshView() { if (S.page === 'mine' && S.view.mine) showToken('mine', S.view.mine); if (S.page === 'trade' && S.view.trade) showToken('trade', S.view.trade); }
+  // ouvre un token dans la page Trader (React) : depuis le portefeuille, la palette de commandes…
+  function openTrade(mint) { setPage('trade'); window.dispatchEvent(new CustomEvent('ts-trade', { detail: mint })); }
+  function refreshView() { if (S.page === 'mine' && S.view.mine) showToken('mine', S.view.mine); if (S.page === 'trade') window.dispatchEvent(new CustomEvent('ts-trade-refresh')); }
 
   /* ================================================================ évènements */
   document.addEventListener('click', (e) => { const a = e.target.closest('a[data-distform]'); if (a) { distMark(a.dataset.distform, true); setTimeout(renderDist, 300); } });
@@ -3761,7 +3798,8 @@
       save(LS.tokens, S.tokens); renderAll(); showToken('mine', mint); return;
     }
     if (d.mine) { showToken('mine', d.mine); renderMineList(); return; }
-    if (b.id === 'tradeGo') { const mint = validMint($('tradeMint').value || ''); if (!mint) return toast('Adresse invalide', 'Collez l\'adresse complète du token (mint).', 'r'); delete S.cache[mint]; showToken('trade', mint); return; }
+    if (d.unmine) return unMine([d.unmine]);
+    if (b.id === 'minePrune') return pruneMine();
     if (d.refresh) { const mint = S.view[d.refresh]; if (mint) { if (S.cache[mint]) S.cache[mint].holdersAt = 0; showToken(d.refresh, mint); } return; }
     if (d.side) { S.side[d.ctx] = d.side; renderTokenView(d.ctx); return; }
     if (d.preset) { const inp = $('amt-' + d.ctx); if (inp) { inp.value = d.preset; updateQuote(d.ctx); } return; }
@@ -4082,7 +4120,7 @@
     const raw = q.trim();
     if (raw.length >= 32 && !/\s/.test(raw)) {
       const mint = validMint(raw);
-      if (mint) out.push({ g: 'Token', ic: IC.search, label: 'Analyser ce token', hint: short(mint, 6), run: () => { setPage('trade'); $('tradeMint').value = mint; clickWhenReady('tradeGo'); } });
+      if (mint) out.push({ g: 'Token', ic: IC.search, label: 'Analyser ce token', hint: short(mint, 6), run: () => openTrade(mint) });
     }
     Object.keys(PAGES).forEach((p) => out.push({ g: 'Aller à', ic: navIcon(p), label: PAGES[p][0], hint: PAGES[p][1], kw: p, run: () => setPage(p) }));
     out.push(
@@ -4154,13 +4192,13 @@
       if (S.busy || $('modal').classList.contains('open')) return;
       if (document.hidden) { if (tick % 4 === 0) watchOrders().catch(() => {}); return; } // onglet en arrière-plan : les ordres restent surveillés
       if (tick % Math.max(1, Math.round(cfg.pollSec / 5)) === 0) {
-        const ctx = S.page === 'mine' ? 'mine' : S.page === 'trade' ? 'trade' : null;
+        const ctx = S.page === 'mine' ? 'mine' : null;   // la page Trader (React) a ses propres actualisations
         if (ctx && S.view[ctx]) loadToken(S.view[ctx], true).then(() => renderTokenView(ctx)).catch(() => {});
         if (S.page === 'mine') S.tokens.forEach((t) => { if (t.mint !== S.view.mine && (!S.cache[t.mint] || Date.now() - S.cache[t.mint].at > 60000)) loadToken(t.mint, false).then(() => { if (S.page === 'mine') renderMineList(); }).catch(() => {}); });
       }
       if (tick % 4 === 0) watchOrders().catch(() => {});
       if (S.page === 'dash') { dashTokens(); renderDash(); }
-      const keep = new Set(S.orders.filter((o) => o.active && !isDemoMint(o.mint)).map((o) => o.mint)); if (S.page === 'mine' && S.view.mine && !isDemoMint(S.view.mine)) keep.add(S.view.mine); if (S.page === 'trade' && S.view.trade && !isDemoMint(S.view.trade)) keep.add(S.view.trade);
+      const keep = new Set(S.orders.filter((o) => o.active && !isDemoMint(o.mint)).map((o) => o.mint)); if (S.page === 'mine' && S.view.mine && !isDemoMint(S.view.mine)) keep.add(S.view.mine);
       keep.forEach((m) => { if (!S.cache[m]) loadToken(m, false).catch(() => {}); });
       liveKeep(keep); ppSync(liveSet());
       if (tick % 4 === 1) prefetch();
@@ -4168,8 +4206,33 @@
     window.addEventListener('resize', () => { if (S.page === 'dash') renderDash(); }); window.addEventListener('pstudio-theme', () => { if (S.page === 'dash') renderDash(); });
     window.addEventListener('resize', () => { ['mine', 'trade'].forEach((c) => { document.querySelectorAll('#' + (c === 'mine' ? 'mineDetail' : 'tradeDetail') + ' canvas.pchart').forEach((cv) => drawPriceChart(cv, S.cache[cv.dataset.mint] || {})); }); });
   }
-  window.PumpStudio = { PP, S, cfg, setPage, openPanel, openTrade: (m) => { setPage('trade'); $('tradeMint').value = m; clickWhenReady('tradeGo'); },
+  window.PumpStudio = { PP, S, cfg, setPage, openPanel, openTrade,
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
+    // flux en direct pour la page Trader : abonnements aux transactions des tokens affichés et aux nouveaux tokens
+    live: {
+      watch: (mints) => { PPX.mints = new Set((mints || []).filter((m) => typeof m === 'string' && !isDemoMint(m)).slice(0, 60)); ppSync(liveSet()); },
+      news: (on) => { PPX.news = !!on; ppSync(liveSet()); },
+      on: (fn) => { PPX.fns.add(fn); return () => PPX.fns.delete(fn); },
+      state: () => ({ on: !!cfg.ppLive, state: PP.state, last: PP.last }),
+    },
+    solUsd: () => S.solUsd,
+    // panneau de trading de la page Trader : réglages, devis sur la courbe, position, ordres
+    trader: {
+      settings: () => ({ slippage: cfg.slippage, priorityFee: cfg.priorityFee, maxSol: cfg.maxSol, sim: !!cfg.sim, wallet: !!S.wallet, bal: cfg.sim ? DEMO.bal : S.bal, busy: !!S.busy }),
+      set: (p) => {
+        const ok = {};
+        if (p && +p.slippage >= 1 && +p.slippage <= 50) ok.slippage = +p.slippage;
+        if (p && +p.priorityFee >= 0 && +p.priorityFee <= 0.01) ok.priorityFee = +p.priorityFee;
+        Object.assign(cfg, ok); save(LS.cfg, cfg);
+      },
+      quote: (mint, side, amount) => {
+        const C = S.cache[mint], c = C && C.curve;
+        if (!c || !c.exists || c.complete || c.ext || !(amount > 0)) return null;
+        return side === 'buy' ? quoteBuy(c, amount) : quoteSell(c, amount);
+      },
+      position: (mint) => { const C = S.cache[mint]; return C && C.stats ? Object.assign(myPosition(mint, C), { price: C.stats.price }) : null; },
+      newOrder: (mint) => newOrder(mint),
+    },
     SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, isSim: () => !!cfg.sim, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
     // Menu de compte (React) : état du wallet et du mode, et actions associées
     hub: {

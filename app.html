@@ -280,6 +280,7 @@
       <!-- MES TOKENS -->
       <section class="page" id="p-mine">
         <div class="page-head"><div><h1>Mes tokens</h1><p>Les tokens lancés depuis le studio, ou ajoutés à la main. Les données viennent directement de la blockchain.</p></div><div class="spacer"></div>
+          <button class="btn ghost" id="minePrune" type="button" title="Retire de cette liste les tokens dont votre wallet ne détient plus rien (rien n'est vendu ni modifié sur la blockchain)">Retirer ceux que je ne détiens pas</button>
           <button class="btn" id="mineAdd" type="button">Ajouter un token existant</button></div>
         <div class="card fee-box fee-card" id="mineFees"></div>
         <div class="tok-list" id="mineList"></div>
@@ -287,11 +288,7 @@
       </section>
 
       <!-- TRADER -->
-      <section class="page" id="p-trade">
-        <div class="page-head"><div><h1>Trader</h1><p>Collez l'adresse d'un token Solana (pump.fun, PumpSwap, Raydium…) : analyse de risque, puis achat ou vente signés dans votre wallet.</p></div></div>
-        <div class="card"><div class="toolbar" style="margin:0"><input class="search" id="tradeMint" placeholder="Adresse du token (mint)" style="flex:1;font-family:var(--mono)"><button class="btn primary" id="tradeGo" type="button">Analyser</button></div></div>
-        <div id="tradeDetail"></div>
-      </section>
+      <section class="page" id="p-trade"><div id="ts-trader"></div></section>
 
       <!-- ORDRES -->
       <section class="page" id="p-orders">
