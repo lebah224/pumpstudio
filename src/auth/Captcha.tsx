@@ -4,9 +4,10 @@ import { lang, t } from '../lib/i18n';
 /**
  * Case « Je ne suis pas un robot » (Cloudflare Turnstile, gratuit) sur la connexion et l'inscription.
  * Le jeton est vérifié par Supabase (connexion par e-mail ou par wallet) et par la fonction wallet-login.
- * Sans clé de site configurée (VITE_TURNSTILE_SITE_KEY), la case n'apparaît pas et rien n'est demandé.
+ * Sans clé de site, la case n'apparaît pas et rien n'est demandé.
  */
-export const CAPTCHA_SITE_KEY: string = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? '';
+// clé de site publique du widget TokenStudio (Cloudflare) ; VITE_TURNSTILE_SITE_KEY peut la remplacer, une valeur vide désactive la case
+export const CAPTCHA_SITE_KEY: string = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? '0x4AAAAAAFSLM0L7WevmEcS-';
 export const captchaOn = () => !!CAPTCHA_SITE_KEY;
 
 type Turnstile = {
