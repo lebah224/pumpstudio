@@ -514,3 +514,6 @@
 .sol.stack[data-usd]::after{display:block;margin:.35em 0 0;font-size:min(.42em,13.5px);white-space:nowrap}
 /* menu du compte : le dollar passe sous le solde de chaque wallet, pour garder la place du nom */
 .ts-hub-wb .sol[data-usd]::after{display:block;margin:2px 0 0;text-align:right;font-size:11.5px}
+/* tableau de bord : dans les petites cases (dépensé, reçu, flux net), le dollar passe sous le montant */
+.d-hstats b[data-sol]{overflow:visible}
+.d-hstats b[data-usd]::after{display:block;margin:3px 0 0;font-size:11.5px}

@@ -21,6 +21,10 @@
   const fr = (x, d) => x == null || !isFinite(x) ? '—' : x.toLocaleString('fr-FR', { minimumFractionDigits: d == null ? 2 : d, maximumFractionDigits: d == null ? 2 : d });
   const fSol = (x, d) => x == null || !isFinite(x) ? '—' : fr(x, d == null ? (Math.abs(x) >= 10 ? 2 : 4) : d) + ' SOL';
   const fUsd = (x) => x == null || !isFinite(x) ? '—' : (Math.abs(x) >= 1e6 ? fr(x / 1e6, 2) + ' M$' : Math.abs(x) >= 1e4 ? fr(x / 1e3, 1) + ' k$' : fr(x, 2) + ' $');
+  // Montant en SOL avec son équivalent en dollars : le dollar est ajouté à côté par usdPaint (attribut data-usd),
+  // et suit le prix du SOL sans redessiner la page. Pour du texte brut (notifications, titres), fSol reste sans balise.
+  const fSolH = (x, d) => x == null || !isFinite(x) ? '—' : '<span class="sol" data-sol="' + (+x) + '">' + fSol(x, d) + '</span>';
+  const fUsdS = (v) => !isFinite(v) ? '' : v !== 0 && Math.abs(v) < 0.01 ? (v < 0 ? '−' : '') + '< 0,01 $' : fUsd(v);
   const fTok = (x) => x == null || !isFinite(x) ? '—' : Math.abs(x) >= 1e6 ? fr(x / 1e6, 2) + ' M' : Math.abs(x) >= 1e3 ? fr(x / 1e3, 1) + ' k' : fr(x, 2);
   const fPct = (x, d) => x == null || !isFinite(x) ? '—' : fr(x, d == null ? 1 : d) + ' %';
   const fPrice = (x) => x == null || !isFinite(x) || x <= 0 ? '—' : x >= 0.01 ? fr(x, 4) : x.toLocaleString('fr-FR', { maximumSignificantDigits: 4, maximumFractionDigits: 20 });
@@ -181,9 +185,26 @@
   function setRpc(ok) { if (S.rpcOk === ok) return; S.rpcOk = ok; renderTop(); }
 
   async function solPrice() {
-    try { const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT'); const j = await r.json(); if (+j.price > 0) { S.solUsd = +j.price; return; } } catch (e) {}
-    try { const r = await fetch('https://api.coinbase.com/v2/prices/SOL-USD/spot'); const j = await r.json(); if (+j.data.amount > 0) S.solUsd = +j.data.amount; } catch (e) {}
+    const prev = S.solUsd;
+    try { const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT'); const j = await r.json(); if (+j.price > 0) S.solUsd = +j.price; } catch (e) {}
+    if (!S.solUsd || S.solUsd === prev) { try { const r = await fetch('https://api.coinbase.com/v2/prices/SOL-USD/spot'); const j = await r.json(); if (+j.data.amount > 0) S.solUsd = +j.data.amount; } catch (e) {} }
+    if (S.solUsd !== prev) usdPaintAll();
   }
+
+  /* ================================================================ équivalent en dollars des montants en SOL */
+  // Tout élément [data-sol] (studio ou écrans React) reçoit data-usd, affiché à côté par le CSS (.sol::after).
+  function usdPaint(el) {
+    const x = +el.getAttribute('data-sol');
+    const v = S.solUsd && isFinite(x) ? '≈ ' + fUsdS(x * S.solUsd) : '';
+    if (v) { if (el.getAttribute('data-usd') !== v) el.setAttribute('data-usd', v); } else if (el.hasAttribute('data-usd')) el.removeAttribute('data-usd');
+  }
+  function usdPaintAll(root) { (root || document).querySelectorAll('[data-sol]').forEach(usdPaint); }
+  new MutationObserver((ms) => {
+    for (const m of ms) {
+      if (m.type === 'attributes') { usdPaint(m.target); continue; }
+      m.addedNodes.forEach((n) => { if (n.nodeType !== 1) return; if (n.hasAttribute('data-sol')) usdPaint(n); if (n.firstElementChild) usdPaintAll(n); });
+    }
+  }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-sol'] });
 
   /* ================================================================ courbe de liaison */
   function curvePda(mint) {
@@ -381,7 +402,7 @@
     if (!S.wallet && window.__tsConnectUI && location.protocol !== 'file:') { window.dispatchEvent(new CustomEvent('ts-connect')); return; }
     if (S.wallet && S.wallet.id === 'session') return walletPanel();
     if (S.wallet) {
-      const i = await modal('Wallet connecté', '<div class="recap"><div class="kv"><span>Wallet</span><span>' + esc(S.wallet.name) + '</span><span>Adresse</span><span>' + short(S.wallet.pk, 6) + '</span><span>Solde</span><span>' + fSol(S.bal) + '</span></div></div><p>L\'adresse publique sert à préparer les transactions. Chaque transaction réelle vous sera présentée par votre wallet pour signature.</p>',
+      const i = await modal('Wallet connecté', '<div class="recap"><div class="kv"><span>Wallet</span><span>' + esc(S.wallet.name) + '</span><span>Adresse</span><span>' + short(S.wallet.pk, 6) + '</span><span>Solde</span><span>' + fSolH(S.bal) + '</span></div></div><p>L\'adresse publique sert à préparer les transactions. Chaque transaction réelle vous sera présentée par votre wallet pour signature.</p>',
         [{ label: 'Fermer' }, { label: 'Copier l\'adresse' }, { label: 'Déconnecter', cls: 'danger' }, { label: 'Wallet rapide', cls: 'primary' }]);
       if (i === 1) { try { await navigator.clipboard.writeText(S.wallet.pk); toast('Adresse copiée', '', 'g'); } catch (e) {} }
       if (i === 2) disconnectWallet(false);
@@ -538,7 +559,7 @@
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
     let curBal = null; if (SESSREC) { try { curBal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {} }
     const html = '<p>Récupérez un wallet rapide créé par le studio, par exemple sur un autre navigateur ou après l\'avoir supprimé. Collez son <b>code de sauvegarde</b> (Wallets → Sauvegarde), ou la <b>clé privée notée à sa création</b>.</p>' +
-      (SESSREC ? '<div class="notice">Le wallet rapide actuel (<span class="mono">' + short(SESSREC.pk, 6) + '</span>' + (curBal == null ? ', solde inconnu' : ', ' + fSol(curBal, 4)) + ') sera remplacé. Sauvegardez-le ou retirez ses fonds avant.</div>' : '') +
+      (SESSREC ? '<div class="notice">Le wallet rapide actuel (<span class="mono">' + short(SESSREC.pk, 6) + '</span>' + (curBal == null ? ', solde inconnu' : ', ' + fSolH(curBal, 4)) + ') sera remplacé. Sauvegardez-le ou retirez ses fonds avant.</div>' : '') +
       '<div class="field"><label for="impKey">Code de sauvegarde ou clé notée à la création</label><input id="impKey" class="mono" type="password" autocomplete="off" spellcheck="false"><label class="check sm-check" style="margin-top:4px"><input type="checkbox" id="impShow">Afficher</label><div class="dim" id="impPk" style="font-size:13px">L\'adresse du wallet s\'affichera ici.</div></div>' +
       '<div id="impPw"></div>' +
       (SESSREC ? '<label class="check"><input type="checkbox" id="pwAck"><span>Je confirme le remplacement du wallet rapide actuel.</span></label>' : '');
@@ -607,7 +628,7 @@
   async function sessDelete() {
     let bal = null; try { bal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {}
     const rich = bal == null || bal > 0.001;
-    const ok = await confirmBox('Supprimer le wallet rapide ?', '<p>La clé chiffrée sera effacée de ce navigateur.</p>' + (rich ? '<div class="notice bad">Le wallet contient ' + (bal == null ? 'peut-être des fonds' : fSol(bal, 4)) + '. Retirez-les vers Phantom avant, ou assurez-vous d\'avoir sauvegardé la clé : sinon ils seront perdus.</div>' : ''), 'Supprimer', true);
+    const ok = await confirmBox('Supprimer le wallet rapide ?', '<p>La clé chiffrée sera effacée de ce navigateur.</p>' + (rich ? '<div class="notice bad">Le wallet contient ' + (bal == null ? 'peut-être des fonds' : fSolH(bal, 4)) + '. Retirez-les vers Phantom avant, ou assurez-vous d\'avoir sauvegardé la clé : sinon ils seront perdus.</div>' : ''), 'Supprimer', true);
     if (!ok) return;
     try { localStorage.removeItem(LS.sess); } catch (e) {}
     SESSREC = null; SESSW.kp = null; cfg.useSess = false; save(LS.cfg, cfg); S.bal = null;
@@ -622,8 +643,8 @@
     let have = S.extBal; try { have = (await rpc('getBalance', [ext.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {}
     const max = have != null ? Math.max(0, have - 0.003) : null;   // garde de quoi payer les frais du wallet
     const i = await modal('Alimenter le wallet rapide', '<p>Virement de SOL depuis <b>' + esc(ext.name) + '</b> <span class="mono">' + short(ext.pk) + '</span> vers votre wallet rapide <span class="mono">' + short(to) + '</span>. ' + esc(ext.name) + ' vous demandera de signer.</p>' +
-      '<div class="field"><label for="fundAmt">Montant' + (max != null ? ' <small>disponible : ' + fSol(have, 4) + '</small>' : '') + '</label><span class="unit"><input id="fundAmt" type="number" min="0.001" step="any" value="' + (max != null ? Math.min(0.3, Math.floor(max * 1000) / 1000) : 0.3) + '"><em>SOL</em></span></div>' +
-      (max != null ? '<div class="row-btns">' + [0.1, 0.5, 1].filter((v) => v <= max).map((v) => '<button class="btn sm" type="button" data-fundset="' + v + '">' + fr(v, 1) + ' SOL</button>').join('') + '<button class="btn sm" type="button" data-fundset="' + Math.floor(max * 1e6) / 1e6 + '">Maximum</button></div>' : '') +
+      '<div class="field"><label for="fundAmt">Montant' + (max != null ? ' <small>disponible : ' + fSolH(have, 4) + '</small>' : '') + '</label><span class="unit"><input id="fundAmt" type="number" min="0.001" step="any" value="' + (max != null ? Math.min(0.3, Math.floor(max * 1000) / 1000) : 0.3) + '"><em>SOL</em></span></div>' +
+      (max != null ? '<div class="row-btns">' + [0.1, 0.5, 1].filter((v) => v <= max).map((v) => '<button class="btn sm" type="button" data-fundset="' + v + '">' + fSolH(v, 1) + '</button>').join('') + '<button class="btn sm" type="button" data-fundset="' + Math.floor(max * 1e6) / 1e6 + '">Maximum</button></div>' : '') +
       '<p class="muted" style="font-size:13.5px">Conseil : juste de quoi couvrir vos achats et les frais (environ 0,03 SOL pour un lancement). Les plafonds de votre wallet rapide s\'appliquent ensuite.</p>',
       [{ label: 'Annuler' }, { label: 'Alimenter', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
@@ -638,7 +659,7 @@
       { label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) },
     ]);
     if (!ctx.error) {
-      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSol(amt, 4) + ' envoyés sur votre wallet rapide. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
+      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSolH(amt, 4) + ' envoyés sur votre wallet rapide. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
       toast('Wallet rapide alimenté', '+' + fSol(amt, 4), 'g'); S.bal = null; refreshBal(); renderAll();
     }
   }
@@ -671,7 +692,7 @@
     if (!SESSW.kp && !(await sessUnlock(true))) return;
     const dest0 = typeof destTo === 'string' ? destTo : S.ext ? S.ext.pk : '';
     let bal = 0; try { bal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value; } catch (e) { return toast('RPC en erreur', e.message, 'r'); }
-    const i = await modal('Retirer vers votre wallet', '<p>Solde du wallet rapide : <b>' + fSol(bal / 1e9, 4) + '</b>. Les tokens ne sont pas déplacés : vendez-les d\'abord si vous voulez tout récupérer en SOL.</p>' +
+    const i = await modal('Retirer vers votre wallet', '<p>Solde du wallet rapide : <b>' + fSolH(bal / 1e9, 4) + '</b>. Les tokens ne sont pas déplacés : vendez-les d\'abord si vous voulez tout récupérer en SOL.</p>' +
       '<div class="field"><label for="wdDest">Adresse de destination</label><input id="wdDest" class="mono" value="' + esc(dest0) + '" autocomplete="off" spellcheck="false"></div>' +
       '<div class="field"><label for="wdAmt">Montant <small>vide = tout le solde, frais déduits</small></label><span class="unit"><input id="wdAmt" type="number" min="0" step="any" placeholder="tout"><em>SOL</em></span></div>',
       [{ label: 'Annuler' }, { label: 'Retirer', cls: 'danger', keep: true }], true);
@@ -699,7 +720,7 @@
     let sesBal = null; if (ses) { if (act) sesBal = S.bal; else { try { sesBal = (await rpc('getBalance', [SESSREC.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {} } }
     const extBal = S.ext ? (act ? S.extBal : S.bal) : null;
     const card = (title, badge, body, btns, pk) => '<div class="wcard' + (badge && badge.on ? ' on' : '') + '"><div class="wh">' + (pk ? wAv(pk, 'lg') : '<span class="wav lg none" aria-hidden="true">' + WI.plug + '</span>') + '<div class="sw-id"><b>' + title + '</b>' + (pk ? '<span class="mono dim" style="font-size:12.5px">' + short(pk, 6) + '</span>' : '') + '</div>' + (badge ? '<span class="pill ' + (badge.c === 'g' ? 'ok' : badge.c === 'a' ? 'lock' : badge.c === 'b' ? 'ext' : '') + '">' + badge.t + '</span>' : '') + '</div>' + body + '<div class="row-btns">' + btns + '</div></div>';
-    const balHtml = (b, meta) => '<div class="wbal"><b>' + (b == null ? '—' : fr(b, 4)) + '</b><em>SOL</em></div><div class="wmeta">' + (S.solUsd && b != null ? '≈ ' + fUsd(b * S.solUsd) + ' · ' : '') + meta + '</div>';
+    const balHtml = (b, meta) => '<div class="wbal">' + (b == null ? '<b>—</b><em>SOL</em>' : '<span class="sol stack" data-sol="' + b + '" style="font-size:24px"><b>' + fr(b, 4) + '</b><em style="margin-left:7px">SOL</em></span>') + '</div><div class="wmeta">' + meta + '</div>';
     const B = (sw, label, c) => '<button class="btn sm ' + (c || '') + '" data-sw="' + sw + '" type="button">' + label + '</button>';
     const sesHtml = !ses
       ? card('Wallet rapide', null, '<p>Signe seul, sans fenêtre Phantom : les ventes de vos paliers partent dès que le prix les atteint (moins d\'une seconde au lieu de 3 à 6).</p>', B('create', 'Créer le wallet rapide', 'primary') + B('import', 'Restaurer un wallet rapide'))
@@ -1110,7 +1131,7 @@
     const dep = kind === 'deposit';
     const i = await modal(dep ? 'Ajouter des SOL fictifs' : 'Retirer du wallet démo', '<p>' + (dep ? 'Simulez un dépôt sur le wallet démo. Aucun vrai SOL n\'est envoyé, et l\'adresse démo ne peut pas en recevoir.' : 'Simulez un retrait vers votre wallet. Rien n\'est envoyé.') + '</p>' +
       '<div class="field"><label for="dmAmt">Montant</label><span class="unit"><input id="dmAmt" type="number" min="0.01" step="any" value="' + (dep ? '5' : fr(Math.min(1, DEMO.bal), 2).replace(',', '.')) + '"><em>SOL</em></span></div>' +
-      '<p class="muted" style="font-size:13.5px">Solde démo actuel : ' + fSol(DEMO.bal, 3) + (dep ? ' · maximum 1 000 SOL.' : '.') + '</p>',
+      '<p class="muted" style="font-size:13.5px">Solde démo actuel : ' + fSolH(DEMO.bal, 3) + (dep ? ' · maximum 1 000 SOL.' : '.') + '</p>',
       [{ label: 'Annuler' }, { label: dep ? 'Ajouter' : 'Retirer', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const amt = num($('dmAmt').value);
@@ -1129,8 +1150,8 @@
     try {
       const Q = await demoQuote(mint, side, amountStr);
       const recap = '<div class="recap"><div class="kv"><span>Opération</span><span>' + (side === 'buy' ? 'Achat' : 'Vente') + ' de ' + esc(Q.sym) + '</span>' +
-        (side === 'buy' ? '<span>Vous payez</span><span>' + fSol(Q.sol) + '</span><span>Vous recevez environ</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span>' : '<span>Vous vendez</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span><span>Vous recevez environ</span><span>' + fSol(Q.sol) + '</span>') +
-        '<span>Prix</span><span>' + Q.src + '</span><span>Wallet</span><span>Wallet démo · ' + fSol(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' + (opts.note ? '<div class="notice">' + esc(opts.note) + '</div>' : '') + demoCta();
+        (side === 'buy' ? '<span>Vous payez</span><span>' + fSolH(Q.sol) + '</span><span>Vous recevez environ</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span>' : '<span>Vous vendez</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span><span>Vous recevez environ</span><span>' + fSolH(Q.sol) + '</span>') +
+        '<span>Prix</span><span>' + Q.src + '</span><span>Wallet</span><span>Wallet démo · ' + fSolH(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' + (opts.note ? '<div class="notice">' + esc(opts.note) + '</div>' : '') + demoCta();
       if (!(await confirmBox(opts.title || (side === 'buy' ? 'Acheter ' : 'Vendre ') + Q.sym + ' en démo ?', recap, side === 'buy' ? 'Acheter en démo' : 'Vendre en démo'))) return;
       const r = demoApply(mint, side, Q);
       toast(side === 'buy' ? 'Achat démo' : 'Vente démo', Q.sym + ' · ' + (side === 'buy' ? fTok(r.tokens) + ' reçus' : '+' + fSol(r.sol, 4)) + ' · wallet démo ' + fSol(DEMO.bal), 'g');
@@ -1159,8 +1180,8 @@
     const d = S.draft, PL = PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null, cost = dev + PL.fee;
     if (cost > DEMO.bal) { toast('Solde démo insuffisant', 'Le wallet démo a ' + fSol(DEMO.bal) + '.', 'a'); return; }
     const recap = '<div class="recap"><div class="kv"><span>Token</span><span>' + esc(d.name) + ' · $' + esc(d.symbol) + '</span>' +
-      '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
-      '<span>Coût total estimé</span><span>' + fSol(cost) + '</span><span>Wallet</span><span>Wallet démo · ' + fSol(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' +
+      '<span>Achat du créateur</span><span>' + (dev ? fSolH(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
+      '<span>Coût total estimé</span><span>' + fSolH(cost) + '</span><span>Wallet</span><span>Wallet démo · ' + fSolH(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' +
       '<p>Le token est créé sur un marché simulé : des acheteurs et vendeurs fictifs le font vivre, et vous le suivez comme un vrai token.</p>' + demoCta();
     if (!(await confirmBox('Lancer ' + d.name + ' en démo ?', recap, 'Lancer en démo'))) return;
     const now = Date.now(), mint = 'DEMO0' + rndB58(39);
@@ -1229,9 +1250,9 @@
       }
       const recap = '<div class="recap"><div class="kv">' +
         '<span>Opération</span><span>' + (side === 'buy' ? 'Achat' : 'Vente') + ' de ' + esc(sym) + '</span>' +
-        (side === 'buy' ? '<span>Vous payez</span><span>' + fSol(amount) + '</span><span>Vous recevez environ</span><span>' + (q ? fTok(q.tokens) + ' ' + esc(sym) : 'selon le pool') + '</span>'
-          : '<span>Vous vendez</span><span>' + (typeof amount === 'string' ? amount + ' · ' : '') + (q ? fTok(q.tokens) : '') + ' ' + esc(sym) + '</span><span>Vous recevez environ</span><span>' + (q ? fSol(q.sol) : 'selon le pool') + '</span>') +
-        (q ? '<span>Impact sur le prix</span><span class="' + (Math.abs(q.impact) > 5 ? 'warn' : '') + '">' + fPct(q.impact, 2) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span><span>Minimum garanti</span><span>' + (side === 'buy' ? fTok(q.minOut) + ' ' + esc(sym) : fSol(q.minOut)) + '</span>' : '') +
+        (side === 'buy' ? '<span>Vous payez</span><span>' + fSolH(amount) + '</span><span>Vous recevez environ</span><span>' + (q ? fTok(q.tokens) + ' ' + esc(sym) : 'selon le pool') + '</span>'
+          : '<span>Vous vendez</span><span>' + (typeof amount === 'string' ? amount + ' · ' : '') + (q ? fTok(q.tokens) : '') + ' ' + esc(sym) + '</span><span>Vous recevez environ</span><span>' + (q ? fSolH(q.sol) : 'selon le pool') + '</span>') +
+        (q ? '<span>Impact sur le prix</span><span class="' + (Math.abs(q.impact) > 5 ? 'warn' : '') + '">' + fPct(q.impact, 2) + '</span><span>Frais estimés</span><span>' + fSolH(q.fees, 4) + '</span><span>Minimum garanti</span><span>' + (side === 'buy' ? fTok(q.minOut) + ' ' + esc(sym) : fSolH(q.minOut)) + '</span>' : '') +
         '<span>Slippage max</span><span>' + fPct(cfg.slippage, 0) + '</span>' + (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' +
         (opts.note ? '<div class="notice info">' + esc(opts.note) + '</div>' : '') +
         (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : S.wallet.id === 'session' ? '<p>Le wallet rapide signe dès que vous confirmez : aucune autre fenêtre.</p>' : '<p>Votre wallet va vous présenter la transaction : vérifiez le montant avant de signer.</p>');
@@ -1326,9 +1347,9 @@
     const recap = '<div class="recap"><div class="kv">' +
       '<span>Token</span><span>' + esc(d.name) + ' · $' + esc(d.symbol) + '</span>' +
       (canPick ? '' : '<span>Créateur affiché</span><span>' + who(S.wallet) + (ses ? '' : ' <small class="dim">(ou votre pseudo pump.fun)</small>') + '</span>') +
-      '<span>Achat du créateur</span><span>' + (dev ? fSol(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
-      '<span>Frais de réseau et comptes</span><span>≈ ' + fr(PL.fee, 2) + ' SOL</span>' +
-      '<span>Coût total estimé</span><span>' + fSol(dev + PL.fee) + '</span>' +
+      '<span>Achat du créateur</span><span>' + (dev ? fSolH(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
+      '<span>Frais de réseau et comptes</span><span>≈ ' + fSolH(PL.fee, 2) + '</span>' +
+      '<span>Coût total estimé</span><span>' + fSolH(dev + PL.fee) + '</span>' +
       '<span>Logo et fiche</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS), envoyés par le serveur') + '</span>' +
       (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' + creatorHtml +
       (ses && !ext ? '<div class="notice">Le wallet rapide sera affiché comme créateur et recevra les frais de créateur. Pour lancer en votre nom, connectez Phantom (ou votre wallet principal) : il sera proposé comme créateur.</div>' : '') +
@@ -2469,6 +2490,7 @@
     return { dev, rows, sold, keep, back, cum, keepVal: keep / 100 * last * f, slLoss: d.sl > 0 ? 1 - (1 - d.sl / 100) * f : null };
   }
   const tpAmt = (k, dev) => dev > 0 ? fSol(dev * k, 3) : fr(k * 100, 0) + ' % de la mise';
+  const tpAmtH = (k, dev) => dev > 0 ? fSolH(dev * k, 3) : fr(k * 100, 0) + ' % de la mise';
   function renderTpPlan() {
     const d = S.draft, dev = num(d.dev) || 0;
     const head = '<div class="tp-head"><span class="switch"><input type="checkbox" id="tpOn"' + (d.tpOn ? ' checked' : '') + ' aria-label="Activer le plan de prise de profit"><i></i></span><div><h4>Plan de prise de profit</h4><p>Des ventes par paliers, préparées dès le lancement : vous sécurisez vos gains quand le prix monte, sans rester devant l\'écran.</p></div></div>';
@@ -2504,8 +2526,8 @@
     const st = (l, v, s, cl) => '<div class="stat"><div class="l">' + l + '</div><div class="v ' + (cl || '') + '">' + v + '</div><div class="s">' + s + '</div></div>';
     $('tpSum').innerHTML =
       st('Mise récupérée', C.back != null ? 'à ' + fx(C.rows[C.back].x) : 'jamais', C.back != null ? 'au palier ' + (C.back + 1) + ', le reste est du bonus' : 'augmentez la part vendue aux premiers paliers', C.back != null ? 'pos' : 'warn') +
-      st('Si tous les paliers sont atteints', tpAmt(C.cum, C.dev), C.keep > 0 ? '+ ' + C.keep + ' % gardés (≈ ' + tpAmt(C.keepVal, C.dev) + ' au dernier palier)' : 'tout est vendu', 'pos') +
-      st('Perte maximale', C.slLoss != null ? '−' + tpAmt(C.slLoss, C.dev).replace(/^-/, '') : 'non limitée', C.slLoss != null ? (d.slMode === 'trail' ? 'si le prix recule dès l\'achat ; ensuite le stop remonte avec le prix' : 'si le stop se déclenche avant le 1er palier') : 'pas de stop : le prix peut aller jusqu\'à 0', C.slLoss != null ? '' : 'neg');
+      st('Si tous les paliers sont atteints', tpAmtH(C.cum, C.dev), C.keep > 0 ? '+ ' + C.keep + ' % gardés (≈ ' + tpAmtH(C.keepVal, C.dev) + ' au dernier palier)' : 'tout est vendu', 'pos') +
+      st('Perte maximale', C.slLoss != null ? (C.dev > 0 ? '<span class="sol" data-sol="' + (-Math.abs(C.dev * C.slLoss)) + '">−' + tpAmt(C.slLoss, C.dev).replace(/^-/, '') + '</span>' : '−' + tpAmt(C.slLoss, C.dev).replace(/^-/, '')) : 'non limitée', C.slLoss != null ? (d.slMode === 'trail' ? 'si le prix recule dès l\'achat ; ensuite le stop remonte avec le prix' : 'si le stop se déclenche avant le 1er palier') : 'pas de stop : le prix peut aller jusqu\'à 0', C.slLoss != null ? '' : 'neg');
     $('tpErr').innerHTML = V.ok ? '' : '<div class="danger-note">' + V.errs.map(esc).join(' · ') + '</div>';
     const cur = JSON.stringify({ tp: d.tp.map((l) => ({ x: l.x, pct: l.pct })), sl: d.sl || 0, m: d.slMode === 'trail' ? 'trail' : 'fixed' });
     document.querySelectorAll('[data-tppre]').forEach((b) => { const p = TP_PRESETS[b.dataset.tppre]; b.classList.toggle('on', JSON.stringify({ tp: p.tp, sl: p.sl, m: p.slMode }) === cur); });
@@ -2615,7 +2637,7 @@
   async function goReal() {
     if (!cfg.sim) return;
     if (!AUTH) { try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'real' })); } catch (e) {} if (AUTH === false) toast('Compte requis', 'Créez votre compte ou connectez-vous pour passer en réel. La démo reste ouverte à tous.', 'a'); return; }
-    if (await confirmBox('Passer en mode réel ?', '<p>Les transactions que vous signez partiront réellement sur la blockchain et engageront votre SOL. Un lancement ou un trade confirmé ne s\'annule pas.</p><p>Vérifiez d\'abord vos réglages : limite par achat ' + fSol(cfg.maxSol, 2) + ', slippage ' + cfg.slippage + ' %.</p>', 'Passer en réel', true)) { cfg.sim = false; save(LS.cfg, cfg); toast('Mode réel activé', 'Chaque transaction demandera votre signature.', 'a'); renderAll(); }
+    if (await confirmBox('Passer en mode réel ?', '<p>Les transactions que vous signez partiront réellement sur la blockchain et engageront votre SOL. Un lancement ou un trade confirmé ne s\'annule pas.</p><p>Vérifiez d\'abord vos réglages : limite par achat ' + fSolH(cfg.maxSol, 2) + ', slippage ' + cfg.slippage + ' %.</p>', 'Passer en réel', true)) { cfg.sim = false; save(LS.cfg, cfg); toast('Mode réel activé', 'Chaque transaction demandera votre signature.', 'a'); renderAll(); }
   }
   function goSim() { if (cfg.sim) return; cfg.sim = true; save(LS.cfg, cfg); toast('Mode démo', 'Plus rien n\'est envoyé.', 'g'); renderAll(); }
   function openSettings() {
@@ -2752,11 +2774,11 @@
     const w = S.wallet;
     $('dModeBadge').className = 'badge v'; $('dModeBadge').textContent = 'Démo'; $('dModeBadge').hidden = !cfg.sim;
     const demoW = cfg.sim && (!w || !AUTH);   // démo sans wallet ou sans compte : solde du wallet démo
-    $('dBal').innerHTML = demoW ? fr(DEMO.bal, 2) + '<small> SOL démo</small>' : w && S.bal != null ? fr(S.bal, S.bal >= 100 ? 2 : 4) + '<small> SOL</small>' : '—';
-    $('dBalS').textContent = demoW ? 'Wallet démo · fonds fictifs' + (S.solUsd ? ' ≈ ' + fUsd(DEMO.bal * S.solUsd) : '') : w ? (S.solUsd && S.bal != null ? '≈ ' + fUsd(S.bal * S.solUsd) + ' · ' : '') + (w.id === 'session' ? 'Wallet rapide' : w.name) + ' · ' + short(w.pk) : 'Connectez un wallet pour voir votre solde';
+    $('dBal').innerHTML = demoW ? '<span class="sol stack" data-sol="' + DEMO.bal + '">' + fr(DEMO.bal, 2) + '<small> SOL démo</small></span>' : w && S.bal != null ? '<span class="sol stack" data-sol="' + S.bal + '">' + fr(S.bal, S.bal >= 100 ? 2 : 4) + '<small> SOL</small></span>' : '—';
+    $('dBalS').textContent = demoW ? 'Wallet démo · fonds fictifs' : w ? (w.id === 'session' ? 'Wallet rapide' : w.name) + ' · ' + short(w.pk) : 'Connectez un wallet pour voir votre solde';
     const ok = L.filter((j) => j.status === 'ok'), spent = Math.abs(ok.filter((j) => j.sol < 0).reduce((a, j) => a + j.sol, 0)), recv = ok.filter((j) => j.sol > 0).reduce((a, j) => a + j.sol, 0), net = recv - spent;
-    const hs = (l, v, c) => '<div><span>' + l + '</span><b class="' + (c || '') + '">' + v + '</b></div>';
-    $('dHero').innerHTML = hs('Dépensé', fSol(spent, 3)) + hs('Reçu', fSol(recv, 3)) + hs('Flux net', (net > 0 ? '+' : '') + fSol(net, 3), cls(net));
+    const hs = (l, x, c, sg) => '<div><span>' + l + '</span><b class="sol ' + (c || '') + '" data-sol="' + x + '">' + (sg && x > 0 ? '+' : '') + fSol(x, 3) + '</b></div>';
+    $('dHero').innerHTML = hs('Dépensé', spent) + hs('Reçu', recv) + hs('Flux net', net, cls(net), true);
     // prix du SOL
     const H = DASH.hist[DASH.range], last = S.solUsd || (H && H[H.length - 1].v);
     $('dSol').textContent = last ? fr(last, 2) + ' $' : '—'; $('dSolSrc').textContent = DASH.src;
@@ -2775,7 +2797,7 @@
     $('dTiles').innerHTML =
       tile('dSpTok', IC.spark, 'Tokens lancés', String(S.tokens.length), S.tokens.filter((t) => Date.now() - t.createdAt < 6048e5).length + ' cette semaine') +
       tile('dSpOrd', IC.shield, 'Ordres actifs', String(act.length), act.length ? kinds.tp + ' objectifs · ' + kinds.sl + ' stops' + (kinds.trail ? ' · ' + kinds.trail + ' suiveurs' : '') : 'aucun ordre surveillé') +
-      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : '') + (m === 'all' ? '' : (m === 'real' ? ' réelle' : ' simulée') + (ok.length > 1 ? 's' : '')), cls(net));
+      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? '<span class="sol" data-sol="' + net + '">' + (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small></span>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : '') + (m === 'all' ? '' : (m === 'real' ? ' réelle' : ' simulée') + (ok.length > 1 ? 's' : '')), cls(net));
     sparkline($('dSpTok'), weeks, K.accent);
     { const el = $('dSpOrd'), parts = [[kinds.tp, K.green], [kinds.sl, K.red], [kinds.trail, K.blue]]; const bar = document.createElement('div'); bar.className = 'd-split'; bar.innerHTML = act.length ? parts.filter((x) => x[0]).map((x) => '<i style="flex:' + x[0] + ';background:' + x[1] + '"></i>').join('') : '<i style="flex:1;background:var(--panel3)"></i>'; el.replaceWith(bar); }
     sparkline($('dSpFlow'), flowVals.length > 1 ? flowVals : null, net >= 0 ? K.green : K.red);
@@ -2802,7 +2824,7 @@
     }).join('') + (act.length > 6 ? '<div class="d-more">+ ' + (act.length - 6) + ' autres ordres</div>' : '') : '<div class="d-empty"><b>Aucun ordre actif</b>Ajoutez un objectif ou un stop depuis un token.</div>';
     // dernières opérations
     const last6 = L.slice(0, 6);
-    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' || j.type === 'fees' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : j.type === 'fees' ? 'F' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + (j.type === 'fees' ? '' : ' · ' + esc(j.symbol || short(j.mint))) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Vos achats, ventes et lancements apparaîtront ici.</div>';
+    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' || j.type === 'fees' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : j.type === 'fees' ? 'F' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + (j.type === 'fees' ? '' : ' · ' + esc(j.symbol || short(j.mint))) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : '<span class="sol" data-sol="' + (j.sol || 0) + '">' + (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL</span>') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Vos achats, ventes et lancements apparaîtront ici.</div>';
     // tokens lancés
     $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.ext ? (PLATFORMS[t.platform] || PLATFORMS.pump).n + (C.curve.dex === 'launchlab' ? ' · ≈ ' + fr(st.progress, 0) + ' %' : ' · ' + dexName(C.curve)) : C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Créez votre premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
     solHist(false);
@@ -2966,7 +2988,7 @@
     const amt = CFEE.pk === w.pk ? CFEE.sol : null, has = amt > 0;
     return '<div class="fee-l"><span class="fee-ic">' + IC.wallet + '</span><span><b>Frais de créateur à récupérer</b><small>' +
       (CFEE.err && CFEE.pk === w.pk ? esc(CFEE.err) : 'Part des frais de chaque échange sur vos tokens · wallet ' + esc(w.id === 'session' ? 'rapide' : w.name) + ' ' + short(w.pk)) + '</small></span></div>' +
-      '<div class="fee-r"><span class="fee-v' + (has ? ' pos' : '') + '">' + (amt == null ? (CFEE.loading ? '…' : '—') : fr(amt, amt >= 1 ? 3 : 5) + '<small> SOL</small>') + (has && S.solUsd ? '<em>≈ ' + fUsd(amt * S.solUsd) + '</em>' : '') + '</span>' +
+      '<div class="fee-r"><span class="fee-v' + (has ? ' pos' : '') + '">' + (amt == null ? (CFEE.loading ? '…' : '—') : '<span class="sol" data-sol="' + amt + '">' + fr(amt, amt >= 1 ? 3 : 5) + '<small> SOL</small></span>') + '</span>' +
       '<button class="btn sm ghost" data-fees="refresh" type="button" title="Relire">' + (CFEE.loading ? '…' : 'Actualiser') + '</button>' +
       '<button class="btn sm ' + (has ? 'primary' : '') + '" data-fees="claim" type="button"' + (has && !S.busy ? '' : ' disabled') + '>' + (has ? 'Récupérer' : 'Rien à récupérer') + '</button></div>';
   }
@@ -2976,7 +2998,7 @@
     await feesRead(true);
     const amt = CFEE.sol || 0;
     if (!(amt > 0)) { toast('Rien à récupérer', 'Vos tokens démo n\'ont pas encore généré de frais.', 'a'); return; }
-    const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSol(amt, 5) + '</span><span>Wallet</span><span>Wallet démo · ' + fSol(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' + demoCta();
+    const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSolH(amt, 5) + '</span><span>Wallet</span><span>Wallet démo · ' + fSolH(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' + demoCta();
     if (!(await confirmBox('Récupérer ' + fSol(amt, 4) + ' en démo ?', recap, 'Récupérer en démo'))) return;
     const ctx = await runFlow('Démo · Frais de créateur', [{ label: 'Frais récupérés sur vos tokens démo', run: async () => { await sleep(400); return fSol(amt, 5); } }]);
     if (ctx.error) return;
@@ -2995,7 +3017,7 @@
     await feesRead(true);
     const amt = CFEE.sol || 0, pk = W.pk;
     if (!(amt > 0)) { toast('Rien à récupérer', CFEE.err || 'Aucun frais de créateur en attente pour ce wallet.', 'a'); return; }
-    const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSol(amt, 5) + (S.solUsd ? ' · ≈ ' + fUsd(amt * S.solUsd) : '') + '</span><span>Wallet créateur</span><span>' + short(pk, 6) + '</span><span>Sources</span><span>courbe pump.fun + PumpSwap</span><span>Frais de réseau</span><span>≈ 0,0001 SOL</span>' + (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' +
+    const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSolH(amt, 5) + '</span><span>Wallet créateur</span><span>' + short(pk, 6) + '</span><span>Sources</span><span>courbe pump.fun + PumpSwap</span><span>Frais de réseau</span><span>≈ ' + fSolH(0.0001, 4) + '</span>' + (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' +
       (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : '<p>Les SOL arrivent directement sur ce wallet. ' + (W.id === 'session' ? 'Le wallet rapide signe dès que vous confirmez.' : 'Votre wallet va vous présenter la transaction.') + '</p>');
     if (!(await confirmBox(cfg.sim ? 'Vérifier la récupération en démo ?' : 'Récupérer ' + fSol(amt, 4) + ' ?', recap, cfg.sim ? 'Vérifier en démo' : 'Récupérer'))) return;
     S.busy = true; renderFees();
@@ -3012,7 +3034,7 @@
       if (ctx.error) { journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: cfg.sim, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 }); return; }
       journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: cfg.sim, status: 'ok', sig: ctx.sig || '', sol: amt, tokens: 0, est: true });
       if (cfg.sim) { $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">Démo réussie : la récupération réelle passerait. Passez en réel pour recevoir les SOL.</div>'); return; }
-      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSol(amt, 5) + ' récupérés. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
+      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSolH(amt, 5) + ' récupérés. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
       toast('Frais récupérés', fSol(amt, 5), 'g');
       CFEE.sol = 0; refreshBal();
     } finally { S.busy = false; setTimeout(() => feesRead(true), 1500); renderAll(); }
@@ -3113,7 +3135,7 @@
   }
   function renderDevQuote() {
     const dev = num(S.draft.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null, st = curveStats(INIT_CURVE);
-    $('devQuote').innerHTML = '<div class="kv">' + (q ? '<span>Vous recevez</span><span>' + fTok(q.tokens) + ' tokens</span><span>Part de l\'offre</span><span class="' + (q.supplyPct > cfg.devMaxPct ? 'neg' : q.supplyPct > 5 ? 'warn' : 'pos') + '">' + fPct(q.supplyPct, 2) + '</span><span>Capitalisation après</span><span>' + (S.solUsd ? fUsd(q.mcapAfterSol * S.solUsd) : fSol(q.mcapAfterSol, 1)) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span>'
+    $('devQuote').innerHTML = '<div class="kv">' + (q ? '<span>Vous recevez</span><span>' + fTok(q.tokens) + ' tokens</span><span>Part de l\'offre</span><span class="' + (q.supplyPct > cfg.devMaxPct ? 'neg' : q.supplyPct > 5 ? 'warn' : 'pos') + '">' + fPct(q.supplyPct, 2) + '</span><span>Capitalisation après</span><span>' + (S.solUsd ? fUsd(q.mcapAfterSol * S.solUsd) : fSol(q.mcapAfterSol, 1)) + '</span><span>Frais estimés</span><span>' + fSolH(q.fees, 4) + '</span>'
       : '<span>Achat du créateur</span><span>aucun</span><span>Capitalisation de départ</span><span>' + (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) + '</span>') + '</div>';
     $('launchNote').innerHTML = q && q.supplyPct > 5 ? 'Un créateur qui détient plus de 5 % de l\'offre fait fuir les acheteurs prudents : les outils d\'analyse l\'affichent en rouge.' : 'L\'achat du créateur est visible publiquement. Une petite part rassure : vous montrez que vous croyez au projet sans contrôler le prix.';
     const R = readiness();
@@ -3182,7 +3204,7 @@
     const pos = myPosition(mint, C), side = S.side[ctx], R = risks(C);
     const usd = (sol) => S.solUsd ? fUsd(sol * S.solUsd) : fSol(sol);
     const H = C.holders || [];
-    const tradesHtml = (C.trades || []).slice(0, 40).map((x) => '<div class="tr"><span class="badge ' + (x.side === 'buy' ? 'g' : 'r') + '">' + (x.side === 'buy' ? 'Achat' : 'Vente') + '</span><span class="w">' + (x.wallet === c.creator ? '<b class="warn">créateur</b>' : S.wallet && x.wallet === S.wallet.pk ? '<b>vous</b>' : short(x.wallet)) + ' · ' + fAgo(x.t) + '</span><span class="num">' + fTok(x.tokens) + '</span><span class="num ' + (x.side === 'buy' ? 'pos' : 'neg') + '">' + fSol(x.sol, 3) + '</span></div>').join('');
+    const tradesHtml = (C.trades || []).slice(0, 40).map((x) => '<div class="tr"><span class="badge ' + (x.side === 'buy' ? 'g' : 'r') + '">' + (x.side === 'buy' ? 'Achat' : 'Vente') + '</span><span class="w">' + (x.wallet === c.creator ? '<b class="warn">créateur</b>' : S.wallet && x.wallet === S.wallet.pk ? '<b>vous</b>' : short(x.wallet)) + ' · ' + fAgo(x.t) + '</span><span class="num">' + fTok(x.tokens) + '</span><span class="num ' + (x.side === 'buy' ? 'pos' : 'neg') + '">' + fSolH(x.sol, 3) + '</span></div>').join('');
     const orders = S.orders.filter((o) => o.mint === mint);
     return '<div class="card"><div class="tok-head"><div class="av lg">' + (m.image ? '<img src="' + esc(m.image) + '" alt="">' : esc(sym.slice(0, 3))) + '</div><div><h2>' + esc(name) + ' <span class="badge v">$' + esc(sym) + '</span>' + (c.ext ? ' <span class="badge b">' + esc(plat ? plat.n : dexName(c)) + '</span>' : c.complete ? ' <span class="badge b">migré</span>' : '') + '</h2><p>' + short(mint, 8) + ' <button class="copy" data-copy="' + mint + '" type="button" title="Copier">⧉</button></p></div><div class="spacer"></div>' +
       (isDemoMint(mint) ? '<div class="links"><span class="badge v">token démo</span><span class="dim">Marché simulé : il n\'existe pas sur la blockchain.</span></div>'
@@ -3192,10 +3214,10 @@
       '<div class="grid-stats" style="margin-top:14px">' +
       '<div class="stat"><div class="l">Capitalisation</div><div class="v">' + usd(st.mcapSol) + '</div><div class="s">' + fSol(st.mcapSol, 1) + '</div></div>' +
       '<div class="stat"><div class="l">Prix</div><div class="v">' + fPrice(st.price) + '</div><div class="s">SOL par token</div></div>' +
-      (c.ext ? '<div class="stat"><div class="l">' + (c.dex === 'launchlab' ? 'Courbe LaunchLab' : 'Marché') + '</div><div class="v">' + (c.dex === 'launchlab' ? '≈ ' + fPct(st.progress, 0) : esc(dexName(c))) + '</div>' + (c.dex === 'launchlab' ? '<div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div>' : '') + '<div class="s">' + (st.realSol ? fSol(st.realSol, 2) + ' dans le pool' : 'liquidité ' + fUsd(st.liqUsd)) + (c.dex === 'launchlab' ? ' · migration à ~85 SOL' : '') + '</div></div>' :
-      '<div class="stat"><div class="l">Courbe de liaison</div><div class="v">' + fPct(st.progress, 1) + '</div><div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div><div class="s">' + fSol(st.realSol, 2) + ' dans la courbe' + (c.complete ? ' · terminée' : '') + '</div></div>') +
+      (c.ext ? '<div class="stat"><div class="l">' + (c.dex === 'launchlab' ? 'Courbe LaunchLab' : 'Marché') + '</div><div class="v">' + (c.dex === 'launchlab' ? '≈ ' + fPct(st.progress, 0) : esc(dexName(c))) + '</div>' + (c.dex === 'launchlab' ? '<div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div>' : '') + '<div class="s">' + (st.realSol ? fSolH(st.realSol, 2) + ' dans le pool' : 'liquidité ' + fUsd(st.liqUsd)) + (c.dex === 'launchlab' ? ' · migration à ~85 SOL' : '') + '</div></div>' :
+      '<div class="stat"><div class="l">Courbe de liaison</div><div class="v">' + fPct(st.progress, 1) + '</div><div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div><div class="s">' + fSolH(st.realSol, 2) + ' dans la courbe' + (c.complete ? ' · terminée' : '') + '</div></div>') +
       '<div class="stat"><div class="l">' + (cfg.sim ? 'Votre position démo' : 'Votre position') + '</div><div class="v">' + (S.wallet || cfg.sim ? fTok(pos.bal) : '—') + '</div><div class="s">' + (S.wallet || cfg.sim ? usd(pos.value) + (pos.avg ? ' · PRU ' + fPrice(pos.avg) : '') : 'wallet non connecté') + '</div></div>' +
-      '<div class="stat"><div class="l">Résultat</div><div class="v ' + cls(pos.pnl) + '">' + (pos.spent || pos.recv ? fSol(pos.pnl, 3) : '—') + '</div><div class="s">valeur + ventes − achats</div></div>' +
+      '<div class="stat"><div class="l">Résultat</div><div class="v ' + cls(pos.pnl) + '">' + (pos.spent || pos.recv ? fSolH(pos.pnl, 3) : '—') + '</div><div class="s">valeur + ventes − achats</div></div>' +
       '</div></div>' +
       '<div class="tok-grid"><div>' +
       (c.ext && c.pair ? '<div class="card"><div class="card-h"><h3>Graphique en direct</h3><p>Fourni par DEX Screener · ' + esc(dexName(c)) + '</p></div><div class="dexchart" data-pair="' + esc(c.pair) + '"><iframe src="https://dexscreener.com/solana/' + encodeURIComponent(c.pair) + '?embed=1&loadChartSettings=0&trades=0&tabs=0&info=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=1&chartType=usd&interval=1" title="Graphique DEX Screener" loading="lazy"></iframe></div></div>'
@@ -3209,7 +3231,7 @@
         : '<div class="amt"><input id="amt-' + ctx + '" type="text" placeholder="50%" inputmode="decimal"><em>' + esc(sym) + '</em></div><div class="presets">' + ['25%', '50%', '75%', '100%'].map((v) => '<button class="btn sm" data-preset="' + v + '" data-ctx="' + ctx + '" type="button">' + v + '</button>').join('') + '</div>') +
       '<div class="quote" id="q-' + ctx + '"><span class="muted">Saisissez un montant pour voir le devis.</span></div>' +
       '<button class="btn ' + (side === 'buy' ? 'primary' : 'danger') + '" style="width:100%" data-go="' + ctx + '" data-mint="' + mint + '" type="button">' + (side === 'buy' ? 'Acheter' : 'Vendre') + (cfg.sim ? ' en démo' : '') + '</button>' +
-      '<p class="dim" style="font-size:13.5px;margin:10px 0 0">Slippage ' + cfg.slippage + ' % · priorité ' + (cfg.speed === 'manual' ? fSol(cfg.priorityFee, 4) : (SPEEDS[cfg.speed] || SPEEDS.fast).label.toLowerCase()) + ' · limite ' + fSol(cfg.maxSol, 2) + ' par achat</p></div>' +
+      '<p class="dim" style="font-size:13.5px;margin:10px 0 0">Slippage ' + cfg.slippage + ' % · priorité ' + (cfg.speed === 'manual' ? fSolH(cfg.priorityFee, 4) : (SPEEDS[cfg.speed] || SPEEDS.fast).label.toLowerCase()) + ' · limite ' + fSolH(cfg.maxSol, 2) + ' par achat</p></div>' +
       '<div class="card" style="margin-top:16px"><div class="card-h"><h3>Ordres préparés</h3><button class="btn sm" data-neworder="' + mint + '" type="button" style="margin-left:auto">Ajouter</button></div>' +
       (orders.length ? orders.map(orderRow).join('') : '<div class="muted" style="font-size:13.5px">Aucun ordre. Exemple : vendre 50 % si le prix double.</div>') + '</div>' +
       '<div class="card"><div class="card-h"><h3>Plus gros détenteurs</h3></div><div class="holders">' + (H.length ? H.slice(0, 12).map((x, i) => '<div class="h"><span class="dim">' + (i + 1) + '</span><div><div style="display:flex;justify-content:space-between;gap:8px"><span class="mono" style="font-size:13.5px">' + (x.label ? '<b class="' + (x.label === 'Créateur' ? 'warn' : '') + '">' + esc(x.label) + '</b>' : short(x.owner)) + '</span></div><div class="bar"><i style="width:' + Math.min(100, x.pct * 2).toFixed(1) + '%;background:' + (x.label === 'Courbe de liaison' ? 'var(--blue)' : x.label === 'Créateur' ? 'var(--amber)' : 'var(--violet)') + '"></i></div></div><span class="num mono" style="text-align:right">' + fPct(x.pct, 1) + '</span></div>').join('') : '<div class="muted">' + (C.holdErr ? esc(C.holdErr) : 'Chargement…') + '</div>') + '</div></div>' +
@@ -3232,11 +3254,11 @@
     if (side === 'buy') {
       const sol = num(v), q = quoteBuy(C.curve, sol);
       if (!q) { el.innerHTML = '<span class="neg">Montant invalide.</span>'; return; }
-      el.innerHTML = '<div class="kv"><span>Vous recevez environ</span><span>' + fTok(q.tokens) + ' ' + esc(sym) + '</span><span>Impact sur le prix</span><span class="' + (q.impact > 5 ? 'warn' : '') + '">+' + fPct(q.impact, 2) + '</span><span>Minimum garanti</span><span>' + fTok(q.minOut) + '</span><span>Frais estimés</span><span>' + fSol(q.fees, 4) + '</span></div>' + (sol > cfg.maxSol ? '<div class="danger-note">Au-delà de votre limite de ' + fSol(cfg.maxSol, 2) + ' par achat.</div>' : '');
+      el.innerHTML = '<div class="kv"><span>Vous recevez environ</span><span>' + fTok(q.tokens) + ' ' + esc(sym) + '</span><span>Impact sur le prix</span><span class="' + (q.impact > 5 ? 'warn' : '') + '">+' + fPct(q.impact, 2) + '</span><span>Minimum garanti</span><span>' + fTok(q.minOut) + '</span><span>Frais estimés</span><span>' + fSolH(q.fees, 4) + '</span></div>' + (sol > cfg.maxSol ? '<div class="danger-note">Au-delà de votre limite de ' + fSolH(cfg.maxSol, 2) + ' par achat.</div>' : '');
     } else {
       const bal = C.myBal || 0, tokens = /%$/.test(v) ? bal * (num(v.replace('%', '')) || 0) / 100 : num(v), q = quoteSell(C.curve, tokens);
       if (!q) { el.innerHTML = '<span class="' + (bal ? 'neg' : 'muted') + '">' + (bal ? 'Quantité invalide.' : 'Vous ne détenez pas ce token.') + '</span>'; return; }
-      el.innerHTML = '<div class="kv"><span>Vous vendez</span><span>' + fTok(tokens) + ' ' + esc(sym) + '</span><span>Vous recevez environ</span><span>' + fSol(q.sol) + '</span><span>Impact sur le prix</span><span class="' + (q.impact < -5 ? 'warn' : '') + '">' + fPct(q.impact, 2) + '</span><span>Minimum garanti</span><span>' + fSol(q.minOut) + '</span></div>';
+      el.innerHTML = '<div class="kv"><span>Vous vendez</span><span>' + fTok(tokens) + ' ' + esc(sym) + '</span><span>Vous recevez environ</span><span>' + fSolH(q.sol) + '</span><span>Impact sur le prix</span><span class="' + (q.impact < -5 ? 'warn' : '') + '">' + fPct(q.impact, 2) + '</span><span>Minimum garanti</span><span>' + fSolH(q.minOut) + '</span></div>';
     }
   }
   async function showToken(ctx, mint) {
@@ -3294,11 +3316,11 @@
     const L = S.journal.filter((j) => (cfg.sim ? !!j.sim : !j.sim));
     const ok = L.filter((j) => j.status === 'ok'), spent = -ok.filter((j) => j.sol < 0).reduce((s, j) => s + j.sol, 0), recv = ok.filter((j) => j.sol > 0).reduce((s, j) => s + j.sol, 0);
     $('jStats').innerHTML = '<div class="stat"><div class="l">Opérations</div><div class="v">' + L.length + '</div><div class="s">' + L.filter((j) => j.status === 'err').length + ' échouées</div></div>' +
-      '<div class="stat"><div class="l">SOL dépensé</div><div class="v">' + fSol(spent, 3) + '</div></div><div class="stat"><div class="l">SOL reçu</div><div class="v">' + fSol(recv, 3) + '</div></div>' +
-      '<div class="stat"><div class="l">Flux net</div><div class="v ' + cls(recv - spent) + '">' + fSol(recv - spent, 3) + '</div><div class="s">hors valeur des tokens détenus</div></div>';
+      '<div class="stat"><div class="l">SOL dépensé</div><div class="v">' + fSolH(spent, 3) + '</div></div><div class="stat"><div class="l">SOL reçu</div><div class="v">' + fSolH(recv, 3) + '</div></div>' +
+      '<div class="stat"><div class="l">Flux net</div><div class="v ' + cls(recv - spent) + '">' + fSolH(recv - spent, 3) + '</div><div class="s">hors valeur des tokens détenus</div></div>';
     const TY = { create: 'Création', buy: 'Achat', sell: 'Vente', fees: 'Frais créateur', deposit: 'Dépôt', withdraw: 'Retrait' };
     $('jBody').innerHTML = L.length ? '<div class="tablebox"><table><thead><tr><th>Date</th><th>Opération</th><th>Token</th><th class="num">SOL</th><th class="num">Tokens</th><th>Statut</th><th>Lien</th></tr></thead><tbody>' +
-      L.slice(0, 400).map((j) => '<tr><td class="dim">' + fT(j.t) + '</td><td>' + TY[j.type] + (j.sim ? ' <span class="badge v">démo</span>' : '') + '</td><td><b>' + esc(j.symbol || '') + '</b> <span class="dim mono">' + short(j.mint) + '</span></td><td class="num ' + cls(j.sol) + '">' + (j.sol ? fSol(j.sol, 4) : '—') + (j.est ? ' <span class="dim">≈</span>' : '') + '</td><td class="num">' + (j.tokens ? fTok(j.tokens) : '—') + '</td><td>' + (j.status === 'ok' ? '<span class="badge g">ok</span>' : '<span class="badge r" title="' + esc(j.err || '') + '">échec</span>') + '</td><td>' + (j.sig && !j.demo ? '<a href="' + solscan(j.sig) + '" target="_blank" rel="noopener">Solscan</a>' : j.demo ? '<span class="dim">démo</span>' : '<span class="dim">—</span>') + '</td></tr>').join('') + '</tbody></table></div>'
+      L.slice(0, 400).map((j) => '<tr><td class="dim">' + fT(j.t) + '</td><td>' + TY[j.type] + (j.sim ? ' <span class="badge v">démo</span>' : '') + '</td><td><b>' + esc(j.symbol || '') + '</b> <span class="dim mono">' + short(j.mint) + '</span></td><td class="num ' + cls(j.sol) + '">' + (j.sol ? fSolH(j.sol, 4) : '—') + (j.est ? ' <span class="dim">≈</span>' : '') + '</td><td class="num">' + (j.tokens ? fTok(j.tokens) : '—') + '</td><td>' + (j.status === 'ok' ? '<span class="badge g">ok</span>' : '<span class="badge r" title="' + esc(j.err || '') + '">échec</span>') + '</td><td>' + (j.sig && !j.demo ? '<a href="' + solscan(j.sig) + '" target="_blank" rel="noopener">Solscan</a>' : j.demo ? '<span class="dim">démo</span>' : '<span class="dim">—</span>') + '</td></tr>').join('') + '</tbody></table></div>'
       : '<div class="card"><div class="empty"><b>Aucune opération</b>' + (cfg.sim ? 'Les lancements, achats et ventes de la démo apparaîtront ici.' : 'Vos lancements, achats et ventes apparaîtront ici, avec leur lien Solscan.') + '</div></div>';
   }
   /* ---------- communication */
@@ -3999,7 +4021,7 @@
   const wAct = (sw, ic, label, cls) => '<button class="wact ' + (cls || '') + '" data-sw="' + sw + '" type="button">' + WI[ic] + '<span>' + label + '</span></button>';
   function renderWalletCard() {
     const el = $('sideWallet'); if (!el) return;
-    const w = S.wallet, ses = w && w.id === 'session', usd = (b) => S.solUsd && b != null ? '≈ ' + fUsd(b * S.solUsd) : '';
+    const w = S.wallet, ses = w && w.id === 'session';
     if (!w) {
       el.innerHTML = '<div class="sw sw-empty"><div class="sw-top">' + '<span class="wav none" aria-hidden="true">' + WI.plug + '</span><div class="sw-id"><b>Aucun wallet</b><small>Connectez Phantom ou utilisez le wallet rapide</small></div></div>' +
         '<div class="sw-act two">' + wAct('connect', 'plug', 'Connecter', 'primary') + wAct('panel', 'bolt', 'Wallet rapide') + '</div></div>';
@@ -4008,7 +4030,7 @@
       const st = ses ? (locked ? ['lock', 'verrouillé'] : ['ok', 'actif']) : ['ext', 'signe avec ' + esc(w.name)];
       el.innerHTML = '<div class="sw' + (ses ? ' fast' : '') + '"><div class="sw-top"><span class="wav-w" title="' + st[1] + '">' + wAv(w.pk) + '<i class="wdot ' + st[0] + '"></i></span>' +
         '<div class="sw-id"><b>' + (ses ? 'Wallet rapide' : esc(w.name)) + '</b><button class="sw-addr" data-sw="copyaddr" type="button" title="Copier l\'adresse">' + short(w.pk, 4) + WI.copy + '</button></div></div>' +
-        '<div class="sw-bal"><b class="mono">' + (S.bal == null ? '—' : fr(S.bal, S.bal >= 100 ? 2 : 4)) + '</b><em>SOL</em></div><div class="sw-usd">' + (usd(S.bal) || (S.bal == null ? 'solde en cours de lecture' : '&nbsp;')) + '</div>' +
+        '<div class="sw-bal">' + (S.bal == null ? '<b class="mono">—</b><em>SOL</em></div><div class="sw-usd">solde en cours de lecture</div>' : '<span class="sol stack" data-sol="' + S.bal + '" style="font-size:26px"><b class="mono">' + fr(S.bal, S.bal >= 100 ? 2 : 4) + '</b><em style="margin-left:7px">SOL</em></span></div>') +
         '<div class="sw-act">' + (ses ? wAct('fund', 'fund', 'Dépôt') + wAct('withdraw', 'withdraw', 'Retrait') + (locked ? wAct('unlock', 'unlock', 'Ouvrir', 'primary') : wAct('lock', 'lock', 'Bloquer')) : wAct('copyaddr', 'copy', 'Copier')) + wAct('panel', 'gear', 'Gérer') + '</div></div>';
     }
     const mw = $('mWallet'); // ancien bouton mobile, remplacé par le menu de compte
