@@ -418,8 +418,10 @@ function parseSecret(s: unknown): Keypair {
   if (bytes.length !== 64) throw new Fail(400, 'Clé invalide : 64 octets attendus.');
   return Keypair.fromSecretKey(bytes);
 }
+// nom d'un wallet rapide : 32 caractères au plus, sans caractères de contrôle ; vide = nom par défaut (n°…)
+const cleanLabel = (v: unknown) => { const t = typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 32) : ''; return t || null; };
 // nouveau wallet (créé ou importé) : le premier fixe le mot de passe du compte, les suivants le demandent
-async function create(uid: string, pw: unknown, kp: Keypair) {
+async function create(uid: string, pw: unknown, kp: Keypair, label: unknown = null) {
   if (await pwRow(uid)) await checkPw(uid, pw);
   else { const weak = passwordError(pw); if (weak) throw new Fail(400, weak); }
   const addr = kp.publicKey.toBase58();
@@ -429,7 +431,9 @@ async function create(uid: string, pw: unknown, kp: Keypair) {
   const { data: num, error } = await admin.rpc('sw_create', { uid, addr, p_enc: s.enc, p_iv: s.iv });
   if (error) throw new Fail(/duplicate|unique/i.test(error.message) ? 409 : /20 wallets/.test(error.message) ? 400 : 500, /duplicate|unique/i.test(error.message) ? 'Ce wallet est déjà enregistré comme wallet rapide.' : /20 wallets/.test(error.message) ? error.message : 'Création impossible.');
   if (!(await pwRow(uid))) { const salt = crypto.getRandomValues(new Uint8Array(16)); await admin.rpc('sw_pw_set', { uid, p_hash: await pwHash(pw as string, salt, ITER), p_salt: b64(salt), p_iter: ITER }); }
-  return { address: addr, num: num as number };
+  const name = cleanLabel(label);
+  if (name) await admin.from('server_wallets').update({ label: name }).eq('user_id', uid).eq('address', addr);
+  return { address: addr, num: num as number, label: name };
 }
 
 Deno.serve(async (req) => {
@@ -470,17 +474,25 @@ Deno.serve(async (req) => {
     // limites d'appels : signatures des trades et des ordres, et actions du compte
     if (action === 'sign_send') await rate('sw_sign:' + uid, 600, 3600);
     else if (action !== 'status') await rate('sw:' + uid, 60, 3600);
-    if (action === 'create') return json(200, await create(uid, body.password, Keypair.generate()));
-    if (action === 'import') { const kp = parseSecret(body.secret); const r = await create(uid, body.password, kp); await audit(uid, 'server_wallet_imported', { address: r.address }); return json(200, r); }
+    if (action === 'create') return json(200, await create(uid, body.password, Keypair.generate(), body.label));
+    if (action === 'import') { const kp = parseSecret(body.secret); const r = await create(uid, body.password, kp, body.label); await audit(uid, 'server_wallet_imported', { address: r.address }); return json(200, r); }
     if (action === 'status') {
-      const [L, pw] = await Promise.all([list(uid), pwRow(uid)]);
-      return json(200, { wallets: L.map((w) => ({ address: w.address, num: w.num, daily_cap_sol: Number(w.daily_cap_sol), alert_balance_sol: Number(w.alert_balance_sol), spent_today: Number(w.spent_today) })),
+      const [L, pw, { data: lb }] = await Promise.all([list(uid), pwRow(uid), admin.from('server_wallets').select('address,label').eq('user_id', uid)]);
+      const names = new Map(((lb ?? []) as { address: string; label: string | null }[]).map((x) => [x.address, x.label]));
+      return json(200, { wallets: L.map((w) => ({ address: w.address, num: w.num, label: names.get(w.address) ?? null, daily_cap_sol: Number(w.daily_cap_sol), alert_balance_sol: Number(w.alert_balance_sol), spent_today: Number(w.spent_today) })),
         hasPassword: !!pw, locked: !!(pw?.locked_until && Date.parse(pw.locked_until) > Date.now()) });
     }
     // wallet visé par son adresse (sinon le n°1)
     const row = await load(uid, body.address);
     if (!row) throw new Fail(404, body.address ? 'Ce wallet rapide n\'existe pas sur votre compte.' : 'Aucun wallet rapide sur ce compte.');
     if (action === 'sign_send') return json(200, await signSend(uid, row, body.tx));
+    // renommer : sans mot de passe (n'engage aucun fonds)
+    if (action === 'rename') {
+      const label = cleanLabel(body.label);
+      const { error } = await admin.from('server_wallets').update({ label }).eq('user_id', uid).eq('address', row.address);
+      if (error) throw new Fail(500, 'Renommage impossible.');
+      return json(200, { ok: true, label });
+    }
     if (action === 'vault_swap') return json(200, await vaultSwap(uid, row, body.from, body.to, body.amount));
     await checkPw(uid, body.password);
     if (action === 'withdraw') return json(200, await withdraw(user, row, body.to, body.amount));

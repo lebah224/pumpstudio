@@ -5,9 +5,9 @@ import { supabase } from '../lib/supabase';
 import { pwError } from '../lib/password';
 import { PasswordMeter } from '../ui/PasswordMeter';
 import { Sol } from '../ui/Sol';
-import { createServerWallet, deleteServerWallet, exportServerWallet, importServerWallet, selectServerWallet, setServerLimits, srvLabel, useServerWallet, withdrawServerWallet } from './api';
+import { createServerWallet, deleteServerWallet, exportServerWallet, importServerWallet, renameServerWallet, selectServerWallet, setServerLimits, srvLabel, useServerWallet, withdrawServerWallet } from './api';
 
-export type SrvMode = 'create' | 'import' | 'withdraw' | 'limits' | 'export' | 'delete';
+export type SrvMode = 'create' | 'import' | 'rename' | 'withdraw' | 'limits' | 'export' | 'delete';
 /** address : wallet rapide visé (sinon le wallet actif) */
 export const openServerWallet = (mode: SrvMode, address?: string) => window.dispatchEvent(new CustomEvent('ts-srv', { detail: { mode, address } }));
 
@@ -23,6 +23,7 @@ export function ServerWalletDialog() {
   const [how, setHow] = useState<'new' | 'move' | 'key'>('new');
   const [pw, setPw] = useState(''); const [pw2, setPw2] = useState('');
   const [secret, setSecret] = useState(''); const [ack, setAck] = useState(false);
+  const [label, setLabel] = useState('');
   const [to, setTo] = useState(''); const [amount, setAmount] = useState(''); const [all, setAll] = useState(false);
   const [cap, setCap] = useState(''); const [alert, setAlert] = useState('');
   const [shown, setShown] = useState<string | null>(null);
@@ -36,7 +37,7 @@ export function ServerWalletDialog() {
       const d = (e as CustomEvent).detail as SrvMode | { mode: SrvMode; address?: string };
       const m = typeof d === 'string' ? d : d.mode, addr = (typeof d === 'string' ? null : d.address) || srv?.address || null;
       const tw = srv?.wallets.find((x) => x.address === addr);
-      setMode(m); setTarget(addr); setErr(null); setPw(''); setPw2(''); setSecret(''); setAck(false); setShown(null); setAmount(''); setAll(false);
+      setMode(m); setTarget(addr); setLabel(m === 'rename' ? tw?.label ?? '' : ''); setErr(null); setPw(''); setPw2(''); setSecret(''); setAck(false); setShown(null); setAmount(''); setAll(false);
       setHow(m === 'import' ? 'key' : quick && !srv?.wallets.length ? 'move' : 'new');
       setCap(String(tw?.daily_cap_sol ?? 10)); setAlert(String(tw?.alert_balance_sol ?? 5));
       // raccourcis : wallets liés au compte (le wallet de connexion d'abord) ; l'adresse reste libre
@@ -64,23 +65,24 @@ export function ServerWalletDialog() {
         } else if (!pw) throw new Error('Saisissez le mot de passe de vos wallets rapides.');
         if (!ack) throw new Error('Cochez la case pour confirmer.');
         let r: { address: string; num: number };
-        if (how === 'new') r = await createServerWallet(pw);
+        if (how === 'new') r = await createServerWallet(pw, label.trim() || undefined);
         else if (how === 'move') {
           const h = studio()?.hub; let kp = h?.quickKeypair();
           if (!kp && (await h?.quickUnlock())) kp = h?.quickKeypair();
           if (!kp) throw new Error('Déverrouillez d\'abord votre wallet rapide.');
           const b58 = (window.PumpStudio as unknown as { b58: (u: Uint8Array) => string }).b58;
-          r = await importServerWallet(pw, b58(kp.secretKey));
+          r = await importServerWallet(pw, b58(kp.secretKey), label.trim() || undefined);
           h?.legacyDrop();   // la copie du navigateur est retirée : le wallet vit maintenant sur le compte
         } else {
           if (!secret.trim()) throw new Error('Collez la clé secrète du wallet.');
-          r = await importServerWallet(pw, secret.trim());
+          r = await importServerWallet(pw, secret.trim(), label.trim() || undefined);
         }
         if (first) await selectServerWallet(r.address);
         toast(srvLabel(r) + ' prêt', short(r.address) + (first ? ' signe maintenant vos transactions, sans fenêtre de confirmation.' : ' · choisissez-le dans Portefeuille pour qu\'il signe.'));
         close(); return;
       }
       if (!target) throw new Error('Aucun wallet rapide choisi.');
+      if (mode === 'rename') { await renameServerWallet(target, label.trim()); toast('Wallet renommé', label.trim() || 'Wallet rapide n°' + (tw?.num ?? '')); close(); return; }
       if (!pw) throw new Error('Saisissez le mot de passe de vos wallets rapides.');
       if (mode === 'withdraw') {
         const dest = to.trim();
@@ -103,7 +105,7 @@ export function ServerWalletDialog() {
 
   const PW = (label = 'Mot de passe de vos wallets rapides', auto = 'current-password', focus = true) => <label className="field"><span className="ts-lbl">{label}</span><input type="password" autoComplete={auto} value={pw} onChange={(e) => setPw(e.target.value)} autoFocus={focus} /></label>;
   const nameOf = tw ? srvLabel(tw) : 'Wallet rapide';
-  const TITLE: Record<SrvMode, string> = { create: first ? 'Créer mon wallet rapide' : 'Nouveau wallet rapide', import: 'Ajouter un wallet par clé secrète', withdraw: 'Retirer · ' + nameOf, limits: 'Plafonds · ' + nameOf, export: 'Exporter la clé · ' + nameOf, delete: 'Supprimer · ' + nameOf };
+  const TITLE: Record<SrvMode, string> = { create: first ? 'Créer mon wallet rapide' : 'Nouveau wallet rapide', import: 'Ajouter un wallet par clé secrète', rename: 'Renommer · ' + nameOf, withdraw: 'Retirer · ' + nameOf, limits: 'Plafonds · ' + nameOf, export: 'Exporter la clé · ' + nameOf, delete: 'Supprimer · ' + nameOf };
 
   return (
     <div className="ts-modal" role="dialog" aria-modal="true" aria-label={TITLE[mode]} onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
@@ -112,12 +114,16 @@ export function ServerWalletDialog() {
         <div className="ts-si-h"><b>{TITLE[mode]}</b>
           <span>{adding ? (first ? 'Un wallet de trading rattaché à votre compte : sa clé est gardée chiffrée par TokenStudio. Il signe seul, sans fenêtre de confirmation, dans la limite de vos plafonds : trades et ventes automatiques de vos ordres.'
               : 'Il prend le numéro suivant (n°' + ((srv?.wallets.reduce((m, x) => Math.max(m, x.num), 0) ?? 0) + 1) + ') et se protège avec le même mot de passe que vos autres wallets rapides.')
+            : mode === 'rename' ? 'Choisissez un nom facile à reconnaître (32 caractères au plus). Son numéro (n°' + (tw?.num ?? '') + ') ne change pas. Laissez vide pour revenir au nom par défaut.'
             : mode === 'withdraw' ? 'Collez l\'adresse Solana qui doit recevoir les SOL : la vôtre, celle d\'un ami ou d\'une plateforme. Vérifiez-la bien, un retrait ne s\'annule pas.'
             : mode === 'limits' ? 'TokenStudio refuse toute dépense au-delà du plafond du jour.'
             : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Gardez-la hors ligne et ne la partage avec personne.'
             : 'La clé chiffrée est définitivement effacée. Sans export préalable, les fonds restants seraient perdus.'}</span></div>
 
+        {mode === 'rename' && <label className="field"><span className="ts-lbl">Nom du wallet</span><input value={label} maxLength={32} onChange={(e) => setLabel(e.target.value)} placeholder={'Wallet rapide n°' + (tw?.num ?? '')} autoFocus /></label>}
+
         {adding && (<>
+          <label className="field"><span className="ts-lbl">Nom du wallet <small>facultatif</small></span><input value={label} maxLength={32} onChange={(e) => setLabel(e.target.value)} placeholder={'ex. Trading, Lancements, Réserve…'} /></label>
           <div className="seg sm ts-srv-how" role="group" aria-label="Origine du wallet">
             {quick && <button type="button" className={how === 'move' ? 'on' : ''} onClick={() => setHow('move')}>Mon ancien wallet rapide</button>}
             <button type="button" className={how === 'new' ? 'on' : ''} onClick={() => setHow('new')}>Nouveau wallet</button>
@@ -170,7 +176,7 @@ export function ServerWalletDialog() {
         {err && <div className="ts-note bad" role="alert">{err}</div>}
         <div className="ts-row" style={{ marginTop: 12 }}>
           <button type="button" className="btn ghost" onClick={close}>{shown ? 'Fermer' : 'Annuler'}</button>
-          {!shown && <button className={'btn ' + (mode === 'delete' ? 'danger' : 'primary')} disabled={busy}>{busy ? 'Patientez…' : adding ? (how === 'new' ? 'Créer le wallet rapide' : how === 'key' ? 'Ajouter ce wallet' : 'Placer sur mon compte') : mode === 'withdraw' ? 'Retirer' : mode === 'limits' ? 'Enregistrer' : mode === 'export' ? 'Afficher la clé' : 'Supprimer'}</button>}
+          {!shown && <button className={'btn ' + (mode === 'delete' ? 'danger' : 'primary')} disabled={busy}>{busy ? 'Patientez…' : adding ? (how === 'new' ? 'Créer le wallet rapide' : how === 'key' ? 'Ajouter ce wallet' : 'Placer sur mon compte') : mode === 'rename' ? 'Renommer' : mode === 'withdraw' ? 'Retirer' : mode === 'limits' ? 'Enregistrer' : mode === 'export' ? 'Afficher la clé' : 'Supprimer'}</button>}
         </div>
       </form>
     </div>

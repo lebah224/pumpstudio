@@ -96,7 +96,7 @@
   let SRVPK = null;
   // numéro d'un wallet rapide du compte (n°1, n°2… dans l'ordre de création)
   const srvNum = (pk) => { const w = window.TSServerWallet && window.TSServerWallet.wallets.find((x) => x.address === pk); return w ? w.num : null; };
-  const srvName = (pk) => { const n = srvNum(pk); return 'Wallet rapide' + (n ? ' n°' + n : ''); };
+  const srvName = (pk) => { const w = window.TSServerWallet && window.TSServerWallet.wallets.find((x) => x.address === pk); return w ? (w.label || 'Wallet rapide n°' + w.num) : 'Wallet rapide'; };
   // wallet choisi pour une opération précise (lancement) : prioritaire le temps de cette opération
   let SIGNER = null;
   Object.defineProperty(S, 'wallet', {
@@ -1126,7 +1126,7 @@
   }
   // wallets capables de lancer : chaque wallet rapide du compte et le wallet connecté (Phantom…)
   function launchWallets() {
-    const L = (window.TSServerWallet ? window.TSServerWallet.wallets : []).map((x) => ({ id: 'server', name: 'Wallet rapide n°' + x.num, pk: x.address, prov: null }));
+    const L = (window.TSServerWallet ? window.TSServerWallet.wallets : []).map((x) => ({ id: 'server', name: (x.label ? x.label + ' · n°' + x.num : 'Wallet rapide n°' + x.num), pk: x.address, prov: null }));
     if (S.ext) L.push(S.ext);
     return L;
   }

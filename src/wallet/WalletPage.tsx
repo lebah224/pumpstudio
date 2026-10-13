@@ -177,24 +177,29 @@ export function WalletPage() {
         </div>
         <div className="ts-wl-table" role="table" aria-label="Mes wallets">
           <div className="ts-wl-row ts-wl-head" role="row"><span role="columnheader">Wallet</span><span role="columnheader">Solde</span><span role="columnheader">Rôle</span><span role="columnheader" className="ts-wl-acts-h">Actions</span></div>
+          <div className="ts-wl-group" role="row"><span role="cell"><b>Wallets rapides</b><small>Clés chiffrées sur votre compte · ils signent seuls, sans fenêtre</small></span></div>
+          {!srvList.length && <div className="ts-wl-empty" role="row"><span role="cell">Aucun wallet rapide. <button type="button" className="btn sm" onClick={() => openServerWallet('create')}>Créer le premier</button></span></div>}
           {srvList.map((w) => {
             const on = tw?.address === w.address && which === 'srv', sg = srv?.active && srvSt?.address === w.address;
             return (
               <div key={w.address} role="row" className={'ts-wl-row' + (on ? ' on' : '')}>
                 <span role="cell" className="ts-wl-idc"><button type="button" className="ts-wl-id" onClick={() => setPick('srv:' + w.address)} aria-pressed={on}>
                   <span className="ts-wmark quick ts-wnum" aria-hidden="true">{w.num}</span>
-                  <span><b>{srvLabel(w)}</b><small className="mono">{short(w.address)}</small></span>
+                  <span><b>{srvLabel(w)}</b><small><span className="mono">{short(w.address)}</span>{w.label ? ' · n°' + w.num : ''}</small></span>
                 </button></span>
                 <span role="cell" className="ts-wl-bal mono">{bals[w.address] != null ? <Sol v={bals[w.address]!} d={4} /> : '…'}</span>
                 <span role="cell">{sg ? <span className="ts-hub-pill ok">Signe</span> : <button type="button" className="ts-hub-pill" onClick={() => selectServerWallet(w.address)}>Utiliser</button>}</span>
                 <span role="cell" className="ts-wl-acts">
                   <button type="button" className="btn sm ghost" onClick={() => openServerWallet('withdraw', w.address)}>Retirer</button>
                   <button type="button" className="btn sm ghost" onClick={() => openServerWallet('export', w.address)}>Clé privée</button>
-                  <button type="button" className="btn sm ghost" onClick={() => copy(w.address)} aria-label={'Copier l\'adresse du ' + srvLabel(w)}>Copier</button>
+                  <button type="button" className="btn sm ghost" onClick={() => openServerWallet('rename', w.address)}>Renommer</button>
+                  <button type="button" className="btn sm ghost" onClick={() => copy(w.address)} aria-label={'Copier l\'adresse de ' + srvLabel(w)}>Copier</button>
                 </span>
               </div>
             );
           })}
+          <div className="ts-wl-group" role="row"><span role="cell"><b>Wallets externes</b><small>Phantom, Solflare, Binance Wallet… · la clé reste dans l'extension, chaque transaction s'y signe</small></span></div>
+          {!ext && <div className="ts-wl-empty" role="row"><span role="cell">Aucun wallet externe connecté. <button type="button" className="btn sm" onClick={() => window.dispatchEvent(new CustomEvent('ts-connect'))}>Connecter un wallet</button></span></div>}
           {ext && (
             <div role="row" className={'ts-wl-row' + (which === 'ext' ? ' on' : '')}>
               <span role="cell" className="ts-wl-idc"><button type="button" className="ts-wl-id" onClick={() => setPick('ext')} aria-pressed={which === 'ext'}>
@@ -221,7 +226,6 @@ export function WalletPage() {
               <span role="cell" className="ts-wl-acts"><button type="button" className="btn sm ghost" onClick={() => hub?.legacyMigrate()}>Transférer sur mon compte</button><button type="button" className="btn sm ghost" onClick={() => hub?.legacyExport()}>Clé privée</button></span>
             </div>
           )}
-          {!srvList.length && !ext && !quick && <div className="empty"><b>Aucun wallet</b>Créez un wallet rapide ou connectez Phantom.</div>}
         </div>
       </section>
 

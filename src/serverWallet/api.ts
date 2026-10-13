@@ -6,7 +6,7 @@ import { studio } from '../legacy/bridge';
 // transactions à signer, le serveur applique sa politique (programmes de trading seulement, plafonds) puis signe.
 // Un seul mot de passe protège tous les wallets rapides du compte.
 
-export type SrvWallet = { address: string; num: number; daily_cap_sol: number; alert_balance_sol: number; spent_today: number };
+export type SrvWallet = { address: string; num: number; label?: string | null; daily_cap_sol: number; alert_balance_sol: number; spent_today: number };
 /** address : wallet rapide actif (celui qui signe), wallets : tous, dans l'ordre de création */
 export type SrvStatus = { address: string | null; wallets: SrvWallet[]; hasPassword: boolean; locked?: boolean; daily_cap_sol?: number; alert_balance_sol?: number; spent_today?: number };
 
@@ -29,17 +29,18 @@ function setState(s: SrvStatus | null) {
 }
 export const srvStore = { get: () => state, subscribe: (f: () => void) => { subs.add(f); return () => subs.delete(f); } };
 export const useServerWallet = () => useSyncExternalStore(srvStore.subscribe, srvStore.get);
-export const srvLabel = (w: { num: number }) => 'Wallet rapide n°' + w.num;
+/** nom affiché : celui choisi, sinon « Wallet rapide n°… » */
+export const srvLabel = (w: { num: number; label?: string | null }) => w.label || 'Wallet rapide n°' + w.num;
 export const srvByAddress = (a: string | null | undefined) => state?.wallets.find((w) => w.address === a) ?? null;
 
 declare global { interface Window {
-  TSServerWallet?: { pk: string; wallets: { address: string; num: number }[]; signSend: (tx: string, address?: string) => Promise<{ signature: string; raw: string }> };
+  TSServerWallet?: { pk: string; wallets: { address: string; num: number; label?: string | null }[]; signSend: (tx: string, address?: string) => Promise<{ signature: string; raw: string }> };
   TSServerWalletImport?: (password: string | null, secret: string) => Promise<string>;
 } }
 /** Le studio historique signe via le serveur avec le wallet rapide actif, ou celui choisi pour une opération */
 function syncLegacy() {
   const pk = state?.address ?? null;
-  if (pk) window.TSServerWallet = { pk, wallets: state!.wallets.map((w) => ({ address: w.address, num: w.num })), signSend: (tx, address) => call('sign_send', { tx, address: address ?? pk }) };
+  if (pk) window.TSServerWallet = { pk, wallets: state!.wallets.map((w) => ({ address: w.address, num: w.num, label: w.label ?? null })), signSend: (tx, address) => call('sign_send', { tx, address: address ?? pk }) };
   else delete window.TSServerWallet;
   studio()?.hub?.setServer(pk);
 }
@@ -55,8 +56,9 @@ export async function selectServerWallet(address: string) {
   await studio()?.hub?.useServer(true);
 }
 
-export async function createServerWallet(password: string) { const r = await call<{ address: string; num: number }>('create', { password }); await refreshServerWallet(); return r; }
-export async function importServerWallet(password: string, secret: string) { const r = await call<{ address: string; num: number }>('import', { password, secret }); await refreshServerWallet(); return r; }
+export async function createServerWallet(password: string, label?: string) { const r = await call<{ address: string; num: number; label: string | null }>('create', { password, label }); await refreshServerWallet(); return r; }
+export async function importServerWallet(password: string, secret: string, label?: string) { const r = await call<{ address: string; num: number; label: string | null }>('import', { password, secret, label }); await refreshServerWallet(); return r; }
+export async function renameServerWallet(address: string, label: string) { await call('rename', { address, label }); await refreshServerWallet(); }
 // le studio place l'ancien wallet rapide du navigateur sur le serveur
 window.TSServerWalletImport = async (password, secret) => (await importServerWallet(password ?? '', secret)).address;
 export async function withdrawServerWallet(address: string, password: string, to: string, amount: number | 'max') { return call<{ signature: string; sol: number }>('withdraw', { address, password, to, amount }); }
