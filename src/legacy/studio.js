@@ -6,7 +6,6 @@
      quitte jamais le wallet, le studio ne la voit jamais.
    • Transactions construites par PumpPortal (API « locale »), vérifiées par
      simulation sur la blockchain avant toute signature.
-   • Mode simulation par défaut : rien n'est envoyé tant qu'il est actif.
    • Données lues directement sur Solana (courbe de liaison, détenteurs,
      transactions) via le RPC configuré.
    █████████████████████████████████████████████████████████████████████ */
@@ -47,7 +46,7 @@
   const FAMOUS = ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF', 'FLOKI', 'POPCAT', 'MEW', 'BOME', 'SLERF', 'PNUT', 'GOAT', 'MOODENG', 'FARTCOIN', 'BRETT', 'MOG', 'TURBO', 'NEIRO', 'CHILLGUY', 'SOL', 'BTC', 'ETH', 'USDC', 'USDT', 'TRUMP', 'MELANIA'];
 
   /* ================================================================ réglages */
-  const DEF = { engine: 'direct', speed: 'fast', maxPriority: 0.003, rpc: '', metaMethod: 'pump', pinataJwt: '', slippage: 15, priorityFee: 0.0005, maxSol: 1, feePct: 1.25, portalFeePct: 0.5, devMaxPct: 10, sim: true, notify: true, sound: true, pollSec: 10, ppLive: true, sender: 'swqos', useSess: false, autoExec: true, slSlippage: 30, autoRetry: 2 };
+  const DEF = { engine: 'direct', speed: 'fast', maxPriority: 0.003, rpc: '', metaMethod: 'pump', pinataJwt: '', slippage: 15, priorityFee: 0.0005, maxSol: 1, feePct: 1.25, portalFeePct: 0.5, devMaxPct: 10, notify: true, sound: true, pollSec: 10, ppLive: true, sender: 'swqos', useSess: false, autoExec: true, slSlippage: 30, autoRetry: 2 };
   const LS = { cfg: 'pstudio_cfg_v1', draft: 'pstudio_draft_v1', tokens: 'pstudio_tokens_v1', journal: 'pstudio_journal_v1', orders: 'pstudio_orders_v1', wallet: 'pstudio_wallet_v1', sess: 'pstudio_sess_v1' };
   const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
   // Réglages appliqués depuis le compte (synchronisation) : on ne les renvoie pas au serveur
@@ -55,15 +54,11 @@
   // Où vivent les données :
   // - réel (compte connecté) : uniquement dans la base de données. Le studio les garde en mémoire (REAL) et chaque
   //   écriture part vers le compte (CLOUD, branché par l'application) ; rien n'est copié dans le navigateur ;
-  // - démo : dans le navigateur, sous des clés « démo », jamais envoyées au compte ;
   // - invité : seul le brouillon reste dans le navigateur (il n'y a pas de compte où l'enregistrer).
-  const DEMO_KEYS = { pstudio_tokens_v1: 'pstudio_demo_tokens_v1', pstudio_orders_v1: 'pstudio_demo_orders_v1', pstudio_journal_v1: 'pstudio_demo_journal_v1', pstudio_dist_v1: 'pstudio_demo_dist_v1' };
   const REAL_KIND = { pstudio_tokens_v1: 'tokens', pstudio_orders_v1: 'orders', pstudio_journal_v1: 'journal', pstudio_dist_v1: 'dist' };
   const REAL = { tokens: [], journal: [], orders: [], dist: {} };
   let CLOUD = null;   // { write(kind, value) } quand un compte est connecté
-  const dk = (k) => (cfg.sim && DEMO_KEYS[k]) || k;
   const save = (k0, v) => {
-    if (cfg.sim && DEMO_KEYS[k0]) { try { localStorage.setItem(DEMO_KEYS[k0], JSON.stringify(v)); } catch (e) {} return; }
     if (REAL_KIND[k0]) { REAL[REAL_KIND[k0]] = v; if (CLOUD && !REMOTE_APPLY) CLOUD.write(REAL_KIND[k0], v); return; }
     if (k0 === LS.draft && CLOUD) { if (!REMOTE_APPLY) CLOUD.write('draft', v); return; }
     // réglages : ceux du compte quand il est connecté (clés API chiffrées sur le serveur), sinon ceux de l'invité
@@ -72,10 +67,13 @@
     if (k0 === LS.cfg && !REMOTE_APPLY) { try { window.dispatchEvent(new CustomEvent('pstudio-cfg', { detail: { cfg: v } })); } catch (e) {} }
   };
   const cfg = Object.assign({}, DEF, load(LS.cfg, {}));
+  delete cfg.sim;
+  // anciennes données de l'essai sans compte : effacées du navigateur
+  try { Object.keys(localStorage).filter((k) => /^pstudio_demo/.test(k) || k === 'ts_demo_guest').forEach((k) => localStorage.removeItem(k)); } catch (e) {}
   // un seul wallet rapide : celui du compte, sur le serveur. L'ancien wallet rapide du navigateur ne signe plus
   // (il reste seulement le temps d'en transférer les fonds vers le compte).
   cfg.useSess = false;
-  // réglages enregistrés sur le compte : tout sauf le mode (colonne des préférences) et l'ancien wallet rapide
+  // réglages enregistrés sur le compte : tout sauf l'ancien wallet rapide
   const CFG_LOCAL_ONLY = ['sim', 'useSess', 'quickOff'];
   function cfgForAccount() { const o = {}; Object.keys(cfg).forEach((k) => { if (!CFG_LOCAL_ONLY.includes(k)) o[k] = cfg[k]; }); return o; }
   // brouillon vide (nouveau compte, déconnexion)
@@ -83,8 +81,8 @@
   const S = {
     page: 'dash', step: 1, ext: null, extBal: null, bal: null, solUsd: null, rpcOk: null,
     draft: Object.assign(draftDefaults(), load(LS.draft, {})),
-    tokens: cfg.sim ? load(dk(LS.tokens), []) : REAL.tokens, journal: cfg.sim ? load(dk(LS.journal), []) : REAL.journal, orders: cfg.sim ? load(dk(LS.orders), []) : REAL.orders,
-    ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, jf: 'real', busy: false, imgBlob: null,
+    tokens: REAL.tokens, journal: REAL.journal, orders: REAL.orders,
+    ideas: [], cache: {}, view: { mine: null, trade: null }, side: { mine: 'buy', trade: 'buy' }, busy: false, imgBlob: null,
   };
   const saveDraft = () => save(LS.draft, S.draft);
   // plateforme d'un token : celle du lancement pour les tokens du studio, sinon déduite du marché lu
@@ -140,13 +138,12 @@
   }
   function closeModal() { $('modal').classList.remove('open'); if (PANEL.cur) panelRestore(); }
   const confirmBox = (title, html, ok, danger) => modal(title, html, [{ label: 'Annuler' }, { label: ok || 'Confirmer', cls: danger ? 'danger' : 'primary' }], true).then((i) => i === 1);
-  // En réel, chaque action importante propose aussi « Tester » (« Tester avant de lancer » pour un lancement) : vérifiée sur la blockchain, jamais envoyée
+  // Chaque action importante propose aussi « Tester » (« Tester avant de lancer » pour un lancement) : vérifiée sur la blockchain, jamais envoyée
   async function confirmTest(title, html, ok, danger, testLabel) {
-    if (cfg.sim) return (await modal(title, html, [{ label: 'Annuler' }, { label: ok, cls: 'primary' }], true)) === 1 ? 'demo' : null;
     const i = await modal(title, html, [{ label: 'Annuler' }, { label: testLabel || 'Tester' }, { label: ok, cls: danger ? 'danger' : 'primary' }], true);
     return i === 2 ? 'real' : i === 1 ? 'test' : null;
   }
-  const dryNote = (how) => how === 'test' ? '<div class="notice info">Test réussi : la transaction passerait. Rien n\'a été envoyé ; relancez pour l\'exécuter.</div>' : '<div class="notice info">Démo réussie : l\'opération est vérifiée sur la blockchain et passerait en réel. Rien n\'a été envoyé.</div>';
+  const dryNote = () => '<div class="notice info">Test réussi : la transaction passerait. Rien n\'a été envoyé ; relancez pour l\'exécuter.</div>';
 
   /* ================================================================ RPC Solana */
   let rpcId = 0;
@@ -154,7 +151,7 @@
   // En cas de panne du relais, retour au RPC direct pendant une minute.
   let RELAY_DOWN = 0;
   const relay = () => (!cfg.rpc && window.TSRelay && Date.now() > RELAY_DOWN ? window.TSRelay : null);
-  const rpcKind = () => (cfg.rpc ? 'privé' : relay() ? 'TokenStudio' : 'public');
+  const rpcKind = () => (cfg.rpc ? 'Helius' : relay() ? 'standard' : 'publique');
   async function rpcPost(body) {
     const R = relay();
     if (R) {
@@ -317,10 +314,9 @@
   const DEX_NAMES = { launchlab: 'Raydium LaunchLab', raydium: 'Raydium', pumpswap: 'PumpSwap', meteora: 'Meteora', orca: 'Orca', moonshot: 'Moonshot' };
   const dexName = (c) => DEX_NAMES[c && c.dex] || (c && c.dex ? c.dex : 'DEX');
   async function loadToken(mint, full) {
-    if (isDemoMint(mint)) { dmRun(); return dmLoad(mint); }
     const C = S.cache[mint] = S.cache[mint] || { trades: [], meta: null, holders: [], at: 0 };
     let c, X = null;
-    try { c = await readCurve(mint); } catch (e) { if (!cfg.sim) throw e; c = { exists: false }; }   // démo sans RPC : prix lu sur DexScreener
+    c = await readCurve(mint);
     if (!c.exists) { X = await dexMarket(mint); if (X) c = X.curve; }
     C.curve = c; C.stats = X ? X.stats : c.exists ? curveStats(c) : null; C.at = Date.now(); C.error = null;
     if (!C.meta || (X && !C.meta.name)) { C.meta = await tokenMeta(mint); if (X && !C.meta.name) C.meta = Object.assign({}, X.meta, { image: C.meta.image || X.meta.image }); }
@@ -328,8 +324,7 @@
       if (!c.ext) try { await trades(mint, c, C.trades); } catch (e) { C.tradeErr = e.message; }
       if (!C.holdersAt || Date.now() - C.holdersAt > 45000) { try { C.holders = await holders(mint, c); C.holdersAt = Date.now(); } catch (e) { C.holdErr = e.message; } }
     }
-    if (cfg.sim) C.myBal = DEMO.pos[mint] || 0;
-    else if (S.wallet) { try { C.myBal = await tokenBalance(S.wallet.pk, mint); } catch (e) {} }
+    if (S.wallet) { try { C.myBal = await tokenBalance(S.wallet.pk, mint); } catch (e) {} }
     return C;
   }
 
@@ -398,7 +393,7 @@
     renderTop();
   }
   async function walletMenu() {
-    // sans wallet, la connexion passe par le menu de compte (choix du wallet, compte, simulation)
+    // sans wallet, la connexion passe par le menu de compte (choix du wallet, compte)
     if (!S.wallet && window.__tsConnectUI && location.protocol !== 'file:') { window.dispatchEvent(new CustomEvent('ts-connect')); return; }
     if (S.wallet && S.wallet.id === 'session') return walletPanel();
     if (S.wallet) {
@@ -638,7 +633,6 @@
   async function sessFund() {
     if (!S.ext) { toast('Wallet non connecté', 'Connectez Phantom (ou un autre wallet) pour alimenter votre wallet rapide.', 'a'); return; }
     if (!SRVPK) { toast('Pas encore de wallet rapide', 'Créez d\'abord votre wallet rapide, puis alimentez-le depuis ' + S.ext.name + '.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return; }
-    if (cfg.sim) return toast('Mode démo', 'Passez en réel pour alimenter votre wallet rapide.', 'a');
     const ext = S.ext, to = SRVPK;
     let have = S.extBal; try { have = (await rpc('getBalance', [ext.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {}
     const max = have != null ? Math.max(0, have - 0.003) : null;   // garde de quoi payer les frais du wallet
@@ -701,7 +695,6 @@
     if (!dest) return toast('Adresse invalide', 'Collez une adresse Solana complète.', 'r');
     if (dest === SESSREC.pk) return toast('Adresse invalide', 'C\'est l\'adresse du wallet rapide lui-même.', 'r');
     closeModal();
-    if (cfg.sim) return toast('Mode démo', 'Le retrait n\'est pas envoyé en démo. Passez en réel pour retirer.', 'a');
     const { web3 } = KIT(), price = 20000, feeLam = 5000 + Math.ceil(price * 1000 / 1e6);
     const lam = amtIn ? Math.round(num(amtIn) * 1e9) : bal - feeLam;
     if (!(lam > 0) || lam + feeLam > bal) return toast('Montant trop élevé', 'Disponible : ' + fSol((bal - feeLam) / 1e9, 6) + '.', 'r');
@@ -1017,236 +1010,14 @@
   function journalAdd(e) { e.id = e.id || (Date.now() + '-' + Math.random().toString(36).slice(2, 7)); e.t = e.t || Date.now(); S.journal.unshift(e); if (S.journal.length > 2000) S.journal.length = 2000; save(LS.journal, S.journal); }
   const solscan = (sig) => 'https://solscan.io/tx/' + sig;
 
-  /* ---------- démo : wallet fictif de 10 SOL et marché simulé. Rien ne touche la blockchain ---------- */
-  // Adresses démo volontairement invalides sur Solana (elles contiennent « 0 ») : impossible d'y envoyer de vrais SOL.
-  const B58A = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  const rndB58 = (n) => { const b = new Uint8Array(n); crypto.getRandomValues(b); let o = ''; b.forEach((x) => { o += B58A[x % 58]; }); return o; };
-  const DEMO = Object.assign({ bal: 10, pos: {}, addr: '' }, load('pstudio_demo_v1', {}));
-  if (!DEMO.addr) DEMO.addr = 'DEMO0' + rndB58(39);
-  const demoSave = () => save('pstudio_demo_v1', DEMO);
-  const isDemoMint = (m) => typeof m === 'string' && m.startsWith('DEMO0');
-  // invitation au réel : créer un compte (invité) ou passer en réel (compte connecté)
-  const demoCta = () => '<div class="notice info ts-acct-cta"><span><b>Opération fictive.</b> ' + (AUTH ? 'En réel, la même opération est vérifiée sur la blockchain puis envoyée après votre signature.' : 'Créez votre compte pour passer en réel : chaque opération y est vérifiée sur la blockchain avant votre signature.') + '</span>' +
-    '<button class="btn sm primary" data-act="' + (AUTH ? 'simoff' : 'needacct') + '" type="button">Passer en réel</button></div>';
-
-  // Marché simulé des tokens lancés en démo : courbe de liaison, acheteurs et vendeurs fictifs, détenteurs, frais créateur
-  const DM = Object.assign({ tok: {} }, load('pstudio_demo_mkt_v1', {}));
-  let dmDirty = 0;
-  const dmSave = () => { dmDirty = 0; save('pstudio_demo_mkt_v1', DM); };
-  const DEMO_FEE = 0.003;   // part des échanges reversée au créateur, simulée
-  const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
-  const poisson = (l) => { let n = 0, p = Math.exp(-Math.min(l, 30)), s = p; const u = Math.random(); while (u > s && n < 40) { n++; p *= l / n; s += p; } return n; };
-  const pick = (a) => a[Math.floor(Math.random() * a.length)];
-  const dmCurve = (T) => ({ pda: 'DEMO0curve', exists: true, demo: true, vSol: T.vSol, vTok: T.vTok, realTok: T.realTok, realSol: T.realSol, supply: 1e15, complete: T.complete, creator: DEMO.addr });
-  function dmApply(T, who, side, amt, t) {
-    const c = dmCurve(T), me = who === DEMO.addr;
-    let tr;
-    if (side === 'buy') {
-      const q = quoteBuy(c, amt); if (!q || !(q.tokens > 0)) return null;
-      const net = amt * (1 - feeRate()) * 1e9, raw = q.tokens * 1e6;
-      T.vSol += net; T.vTok -= raw; T.realSol += net; T.realTok -= raw;
-      if (!me) T.hold[who] = (T.hold[who] || 0) + q.tokens;
-      tr = { sig: 'DEMO0' + rndB58(40), t, wallet: who, side, tokens: q.tokens, sol: amt, price: amt / q.tokens };
-    } else {
-      const have = me ? (DEMO.pos[T.mint] || 0) : (T.hold[who] || 0), tok = Math.min(amt, have);
-      const q = quoteSell(c, tok); if (!q || !(q.sol > 0)) return null;
-      const gross = q.sol / (1 - feeRate()) * 1e9, raw = tok * 1e6;
-      T.vTok += raw; T.vSol -= gross; T.realTok += raw; T.realSol = Math.max(0, T.realSol - gross);
-      if (!me) T.hold[who] = have - tok;
-      tr = { sig: 'DEMO0' + rndB58(40), t, wallet: who, side, tokens: tok, sol: q.sol, price: q.sol / tok };
-    }
-    T.fees += tr.sol * DEMO_FEE;
-    // courbe terminée : migration simulée, les échanges continuent sur un pool
-    if (!T.complete && T.realTok <= 1e9) { T.complete = true; T.migratedAt = t; T.realTok = T.vTok * 0.8; }
-    T.trades.unshift(tr); if (T.trades.length > 300) T.trades.length = 300;
-    dmDirty++;
-    return tr;
-  }
-  function dmStep(T, t, dt) {
-    const age = (t - T.createdAt) / 60000, lam = (0.45 * Math.exp(-age / 40) + 0.05) * T.heat;
-    const n = Math.min(poisson(lam * dt), 15);
-    for (let i = 0; i < n; i++) {
-      T.mood = clamp(T.mood * 0.97 + gauss() * 0.16 - 0.006, -1, 1);
-      const ts = t - Math.random() * dt * 1000;
-      if (Math.random() < 0.5 + 0.3 * T.mood) {
-        let who = T.traders.length && Math.random() > 0.35 ? pick(T.traders) : null;
-        if (!who) { who = rndB58(44); T.traders.push(who); if (T.traders.length > 120) T.traders.shift(); }
-        dmApply(T, who, 'buy', clamp(Math.exp(Math.log(0.18) + gauss() * 0.9), 0.01, 6), ts);
-      } else {
-        const hs = Object.keys(T.hold).filter((k) => T.hold[k] > 1); if (!hs.length) continue;
-        const who = pick(hs); dmApply(T, who, 'sell', T.hold[who] * (Math.random() < 0.4 ? 1 : 0.2 + Math.random() * 0.6), ts);
-      }
-    }
-    Object.keys(T.hold).forEach((k) => { if (T.hold[k] <= 1) delete T.hold[k]; });
-  }
-  // fait avancer le marché jusqu'à maintenant (rattrape au plus 30 minutes d'absence)
-  function dmRun() {
-    const now = Date.now();
-    Object.values(DM.tok).forEach((T) => {
-      let t = Math.max(T.last, now - 30 * 60000);
-      while (now - t >= 4000) { t += 4000; dmStep(T, t, 4); }
-      T.last = now - (now - t);
-      T.trades.sort((a, b) => b.t - a.t);
-    });
-    if (dmDirty) dmSave();
-  }
-  function dmLoad(mint) {
-    const T = DM.tok[mint], C = S.cache[mint] = S.cache[mint] || { trades: [], meta: null, holders: [], at: 0 };
-    if (!T) { C.curve = { exists: false }; C.stats = null; return C; }
-    C.curve = dmCurve(T); C.stats = curveStats(C.curve); C.at = Date.now(); C.error = null;
-    C.meta = { name: T.name, symbol: T.symbol, image: T.image || '' };
-    C.trades = T.trades.slice(); C.myBal = DEMO.pos[mint] || 0;
-    const sup = 1e9, me = DEMO.pos[mint] || 0;
-    const H = Object.keys(T.hold).map((o) => ({ owner: o, amount: T.hold[o], pct: T.hold[o] / sup * 100, label: '' }));
-    if (me > 0) H.push({ owner: DEMO.addr, amount: me, pct: me / sup * 100, label: 'Créateur' });
-    const pool = T.complete ? T.realTok / 1e6 : (T.realTok + (1e15 - INIT_REAL_TOK)) / 1e6;
-    H.push({ owner: 'DEMO0curve', amount: pool, pct: pool / sup * 100, label: T.complete ? 'Pool PumpSwap' : 'Courbe de liaison' });
-    C.holders = H.sort((a, b) => b.amount - a.amount).slice(0, 20); C.holdersAt = Date.now();
-    return C;
-  }
-
-  // Devis et exécution d'un échange démo : token démo (courbe simulée) ou vrai token (prix DexScreener, SOL fictifs)
-  async function demoQuote(mint, side, amountStr) {
-    let sym, price = null, T = null;
-    if (isDemoMint(mint)) { dmRun(); T = DM.tok[mint]; if (!T) throw new Error('Token démo introuvable.'); sym = T.symbol; }
-    else {
-      const X = await dexMarket(mint); price = X && X.stats && X.stats.price;
-      if (!(price > 0)) throw new Error('Prix introuvable pour ce token sur DexScreener. Essayez un token déjà échangé, ou lancez votre propre token en démo.');
-      sym = (X.meta && X.meta.symbol) || short(mint);
-    }
-    let sol, tokens;
-    if (side === 'buy') {
-      sol = num(amountStr); if (!(sol > 0)) throw new Error('Montant SOL invalide.');
-      if (sol > DEMO.bal) throw new Error('Solde démo insuffisant : ' + fSol(DEMO.bal) + ' disponibles.');
-      if (T) { const q = quoteBuy(dmCurve(T), sol); if (!q || !(q.tokens > 0)) throw new Error('Plus aucun token à acheter sur la courbe.'); tokens = q.tokens; }
-      else tokens = sol * (1 - feeRate()) / price;
-    } else {
-      const held = DEMO.pos[mint] || 0;
-      tokens = /%$/.test(String(amountStr)) ? held * num(String(amountStr).replace('%', '')) / 100 : num(amountStr);
-      if (!(tokens > 0)) throw new Error(held ? 'Quantité invalide.' : 'Le wallet démo ne détient pas ce token.');
-      if (tokens > held * 1.0001) throw new Error('Le wallet démo ne détient que ' + fTok(held) + ' ' + sym + '.');
-      tokens = Math.min(tokens, held);
-      if (T) { const q = quoteSell(dmCurve(T), tokens); sol = q ? q.sol : 0; } else sol = tokens * price * (1 - feeRate());
-    }
-    return { sym, sol, tokens, src: T ? (T.complete ? 'Pool simulé (après migration)' : 'Courbe de liaison simulée') : 'DexScreener, en direct' };
-  }
-  function demoApply(mint, side, Q, extra) {
-    let sol = Q.sol, tokens = Q.tokens, sig = '';
-    if (isDemoMint(mint)) {
-      const tr = dmApply(DM.tok[mint], DEMO.addr, side, side === 'buy' ? sol : tokens, Date.now());
-      if (!tr) throw new Error('Échange impossible sur la courbe simulée.');
-      tokens = tr.tokens; sol = tr.sol; sig = tr.sig; dmSave();
-    }
-    DEMO.bal = Math.max(0, DEMO.bal + (side === 'buy' ? -sol : sol));
-    DEMO.pos[mint] = Math.max(0, (DEMO.pos[mint] || 0) + (side === 'buy' ? tokens : -tokens));
-    demoSave();
-    journalAdd(Object.assign({ type: side, mint, symbol: Q.sym, sim: true, demo: true, status: 'ok', sig, sol: side === 'buy' ? -sol : sol, tokens: side === 'buy' ? tokens : -tokens, est: !isDemoMint(mint) }, extra || {}));
-    if (S.cache[mint] && isDemoMint(mint)) dmLoad(mint);
-    return { sol, tokens };
-  }
-  // dépôt et retrait fictifs sur le wallet démo
-  async function demoMove(kind) {
-    const dep = kind === 'deposit';
-    const i = await modal(dep ? 'Ajouter des SOL fictifs' : 'Retirer du wallet démo', '<p>' + (dep ? 'Simulez un dépôt sur le wallet démo. Aucun vrai SOL n\'est envoyé, et l\'adresse démo ne peut pas en recevoir.' : 'Simulez un retrait vers votre wallet. Rien n\'est envoyé.') + '</p>' +
-      '<div class="field"><label for="dmAmt">Montant</label><span class="unit"><input id="dmAmt" type="number" min="0.01" step="any" value="' + (dep ? '5' : fr(Math.min(1, DEMO.bal), 2).replace(',', '.')) + '"><em>SOL</em></span></div>' +
-      '<p class="muted" style="font-size:13.5px">Solde démo actuel : ' + fSolH(DEMO.bal, 3) + (dep ? ' · maximum 1 000 SOL.' : '.') + '</p>',
-      [{ label: 'Annuler' }, { label: dep ? 'Ajouter' : 'Retirer', cls: 'primary', keep: true }], true);
-    if (i !== 1) return;
-    const amt = num($('dmAmt').value);
-    if (!(amt > 0)) return toast('Montant invalide', 'Entrez un montant positif.', 'r');
-    if (dep && DEMO.bal + amt > 1000) return toast('Montant trop élevé', 'Le wallet démo est limité à 1 000 SOL.', 'r');
-    if (!dep && amt > DEMO.bal) return toast('Solde insuffisant', 'Disponible : ' + fSol(DEMO.bal, 3) + '.', 'r');
-    closeModal();
-    DEMO.bal += dep ? amt : -amt; demoSave();
-    if (cfg.sim) journalAdd({ type: dep ? 'deposit' : 'withdraw', mint: '', symbol: 'SOL', sim: true, demo: true, status: 'ok', sol: dep ? amt : -amt, tokens: 0 });
-    toast(dep ? 'Dépôt démo' : 'Retrait démo', (dep ? '+' : '−') + fSol(amt, 3) + ' · wallet démo ' + fSol(DEMO.bal, 3), 'g');
-    renderAll();
-  }
-  async function demoTrade(mint, side, amountStr, opts) {
-    opts = opts || {};
-    if (S.busy) return; S.busy = true;
-    try {
-      const Q = await demoQuote(mint, side, amountStr);
-      const recap = '<div class="recap"><div class="kv"><span>Opération</span><span>' + (side === 'buy' ? 'Achat' : 'Vente') + ' de ' + esc(Q.sym) + '</span>' +
-        (side === 'buy' ? '<span>Vous payez</span><span>' + fSolH(Q.sol) + '</span><span>Vous recevez environ</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span>' : '<span>Vous vendez</span><span>' + fTok(Q.tokens) + ' ' + esc(Q.sym) + '</span><span>Vous recevez environ</span><span>' + fSolH(Q.sol) + '</span>') +
-        '<span>Prix</span><span>' + Q.src + '</span><span>Wallet</span><span>Wallet démo · ' + fSolH(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' + (opts.note ? '<div class="notice">' + esc(opts.note) + '</div>' : '') + demoCta();
-      if (!(await confirmBox(opts.title || (side === 'buy' ? 'Acheter ' : 'Vendre ') + Q.sym + ' en démo ?', recap, side === 'buy' ? 'Acheter en démo' : 'Vendre en démo'))) return;
-      const r = demoApply(mint, side, Q);
-      toast(side === 'buy' ? 'Achat démo' : 'Vente démo', Q.sym + ' · ' + (side === 'buy' ? fTok(r.tokens) + ' reçus' : '+' + fSol(r.sol, 4)) + ' · wallet démo ' + fSol(DEMO.bal), 'g');
-      renderAll(); refreshView();
-      return true;
-    } catch (e) { toast('Opération impossible', e.message, 'r'); }
-    finally { S.busy = false; renderTop(); }
-  }
-  // ordre déclenché en démo : vendu aussitôt dans le wallet démo, sans signature
-  async function demoOrderSell(o) {
-    try {
-      const held = DEMO.pos[o.mint] || 0;
-      const tok = Math.min(held, o.tokens ? o.tokens : held * o.pct / 100);
-      if (!(tok > 0)) throw new Error('Le wallet démo ne détient plus ce token.');
-      const Q = await demoQuote(o.mint, 'sell', String(tok));
-      const r = demoApply(o.mint, 'sell', Q, { auto: true });
-      o.done = true; o.auto = 'ok'; o.failed = null; save(LS.orders, S.orders);
-      toast('Vente automatique (démo)', Q.sym + ' · +' + fSol(r.sol, 4) + ' · wallet démo ' + fSol(DEMO.bal), 'g');
-    } catch (e) { o.auto = 'ko'; o.failed = e.message; save(LS.orders, S.orders); toast('Vente démo impossible', e.message, 'r'); }
-    renderAll();
-  }
-
-  async function demoLaunch() {
-    const R = readiness();
-    if (R.blocking.length) { toast('Pas encore prêt', R.blocking[0], 'a'); return; }
-    const d = S.draft, PL = PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null, cost = dev + PL.fee;
-    if (cost > DEMO.bal) { toast('Solde démo insuffisant', 'Le wallet démo a ' + fSol(DEMO.bal) + '.', 'a'); return; }
-    const recap = '<div class="recap"><div class="kv"><span>Token</span><span>' + esc(d.name) + ' · $' + esc(d.symbol) + '</span>' +
-      '<span>Achat du créateur</span><span>' + (dev ? fSolH(dev) + (q ? ' → ' + fTok(q.tokens) + ' (' + fPct(q.supplyPct, 2) + ' de l\'offre)' : '') : 'aucun') + '</span>' +
-      '<span>Coût total estimé</span><span>' + fSolH(cost) + '</span><span>Wallet</span><span>Wallet démo · ' + fSolH(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' +
-      '<p>Le token est créé sur un marché simulé : des acheteurs et vendeurs fictifs le font vivre, et vous le suivez comme un vrai token.</p>' + demoCta();
-    if (!(await confirmBox('Lancer ' + d.name + ' en démo ?', recap, 'Lancer en démo'))) return;
-    const now = Date.now(), mint = 'DEMO0' + rndB58(39);
-    const T = { mint, name: d.name, symbol: d.symbol, image: '', createdAt: now, last: now, vSol: INIT_CURVE.vSol, vTok: INIT_CURVE.vTok, realTok: INIT_CURVE.realTok, realSol: 0, complete: false,
-      hold: {}, traders: [], trades: [], mood: 0.2 + gauss() * 0.25, heat: 0.6 + Math.random(), fees: 0, claimed: 0 };
-    let buy = null;
-    const ctx = await runFlow('Démo · ' + d.name, [
-      { label: 'Logo et fiche du token préparés', run: async () => { await sleep(300); T.image = await thumbnail(d.image); return 'prêts'; } },
-      { label: 'Token créé sur la courbe simulée', run: async () => { await sleep(400); DM.tok[mint] = T; return short(mint); } },
-      { label: dev > 0 ? 'Achat du créateur' : 'Aucun achat du créateur', run: async () => {
-        await sleep(300); if (!(dev > 0)) return 'aucun';
-        buy = dmApply(T, DEMO.addr, 'buy', dev, now); if (!buy) throw new Error('Achat impossible.');
-        return fTok(buy.tokens) + ' ' + d.symbol;
-      } },
-    ]);
-    if (ctx.error) { delete DM.tok[mint]; return; }
-    dmSave();
-    DEMO.bal = Math.max(0, DEMO.bal - cost); if (buy) DEMO.pos[mint] = buy.tokens; demoSave();
-    S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: T.image, createdAt: now, sig: buy ? buy.sig : '', dev, platform: 'pump', creator: DEMO.addr, desc: d.desc, tw: d.tw, tg: d.tg, web: d.web, demo: true });
-    save(LS.tokens, S.tokens);
-    journalAdd({ type: 'create', mint, symbol: d.symbol, sim: true, demo: true, status: 'ok', sig: buy ? buy.sig : '', sol: -cost, tokens: buy ? buy.tokens : 0 });
-    // plan de prise de profit → ordres démo, vendus automatiquement dans le wallet démo
-    if (buy && d.tpOn && tpValid().ok) {
-      const ref = dev / buy.tokens;
-      d.tp.forEach((l, i) => S.orders.push({ id: Date.now().toString(36) + i, mint, symbol: d.symbol, kind: 'tp', value: Math.round((l.x - 1) * 100), pct: l.pct, tokens: buy.tokens * l.pct / 100, ref, active: true, createdAt: Date.now(), plan: true }));
-      save(LS.orders, S.orders);
-    }
-    $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est lancé en démo. Le marché simulé démarre : suivez son prix, vos ordres et sa diffusion comme pour un vrai token. <button class="btn sm primary" data-dtok="' + mint + '" type="button">Voir le token</button></div>' + demoCta());
-    toast('Lancement démo', d.name + ' · wallet démo ' + fSol(DEMO.bal), 'g');
-    renderAll();
-  }
-  // le marché simulé avance tant que la démo est ouverte
-  setInterval(() => {
-    if (!cfg.sim || !Object.keys(DM.tok).length || document.hidden) return;
-    dmRun();
-    Object.keys(DM.tok).forEach((m) => { if (S.cache[m]) dmLoad(m); });
-  }, 3000);
-
   /* ---------- achat / vente */
   async function trade(mint, side, amountStr, opts) {
     opts = opts || {};
-    // démo sans compte ou sans wallet : opération locale sur le wallet démo, sans vérification
-    if (cfg.sim) return demoTrade(mint, side, amountStr, opts);
+    if (needAccount()) return;
     if (!S.wallet) { toast('Wallet non connecté', 'Connectez votre wallet pour préparer la transaction.', 'a'); return walletMenu(); }
-    if (!cfg.sim && !(await ensureSigner())) return;
+    if (!(await ensureSigner())) return;
     if (S.busy) return; S.busy = true;
-    let dry = !!cfg.sim, how = cfg.sim ? 'demo' : 'real';
+    let dry = false, how = 'real';
     try {
       const C = await loadToken(mint, false);
       if (!C.curve.exists) throw new Error('Marché introuvable pour ce token (ni pump.fun, ni DEX Screener).');
@@ -1255,7 +1026,7 @@
       if (side === 'buy') {
         const sol = num(amountStr); if (!(sol > 0)) throw new Error('Montant SOL invalide.');
         if (sol > cfg.maxSol) throw new Error('Au-delà de votre limite par trade (' + fSol(cfg.maxSol) + '). Modifiez-la dans Réglages si c\'est voulu.');
-        if (!cfg.sim && S.bal != null && sol + 0.01 > S.bal) throw new Error('Solde insuffisant : ' + fSol(S.bal) + ' disponibles.');
+        if (S.bal != null && sol + 0.01 > S.bal) throw new Error('Solde insuffisant : ' + fSol(S.bal) + ' disponibles.');
         q = C.curve.complete ? null : quoteBuy(C.curve, sol); amount = sol; denom = 'true';
       } else {
         const bal = C.myBal || 0;
@@ -1263,7 +1034,7 @@
         if (/%$/.test(String(amountStr))) { const p = num(String(amountStr).replace('%', '')); if (!(p > 0 && p <= 100)) throw new Error('Pourcentage invalide.'); tokens = bal * p / 100; amount = p + '%'; }
         else { tokens = num(amountStr); amount = tokens; }
         if (!(tokens > 0)) throw new Error(bal ? 'Quantité invalide.' : 'Vous ne détenez pas ce token.');
-        if (!cfg.sim && tokens > bal * 1.0001) throw new Error('Vous ne détenez que ' + fTok(bal) + ' ' + sym + '.');
+        if (tokens > bal * 1.0001) throw new Error('Vous ne détenez que ' + fTok(bal) + ' ' + sym + '.');
         q = C.curve.complete ? null : quoteSell(C.curve, tokens); denom = 'false';
       }
       const recap = '<div class="recap"><div class="kv">' +
@@ -1271,10 +1042,10 @@
         (side === 'buy' ? '<span>Vous payez</span><span>' + fSolH(amount) + '</span><span>Vous recevez environ</span><span>' + (q ? fTok(q.tokens) + ' ' + esc(sym) : 'selon le pool') + '</span>'
           : '<span>Vous vendez</span><span>' + (typeof amount === 'string' ? amount + ' · ' : '') + (q ? fTok(q.tokens) : '') + ' ' + esc(sym) + '</span><span>Vous recevez environ</span><span>' + (q ? fSolH(q.sol) : 'selon le pool') + '</span>') +
         (q ? '<span>Impact sur le prix</span><span class="' + (Math.abs(q.impact) > 5 ? 'warn' : '') + '">' + fPct(q.impact, 2) + '</span><span>Frais estimés</span><span>' + fSolH(q.fees, 4) + '</span><span>Minimum garanti</span><span>' + (side === 'buy' ? fTok(q.minOut) + ' ' + esc(sym) : fSolH(q.minOut)) + '</span>' : '') +
-        '<span>Slippage max</span><span>' + fPct(cfg.slippage, 0) + '</span>' + (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' +
+        '<span>Slippage max</span><span>' + fPct(cfg.slippage, 0) + '</span></div></div>' +
         (opts.note ? '<div class="notice info">' + esc(opts.note) + '</div>' : '') +
-        (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : S.wallet.id === 'session' ? '<p>Le wallet rapide signe dès que vous confirmez : aucune autre fenêtre.</p>' : '<p>Votre wallet va vous présenter la transaction : vérifiez le montant avant de signer.</p>');
-      how = await confirmTest(opts.title || (side === 'buy' ? 'Acheter ' : 'Vendre ') + sym + ' ?', recap, cfg.sim ? 'Vérifier en démo' : (side === 'buy' ? 'Acheter' : 'Vendre'), side === 'sell');
+        (S.wallet.id === 'session' ? '<p>Le wallet rapide signe dès que vous confirmez : aucune autre fenêtre.</p>' : '<p>Votre wallet va vous présenter la transaction : vérifiez le montant avant de signer.</p>');
+      how = await confirmTest(opts.title || (side === 'buy' ? 'Acheter ' : 'Vendre ') + sym + ' ?', recap, side === 'buy' ? 'Acheter' : 'Vendre', side === 'sell');
       if (!how) return; dry = how !== 'real';
       const body = { publicKey: S.wallet.pk, action: side, mint, amount, denominatedInSol: denom, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: C.curve.complete ? 'auto' : 'pump' };
       // token migré (PumpSwap) : PumpPortal automatiquement, quel que soit le moteur choisi
@@ -1299,12 +1070,12 @@
         steps.push({ label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) });
       }
       const ctx = await runFlow((side === 'buy' ? 'Achat ' : 'Vente ') + sym, steps);
-      if (ctx.error) { journalAdd({ type: side, mint, symbol: sym, sim: dry, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 }); return; }
+      if (ctx.error) { if (!dry) journalAdd({ type: side, mint, symbol: sym, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 }); return; }
       let sol = side === 'buy' ? -amount : (q ? q.sol : 0), tokens = q ? (side === 'buy' ? q.tokens : -q.tokens) : 0, est = true;
       if (!dry) { const d = await actualDeltas(ctx.sig, mint); if (d) { sol = side === 'buy' ? -d.sol : d.sol; tokens = side === 'buy' ? d.tokens : -d.tokens; est = false; } }
-      journalAdd({ type: side, mint, symbol: sym, sim: dry, status: 'ok', sig: ctx.sig || '', sol, tokens, est });
-      $('mBody').insertAdjacentHTML('beforeend', dry ? dryNote(how) : '<div class="notice good">Transaction confirmée. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
-      toast(dry ? (how === 'test' ? 'Test réussi' : 'Démo réussie') : (side === 'buy' ? 'Achat confirmé' : 'Vente confirmée'), sym, 'g');
+      if (!dry) journalAdd({ type: side, mint, symbol: sym, status: 'ok', sig: ctx.sig || '', sol, tokens, est });
+      $('mBody').insertAdjacentHTML('beforeend', dry ? dryNote() : '<div class="notice good">Transaction confirmée. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
+      toast(dry ? 'Test réussi' : (side === 'buy' ? 'Achat confirmé' : 'Vente confirmée'), sym, 'g');
       refreshBal(); delete S.cache[mint]; refreshView();
       return true;
     } catch (e) { toast('Opération impossible', e.message, 'r'); }
@@ -1350,9 +1121,9 @@
   async function launch() {
     const R = readiness();
     if (R.blocking.length) { toast('Pas encore prêt', R.blocking[0], 'a'); return; }
-    if (cfg.sim) return demoLaunch();
+    if (needAccount()) return;
     if (!S.wallet) return walletMenu();
-    if (!cfg.sim && !(await ensureSigner())) return;
+    if (!(await ensureSigner())) return;
     const d = S.draft, PL = PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null;
     // Créateur affiché sur pump.fun : le wallet principal (Phantom…) de préférence, même quand le wallet rapide signe
     const ses = S.wallet.id === 'session' || S.wallet.id === 'server', ext = S.ext, canPick = ses && !!ext && cfg.engine !== 'portal';
@@ -1369,12 +1140,12 @@
       '<span>Frais de réseau et comptes</span><span>≈ ' + fSolH(PL.fee, 2) + '</span>' +
       '<span>Coût total estimé</span><span>' + fSolH(dev + PL.fee) + '</span>' +
       '<span>Logo et fiche</span><span>' + (cfg.metaMethod === 'pinata' ? 'Pinata (IPFS)' : 'pump.fun (IPFS), envoyés par TokenStudio') + '</span>' +
-      (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' + creatorHtml +
+      '</div></div>' + creatorHtml +
       (ses && !ext ? '<div class="notice">Le wallet rapide sera affiché comme créateur et recevra les frais de créateur. Pour lancer en votre nom, connectez Phantom (ou votre wallet principal) : il sera proposé comme créateur.</div>' : '') +
       (ses && ext && cfg.engine === 'portal' ? '<div class="notice">Avec PumpPortal, le créateur est forcément le wallet qui signe (wallet rapide). Choisissez le moteur Direct dans Réglages pour afficher ' + esc(ext.name) + '.</div>' : '') +
       (d.tpOn && dev > 0 ? '<div class="notice info">Plan de prise de profit : ' + d.tp.map((l) => '×' + fr(l.x, 1).replace(',0', '') + ' → ' + l.pct + ' %').join(' · ') + (d.sl > 0 ? (d.slMode === 'trail' ? ' · stop suiveur −' : ' · stop −') + d.sl + ' %' : '') + '. ' + (canAuto() ? 'Le wallet rapide exécutera chaque vente automatiquement.' : 'Chaque vente vous sera présentée à signer.') + '</div>' : '') +
-      (cfg.sim ? '<p>Simulation : le token est préparé et vérifié sur la blockchain, mais rien n\'est publié ni envoyé.</p>' : '<p>Le token sera publié sur ' + PL.n + ' et visible par tous. Votre wallet va vous présenter la transaction : vérifiez avant de signer. Une création ne s\'annule pas.</p>');
-    const how = await confirmTest(cfg.sim ? 'Lancer ' + d.name + ' en démo ?' : 'Lancer ' + d.name + ' ?', recap, cfg.sim ? 'Vérifier en démo' : 'Lancer le token', !cfg.sim, 'Tester avant de lancer');
+      '<p>Le token sera publié sur ' + PL.n + ' et visible par tous. Votre wallet va vous présenter la transaction : vérifiez avant de signer. Une création ne s\'annule pas.</p>';
+    const how = await confirmTest('Lancer ' + d.name + ' ?', recap, 'Lancer le token', true, 'Tester avant de lancer');
     if (!how) return;
     const dry = how !== 'real';
     const pick = document.querySelector('input[name="crWho"]:checked');
@@ -1382,7 +1153,7 @@
     S.busy = true;
     const mintKp = W3().Keypair.generate(), mint = mintKp.publicKey.toBase58();
     const steps = [
-      { label: dry ? 'Métadonnées (non envoyées)' : 'Envoi du logo et des métadonnées (IPFS)', run: async (x) => { x.uri = dry ? 'https://ipfs.io/ipfs/simulation' : await uploadMeta(d); return dry ? 'ignoré' : 'ok'; } },
+      { label: dry ? 'Métadonnées (non envoyées)' : 'Envoi du logo et des métadonnées (IPFS)', run: async (x) => { x.uri = dry ? 'https://ipfs.io/ipfs/test' : await uploadMeta(d); return dry ? 'ignoré' : 'ok'; } },
       { label: cfg.engine === 'portal' ? 'Préparation de la création (PumpPortal)' : 'Préparation de la création (programme pump.fun)', run: async (x) => {
         x.tx = cfg.engine === 'portal' ? await portalTx({ publicKey: S.wallet.pk, action: 'create', tokenMetadata: { name: d.name, symbol: d.symbol, uri: x.uri }, mint, denominatedInSol: 'true', amount: dev, slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: 'pump' })
           : await directCreate(mintKp, d, x.uri, dev, creatorPk);
@@ -1408,21 +1179,20 @@
     try {
       const ctx = await runFlow((dry ? 'Test · ' : 'Lancement · ') + d.name, steps);
       if (ctx.error) {
-        journalAdd({ type: 'create', mint, symbol: d.symbol, sim: dry, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 });
+        if (!dry) journalAdd({ type: 'create', mint, symbol: d.symbol, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 });
         if (/pump\.fun n'accepte pas|refusé les métadonnées|refusé la fiche|pump\.fun ne répond|Réponse inattendue|Pinata/.test(ctx.error.message || '')) $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">L\'envoi du logo a échoué. Un jeton Pinata gratuit règle le problème. <button class="btn sm primary" data-act="keyhelp" data-k="pinata" type="button">Ajouter un jeton Pinata</button></div>');
         return;
       }
       if (dry) {
-        journalAdd({ type: 'create', mint, symbol: d.symbol, sim: true, status: 'ok', sol: -dev, tokens: q ? q.tokens : 0, est: true });
-        $('mBody').insertAdjacentHTML('beforeend', dryNote(how));
-        toast(how === 'test' ? 'Test réussi' : 'Démo réussie', d.name + ' est prêt à être lancé.', 'g');
+        $('mBody').insertAdjacentHTML('beforeend', dryNote());
+        toast('Test réussi', d.name + ' est prêt à être lancé.', 'g');
         return;
       }
       const real = await actualDeltas(ctx.buySig || ctx.sig, mint);
       const thumb = await thumbnail(d.image);
       S.tokens.unshift({ mint, name: d.name, symbol: d.symbol, image: thumb, createdAt: Date.now(), sig: ctx.sig, dev, platform: 'pump', creator: creatorPk, desc: d.desc, tw: d.tw, tg: d.tg, web: d.web });
       save(LS.tokens, S.tokens);
-      journalAdd({ type: 'create', mint, symbol: d.symbol, sim: false, status: 'ok', sig: ctx.sig, sol: -(real ? real.sol : dev), tokens: real ? real.tokens : (q ? q.tokens : 0), est: !real });
+      journalAdd({ type: 'create', mint, symbol: d.symbol, status: 'ok', sig: ctx.sig, sol: -(real ? real.sol : dev), tokens: real ? real.tokens : (q ? q.tokens : 0), est: !real });
       if (ctx.buyErr) $('mBody').insertAdjacentHTML('beforeend', '<div class="notice warn">Le token est créé, mais l\'achat du créateur n\'a pas pu être fait (' + esc(ctx.buyErr) + '). Vous pouvez l\'acheter depuis Mes tokens ou Trader.</div>');
       $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + esc(d.name) + ' est en ligne. <a href="' + PL.url(mint) + '" target="_blank" rel="noopener">' + PL.n + '</a> · <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Solscan</a></div>');
       toast('Token lancé', d.name + ' · ' + short(mint), 'g');
@@ -2478,18 +2248,12 @@
     add(!!d.image, 'Logo');
     add(!!(d.tw || d.tg || d.web), 'Au moins un lien (X, Telegram ou site)', 'rec');
     add(!FAMOUS.includes(d.symbol), 'Ticker différent des tokens célèbres', 'rec');
-    // démo : wallet démo et marché simulé, aucun wallet ni RPC nécessaire
-    if (cfg.sim) {
-      add(true, 'Wallet démo (' + fSol(DEMO.bal, 2) + ' fictifs)');
-      add(DEMO.bal >= dev + 0.03, 'Solde démo suffisant (' + fSol(dev + 0.03, 2) + ' nécessaires)');
-    } else {
-      add(!!S.wallet, 'Wallet connecté');
-      if (S.wallet) add(S.bal != null && S.bal >= dev + 0.03, 'Solde suffisant (' + fSol(dev + 0.03, 2) + ' nécessaires)');
-    }
+    add(!!S.wallet, 'Wallet connecté');
+    if (S.wallet) add(S.bal != null && S.bal >= dev + 0.03, 'Solde suffisant (' + fSol(dev + 0.03, 2) + ' nécessaires)');
     add(!q || q.supplyPct <= cfg.devMaxPct, 'Achat du créateur ≤ ' + cfg.devMaxPct + ' % de l\'offre');
-    if (!cfg.sim) add(!!cfg.rpc || !!relay(), cfg.rpc ? 'RPC privé configuré (Helius)' : 'Connexion Solana TokenStudio ou clé Helius', 'rec');
+    add(!!cfg.rpc || !!relay(), cfg.rpc ? 'RPC privé configuré (Helius)' : 'Connexion Solana TokenStudio ou clé Helius', 'rec');
     if (d.tpOn && dev > 0) add(tpValid().ok, 'Plan de prise de profit cohérent');
-    if (!cfg.sim && cfg.metaMethod === 'pinata') add(!!cfg.pinataJwt, 'Jeton Pinata renseigné');
+    if (cfg.metaMethod === 'pinata') add(!!cfg.pinataJwt, 'Jeton Pinata renseigné');
     const urlOk = (u) => !u || /^https?:\/\/\S+\.\S+/.test(u);
     add(urlOk(d.tw) && urlOk(d.tg) && urlOk(d.web), 'Liens au bon format (https://…)');
     const req = items.filter((x) => x.kind === 'req'), rec = items.filter((x) => x.kind === 'rec');
@@ -2631,46 +2395,31 @@
   try { const dp = localStorage.getItem('pstudio_ui_depth2'); if (dp && UI_DEPTH[dp]) uiDepth = dp; } catch (e) {}
   try { applyUiTheme(localStorage.getItem('pstudio_ui_theme') || 'or', true); } catch (e) { applyUiTheme('or', true); }
   /* ================================================================ rendu : en-tête */
-  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de vos wallets'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
+  const PAGES = { account: ['Mon compte', 'Profil, préférences, wallets et sécurité'], dash: ['Tableau de bord','Solde, marché, ordres et activité en un coup d\'œil'], wallet: ['Portefeuille', 'Solde, actifs, dépôts, retraits et activité de vos wallets'], vault: ['Coffre-fort', 'Vos SOL à l\'abri des baisses, en USDT ou USDC'], launch: ['Lancer un token', 'Du concept à la publication sur pump.fun'], mine: ['Mes tokens', 'Suivi en direct depuis la blockchain'], trade: ['Trader', 'Analyse de risque, achat et vente'], orders: ['Ordres préparés', 'Surveillance du prix et ventes automatiques'], journal: ['Journal', 'Historique des opérations'], social: ['Communication', 'Messages prêts à publier'], dist: ['Diffusion', 'Référencement sur les grandes plateformes crypto'], settings: ['Réglages', 'Connexion, coûts et sécurité'] };
   function renderTop() {
     const w = S.wallet, ses = w && w.id === 'session';
     // le bouton wallet historique est remplacé par le menu de compte (React) ; on le met à jour s'il existe encore
     const wt = $('walletTxt'); if (wt) wt.innerHTML = w ? (ses ? '<span class="dot ' + (SESSW.kp ? 'on' : 'wait') + '"></span>' : '') + esc(w.name) + (ses && !SESSW.kp ? ' · verrouillé' : '') + ' <span class="addr-s">' + short(w.pk) + '</span>' : 'Connecter le wallet';
     const wb = $('walletBtn'); if (wb) wb.classList.toggle('primary', !S.wallet);
     const rs = $('rpcStatus');
-    rs.innerHTML = '<span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? '' : 'wait') + '"></span><span>' + (S.rpcOk ? 'RPC ' + rpcKind() + ' connecté' : S.rpcOk === false ? 'RPC en erreur' : 'RPC non testé') + '</span>';
-    const sb = $('simbar');
-    // bandeau en démo seulement : en réel, aucune mention de simulation (le mode se change dans le menu du compte)
-    sb.className = 'simbar'; sb.hidden = !cfg.sim;
-    sb.innerHTML = cfg.sim ? '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span><b>Mode démo.</b> Tout est simulé avec le wallet démo de 10 SOL fictifs : rien n\'est envoyé sur la blockchain.</span>' +
-      '<button class="btn sm primary" data-act="' + (AUTH ? 'simoff' : 'needacct') + '" type="button">Passer en réel</button>' : '';
+    rs.innerHTML = '<span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? '' : 'wait') + '"></span><span>' + (S.rpcOk ? 'Solana connecté' + (cfg.rpc ? ' · Helius' : '') : S.rpcOk === false ? 'Solana injoignable' : 'Connexion Solana…') + '</span>';
     const fb = $('filebar'); if (fb) { fb.hidden = location.protocol !== 'file:'; fb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>Studio ouvert comme fichier.</b> Phantom ne peut pas s\'y connecter : ouvrez la version en ligne (https) ou via localhost.</span><button class="btn sm" id="fileHelp" type="button">Comment faire</button>'; }
-    const rb = $('rpcbar'); if (rb) { rb.hidden = !(S.rpcOk === false) || !!cfg.sim; /* la démo n'utilise pas la blockchain */ rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Votre RPC ne répond pas.</b> Vérifiez l\'adresse dans Réglages.' : window.TSRelay ? '<b>La connexion Solana de TokenStudio ne répond pas pour le moment.</b> Réessayez dans une minute, ou collez votre clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connectez-vous à votre compte pour utiliser la connexion Solana de TokenStudio, ou collez votre clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
-    // seule la démo porte une étiquette de mode
-    $('footMode').textContent = cfg.sim ? '● Démo' : ''; $('footMode').hidden = !cfg.sim;
-    $('footMode').style.color = 'var(--violet)';
+    const rb = $('rpcbar'); if (rb) { rb.hidden = S.rpcOk !== false; rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Votre RPC ne répond pas.</b> Vérifiez l\'adresse dans Réglages.' : window.TSRelay ? '<b>La connexion Solana de TokenStudio ne répond pas pour le moment.</b> Réessayez dans une minute, ou collez votre clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connectez-vous à votre compte pour utiliser la connexion Solana de TokenStudio, ou collez votre clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
     const sc = (attr, dot, label, val) => '<button class="sc-it" type="button" ' + attr + '><span class="dot ' + dot + '"></span>' + label + '<em>' + val + '</em></button>';
     $('sideCheck').innerHTML =       sc('data-sc="pp" data-page="settings"', 'wait', 'Flux direct', '…') +
-      (cfg.sim ? '' : sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'RPC Solana', S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé')) +
-      (cfg.sim ? sc('data-act="simoff"', 'demo', 'Mode', 'démo') : '');
+      sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'Connexion Solana', S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testée');
     ppStatus(); renderWalletCard();
     $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length;
     try { window.dispatchEvent(new CustomEvent('pstudio-state')); } catch (e) {}
   }
-  // Bascule simulation / réel : le passage en réel demande toujours une confirmation explicite
-  // Le mode réel demande un compte connecté (le menu de compte transmet l'état de connexion)
+  // Toute opération demande un compte connecté (le menu de compte transmet l'état de connexion)
   let AUTH = null;
-  function setAuth(on) {
-    AUTH = !!on;
-    if (!AUTH && !cfg.sim) { cfg.sim = true; save(LS.cfg, cfg); toast('Mode démo', 'Connectez-vous à votre compte pour passer en réel.', 'a'); }
-    renderAll();
+  function setAuth(on) { AUTH = !!on; renderAll(); }
+  function needAccount() {
+    if (AUTH) return false;
+    try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'real' })); } catch (e) {}
+    return true;
   }
-  async function goReal() {
-    if (!cfg.sim) return;
-    if (!AUTH) { try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'real' })); } catch (e) {} if (AUTH === false) toast('Compte requis', 'Créez votre compte ou connectez-vous pour passer en réel. La démo reste ouverte à tous.', 'a'); return; }
-    if (await confirmBox('Passer en mode réel ?', '<p>Les transactions que vous signez partiront réellement sur la blockchain et engageront votre SOL. Un lancement ou un trade confirmé ne s\'annule pas.</p><p>Vérifiez d\'abord vos réglages : limite par achat ' + fSolH(cfg.maxSol, 2) + ', slippage ' + cfg.slippage + ' %.</p>', 'Passer en réel', true)) { cfg.sim = false; save(LS.cfg, cfg); toast('Mode réel activé', 'Chaque transaction demandera votre signature.', 'a'); renderAll(); }
-  }
-  function goSim() { if (cfg.sim) return; cfg.sim = true; save(LS.cfg, cfg); toast('Mode démo', 'Plus rien n\'est envoyé.', 'g'); renderAll(); }
   function openSettings() {
     const sec = $('p-settings'); if (!sec) return;
     let body = $('setBody');
@@ -2686,15 +2435,15 @@
     document.querySelectorAll('.page').forEach((s) => s.classList.toggle('active', s.id === 'p-' + p));
     $('pageTitle').textContent = PAGES[p][0]; $('pageSub').textContent = PAGES[p][1];
     try { window.dispatchEvent(new CustomEvent('pstudio-page', { detail: p })); } catch (e) {}
-    $('pageEyebrow').textContent = { account: 'Compte', dash: 'Vue d\'ensemble', wallet: 'Vue d\'ensemble', launch: 'Créer', social: 'Créer', dist: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
+    $('pageEyebrow').textContent = { account: 'Compte', dash: 'Vue d\'ensemble', wallet: 'Vue d\'ensemble', vault: 'Vue d\'ensemble', launch: 'Créer', social: 'Créer', dist: 'Créer', mine: 'Suivre', trade: 'Suivre', orders: 'Suivre', journal: 'Suivre', settings: 'Outil' }[p] || '';
     try { localStorage.setItem('pstudio_page', p); } catch (e) {}
     renderPage(); window.scrollTo(0, 0); ppSync(liveSet());
     if (p === 'launch') setLaunchTab(S.ltab);
   }
 
   /* ================================================================ tableau de bord */
-  const DASH = { mode: null, range: '1d', hist: {}, histAt: {}, src: 'Binance', tokAt: 0 };
-  try { const m = localStorage.getItem('pstudio_dash_mode'); if (['real', 'sim', 'all'].includes(m)) DASH.mode = m; } catch (e) {}
+  const DASH = { range: '1d', hist: {}, histAt: {}, src: 'Binance', tokAt: 0 };
+  try { localStorage.removeItem('pstudio_dash_mode'); } catch (e) {}
   const RANGES = { '1d': { bi: '15m', n: 96, cb: 900, ms: 864e5 }, '7d': { bi: '1h', n: 168, cb: 3600, ms: 6048e5 }, '30d': { bi: '4h', n: 180, cb: 21600, ms: 2592e6 } };
   async function solHist(force) {
     const k = DASH.range, R = RANGES[k];
@@ -2782,9 +2531,7 @@
   }
   const DTYPE = { buy: 'Achat', sell: 'Vente', create: 'Lancement', fees: 'Frais créateur', deposit: 'Dépôt', withdraw: 'Retrait' };
   function dashOps() {
-    // opérations du mode en cours seulement (démo ou réel), comme le journal
-    const m = cfg.sim ? 'sim' : 'real';
-    return { m, L: S.journal.filter((j) => (m === 'sim' ? !!j.sim : !j.sim)) };
+    return { L: S.journal };
   }
   function dashTokens() {
     if (Date.now() - DASH.tokAt < 60000) return; DASH.tokAt = Date.now();
@@ -2795,18 +2542,14 @@
     const K = dcol(), now = new Date(), hr = now.getHours();
     $('dHello').textContent = hr < 5 || hr >= 18 ? 'Bonsoir' : 'Bonjour';
     $('dDate').textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const { m, L } = dashOps();
-    { const dm = $('dMode'); if (dm) dm.hidden = true; }
+    const { L } = dashOps();
     renderKeysCard();
-    document.querySelectorAll('#dMode [data-dmode]').forEach((b) => { b.classList.toggle('on', b.dataset.dmode === m); b.setAttribute('aria-pressed', b.dataset.dmode === m); });
     document.querySelectorAll('#dRange [data-drange]').forEach((b) => b.classList.toggle('on', b.dataset.drange === DASH.range));
-    const ppl = ppLabel(); $('dLive').innerHTML = '<span class="dot ' + ppl[0] + '"></span>Flux direct · ' + esc(ppl[1]) + (cfg.sim ? '' : '<i></i><span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait') + '"></span>RPC ' + (S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testé'));
+    const ppl = ppLabel(); $('dLive').innerHTML = '<span class="dot ' + ppl[0] + '"></span>Flux direct · ' + esc(ppl[1]) + '<i></i><span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait') + '"></span>Solana · ' + (S.rpcOk ? 'connecté' : S.rpcOk === false ? 'en erreur' : 'connexion…');
     // portefeuille
     const w = S.wallet;
-    $('dModeBadge').className = 'badge v'; $('dModeBadge').textContent = 'Démo'; $('dModeBadge').hidden = !cfg.sim;
-    const demoW = cfg.sim && (!w || !AUTH);   // démo sans wallet ou sans compte : solde du wallet démo
-    $('dBal').innerHTML = demoW ? '<span class="sol stack" data-sol="' + DEMO.bal + '">' + fr(DEMO.bal, 2) + '<small> SOL démo</small></span>' : w && S.bal != null ? '<span class="sol stack" data-sol="' + S.bal + '">' + fr(S.bal, S.bal >= 100 ? 2 : 4) + '<small> SOL</small></span>' : '—';
-    $('dBalS').textContent = demoW ? 'Wallet démo · fonds fictifs' : w ? (w.id === 'session' ? 'Wallet rapide' : w.name) + ' · ' + short(w.pk) : 'Connectez un wallet pour voir votre solde';
+    $('dBal').innerHTML = w && S.bal != null ? '<span class="sol stack" data-sol="' + S.bal + '">' + fr(S.bal, S.bal >= 100 ? 2 : 4) + '<small> SOL</small></span>' : '—';
+    $('dBalS').textContent = w ? (w.id === 'session' ? 'Wallet rapide' : w.name) + ' · ' + short(w.pk) : 'Connectez un wallet pour voir votre solde';
     const ok = L.filter((j) => j.status === 'ok'), spent = Math.abs(ok.filter((j) => j.sol < 0).reduce((a, j) => a + j.sol, 0)), recv = ok.filter((j) => j.sol > 0).reduce((a, j) => a + j.sol, 0), net = recv - spent;
     const hs = (l, x, c, sg) => '<div><span>' + l + '</span><b class="sol ' + (c || '') + '" data-sol="' + x + '">' + (sg && x > 0 ? '+' : '') + fSol(x, 3) + '</b></div>';
     $('dHero').innerHTML = hs('Dépensé', spent) + hs('Reçu', recv) + hs('Flux net', net, cls(net), true);
@@ -2828,13 +2571,13 @@
     $('dTiles').innerHTML =
       tile('dSpTok', IC.spark, 'Tokens lancés', String(S.tokens.length), S.tokens.filter((t) => Date.now() - t.createdAt < 6048e5).length + ' cette semaine') +
       tile('dSpOrd', IC.shield, 'Ordres actifs', String(act.length), act.length ? kinds.tp + ' objectifs · ' + kinds.sl + ' stops' + (kinds.trail ? ' · ' + kinds.trail + ' suiveurs' : '') : 'aucun ordre surveillé') +
-      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? '<span class="sol" data-sol="' + net + '">' + (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small></span>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : '') + (m === 'all' ? '' : (m === 'real' ? ' réelle' : ' simulée') + (ok.length > 1 ? 's' : '')), cls(net));
+      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? '<span class="sol" data-sol="' + net + '">' + (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small></span>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : ''), cls(net));
     sparkline($('dSpTok'), weeks, K.accent);
     { const el = $('dSpOrd'), parts = [[kinds.tp, K.green], [kinds.sl, K.red], [kinds.trail, K.blue]]; const bar = document.createElement('div'); bar.className = 'd-split'; bar.innerHTML = act.length ? parts.filter((x) => x[0]).map((x) => '<i style="flex:' + x[0] + ';background:' + x[1] + '"></i>').join('') : '<i style="flex:1;background:var(--panel3)"></i>'; el.replaceWith(bar); }
     sparkline($('dSpFlow'), flowVals.length > 1 ? flowVals : null, net >= 0 ? K.green : K.red);
     // flux net cumulé
     let c2 = 0; const fpts = okAsc.length ? [{ t: okAsc[0].t - 1, v: 0 }].concat(okAsc.map((j) => ({ t: j.t, v: (c2 += j.sol || 0), j }))) : null;
-    $('dFlowNote').textContent = 'SOL reçu moins SOL dépensé · opérations ' + (m === 'real' ? 'réelles' : m === 'sim' ? 'simulées' : 'réelles et simulées');
+    $('dFlowNote').textContent = 'SOL reçu moins SOL dépensé';
     lineChart($('dFlowCv'), fpts, { zero: true, yw: 76, empty: 'La courbe apparaîtra après votre première opération.', fy: (v, hv) => (v > 0 ? '+' : '') + fr(v, hv ? 4 : Math.abs(v) >= 10 ? 1 : 3), fx: (p) => fDay(p.t), ft: (p) => (p.j ? (DTYPE[p.j.type] || p.j.type) + ' ' + (p.j.symbol || '') + ' · ' : '') + fDay(p.t) + ' ' + fHm(p.t) });
     // répartition
     const mix = [{ k: 'buy', l: 'Achats', c: K.green }, { k: 'sell', l: 'Ventes', c: K.red }, { k: 'create', l: 'Lancements', c: K.accent }, { k: 'err', l: 'Échecs', c: K.dim }].map((x) => Object.assign(x, { n: L.filter((j) => x.k === 'err' ? j.status === 'err' : j.status === 'ok' && j.type === x.k).length }));
@@ -2855,7 +2598,7 @@
     }).join('') + (act.length > 6 ? '<div class="d-more">+ ' + (act.length - 6) + ' autres ordres</div>' : '') : '<div class="d-empty"><b>Aucun ordre actif</b>Ajoutez un objectif ou un stop depuis un token.</div>';
     // dernières opérations
     const last6 = L.slice(0, 6);
-    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' || j.type === 'fees' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : j.type === 'fees' ? 'F' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + (j.type === 'fees' ? '' : ' · ' + esc(j.symbol || short(j.mint))) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.sim ? ' · simulation' : '') + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : '<span class="sol" data-sol="' + (j.sol || 0) + '">' + (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL</span>') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Vos achats, ventes et lancements apparaîtront ici.</div>';
+    $('dOps').innerHTML = last6.length ? last6.map((j) => '<div class="d-row"><span class="d-tag ' + (j.status === 'err' ? '' : j.type === 'buy' || j.type === 'fees' ? 'g' : j.type === 'sell' ? 'r' : 'v') + '">' + (j.status === 'err' ? '!' : j.type === 'buy' ? 'A' : j.type === 'sell' ? 'V' : j.type === 'fees' ? 'F' : 'L') + '</span><span class="d-main"><b>' + (DTYPE[j.type] || esc(j.type)) + (j.type === 'fees' ? '' : ' · ' + esc(j.symbol || short(j.mint))) + '</b><small>' + fDay(j.t) + ' ' + fHm(j.t) + (j.auto ? ' · auto' : '') + (j.status === 'err' ? ' · échec' : '') + '</small></span><span class="d-val ' + cls(j.sol) + '">' + (j.status === 'err' ? '<span class="dim">—</span>' : '<span class="sol" data-sol="' + (j.sol || 0) + '">' + (j.sol > 0 ? '+' : '') + fr(j.sol || 0, 3) + ' SOL</span>') + '</span></div>').join('') : '<div class="d-empty"><b>Aucune opération</b>Vos achats, ventes et lancements apparaîtront ici.</div>';
     // tokens lancés
     $('dToks').innerHTML = S.tokens.length ? S.tokens.slice(0, 8).map((t) => { const C = S.cache[t.mint], st = C && C.stats; return '<button class="d-tok" type="button" data-dtok="' + esc(t.mint) + '"><span class="d-timg">' + (t.image ? '<img src="' + esc(t.image) + '" alt="" loading="lazy">' : esc((t.symbol || '?').slice(0, 2))) + '</span><span class="d-main"><b>' + esc(t.symbol || '?') + '</b><small>' + esc(t.name || '') + '</small></span><span class="d-tm"><b>' + (st ? (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) : '…') + '</b><small>' + (st ? (C.curve && C.curve.ext ? (PLATFORMS[t.platform] || PLATFORMS.pump).n + (C.curve.dex === 'launchlab' ? ' · ≈ ' + fr(st.progress, 0) + ' %' : ' · ' + dexName(C.curve)) : C.curve && C.curve.complete ? 'migré' : 'courbe ' + fr(st.progress, 0) + ' %') : fDay(t.createdAt)) + '</small></span>' + (st ? '<span class="d-prog"><i style="width:' + Math.min(100, st.progress).toFixed(1) + '%"></i></span>' : '') + '</button>'; }).join('') : '<div class="d-empty"><b>Aucun token lancé</b>Créez votre premier token dans le studio. <button class="btn sm primary" data-page="launch" type="button">Lancer un token</button></div>';
     solHist(false);
@@ -2874,31 +2617,12 @@
     { id: 'rugcheck', n: 'RugCheck', k: 'Confiance', cost: 'auto', costL: 'Automatique', note: 'Rapport de risque automatique, utilisé par l\'explorateur Solana et de nombreux traders avant d\'acheter.', page: (m) => 'https://rugcheck.xyz/tokens/' + m, form: '', formL: '' },
   ];
   const LSD = 'pstudio_dist_v1';
-  const DS = { mint: '', sel: null, cache: {}, rec: cfg.sim ? load(dk(LSD), {}) : REAL.dist };
+  const DS = { mint: '', sel: null, cache: {}, rec: REAL.dist };
   try { DS.sel = new Set(JSON.parse(localStorage.getItem('pstudio_dist_sel') || 'null') || ['jupiter', 'coingecko', 'coinmarketcap', 'solscan']); } catch (e) { DS.sel = new Set(['jupiter', 'coingecko', 'coinmarketcap', 'solscan']); }
   const saveSel = () => { try { localStorage.setItem('pstudio_dist_sel', JSON.stringify([...DS.sel])); } catch (e) {} };
   const tfetch = (u, ms) => Promise.race([fetch(u), new Promise((_, r) => setTimeout(() => r(new Error('délai')), ms || 8000))]);
-  // démo : la diffusion progresse avec l'âge et l'activité du token simulé (aucun site n'est interrogé)
-  function demoDist(mint) {
-    dmRun(); const T = DM.tok[mint];
-    const X = DS.cache[mint] = { at: Date.now(), st: {}, loading: false };
-    const set = (id, s2, t) => { X.st[id] = { s: s2, t }; };
-    if (!T) { if (S.page === 'dist' && DS.mint === mint) renderDist(); return X; }
-    const age = (Date.now() - T.createdAt) / 60000, n = T.trades.length, vol = T.trades.filter((x) => Date.now() - x.t < 864e5).reduce((a, x) => a + x.sol, 0);
-    if (n) { X.pair = 'DEMO0pair'; X.dex = T.complete ? 'pumpswap' : 'pumpfun'; X.vol = S.solUsd ? vol * S.solUsd : null; X.liq = S.solUsd ? T.realSol / 1e9 * 2 * S.solUsd : null; }
-    set('dexscreener', n ? 'on' : 'off', n ? '1 paire · indexé automatiquement' : 'pas encore indexé (aucun échange)');
-    set('geckoterminal', age > 3 && n ? 'on' : 'off', age > 3 && n ? 'indexé · logo à ajouter' : 'pas encore indexé');
-    set('jupiter', T.complete ? 'on' : n && age > 2 ? 'mid' : 'off', T.complete ? 'vérifié ✓' : n && age > 2 ? 'échangeable, non vérifié' : 'pas encore dans Jupiter');
-    set('coingecko', 'off', 'non listé (demande à déposer)');
-    set('rugcheck', age > 1 ? 'on' : 'unk', age > 1 ? 'rapport disponible · score ' + Math.max(1, Math.round(60 - Math.min(50, n / 4))) : 'rapport pas encore disponible');
-    set('birdeye', n ? 'mid' : 'off', n ? 'indexé automatiquement avec la paire' : 'apparaît avec le premier échange');
-    set('solscan', 'on', 'page du token disponible');
-    set('coinmarketcap', 'man', 'statut à vérifier sur le site');
-    if (S.page === 'dist' && DS.mint === mint) renderDist();
-    return X;
-  }
+
   async function distCheck(mint, force) {
-    if (isDemoMint(mint)) return demoDist(mint);
     const X0 = DS.cache[mint]; if (X0 && !force && Date.now() - X0.at < 120000) return X0;
     const X = DS.cache[mint] = { at: Date.now(), st: {}, loading: true }; if (S.page === 'dist') renderDist();
     const set = (id, s, t) => { X.st[id] = { s, t }; };
@@ -3001,10 +2725,8 @@
   // (tous ses tokens confondus), sur la courbe pump.fun et sur PumpSwap après migration.
   const CFEE = { pk: null, sol: null, at: 0, loading: false, err: null };
   // wallet créateur : le wallet principal (Phantom…) s'il est connecté, c'est lui que le studio propose comme créateur
-  const feeWallet = () => (cfg.sim ? { id: 'demo', name: 'démo', pk: DEMO.addr } : S.ext || S.wallet);
-  const demoFees = () => Object.values(DM.tok).reduce((a, T) => a + Math.max(0, T.fees - T.claimed), 0);
+  const feeWallet = () => S.ext || S.wallet;
   async function feesRead(force) {
-    if (cfg.sim) { dmRun(); Object.assign(CFEE, { pk: DEMO.addr, sol: demoFees(), err: null, loading: false, at: Date.now() }); renderFees(); return; }
     const pk = feeWallet() && feeWallet().pk; if (!pk) return;
     if (!force && CFEE.pk === pk && (CFEE.loading || Date.now() - CFEE.at < 60000)) return;
     if (CFEE.pk !== pk) { CFEE.sol = null; CFEE.err = null; }
@@ -3024,47 +2746,29 @@
       '<button class="btn sm ' + (has ? 'primary' : '') + '" data-fees="claim" type="button"' + (has && !S.busy ? '' : ' disabled') + '>' + (has ? 'Récupérer' : 'Rien à récupérer') + '</button></div>';
   }
   function renderFees() { ['dFees', 'mineFees'].forEach((id) => { const el = $(id); if (el) el.innerHTML = feesHtml(); }); }
-  // démo : frais cumulés par le marché simulé, récupérés dans le wallet démo
-  async function demoClaimFees() {
-    await feesRead(true);
-    const amt = CFEE.sol || 0;
-    if (!(amt > 0)) { toast('Rien à récupérer', 'Vos tokens démo n\'ont pas encore généré de frais.', 'a'); return; }
-    const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSolH(amt, 5) + '</span><span>Wallet</span><span>Wallet démo · ' + fSolH(DEMO.bal) + '</span><span>Mode</span><span><span class="badge v">démo</span></span></div></div>' + demoCta();
-    if (!(await confirmBox('Récupérer ' + fSol(amt, 4) + ' en démo ?', recap, 'Récupérer en démo'))) return;
-    const ctx = await runFlow('Démo · Frais de créateur', [{ label: 'Frais récupérés sur vos tokens démo', run: async () => { await sleep(400); return fSol(amt, 5); } }]);
-    if (ctx.error) return;
-    Object.values(DM.tok).forEach((T) => { T.claimed = T.fees; }); dmSave();
-    DEMO.bal += amt; demoSave();
-    journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: true, demo: true, status: 'ok', sol: amt, tokens: 0 });
-    toast('Frais récupérés (démo)', '+' + fSol(amt, 5) + ' · wallet démo ' + fSol(DEMO.bal), 'g');
-    CFEE.sol = 0; renderAll();
-  }
   async function claimFees() {
-    if (cfg.sim) return demoClaimFees();
+    if (needAccount()) return;
     const W = feeWallet();
     if (!W) return walletMenu();
-    if (!cfg.sim && W.id === 'session' && !(await ensureSigner())) return;
+    if (W.id === 'session' && !(await ensureSigner())) return;
     if (S.busy) return;
     await feesRead(true);
     const amt = CFEE.sol || 0, pk = W.pk;
     if (!(amt > 0)) { toast('Rien à récupérer', CFEE.err || 'Aucun frais de créateur en attente pour ce wallet.', 'a'); return; }
-    const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSolH(amt, 5) + '</span><span>Wallet créateur</span><span>' + short(pk, 6) + '</span><span>Sources</span><span>courbe pump.fun + PumpSwap</span><span>Frais de réseau</span><span>≈ ' + fSolH(0.0001, 4) + '</span>' + (cfg.sim ? '<span>Mode</span><span><span class="badge v">démo</span></span>' : '') + '</div></div>' +
-      (cfg.sim ? '<p>La transaction sera préparée et vérifiée sur la blockchain, sans être envoyée.</p>' : '<p>Les SOL arrivent directement sur ce wallet. ' + (W.id === 'session' ? 'Le wallet rapide signe dès que vous confirmez.' : 'Votre wallet va vous présenter la transaction.') + '</p>');
-    if (!(await confirmBox(cfg.sim ? 'Vérifier la récupération en démo ?' : 'Récupérer ' + fSol(amt, 4) + ' ?', recap, cfg.sim ? 'Vérifier en démo' : 'Récupérer'))) return;
+    const recap = '<div class="recap"><div class="kv"><span>Montant</span><span>' + fSolH(amt, 5) + '</span><span>Wallet créateur</span><span>' + short(pk, 6) + '</span><span>Sources</span><span>courbe pump.fun + PumpSwap</span><span>Frais de réseau</span><span>≈ ' + fSolH(0.0001, 4) + '</span>' + '</div></div>' +
+      '<p>Les SOL arrivent directement sur ce wallet. ' + (W.id === 'session' ? 'Le wallet rapide signe dès que vous confirmez.' : 'Votre wallet va vous présenter la transaction.') + '</p>';
+    if (!(await confirmBox('Récupérer ' + fSol(amt, 4) + ' ?', recap, 'Récupérer'))) return;
     S.busy = true; renderFees();
     try {
       const steps = [
         { label: 'Préparation (pump.fun et PumpSwap)', run: async (x) => { const { web3 } = KIT(), u = new web3.PublicKey(pk); const ixs = await pumpConn().online.collectCoinCreatorFeeInstructions(u, u); x.tx = await txFrom(ixs, 200000, { payer: pk }); } },
         { label: 'Vérification sur la blockchain', run: async (x) => { const v = await simulate(x.tx); x.logs = (v.logs || []).slice(-12).join('\n'); if (v.err) throw new Error(simError(v)); x.logs = ''; return 'acceptée'; } },
+        { label: W.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans votre wallet', run: async (x) => { x.sig = await signAndSend(x.tx, null, W); return short(x.sig, 6); } },
+        { label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) },
       ];
-      if (!cfg.sim) {
-        steps.push({ label: W.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans votre wallet', run: async (x) => { x.sig = await signAndSend(x.tx, null, W); return short(x.sig, 6); } });
-        steps.push({ label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) });
-      }
-      const ctx = await runFlow((cfg.sim ? 'Simulation · ' : '') + 'Frais de créateur', steps);
-      if (ctx.error) { journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: cfg.sim, status: 'err', err: ctx.error.message, sol: 0, tokens: 0 }); return; }
-      journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', sim: cfg.sim, status: 'ok', sig: ctx.sig || '', sol: amt, tokens: 0, est: true });
-      if (cfg.sim) { $('mBody').insertAdjacentHTML('beforeend', '<div class="notice info">Démo réussie : la récupération réelle passerait. Passez en réel pour recevoir les SOL.</div>'); return; }
+      const ctx = await runFlow('Frais de créateur', steps);
+      if (ctx.error) { journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', status: 'err', err: ctx.error.message, sol: 0, tokens: 0 }); return; }
+      journalAdd({ type: 'fees', mint: '', symbol: 'Frais créateur', status: 'ok', sig: ctx.sig || '', sol: amt, tokens: 0, est: true });
       $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSolH(amt, 5) + ' récupérés. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
       toast('Frais récupérés', fSol(amt, 5), 'g');
       CFEE.sol = 0; refreshBal();
@@ -3170,10 +2874,10 @@
       : '<span>Achat du créateur</span><span>aucun</span><span>Capitalisation de départ</span><span>' + (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) + '</span>') + '</div>';
     $('launchNote').innerHTML = q && q.supplyPct > 5 ? 'Un créateur qui détient plus de 5 % de l\'offre fait fuir les acheteurs prudents : les outils d\'analyse l\'affichent en rouge.' : 'L\'achat du créateur est visible publiquement. Une petite part rassure : vous montrez que vous croyez au projet sans contrôler le prix.';
     const R = readiness();
-    $('launchBtn').textContent = cfg.sim ? 'Lancer en démo' : 'Lancer le token';
-    $('launchBtn').className = 'btn ' + (cfg.sim ? 'primary' : 'danger');
+    $('launchBtn').textContent = 'Lancer le token';
+    $('launchBtn').className = 'btn danger';
     $('launchBtn').disabled = S.busy;
-    $('launchHint').textContent = R.blocking.length ? 'À compléter : ' + R.blocking[0] : cfg.sim ? 'Prêt pour un lancement en démo.' : 'Prêt. Le token sera publié après votre signature.';
+    $('launchHint').textContent = R.blocking.length ? 'À compléter : ' + R.blocking[0] : 'Prêt. Le token sera publié après votre signature.';
   }
   function ring(pct, color) { const r = 16, c = 2 * Math.PI * r; return '<svg viewBox="0 0 38 38"><circle cx="19" cy="19" r="' + r + '" fill="none" stroke="var(--line2)" stroke-width="4"/><circle cx="19" cy="19" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + (c * pct / 100) + ' ' + c + '"/></svg><span>' + Math.round(pct) + '</span>'; }
   function renderLaunchSide() {
@@ -3218,7 +2922,7 @@
     g.fillStyle = '#848ba2'; g.textAlign = 'left'; g.fillText(fT(x0), pl, h - 6); g.textAlign = 'right'; g.fillText(fT(x1), w - pr, h - 6);
   }
   function myPosition(mint, C) {
-    const J = S.journal.filter((j) => j.mint === mint && (cfg.sim ? !!j.sim : !j.sim) && j.status === 'ok');
+    const J = S.journal.filter((j) => j.mint === mint && j.status === 'ok');
     const bought = J.filter((j) => j.tokens > 0), spent = -bought.reduce((s, j) => s + j.sol, 0), tokB = bought.reduce((s, j) => s + j.tokens, 0);
     const recv = J.filter((j) => j.tokens < 0).reduce((s, j) => s + j.sol, 0);
     const bal = C.myBal || 0, price = C.stats ? C.stats.price : 0, value = bal * price;
@@ -3238,8 +2942,7 @@
     const tradesHtml = (C.trades || []).slice(0, 40).map((x) => '<div class="tr"><span class="badge ' + (x.side === 'buy' ? 'g' : 'r') + '">' + (x.side === 'buy' ? 'Achat' : 'Vente') + '</span><span class="w">' + (x.wallet === c.creator ? '<b class="warn">créateur</b>' : S.wallet && x.wallet === S.wallet.pk ? '<b>vous</b>' : short(x.wallet)) + ' · ' + fAgo(x.t) + '</span><span class="num">' + fTok(x.tokens) + '</span><span class="num ' + (x.side === 'buy' ? 'pos' : 'neg') + '">' + fSolH(x.sol, 3) + '</span></div>').join('');
     const orders = S.orders.filter((o) => o.mint === mint);
     return '<div class="card"><div class="tok-head"><div class="av lg">' + (m.image ? '<img src="' + esc(m.image) + '" alt="">' : esc(sym.slice(0, 3))) + '</div><div><h2>' + esc(name) + ' <span class="badge v">$' + esc(sym) + '</span>' + (c.ext ? ' <span class="badge b">' + esc(plat ? plat.n : dexName(c)) + '</span>' : c.complete ? ' <span class="badge b">migré</span>' : '') + '</h2><p>' + short(mint, 8) + ' <button class="copy" data-copy="' + mint + '" type="button" title="Copier">⧉</button></p></div><div class="spacer"></div>' +
-      (isDemoMint(mint) ? '<div class="links"><span class="badge v">token démo</span><span class="dim">Marché simulé : il n\'existe pas sur la blockchain.</span></div>'
-        : '<div class="links">' + (plat ? '<a href="' + plat.url(mint) + '" target="_blank" rel="noopener">' + plat.n + '</a>' : '') + '<a href="https://solscan.io/token/' + mint + '" target="_blank" rel="noopener">Solscan</a><a href="https://dexscreener.com/solana/' + mint + '" target="_blank" rel="noopener">DEX Screener</a></div>') +
+      '<div class="links">' + (plat ? '<a href="' + plat.url(mint) + '" target="_blank" rel="noopener">' + plat.n + '</a>' : '') + '<a href="https://solscan.io/token/' + mint + '" target="_blank" rel="noopener">Solscan</a><a href="https://dexscreener.com/solana/' + mint + '" target="_blank" rel="noopener">DEX Screener</a></div>' +
       (C.live && Date.now() - C.live < 60000 ? '<span class="badge g" title="Prix reçu en direct (' + esc(C.liveSrc || 'blockchain') + ')">● temps réel</span>' : LIVE[mint] ? '<span class="badge b" title="Abonnement actif, en attente d\'une transaction">● à l\'écoute</span>' : '<span class="badge" title="Ajoutez un RPC Helius pour le temps réel">actualisation ' + cfg.pollSec + ' s</span>') +
       '<button class="btn sm" data-refresh="' + ctx + '" type="button">Actualiser</button>' +
       (ctx === 'mine' && C.myBal != null && !(C.myBal > 0) ? '<button class="btn sm ghost" data-unmine="' + mint + '" type="button" title="Retirer ce token de votre liste (rien n\'est vendu ni modifié sur la blockchain)">Retirer de la liste</button>' : '') + '</div>' +
@@ -3248,7 +2951,7 @@
       '<div class="stat"><div class="l">Prix</div><div class="v">' + fPrice(st.price) + '</div><div class="s">SOL par token</div></div>' +
       (c.ext ? '<div class="stat"><div class="l">' + (c.dex === 'launchlab' ? 'Courbe LaunchLab' : 'Marché') + '</div><div class="v">' + (c.dex === 'launchlab' ? '≈ ' + fPct(st.progress, 0) : esc(dexName(c))) + '</div>' + (c.dex === 'launchlab' ? '<div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div>' : '') + '<div class="s">' + (st.realSol ? fSolH(st.realSol, 2) + ' dans le pool' : 'liquidité ' + fUsd(st.liqUsd)) + (c.dex === 'launchlab' ? ' · migration à ~85 SOL' : '') + '</div></div>' :
       '<div class="stat"><div class="l">Courbe de liaison</div><div class="v">' + fPct(st.progress, 1) + '</div><div class="progress-big"><i style="width:' + st.progress.toFixed(1) + '%"></i></div><div class="s">' + fSolH(st.realSol, 2) + ' dans la courbe' + (c.complete ? ' · terminée' : '') + '</div></div>') +
-      '<div class="stat"><div class="l">' + (cfg.sim ? 'Votre position démo' : 'Votre position') + '</div><div class="v">' + (S.wallet || cfg.sim ? fTok(pos.bal) : '—') + '</div><div class="s">' + (S.wallet || cfg.sim ? usd(pos.value) + (pos.avg ? ' · PRU ' + fPrice(pos.avg) : '') : 'wallet non connecté') + '</div></div>' +
+      '<div class="stat"><div class="l">' + 'Votre position</div><div class="v">' + (S.wallet ? fTok(pos.bal) : '—') + '</div><div class="s">' + (S.wallet ? usd(pos.value) + (pos.avg ? ' · PRU ' + fPrice(pos.avg) : '') : 'wallet non connecté') + '</div></div>' +
       '<div class="stat"><div class="l">Résultat</div><div class="v ' + cls(pos.pnl) + '">' + (pos.spent || pos.recv ? fSolH(pos.pnl, 3) : '—') + '</div><div class="s">valeur + ventes − achats</div></div>' +
       '</div></div>' +
       '<div class="tok-grid"><div>' +
@@ -3262,7 +2965,7 @@
         ? '<div class="amt"><input id="amt-' + ctx + '" type="number" min="0" step="0.01" placeholder="0,1" inputmode="decimal"><em>SOL</em></div><div class="presets">' + [0.05, 0.1, 0.25, 0.5, 1].map((v) => '<button class="btn sm" data-preset="' + v + '" data-ctx="' + ctx + '" type="button">' + fr(v, v < 0.1 ? 2 : 2).replace(/,?0+$/, '') + '</button>').join('') + '</div>'
         : '<div class="amt"><input id="amt-' + ctx + '" type="text" placeholder="50%" inputmode="decimal"><em>' + esc(sym) + '</em></div><div class="presets">' + ['25%', '50%', '75%', '100%'].map((v) => '<button class="btn sm" data-preset="' + v + '" data-ctx="' + ctx + '" type="button">' + v + '</button>').join('') + '</div>') +
       '<div class="quote" id="q-' + ctx + '"><span class="muted">Saisissez un montant pour voir le devis.</span></div>' +
-      '<button class="btn ' + (side === 'buy' ? 'primary' : 'danger') + '" style="width:100%" data-go="' + ctx + '" data-mint="' + mint + '" type="button">' + (side === 'buy' ? 'Acheter' : 'Vendre') + (cfg.sim ? ' en démo' : '') + '</button>' +
+      '<button class="btn ' + (side === 'buy' ? 'primary' : 'danger') + '" style="width:100%" data-go="' + ctx + '" data-mint="' + mint + '" type="button">' + (side === 'buy' ? 'Acheter' : 'Vendre') + '</button>' +
       '<p class="dim" style="font-size:13.5px;margin:10px 0 0">Slippage ' + cfg.slippage + ' % · priorité ' + (cfg.speed === 'manual' ? fSolH(cfg.priorityFee, 4) : (SPEEDS[cfg.speed] || SPEEDS.fast).label.toLowerCase()) + ' · limite ' + fSolH(cfg.maxSol, 2) + ' par achat</p></div>' +
       '<div class="card" style="margin-top:16px"><div class="card-h"><h3>Ordres préparés</h3><button class="btn sm" data-neworder="' + mint + '" type="button" style="margin-left:auto">Ajouter</button></div>' +
       (orders.length ? orders.map(orderRow).join('') : '<div class="muted" style="font-size:13.5px">Aucun ordre. Exemple : vendre 50 % si le prix double.</div>') + '</div>' +
@@ -3343,7 +3046,7 @@
   }
   async function pruneMine() {
     if (!S.tokens.length) return;
-    if (!cfg.sim && !S.wallet) { toast('Wallet non connecté', 'Connectez votre wallet : le studio vérifie vos soldes avant de retirer un token.', 'a'); return; }
+    if (!S.wallet) { toast('Wallet non connecté', 'Connectez votre wallet : le studio vérifie vos soldes avant de retirer un token.', 'a'); return; }
     const btn = $('minePrune'); if (btn) { btn.disabled = true; btn.textContent = 'Vérification des soldes…'; }
     try {
       await Promise.all(S.tokens.map((t) => { const C = S.cache[t.mint]; return C && C.myBal != null && Date.now() - C.at < 60000 ? null : loadToken(t.mint, false).catch(() => null); }));
@@ -3364,23 +3067,19 @@
   function renderOrders() {
     const on = canAuto(), locked = S.wallet && S.wallet.id === 'session' && !SESSW.kp;
     const n = $('ordersNote');
-    if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Ventes automatiques actives.</b> Votre wallet rapide vend dès qu\'une condition est atteinte : à l\'instant quand l\'outil est ouvert, et par TokenStudio (vérification toutes les 10 secondes) quand il est fermé.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause.' : 'Avec ' + (S.ext ? esc(S.ext.name) : 'votre wallet') + ', chaque vente demande votre signature. Pour des ventes automatiques, utilisez votre <button class="btn sm" data-sw="' + (SRVPK ? 'use' : 'create') + '" type="button">wallet rapide</button>.';
-      if (cfg.sim) { n.className = 'notice info'; n.innerHTML = '<b>Démo.</b> Un ordre déclenché est vendu aussitôt dans le wallet démo, au prix simulé.'; } }
+    if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Ventes automatiques actives.</b> Votre wallet rapide vend dès qu\'une condition est atteinte : à l\'instant quand l\'outil est ouvert, et par TokenStudio (vérification toutes les 10 secondes) quand il est fermé.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause.' : 'Avec ' + (S.ext ? esc(S.ext.name) : 'votre wallet') + ', chaque vente demande votre signature. Pour des ventes automatiques, utilisez votre <button class="btn sm" data-sw="' + (SRVPK ? 'use' : 'create') + '" type="button">wallet rapide</button>.';}
     $('ordersBody').innerHTML = S.orders.length ? '<div class="card">' + S.orders.map(orderRow).join('') + '</div>' : '<div class="card"><div class="empty"><b>Aucun ordre préparé</b>Ouvrez un token (Mes tokens ou Trader) et cliquez sur « Ajouter » dans le bloc Ordres préparés.</div></div>';
   }
   function renderJournal() {
-    document.querySelectorAll('#jFilter .chip').forEach((b) => b.classList.toggle('on', b.dataset.jf === S.jf));
-    // chaque mode a son propre historique : réel seulement en réel, démo seulement en démo
-    const jf = $('jFilter'); if (jf) jf.hidden = true;
-    const L = S.journal.filter((j) => (cfg.sim ? !!j.sim : !j.sim));
+    const L = S.journal;
     const ok = L.filter((j) => j.status === 'ok'), spent = -ok.filter((j) => j.sol < 0).reduce((s, j) => s + j.sol, 0), recv = ok.filter((j) => j.sol > 0).reduce((s, j) => s + j.sol, 0);
     $('jStats').innerHTML = '<div class="stat"><div class="l">Opérations</div><div class="v">' + L.length + '</div><div class="s">' + L.filter((j) => j.status === 'err').length + ' échouées</div></div>' +
       '<div class="stat"><div class="l">SOL dépensé</div><div class="v">' + fSolH(spent, 3) + '</div></div><div class="stat"><div class="l">SOL reçu</div><div class="v">' + fSolH(recv, 3) + '</div></div>' +
       '<div class="stat"><div class="l">Flux net</div><div class="v ' + cls(recv - spent) + '">' + fSolH(recv - spent, 3) + '</div><div class="s">hors valeur des tokens détenus</div></div>';
     const TY = { create: 'Création', buy: 'Achat', sell: 'Vente', fees: 'Frais créateur', deposit: 'Dépôt', withdraw: 'Retrait' };
     $('jBody').innerHTML = L.length ? '<div class="tablebox"><table><thead><tr><th>Date</th><th>Opération</th><th>Token</th><th class="num">SOL</th><th class="num">Tokens</th><th>Statut</th><th>Lien</th></tr></thead><tbody>' +
-      L.slice(0, 400).map((j) => '<tr><td class="dim">' + fT(j.t) + '</td><td>' + TY[j.type] + (j.sim ? ' <span class="badge v">démo</span>' : '') + '</td><td><b>' + esc(j.symbol || '') + '</b> <span class="dim mono">' + short(j.mint) + '</span></td><td class="num ' + cls(j.sol) + '">' + (j.sol ? fSolH(j.sol, 4) : '—') + (j.est ? ' <span class="dim">≈</span>' : '') + '</td><td class="num">' + (j.tokens ? fTok(j.tokens) : '—') + '</td><td>' + (j.status === 'ok' ? '<span class="badge g">ok</span>' : '<span class="badge r" title="' + esc(j.err || '') + '">échec</span>') + '</td><td>' + (j.sig && !j.demo ? '<a href="' + solscan(j.sig) + '" target="_blank" rel="noopener">Solscan</a>' : j.demo ? '<span class="dim">démo</span>' : '<span class="dim">—</span>') + '</td></tr>').join('') + '</tbody></table></div>'
-      : '<div class="card"><div class="empty"><b>Aucune opération</b>' + (cfg.sim ? 'Les lancements, achats et ventes de la démo apparaîtront ici.' : 'Vos lancements, achats et ventes apparaîtront ici, avec leur lien Solscan.') + '</div></div>';
+      L.slice(0, 400).map((j) => '<tr><td class="dim">' + fT(j.t) + '</td><td>' + TY[j.type] + '</td><td><b>' + esc(j.symbol || '') + '</b> <span class="dim mono">' + short(j.mint) + '</span></td><td class="num ' + cls(j.sol) + '">' + (j.sol ? fSolH(j.sol, 4) : '—') + (j.est ? ' <span class="dim">≈</span>' : '') + '</td><td class="num">' + (j.tokens ? fTok(j.tokens) : '—') + '</td><td>' + (j.status === 'ok' ? '<span class="badge g">ok</span>' : '<span class="badge r" title="' + esc(j.err || '') + '">échec</span>') + '</td><td>' + (j.sig ? '<a href="' + solscan(j.sig) + '" target="_blank" rel="noopener">Solscan</a>' : '<span class="dim">—</span>') + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="card"><div class="empty"><b>Aucune opération</b>' + 'Vos lancements, achats et ventes apparaîtront ici, avec leur lien Solscan.' + '</div></div>';
   }
   /* ---------- communication */
   let soTone = 'communaute';
@@ -3552,11 +3251,10 @@
   function liveSet() {
     const keep = new Set(S.orders.filter((o) => o.active).map((o) => o.mint));
     if (S.page === 'mine') { if (S.view.mine) keep.add(S.view.mine); S.tokens.slice(0, 20).forEach((t) => keep.add(t.mint)); }
-    keep.forEach((m) => { if (isDemoMint(m)) keep.delete(m); });   // tokens démo : marché simulé, aucun abonnement
     return keep;
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.ppLive && PP.want.size && !PP.ws) ppConnect(); });
-  /* ---------- clés API (mode réel) : petit panneau en 3 étapes, vérifié avant d'enregistrer */
+  /* ---------- clés API : petit panneau en 3 étapes, vérifié avant d'enregistrer */
   const KEYS = {
     helius: { title: 'Ajouter votre clé Helius', label: 'Clé Helius', ph: 'ex. 1a2b3c4d-5e6f-…',
       why: '<b>Gratuite, conseillée.</b> Prix en temps réel, envois plus rapides et pas de blocage. Sans elle, l\'outil passe par la connexion Solana de TokenStudio, plus lente.',
@@ -3603,10 +3301,10 @@
       } catch (e) { err = e.message || String(e); }
     }
   }
-  // carte du tableau de bord : en réel seulement, tant que la clé Helius manque et qu'on ne l'a pas remise à plus tard
+  // carte du tableau de bord : tant que la clé Helius manque et qu'on ne l'a pas remise à plus tard
   function renderKeysCard() {
     const kc = $('keysCard'); if (!kc) return;
-    const show = !cfg.sim && AUTH === true && !cfg.rpc && !cfg.keysLater;
+    const show = AUTH === true && !cfg.rpc && !cfg.keysLater;
     kc.hidden = !show; if (!show) { kc.innerHTML = ''; return; }
     kc.innerHTML = '<svg class="i" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg><span><b>Ajoutez votre clé Helius gratuite.</b> Prix en temps réel et envois plus rapides, en 2 minutes.</span>' +
       '<button class="btn sm" data-act="keylater" type="button">Plus tard</button><button class="btn sm primary" data-act="keyhelp" data-k="helius" type="button">Ajouter</button>';
@@ -3659,7 +3357,7 @@
   const CLAIMS = new Map();
   function fireOrder(o) {
     // un ordre ne s'exécute qu'une fois : l'onglet le réserve d'abord (le serveur peut aussi le vendre, outil fermé)
-    if (!cfg.sim && window.TSClaimOrder) {
+    if (window.TSClaimOrder) {
       const c = CLAIMS.get(o.id);
       if (c === 'wait') return;
       if (c !== 'ok') {
@@ -3674,7 +3372,6 @@
       CLAIMS.delete(o.id);
     }
     o.active = false; o.triggered = Date.now(); save(LS.orders, S.orders);
-    if (cfg.sim) { toast('Ordre déclenché', o.symbol + ' : condition atteinte, vente démo en cours.', 'a'); if (cfg.sound) beep(); demoOrderSell(o); return; }
     const auto = canAuto();
     const msg = o.symbol + ' : condition atteinte, vente ' + (o.tokens ? 'de ' + fTok(o.tokens) : 'de ' + o.pct + ' %') + (auto ? ' en cours (automatique).' : ' prête à signer.');
     toast('Ordre déclenché', msg, 'a');
@@ -3713,12 +3410,6 @@
         let tx = null;
         if (cfg.engine !== 'portal' && !(C && C.curve && C.curve.complete)) { try { tx = await directTrade(o.mint, 'sell', sellRaw.toString(), slip); } catch (e) { if (e.message !== 'MIGRATED') throw e; } }
         if (!tx) tx = await portalTx({ publicKey: pk, action: 'sell', mint: o.mint, amount: Number(sellRaw) / 1e6, denominatedInSol: 'false', slippage: slip, priorityFee: cfg.priorityFee, pool: 'auto' }); // token migré ou moteur PumpPortal
-        if (cfg.sim) {
-          const v = await simulate(tx); if (v.err) throw new Error(simError(v));
-          journalAdd({ type: 'sell', mint: o.mint, symbol: sym, sim: true, status: 'ok', sol: q ? q.sol : 0, tokens: q ? -q.tokens : 0, est: true, auto: true });
-          o.done = true; o.auto = 'ok'; o.ms = Math.round(performance.now() - t0); save(LS.orders, S.orders);
-          toast('Vente automatique simulée', sym + ' · passerait en réel · ' + (o.ms / 1000).toFixed(1).replace('.', ',') + ' s', 'g'); renderAll(); return;
-        }
         let sig;
         if (srv) sig = await signAndSend(tx, null, S.wallet); else { tx.sign([SESSW.kp]); sig = await sendRaw(tx); }
         sent = true;
@@ -3726,7 +3417,7 @@
         o.ms = Math.round(performance.now() - t0);
         const d = await actualDeltas(sig, o.mint);
         const sol = d ? d.sol : (q ? q.sol : 0);
-        journalAdd({ type: 'sell', mint: o.mint, symbol: sym, sim: false, status: 'ok', sig, sol, tokens: d ? -d.tokens : (q ? -q.tokens : 0), est: !d, auto: true });
+        journalAdd({ type: 'sell', mint: o.mint, symbol: sym, status: 'ok', sig, sol, tokens: d ? -d.tokens : (q ? -q.tokens : 0), est: !d, auto: true });
         o.done = true; o.auto = 'ok'; o.sig = sig; o.failed = null; save(LS.orders, S.orders);
         toast('Vente automatique confirmée', sym + ' · +' + fSol(sol, 4) + ' · ' + (o.ms / 1000).toFixed(1).replace('.', ',') + ' s', 'g');
         if (cfg.sound) beep();
@@ -3739,7 +3430,7 @@
       }
     }
     o.auto = 'ko'; o.failed = lastErr ? lastErr.message : 'Échec'; save(LS.orders, S.orders);
-    journalAdd({ type: 'sell', mint: o.mint, symbol: sym, sim: cfg.sim, status: 'err', err: o.failed, sol: 0, tokens: 0, auto: true });
+    journalAdd({ type: 'sell', mint: o.mint, symbol: sym, status: 'err', err: o.failed, sol: 0, tokens: 0, auto: true });
     toast('Vente automatique échouée', sym + ' : ' + o.failed + ' Relancez-la depuis Ordres.', 'r');
     renderAll();
   }
@@ -3757,19 +3448,9 @@
     else if (S.page === 'social') renderSocial();
     else if (S.page === 'dist') renderDist();
   }
-  // changement de mode : on recharge les données du mode (démo ou réel)
-  let MODE_SIM = !!cfg.sim;
-  function syncModeData() {
-    if (!!cfg.sim === MODE_SIM) return; MODE_SIM = !!cfg.sim;
-    showModeData();
-    S.view.mine = null; S.view.trade = null; DS.mint = '';
-  }
-  // données affichées : celles de la démo (navigateur) ou celles du compte (mémoire, chargées depuis la base)
-  function showModeData() {
-    if (cfg.sim) { S.tokens = load(dk(LS.tokens), []); S.orders = load(dk(LS.orders), []); S.journal = load(dk(LS.journal), []); DS.rec = load(dk(LSD), {}); }
-    else { S.tokens = REAL.tokens; S.orders = REAL.orders; S.journal = REAL.journal; DS.rec = REAL.dist; }
-  }
-  function renderAll() { syncModeData(); renderPage(); }
+  // données affichées : celles du compte (en mémoire, chargées depuis la base)
+  function showModeData() { S.tokens = REAL.tokens; S.orders = REAL.orders; S.journal = REAL.journal; DS.rec = REAL.dist; }
+  function renderAll() { renderPage(); }
   // ouvre un token dans la page Trader (React) : depuis le portefeuille, la palette de commandes…
   function openTrade(mint) { setPage('trade'); window.dispatchEvent(new CustomEvent('ts-trade', { detail: mint })); }
   function refreshView() { if (S.page === 'mine' && S.view.mine) showToken('mine', S.view.mine); if (S.page === 'trade') window.dispatchEvent(new CustomEvent('ts-trade-refresh')); }
@@ -3790,14 +3471,10 @@
     if (d.dist || d.distmark || d.distcp) return distAction(b);
     if (d.cr) return crAction(d.cr);
     if (d.dact === 'radar') { setPage('launch'); return setLaunchTab('radar'); }
-    if (d.dmode) { DASH.mode = d.dmode; try { localStorage.setItem('pstudio_dash_mode', d.dmode); } catch (x) {} return renderDash(); }
     if (d.drange) { DASH.range = d.drange; renderDash(); return solHist(true); }
     if (b.id === 'walletBtn' || b.id === 'fileHelp') return walletMenu();
     if (d.sw) return swAction(d.sw);
     if (d.sk) { const el = $('skTxt'); if (!el) return; if (d.sk === 'show') { el.dataset.blur = el.dataset.blur === '1' ? '0' : '1'; b.textContent = el.dataset.blur === '1' ? 'Afficher' : 'Masquer'; } else { try { await navigator.clipboard.writeText(el.textContent); toast('Clé copiée', 'Collez-la dans un endroit sûr, puis effacez le presse-papiers.', 'a'); } catch (e2) {} } return; }
-    if (d.act === 'simoff') return goReal();
-    if (d.act === 'needacct') { try { window.dispatchEvent(new CustomEvent('ts-need-account', { detail: 'demo' })); } catch (e) {} return; }
-    if (d.act === 'simon') return goSim();
     if (d.act === 'testrpc') return testRpc(false);
     if (d.act === 'keyhelp') return keyPanel(d.k === 'pinata' ? 'pinata' : 'helius');
     if (d.act === 'keylater') { cfg.keysLater = true; save(LS.cfg, cfg); renderKeysCard(); toast('Rappel masqué', 'Vous pouvez ajouter la clé à tout moment dans Réglages.', ''); return; }
@@ -3840,10 +3517,9 @@
     if (d.otoggle) { const o = S.orders.find((x) => x.id === d.otoggle); if (o) { o.active = !o.active; if (o.active) { o.triggered = null; o.done = false; } save(LS.orders, S.orders); renderAll(); } return; }
     if (d.odel) { const o = S.orders.find((x) => x.id === d.odel); if (o && await confirmBox('Supprimer cet ordre ?', '<p>' + esc(o.symbol) + ' · vendre ' + o.pct + ' %.</p>', 'Supprimer', true)) { S.orders = S.orders.filter((x) => x.id !== d.odel); save(LS.orders, S.orders); renderAll(); } return; }
     if (d.osell) { const o = S.orders.find((x) => x.id === d.osell); if (o) sellOrder(o); return; }
-    if (d.jf) { S.jf = d.jf; renderJournal(); return; }
     if (b.id === 'jExport') {
-      const rows = S.journal.map((j) => [new Date(j.t).toISOString(), j.type, j.sim ? 'démo' : 'réel', j.symbol, j.mint, j.sol, j.tokens, j.status, j.sig || '', (j.err || '').replace(/[\n,]/g, ' ')]);
-      const csv = 'date,operation,mode,symbole,mint,sol,tokens,statut,signature,erreur\n' + rows.map((r) => r.join(',')).join('\n');
+      const rows = S.journal.map((j) => [new Date(j.t).toISOString(), j.type, j.symbol, j.mint, j.sol, j.tokens, j.status, j.sig || '', (j.err || '').replace(/[\n,]/g, ' ')]);
+      const csv = 'date,operation,symbole,mint,sol,tokens,statut,signature,erreur\n' + rows.map((r) => r.join(',')).join('\n');
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'tokenstudio-journal.csv'; a.click(); return;
     }
     if (d.sotone) { soTone = d.sotone; renderSocial(); return; }
@@ -4162,8 +3838,6 @@
       { g: 'Actions', ic: IC.plus, label: 'Ajouter un token existant', hint: 'Mes tokens', kw: 'suivre mint', run: () => { setPage('mine'); clickWhenReady('mineAdd'); } },
       { g: 'Actions', ic: IC.down, label: 'Exporter le journal en CSV', hint: 'Journal', kw: 'export historique', run: () => { setPage('journal'); clickWhenReady('jExport'); } },
       { g: 'Actions', ic: IC.pulse, label: 'Tester la connexion RPC', hint: S.rpcOk ? 'connecté' : S.rpcOk === false ? 'en erreur' : 'non testé', kw: 'solana helius reseau', run: () => testRpc(false) },
-      // le passage en réel est proposé en démo ; le retour en démo se fait depuis le menu du compte
-      ...(cfg.sim ? [{ g: 'Actions', ic: IC.shield, label: cfg.sim ? 'Passer en mode réel' : 'Revenir en démo', hint: cfg.sim ? 'demande confirmation' : 'plus rien n\'est envoyé', kw: 'simulation reel mode', run: () => { const b = document.querySelector('#simbar [data-act]'); if (b) b.click(); } }] : []),
     );
     const words = norm(raw).split(/\s+/).filter(Boolean);
     if (!words.length) return out;
@@ -4209,7 +3883,9 @@
       return;
     }
     setFormsHtml();
-    const p = localStorage.getItem('pstudio_page'); if (p && PAGES[p] && p !== 'settings') S.page = p;
+    // page demandée par un lien (notification : ?page=orders, ?page=vault…), sinon la dernière page ouverte
+    let qp = null; try { qp = new URLSearchParams(location.search).get('page'); } catch (e) {}
+    const p = qp && PAGES[qp] ? qp : localStorage.getItem('pstudio_page'); if (p && PAGES[p] && p !== 'settings') S.page = p;
     setPage(S.page);
     await solPrice(); renderTop();
     testRpc(true);
@@ -4229,7 +3905,7 @@
       }
       if (tick % 4 === 0) watchOrders().catch(() => {});
       if (S.page === 'dash') { dashTokens(); renderDash(); }
-      const keep = new Set(S.orders.filter((o) => o.active && !isDemoMint(o.mint)).map((o) => o.mint)); if (S.page === 'mine' && S.view.mine && !isDemoMint(S.view.mine)) keep.add(S.view.mine);
+      const keep = new Set(S.orders.filter((o) => o.active).map((o) => o.mint)); if (S.page === 'mine' && S.view.mine) keep.add(S.view.mine);
       keep.forEach((m) => { if (!S.cache[m]) loadToken(m, false).catch(() => {}); });
       liveKeep(keep); ppSync(liveSet());
       if (tick % 4 === 1) prefetch();
@@ -4241,15 +3917,29 @@
     toast: (t, x, k) => toast(t, x, k), confirm: (t, x, ok, danger) => confirmBox(t, '<p>' + esc(x) + '</p>', ok, danger),
     // flux en direct pour la page Trader : abonnements aux transactions des tokens affichés et aux nouveaux tokens
     live: {
-      watch: (mints) => { PPX.mints = new Set((mints || []).filter((m) => typeof m === 'string' && !isDemoMint(m)).slice(0, 60)); ppSync(liveSet()); },
+      watch: (mints) => { PPX.mints = new Set((mints || []).filter((m) => typeof m === 'string').slice(0, 60)); ppSync(liveSet()); },
       news: (on) => { PPX.news = !!on; ppSync(liveSet()); },
       on: (fn) => { PPX.fns.add(fn); return () => PPX.fns.delete(fn); },
       state: () => ({ on: !!cfg.ppLive, state: PP.state, last: PP.last }),
     },
     solUsd: () => S.solUsd,
+    // coffre-fort (React) : wallet actif et signature des conversions avec le wallet externe
+    vault: {
+      ctx: () => {
+        const w = S.wallet;
+        return { solUsd: S.solUsd, bal: S.bal,
+          wallet: w ? { kind: w.id === 'server' ? 'server' : w.id === 'session' ? 'legacy' : 'ext', pk: w.pk, name: w.id === 'server' ? 'Wallet rapide' : w.name } : null };
+      },
+      signSend: async (b64) => {
+        const tx = W3().VersionedTransaction.deserialize(b64ToBytes(b64));
+        const v = await simulate(tx); if (v.err) throw new Error(simError(v));
+        const sig = await signAndSend(tx); await confirmSig(sig); refreshBal();
+        return sig;
+      },
+    },
     // panneau de trading de la page Trader : réglages, devis sur la courbe, position, ordres
     trader: {
-      settings: () => ({ slippage: cfg.slippage, priorityFee: cfg.priorityFee, maxSol: cfg.maxSol, sim: !!cfg.sim, wallet: !!S.wallet, bal: cfg.sim ? DEMO.bal : S.bal, busy: !!S.busy }),
+      settings: () => ({ slippage: cfg.slippage, priorityFee: cfg.priorityFee, maxSol: cfg.maxSol, wallet: !!S.wallet, bal: S.bal, busy: !!S.busy }),
       set: (p) => {
         const ok = {};
         if (p && +p.slippage >= 1 && +p.slippage <= 50) ok.slippage = +p.slippage;
@@ -4266,7 +3956,7 @@
       // frais de créateur non réclamés d'un wallet (tous ses tokens, courbe et PumpSwap), en SOL
       creatorFees: async (pk) => { const { web3 } = KIT(), bn = await pumpConn().online.getCreatorVaultBalanceBothPrograms(new web3.PublicKey(pk)); return Number(bn.toString()) / 1e9; },
     },
-    SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, isSim: () => !!cfg.sim, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
+    SESSW, sessUnlock, autoSell, canAuto, walletPanel, b58, tpValid, autoGenerate, directTrade, directCreate, pumpGlobal, quoteBuy, quoteSell, curveStats, readCurve, loadToken, trade, launch, genIdeas, readiness, INIT_CURVE,
     // Menu de compte (React) : état du wallet et du mode, et actions associées
     hub: {
       state: () => {
@@ -4277,8 +3967,7 @@
           quick: null,   // l'ancien wallet rapide du navigateur n'est plus utilisé (voir quickSaved pour le transférer)
           quickSaved: SESSREC ? { pk: SESSREC.pk, unlocked: !!SESSW.kp } : null,
           srv: SRVPK ? { pk: SRVPK, active: !!(w && w.id === 'server'), bal: w && w.id === 'server' ? S.bal : null } : null,
-          hasSession: !!SESSREC, bal: S.bal, solUsd: S.solUsd, sim: !!cfg.sim, rpcOk: S.rpcOk, theme: uiTheme, depth: uiDepth,
-          demo: { bal: DEMO.bal, positions: Object.values(DEMO.pos).filter((x) => x > 0).length } };
+          hasSession: !!SESSREC, bal: S.bal, solUsd: S.solUsd, rpcOk: S.rpcOk, theme: uiTheme, depth: uiDepth };
       },
       connect: async (id) => { const pv = providers().find((x) => x.id === id); return pv ? connectWallet(pv) : null; },
       quickCreate: async () => { try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return undefined; },
@@ -4296,23 +3985,6 @@
       useExt: async () => { cfg.useSess = false; cfg.useSrv = false; save(LS.cfg, cfg); S.bal = null; await refreshBal(); renderAll(); },
       setAuth,
       authed: () => AUTH === true,
-      demoReset: async () => {
-        if (!(await confirmBox('Réinitialiser la démo ?', '<p>Le wallet démo revient à 10 SOL fictifs. Vos tokens démo, leurs ordres et l\'historique démo sont effacés.</p>', 'Réinitialiser', true))) return;
-        DEMO.bal = 10; DEMO.pos = {}; demoSave(); DM.tok = {}; dmSave();
-        ['pstudio_demo_tokens_v1', 'pstudio_demo_orders_v1', 'pstudio_demo_journal_v1', 'pstudio_demo_dist_v1'].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
-        if (cfg.sim) { S.tokens = []; S.orders = []; S.journal = []; DS.rec = {}; S.view.mine = null; S.view.trade = null; }
-        toast('Démo réinitialisée', 'Wallet démo : 10 SOL fictifs.', 'g'); renderAll();
-      },
-      demoInfo: () => {
-        dmRun();
-        const hold = Object.keys(DEMO.pos).filter((m) => DEMO.pos[m] > 0).map((m) => {
-          const T = DM.tok[m], C = S.cache[m], st = T ? curveStats(dmCurve(T)) : C && C.stats;
-          return { mint: m, symbol: T ? T.symbol : (C && C.meta && C.meta.symbol) || short(m), image: T ? T.image || '' : (C && C.meta && C.meta.image) || '', amount: DEMO.pos[m], sol: st && st.price ? st.price * DEMO.pos[m] : null, demo: !!T };
-        }).sort((a, b) => (b.sol || 0) - (a.sol || 0));
-        const acts = (cfg.sim ? S.journal : load('pstudio_demo_journal_v1', [])).slice(0, 15).map((j) => ({ t: j.t, type: j.type, symbol: j.symbol || '', sol: j.sol || 0, tokens: j.tokens || 0 }));
-        return { addr: DEMO.addr, bal: DEMO.bal, solUsd: S.solUsd, hold, acts };
-      },
-      demoMove: (kind) => demoMove(kind),
       avatar: (pk, cls) => wAv(pk, cls),
       walletMenu: () => walletMenu(),
       walletPanel: () => walletPanel(),
@@ -4328,7 +4000,6 @@
       page: () => S.page,
       copyAddress: async () => { const pk = S.wallet && S.wallet.pk; if (!pk) return; try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk, 6), 'g'); } catch (e) {} },
       appearance: () => themePicker(),
-      goReal, goSim,
     },
     // Données synchronisées avec le compte : export de l'état local, et fusion de celles du serveur
     // Données du compte : chargées depuis la base par l'application, écrites dans la base à chaque changement
@@ -4337,16 +4008,16 @@
       // données du compte chargées : elles remplacent l'affichage réel (sans être renvoyées au compte)
       loadReal: (x) => {
         REAL.tokens = x.tokens || []; REAL.journal = x.journal || []; REAL.orders = x.orders || []; REAL.dist = x.dist || {};
-        if (!cfg.sim) { showModeData(); S.view.mine = null; S.view.trade = null; }
+        showModeData(); S.view.mine = null; S.view.trade = null;
         if (x.draft) { REMOTE_APPLY = true; try { S.draft = Object.assign(draftDefaults(), x.draft); } finally { REMOTE_APPLY = false; } }
         renderAll();
       },
       // une table modifiée ailleurs (autre appareil) : remplacée sans être renvoyée
-      replaceReal: (kind, v) => { if (!(kind in REAL)) return; REAL[kind] = v; if (!cfg.sim) showModeData(); renderAll(); },
+      replaceReal: (kind, v) => { if (!(kind in REAL)) return; REAL[kind] = v; showModeData(); renderAll(); },
       // déconnexion : plus aucune donnée du compte dans l'outil
       clearReal: () => {
         REAL.tokens = []; REAL.journal = []; REAL.orders = []; REAL.dist = {};
-        if (!cfg.sim) { showModeData(); S.view.mine = null; S.view.trade = null; }
+        showModeData(); S.view.mine = null; S.view.trade = null;
         S.draft = draftDefaults(); try { localStorage.removeItem(LS.draft); } catch (e) {}
         renderAll();
       },
@@ -4355,7 +4026,7 @@
       // réglages du compte chargés : ils remplacent ceux de l'invité tant que le compte est ouvert
       loadCfg: (c) => { REMOTE_APPLY = true; try { Object.keys(c || {}).forEach((k) => { if (!CFG_LOCAL_ONLY.includes(k)) cfg[k] = c[k]; }); cfg.useSess = false; } finally { REMOTE_APPLY = false; } renderAll(); },
       // déconnexion : retour aux réglages de l'invité (sans clé API)
-      guestCfg: () => { const sim = cfg.sim; Object.keys(cfg).forEach((k) => { delete cfg[k]; }); Object.assign(cfg, DEF, load(LS.cfg, {}), { useSess: false, sim: sim || true, rpc: '', pinataJwt: '' }); renderAll(); },
+      guestCfg: () => { Object.keys(cfg).forEach((k) => { delete cfg[k]; }); Object.assign(cfg, DEF, load(LS.cfg, {}), { useSess: false, rpc: '', pinataJwt: '' }); delete cfg.sim; renderAll(); },
       // anciennes clés API gardées dans ce navigateur : passées sur le compte puis retirées d'ici
       dropLocalKeys: () => { const c = load(LS.cfg, {}); if (c.rpc || c.pinataJwt) { delete c.rpc; delete c.pinataJwt; try { localStorage.setItem(LS.cfg, JSON.stringify(c)); } catch (e) {} } },
       // anciennes données gardées dans ce navigateur (avant la base) : reprises une fois sur le compte, puis effacées
@@ -4364,7 +4035,7 @@
     },
     // Préférences du compte : lecture de l'état local, et application de celles du serveur
     prefs: {
-      get: () => ({ ui_theme: uiTheme, ui_depth: uiDepth, sim_mode: !!cfg.sim, slippage_pct: cfg.slippage, max_buy_sol: cfg.maxSol, priority: cfg.speed, dev_max_pct: cfg.devMaxPct,
+      get: () => ({ ui_theme: uiTheme, ui_depth: uiDepth, slippage_pct: cfg.slippage, max_buy_sol: cfg.maxSol, priority: cfg.speed, dev_max_pct: cfg.devMaxPct,
         studio_universe: S.draft.theme, studio_tone: S.draft.tone, studio_lang: S.draft.lang }),
       apply(p) {
         if (!p) return;
@@ -4372,7 +4043,6 @@
         try {
           if (p.ui_theme || p.ui_depth) applyUiTheme(p.ui_theme || uiTheme, true, UI_DEPTH[p.ui_depth] ? p.ui_depth : null, 'remote');
           const c = {};
-          if (p.sim_mode != null) c.sim = !!p.sim_mode;
           if (p.slippage_pct != null) c.slippage = +p.slippage_pct;
           if (p.max_buy_sol != null) c.maxSol = +p.max_buy_sol;
           if (p.priority) c.speed = p.priority;

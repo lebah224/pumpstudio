@@ -38,6 +38,8 @@ export const WALLETS: WalletInfo[] = [
   { id: 'trust', name: 'Trust Wallet', color: '#0500ff', install: 'https://trustwallet.com/download',
     mobile: (u) => 'https://link.trustwallet.com/open_url?coin_id=501&url=' + enc(u), get: () => w.trustwallet?.solana ?? (w.solana?.isTrust ? w.solana : undefined) },
   { id: 'magiceden', name: 'Magic Eden', color: '#e42575', install: 'https://wallet.magiceden.io/download', get: () => w.magicEden?.solana },
+  { id: 'binance', name: 'Binance Wallet', color: '#f0b90b', install: 'https://www.binance.com/web3wallet',
+    get: () => w.binancew3w?.solana ?? (w.BinanceChain?.solana) },
   { id: 'bitget', name: 'Bitget Wallet', color: '#1fb6c9', install: 'https://web3.bitget.com/wallet-download', get: () => w.bitkeep?.solana },
 ];
 

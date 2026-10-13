@@ -13,14 +13,10 @@ import { installSelectMenus } from './ui/selectMenu';
 import { installRpcRelay } from './lib/rpcRelay';
 import { installPushRouting } from './notify/push';
 import { installTokenMeta } from './lib/tokenMeta';
-import { enterDemoGuest, isDemoGuest, maybeSignedIn } from './lib/guest';
+import { isQuickSignIn, maybeSignedIn } from './lib/guest';
 
-// Sans compte, l'outil s'ouvre seulement en démo (depuis l'accueil) ou pour se connecter avec le wallet rapide
-{
-  const q = new URLSearchParams(location.search);
-  if (q.get('demo') === '1' || q.get('signin') === 'quick') enterDemoGuest();
-  if (!maybeSignedIn() && !isDemoGuest()) location.replace('/');
-}
+// Sans compte, l'outil ne s'ouvre que pour se connecter avec l'ancien wallet rapide
+if (!maybeSignedIn() && !isQuickSignIn()) location.replace('/connexion');
 
 // Images distantes cassées (logos de tokens) : retirées sans gestionnaire en ligne, compatible avec la CSP
 document.addEventListener('error', (e) => {

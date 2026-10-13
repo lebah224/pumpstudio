@@ -59,7 +59,6 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-
 .menu .count{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--dim);min-width:22px;text-align:center;padding:1px 6px;border-radius:999px;background:var(--panel2)}
 .menu button.active .count{color:var(--accent-ink);background:var(--accent-bg)}
 .side-foot{margin-top:auto;padding:14px 16px 16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--dim);display:flex;flex-direction:column;gap:10px}
-.side-foot .mode{display:none}
 .sc-title{font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600}
 .sc-list{display:flex;flex-direction:column;gap:2px}
 .sc-it{display:flex;align-items:center;gap:9px;background:none;border:none;padding:6px 6px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:13.5px;text-align:left;width:100%}
@@ -78,7 +77,6 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-
 .dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}
 .dot.on{background:var(--green);box-shadow:0 0 0 3px color-mix(in oklab,var(--green) 22%,transparent)}
 .dot.wait{background:var(--amber);box-shadow:0 0 0 3px color-mix(in oklab,var(--amber) 22%,transparent)}
-.dot.demo{background:var(--accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 25%,transparent)}
 .dot.bad{background:var(--red);box-shadow:0 0 0 3px color-mix(in oklab,var(--red) 22%,transparent)}
 .sel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px;min-height:36px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--panel2);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 15px;cursor:pointer;min-height:38px;white-space:nowrap;font-weight:500;transition:background .15s,border-color .15s,transform .05s}
@@ -300,10 +298,10 @@ fieldset.dirty .actions{display:flex}
 @media (max-width:760px){.mv{grid-template-columns:1fr}}
 
 /* ═════════ TokenStudio ═════════ */
-.simbar{display:flex;align-items:center;gap:10px;padding:8px 26px;background:var(--accent-bg);border-top:1px solid var(--accent-line);color:var(--accent-ink);font-size:14px;flex-wrap:wrap}
-.simbar.live{background:var(--red-bg);border-top-color:var(--red-line);color:var(--red-ink)}
-.simbar>span{flex:1 1 220px;min-width:0}
-.simbar button{margin-left:auto}
+.notebar{display:flex;align-items:center;gap:10px;padding:8px 26px;background:var(--accent-bg);border-top:1px solid var(--accent-line);color:var(--accent-ink);font-size:14px;flex-wrap:wrap}
+.notebar.live{background:var(--red-bg);border-top-color:var(--red-line);color:var(--red-ink)}
+.notebar>span{flex:1 1 220px;min-width:0}
+.notebar button{margin-left:auto}
 .wallet-btn{display:inline-flex;align-items:center;gap:10px}
 .wallet-btn .addr-s{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
 .btn.primary .addr-s{color:inherit;opacity:.7}
@@ -652,9 +650,9 @@ textarea{font:inherit;color:inherit}
   .kpis{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
   .kpis::-webkit-scrollbar{display:none}
   .kpi{flex:0 0 auto;min-width:138px;scroll-snap-align:start;padding:10px 16px}
-  .simbar,.lowbal{padding:9px 16px;font-size:13px;gap:8px}
-  .simbar svg.i{display:none}
-  .simbar button{margin-left:0}
+  .notebar,.lowbal{padding:9px 16px;font-size:13px;gap:8px}
+  .notebar svg.i{display:none}
+  .notebar button{margin-left:0}
   .body{padding:18px 16px calc(96px + env(safe-area-inset-bottom,0px))}
   .bnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:60;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:color-mix(in oklab,var(--bg2) 92%,transparent);backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);border-top:1px solid var(--line)}
   .bnav button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;border:none;border-radius:12px;color:var(--dim);font-size:11.5px;font-weight:600;min-height:54px;cursor:pointer;padding:4px 2px}

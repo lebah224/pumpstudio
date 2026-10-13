@@ -7,14 +7,7 @@ export type HubState = {
   quick: { pk: string; active: boolean; unlocked: boolean; bal: number | null } | null;
   quickSaved: { pk: string; unlocked: boolean } | null;
   srv: { pk: string; active: boolean; bal: number | null } | null;
-  hasSession: boolean; bal: number | null; solUsd: number | null; sim: boolean; rpcOk: boolean | null; theme: string; depth: string;
-  demo: { bal: number; positions: number };
-};
-/** Wallet démo : solde fictif, tokens détenus (démo ou vrais tokens à prix réel) et activité */
-export type DemoInfo = {
-  addr: string; bal: number; solUsd: number | null;
-  hold: { mint: string; symbol: string; image: string; amount: number; sol: number | null; demo: boolean }[];
-  acts: { t: number; type: string; symbol: string; sol: number; tokens: number }[];
+  hasSession: boolean; bal: number | null; solUsd: number | null; rpcOk: boolean | null; theme: string; depth: string;
 };
 type Keypair = { publicKey: { toBase58: () => string }; secretKey: Uint8Array };
 
@@ -47,15 +40,10 @@ type LegacyStudio = {
     setServer: (pk: string | null) => void;
     setAuth: (on: boolean) => void;
     authed: () => boolean;
-    demoReset: () => void;
-    demoInfo: () => DemoInfo;
-    demoMove: (kind: 'deposit' | 'withdraw') => Promise<void>;
     rpc: <T = any>(method: string, params: unknown[]) => Promise<T>;
     page: () => string;
     copyAddress: () => void;
     appearance: () => void;
-    goReal: () => void;
-    goSim: () => void;
   };
 };
 

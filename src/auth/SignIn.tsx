@@ -34,7 +34,7 @@ const QuickMark = () => <span className="ts-wmark quick" aria-hidden="true"><svg
 /**
  * Connexion et ajout de wallets.
  * Invité : wallet (Phantom, Solflare…), wallet rapide ou e-mail. Un compte n'est jamais créé sans accord :
- * si le wallet ou l'e-mail n'a pas de compte, on propose de le créer ou de continuer en démo.
+ * si le wallet ou l'e-mail n'a pas de compte, on propose de le créer (jamais automatiquement).
  * Connecté (écran « add ») : ajoute un wallet au compte après une signature gratuite.
  */
 /**
@@ -119,7 +119,6 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
     else if (intent.wallet) pickWallet(intent.wallet);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const simulate = () => { if (standalone) { location.href = '/app?demo=1'; return; } close(); hub?.goSim(); toast('Mode démo', 'Explorez l\'outil avec un wallet démo de 10 SOL fictifs. Rien n\'est envoyé ; créez votre compte pour vérifier sur la blockchain.', 'g'); };
 
   async function sendEmail(ev: FormEvent | null, createUser: boolean) {
     ev?.preventDefault(); setErr(null);
@@ -184,12 +183,11 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
       {step === 'choose' && (<>
         {signup ? head(t('Créer votre compte', 'Create your account'), t('Avec votre wallet ou votre e-mail. Une signature gratuite suffit : aucune transaction, aucun frais.', 'With your wallet or your email. One free signature is enough: no transaction, no fees.'))
           : head(t('Connexion à TokenStudio', 'Sign in to TokenStudio'), t('Choisissez comment vous connecter. Vos clés privées ne quittent jamais votre wallet.', 'Choose how to sign in. Your private keys never leave your wallet.'))}
-        {intent.reason === 'real' && <div className="ts-note warn">Le mode réel demande un compte. La démo reste ouverte sans compte.</div>}
+        {intent.reason === 'real' && <div className="ts-note warn">{t('Connectez-vous à votre compte pour continuer.', 'Sign in to your account to continue.')}</div>}
         {walletList}
         <div className="ts-si-or"><span>{t('ou', 'or')}</span></div>
         {googleOn && <button type="button" className="btn ts-si-mail ts-si-google" disabled={!!busy} onClick={google}><GoogleMark />{busy === 'google' ? t('Ouverture de Google…', 'Opening Google…') : t('Continuer avec Google', 'Continue with Google')}</button>}
         <button type="button" className="btn ts-si-mail" onClick={() => { setErr(null); setStep('email'); }}>{t('Continuer avec un e-mail', 'Continue with email')}</button>
-        <button type="button" className="ts-si-sim" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
       </>)}
 
       {step === 'add' && (<>
@@ -222,9 +220,8 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         <div className="ts-si-choices">
           <button type="button" className="btn primary" disabled={!!busy} onClick={create}>{busy === 'create' ? t('Signature en attente…', 'Waiting for signature…') : t('Créer mon compte avec ce wallet', 'Create my account with this wallet')}</button>
           <button type="button" className="btn" disabled={!!busy} onClick={() => { setErr(null); setStep('email'); }}>{t('J\'ai déjà un compte (e-mail)', 'I already have an account (email)')}</button>
-          <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
-        <p className="muted ts-small">{t('Le compte garde vos préférences et votre historique sur tous vos appareils, et permet le mode réel. Connecté par e-mail, vous pourrez ajouter ce wallet ensuite.', 'An account keeps your settings and history on all your devices, and unlocks live mode. Signed in by email, you can add this wallet afterwards.')}</p>
+        <p className="muted ts-small">{t('Le compte garde vos préférences et votre historique sur tous vos appareils, et donne accès à toutes les fonctions. Connecté par e-mail, vous pourrez ajouter ce wallet ensuite.', 'An account keeps your settings and history on all your devices, and unlocks every feature. Signed in by email, you can add this wallet afterwards.')}</p>
       </>)}
 
       {step === 'email' && (
@@ -240,7 +237,6 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
         <div className="ts-si-choices">
           <button type="button" className="btn primary" disabled={busy === 'email'} onClick={() => sendEmail(null, true)}>{busy === 'email' ? t('Envoi…', 'Sending…') : t('Créer mon compte avec cet e-mail', 'Create my account with this email')}</button>
           <button type="button" className="btn" onClick={() => { setErr(null); setStep('email'); }}>{t('Changer d\'adresse', 'Change address')}</button>
-          <button type="button" className="btn ghost" onClick={simulate}>{t('Essayer la démo sans compte', 'Try the demo without an account')}</button>
         </div>
       </>)}
 

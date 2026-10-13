@@ -424,7 +424,7 @@ Deno.serve(async (req) => {
       }
       return json(400, { error: 'Action inconnue.' });
     } catch (e) {
-      if (e instanceof Fail) return json(e.status, { error: e.message });
+      if (e instanceof Fail || e instanceof Need) return json(e.status, { error: e.message });
       return json(500, { error: ((e as Error).message || 'erreur').slice(0, 160) });
     }
   }

@@ -23,7 +23,7 @@ export const toRow = {
   },
   op(j: Obj) {
     if (!OP_TYPES.has(j.type) || j.id == null) return null;
-    return { client_id: String(j.id).slice(0, 64), type: j.type, status: j.status === 'err' ? 'err' : 'ok', sim: !!j.sim, mint: B58.test(j.mint || '') ? j.mint : null,
+    return { client_id: String(j.id).slice(0, 64), type: j.type, status: j.status === 'err' ? 'err' : 'ok', mint: B58.test(j.mint || '') ? j.mint : null,
       symbol: str(j.symbol, 32), sol: num(j.sol), tokens: num(j.tokens), estimated: !!j.est, auto: !!j.auto, signature: str(j.sig, 100), error: str(j.err, 500), at: iso(j.t) || new Date().toISOString() };
   },
   order(o: Obj) {
@@ -49,7 +49,7 @@ export const toRow = {
 export const fromRow = {
   token: (r: Obj) => ({ mint: r.mint, name: r.name, symbol: r.symbol, image: r.image_url || r.thumb || '', createdAt: ms(r.launched_at || r.created_at), sig: r.signature || '',
     dev: r.dev_sol != null ? Number(r.dev_sol) : undefined, desc: r.description || '', tw: r.twitter || '', tg: r.telegram || '', web: r.website || '', platform: r.platform, added: r.added_manually || undefined }),
-  op: (r: Obj) => ({ id: r.client_id || r.id, t: ms(r.at), type: r.type, mint: r.mint || '', symbol: r.symbol || '', sim: r.sim, status: r.status,
+  op: (r: Obj) => ({ id: r.client_id || r.id, t: ms(r.at), type: r.type, mint: r.mint || '', symbol: r.symbol || '', status: r.status,
     sol: r.sol != null ? Number(r.sol) : 0, tokens: r.tokens != null ? Number(r.tokens) : 0, est: r.estimated || undefined, auto: r.auto || undefined, sig: r.signature || '', err: r.error || undefined }),
   order: (r: Obj) => Object.assign({}, r.state || {}, { id: r.client_id || r.id, mint: r.mint, symbol: r.symbol || '', kind: r.kind, value: Number(r.value), pct: Number(r.pct), ref: r.ref_price != null ? Number(r.ref_price) : undefined, active: r.active }),
 };

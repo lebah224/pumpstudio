@@ -15,7 +15,6 @@ export type Preferences = {
   user_id: string;
   ui_theme: 'or' | 'platine' | 'saphir' | 'jade' | 'cuivre' | 'iris';
   ui_depth: 'nuit' | 'profond' | 'doux';
-  sim_mode: boolean;
   slippage_pct: number;
   max_buy_sol: number;
   priority: 'eco' | 'fast' | 'turbo' | 'manual';

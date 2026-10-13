@@ -229,7 +229,7 @@ async function runRules(key: string) {
       } else if (r.kind === 'profit') {
         if (!srv) continue;   // les ventes du wallet rapide seulement : les autres wallets sont suivis dans le navigateur
         const since = (r.last_result?.cursor as string | undefined) ?? r.created_at;
-        const { data: ops } = await admin.from('operations').select('sol,at').eq('user_id', r.user_id).eq('type', 'sell').eq('status', 'ok').eq('sim', false).gt('at', since).order('at');
+        const { data: ops } = await admin.from('operations').select('sol,at').eq('user_id', r.user_id).eq('type', 'sell').eq('status', 'ok').gt('at', since).order('at');
         const L = (ops ?? []) as { sol: number; at: string }[];
         if (!L.length) continue;
         const gain = L.reduce((a, x) => a + Math.max(0, Number(x.sol)), 0);
@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
   try { b = await req.json(); } catch { return json(400, { error: 'Requête invalide.' }, h); }
   try {
     const action = String(b.action ?? '');
-    // devis et prix du SOL : aussi pour la démo (sans compte)
+    // devis et prix du SOL
     if (action === 'quote' || action === 'market') {
       const c = claims(req), who = String(c.sub ?? (req.headers.get('x-forwarded-for') ?? '').split(',')[0] ?? 'x');
       await rate('vault_q:' + who, 240, 3600);

@@ -34,7 +34,7 @@ export function Footer() {
         )}</p>
         <div className="lp-foot-nav">
           <nav className="lp-foot-links" aria-label={t('Liens', 'Links')}>
-            <a href="/app?demo=1">{t('Démo', 'Demo')}</a><a href="/connexion">{t('Connexion', 'Sign in')}</a><a href="/inscription">{t('Créer un compte', 'Create an account')}</a>
+            <a href="/connexion">{t('Connexion', 'Sign in')}</a><a href="/inscription">{t('Créer un compte', 'Create an account')}</a>
           </nav>
           <nav className="lp-foot-links" aria-label={t('Informations légales', 'Legal information')}>
             {LEGAL().map((l) => <a key={l.href} href={l.href}>{l.label}</a>)}

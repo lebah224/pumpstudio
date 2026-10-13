@@ -46,15 +46,14 @@ const I = {
   shield: <svg className="i" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" /></svg>,
   cloud: <svg className="i" viewBox="0 0 24 24"><path d="M7 18a5 5 0 01-.6-9.96A6 6 0 0118 9a4.5 4.5 0 01-.5 9H7z" /><path d="M12 12v5M9.5 14.5L12 12l2.5 2.5" /></svg>,
   plus: <svg className="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>,
-  lock: <svg className="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" /></svg>,
   mail: <svg className="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>,
 };
 
 /**
  * Menu unique en haut à droite. Trois états :
- * - invité : choix de connexion (wallets, wallet rapide, e-mail) ou démo sans compte ;
+ * - invité : choix de connexion (wallets, wallet rapide, e-mail) ;
  * - wallet connecté sans compte : se connecter au compte de ce wallet, ou le créer (jamais automatiquement) ;
- * - connecté : wallets du compte (ajout, choix du signataire), mode, préférences, sécurité, déconnexion.
+ * - connecté : wallets du compte (ajout, choix du signataire), préférences, sécurité, déconnexion.
  */
 export function AccountHub({ mobile }: { mobile?: boolean }) {
   const { ready, user, needsMfa, aal, openSignIn, signOut } = useAuth();
@@ -125,18 +124,6 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
     <>{I.wallet}<span>{mobile ? 'Connexion' : 'Se connecter'}</span></>
   );
 
-  const modeSec = (
-    <section className="ts-hub-sec">
-      <div className="ts-hub-h">Mode</div>
-      <div className="seg ts-hub-mode" role="group" aria-label="Mode de trading">
-        <button type="button" className={st.sim ? 'on' : ''} aria-pressed={st.sim} data-hub-item onClick={act(() => hub?.goSim())}>Démo</button>
-        {signed
-          ? <button type="button" className={!st.sim ? 'on real' : ''} aria-pressed={!st.sim} data-hub-item onClick={act(() => hub?.goReal())}>Réel</button>
-          : <button type="button" className="locked" data-hub-item title="Le mode réel demande un compte" onClick={act(() => openSignIn({ start: 'choose', reason: 'real' }))}>{I.lock}Réel</button>}
-      </div>
-      {!signed && <p className="ts-hub-note">Le mode réel demande un compte. La démo est ouverte à tous.</p>}
-    </section>
-  );
   const quickLinks = (
     <nav className="ts-hub-sec ts-hub-links" aria-label="Réglages">
       <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}Apparence</button>
@@ -196,7 +183,6 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
           {(ext || quick || srv) && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}Portefeuille</button>}
         </div>
       </section>
-      {modeSec}
       <nav className="ts-hub-sec ts-hub-menu" aria-label="Compte">
         <button type="button" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}<span>Mon compte</span><em>profil, wallets</em></button>
         <button type="button" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}<span>Portefeuille</span><em>solde, dépôt, retrait</em></button>
@@ -230,7 +216,7 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         {status === null ? <small>Recherche d'un compte pour ce wallet…</small>
           : status === 'none' ? (<>
             <b>Aucun compte pour ce wallet</b>
-            <small>Créez votre compte pour enregistrer vos données et passer en mode réel. Rien n'est créé sans votre accord.</small>
+            <small>Créez votre compte pour enregistrer vos données et utiliser l'outil. Rien n'est créé sans votre accord.</small>
             <div className="ts-hub-row">
               <button type="button" className="btn primary sm" data-hub-item onClick={signIn(src)}>Créer mon compte</button>
               <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'email' }))}>{I.mail}J'ai un compte e-mail</button>
@@ -241,7 +227,6 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
             <button type="button" className="btn primary sm" data-hub-item onClick={signIn(src)}>Se connecter au compte</button>
           </>)}
       </section>
-      {modeSec}
       {quickLinks}
     </>);
   } else {
@@ -256,7 +241,6 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
           <button type="button" className="ts-si-opt" data-hub-item onClick={signIn()}><span className="ts-wmark ghost" aria-hidden="true">{I.wallet}</span><span className="ts-si-n">{found.length ? 'Autres wallets' : 'Phantom, Solflare et autres'}</span></button>
           <button type="button" className="ts-si-opt" data-hub-item onClick={act(() => openSignIn({ start: 'email' }))}><span className="ts-wmark ghost" aria-hidden="true">{I.mail}</span><span className="ts-si-n">E-mail</span></button>
         </div>
-        <button type="button" className="ts-si-sim" data-hub-item onClick={act(() => { hub?.goSim(); })}>Essayer la démo sans compte</button>
       </section>
       {quickLinks}
     </>);
@@ -264,9 +248,8 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
 
   return (
     <div className={'ts-hub' + (mobile ? ' m' : '')}>
-      <button ref={btn} type="button" aria-label={signed ? 'Compte de ' + name + (w ? ', solde ' + balTxt + ' SOL' : '') : undefined} className={'ts-hub-btn' + (!w && !user ? ' primary' : '') + (signed ? ' acct' : '') + (st.sim ? ' demo' : '') + (open ? ' on' : '')}
+      <button ref={btn} type="button" aria-label={signed ? 'Compte de ' + name + (w ? ', solde ' + balTxt + ' SOL' : '') : undefined} className={'ts-hub-btn' + (!w && !user ? ' primary' : '') + (signed ? ' acct' : '') + (open ? ' on' : '')}
         aria-haspopup="dialog" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-        {st.sim && <span className="ts-hub-demo">Démo</span>}
         {trigger}
         {I.chev}
       </button>

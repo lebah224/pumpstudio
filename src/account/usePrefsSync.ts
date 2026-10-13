@@ -4,7 +4,7 @@ import type { Preferences, PrefsPatch, Profile } from '../lib/types';
 import { studio, toast } from '../legacy/bridge';
 import { useAuth } from '../auth/AuthContext';
 
-const PREF_KEYS: (keyof PrefsPatch)[] = ['ui_theme', 'ui_depth', 'sim_mode', 'slippage_pct', 'max_buy_sol', 'priority', 'dev_max_pct', 'studio_universe', 'studio_tone', 'studio_lang'];
+const PREF_KEYS: (keyof PrefsPatch)[] = ['ui_theme', 'ui_depth', 'slippage_pct', 'max_buy_sol', 'priority', 'dev_max_pct', 'studio_universe', 'studio_tone', 'studio_lang'];
 
 /** Ne garde que des valeurs acceptées par la base (les contraintes sont aussi vérifiées côté serveur) */
 export function cleanPrefs(p: PrefsPatch): PrefsPatch {

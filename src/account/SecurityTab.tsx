@@ -16,7 +16,9 @@ const solOf = (x: unknown): ReactNode => { const n = Number(x); return x != null
 type Sess = { id: string; created_at: string; updated_at: string | null; refreshed_at: string | null; user_agent: string | null; ip: string | null; aal: string | null };
 const EVENTS: Record<string, string> = {
   account_created: 'Compte créé', wallet_added: 'Wallet ajouté', wallet_removed: 'Wallet retiré', withdraw_wallet_pending: 'Wallet de retrait ajouté (actif dans 24 h)',
-  mode_reel: 'Passage en mode réel', mode_simulation: 'Retour en démo', limite_achat_modifiee: 'Limite par achat modifiée',
+  limite_achat_modifiee: 'Limite par achat modifiée',
+  vault_swap: 'Conversion du coffre-fort', vault_send: 'Envoi depuis le coffre-fort', vault_address_added: 'Adresse ajoutée au coffre-fort',
+  vault_address_removed: 'Adresse retirée du coffre-fort', vault_rule_saved: 'Règle du coffre-fort enregistrée', vault_rule_deleted: 'Règle du coffre-fort supprimée',
   login_new_device: 'Connexion depuis un nouvel appareil', session_revoked: 'Appareil déconnecté', sessions_revoked: 'Autres appareils déconnectés',
   anti_phishing_set: 'Code anti-hameçonnage modifié', server_wallet_withdraw: 'Retrait du wallet rapide', server_wallet_export: 'Clé du wallet rapide exportée',
   server_wallet_limits: 'Plafond du wallet rapide modifié', server_wallet_deleted: 'Wallet rapide supprimé', server_wallet_imported: 'Wallet rapide importé',

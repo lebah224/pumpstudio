@@ -6,7 +6,7 @@ import { solUsd } from './live';
 type Quote = { sol: number; tokens: number; minOut: number; impact: number; fees: number };
 type Pos = { bal: number; value: number; avg: number | null; spent: number; recv: number; pnl: number; price: number };
 type TraderApi = {
-  settings: () => { slippage: number; priorityFee: number; maxSol: number; sim: boolean; wallet: boolean; bal: number | null; busy: boolean };
+  settings: () => { slippage: number; priorityFee: number; maxSol: number; wallet: boolean; bal: number | null; busy: boolean };
   set: (p: { slippage?: number; priorityFee?: number }) => void;
   quote: (mint: string, side: 'buy' | 'sell', amount: number) => Quote | null;
   position: (mint: string) => Pos | null;
@@ -21,7 +21,7 @@ const SLIPS = [5, 10, 15, 25];
 const PRIO: { v: number; l: string }[] = [{ v: 0.0001, l: 'Éco' }, { v: 0.0005, l: 'Normal' }, { v: 0.001, l: 'Rapide' }, { v: 0.003, l: 'Turbo' }];
 const parse = (s: string) => { const v = parseFloat(s.replace(',', '.').replace(/\s/g, '')); return isFinite(v) ? v : NaN; };
 
-/** Panneau d'achat et de vente : le studio prépare, vérifie et fait signer la transaction (ou la simule en démo) */
+/** Panneau d'achat et de vente : le studio prépare, vérifie et fait signer la transaction */
 export function TradePanel({ mint, symbol, priceSol, onPosition }: { mint: string; symbol: string; priceSol: number | null; onPosition: (p: Pos | null) => void }) {
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [amt, setAmt] = useState('0.1');
@@ -58,7 +58,7 @@ export function TradePanel({ mint, symbol, priceSol, onPosition }: { mint: strin
   const bal = cfg?.bal ?? null;
   const warn = side === 'buy'
     ? (!(solIn > 0) ? 'Saisissez un montant.' : cfg && solIn > cfg.maxSol ? 'Au-delà de votre limite par achat (' + cfg.maxSol.toLocaleString('fr-FR') + ' SOL), modifiable dans Réglages.' : bal != null && solIn > bal ? 'Solde insuffisant.' : null)
-    : (!(held > 0) ? 'Vous ne détenez pas ce token' + (cfg?.sim ? ' dans le wallet démo.' : '.') : null);
+    : (!(held > 0) ? 'Vous ne détenez pas ce token.' : null);
 
   const go = async () => {
     const S = st(); if (!S?.trade || warn) return;
@@ -76,7 +76,6 @@ export function TradePanel({ mint, symbol, priceSol, onPosition }: { mint: strin
         <button type="button" role="tab" aria-selected={side === 'sell'} className={'sell' + (side === 'sell' ? ' on' : '')} onClick={() => setSide('sell')}>Vendre</button>
       </div>
 
-      {cfg?.sim && <div className="tr-demo"><span className="badge v">démo</span>Prix réels du marché, opérations simulées sur votre wallet démo.</div>}
 
       {side === 'buy' ? (<>
         <label className="tr-amt">
@@ -123,11 +122,11 @@ export function TradePanel({ mint, symbol, priceSol, onPosition }: { mint: strin
       <button type="button" className={'btn tr-go ' + side} disabled={busy || !!warn || cfg?.busy} onClick={go}>
         {busy ? 'Préparation…' : side === 'buy' ? 'Acheter ' + symbol + (solIn > 0 ? ' · ' + solIn.toLocaleString('fr-FR') + ' SOL' : '') : 'Vendre ' + pct + ' % de ' + symbol}
       </button>
-      {!cfg?.sim && !cfg?.wallet && <p className="dim tr-small">Connectez un wallet pour trader en réel : la transaction vous sera présentée avant signature.</p>}
+      {!cfg?.wallet && <p className="dim tr-small">Connectez un wallet pour trader : la transaction vous sera présentée avant signature.</p>}
 
       <div className="tr-pos">
         <div className="tr-pos-h"><b>Ma position</b>{held > 0 && <button type="button" className="btn sm" onClick={() => st()?.trader?.newOrder(mint)}>Prise de profit / stop</button>}</div>
-        {!ready ? <p className="dim tr-small">Lecture…</p> : !(held > 0) && !pos?.spent ? <p className="dim tr-small">Aucune position sur ce token{cfg?.sim ? ' en démo' : ''}.</p> : (
+        {!ready ? <p className="dim tr-small">Lecture…</p> : !(held > 0) && !pos?.spent ? <p className="dim tr-small">Aucune position sur ce token.</p> : (
           <dl className="tr-quote">
             <dt>Détenus</dt><dd className="mono">{fTok(held)} {symbol}</dd>
             <dt>Valeur</dt><dd><Sol v={pos!.value} /></dd>

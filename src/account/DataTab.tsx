@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { cloudCounts, detachCloud, exportCloud, flushAll, useCloudStatus } from '../data/cloud';
 import { toast } from '../legacy/bridge';
 import { disablePush } from '../notify/push';
-import { leaveDemoGuest, markLeaving } from '../lib/guest';
+import { markLeaving } from '../lib/guest';
 import { invokeSecure } from '../security/stepUp';
 
 const ORDER = ['tokens', 'operations', 'orders', 'distributions'];
@@ -41,7 +41,6 @@ export function DataTab() {
       markLeaving();
       await detachCloud();
       await signOut().catch(() => {});
-      leaveDemoGuest();
       try { sessionStorage.setItem('ts-account-deleted', '1'); } catch { /* navigation privée */ }
       location.replace('/');
     } catch (e) { setDelErr((e as Error).message); setBusy(null); }
@@ -60,7 +59,7 @@ export function DataTab() {
           <thead><tr><th>Donnée</th><th>Sur votre compte</th></tr></thead>
           <tbody>{ORDER.map((k) => <tr key={k}><td>{LABELS[k] ?? k}</td><td className="mono">{s.cloud ? s.cloud[k] ?? 0 : '…'}</td></tr>)}</tbody>
         </table>
-        <p className="muted ts-small">Jamais enregistrés : les clés privées de vos wallets (sauf celle du wallet rapide, chiffrée) et les opérations de la démo.</p>
+        <p className="muted ts-small">Jamais enregistrés : les clés privées de vos wallets (sauf celle du wallet rapide, chiffrée).</p>
       </div>
       <div className="card">
         <div className="card-h"><h3>Vos données</h3><p>Elles vous appartiennent : vous pouvez les récupérer ou supprimer votre compte quand vous voulez. Détails dans la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a> et les <a href="/conditions" target="_blank" rel="noopener">conditions d'utilisation</a>.</p></div>

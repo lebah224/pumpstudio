@@ -21,7 +21,7 @@ type AuthState = {
 const Ctx = createContext<AuthState | null>(null);
 
 /**
- * guestPages : dans l'outil, un invité (démo) qui veut se connecter va sur la page /connexion ;
+ * guestPages : dans l'outil, une personne sans compte qui veut se connecter va sur la page /connexion ;
  * seul le wallet rapide, qui vit dans l'outil, garde sa fenêtre.
  */
 export function AuthProvider({ children, guestPages }: { children: ReactNode; guestPages?: boolean }) {

@@ -150,7 +150,7 @@ async function watch(watchKey: string) {
         if (r.ok && r.signature) {
           sold++; done.add(o.order_id);
           await admin.rpc('order_done_srv', { p_id: o.order_id, p_state: { done: true, auto: 'ok', sig: r.signature, server: true, triggered: Date.now() } });
-          await admin.from('operations').insert({ user_id: o.user_id, client_id: 'srv-' + o.order_id.slice(0, 8) + '-' + Date.now().toString(36), type: 'sell', status: 'ok', sim: false,
+          await admin.from('operations').insert({ user_id: o.user_id, client_id: 'srv-' + o.order_id.slice(0, 8) + '-' + Date.now().toString(36), type: 'sell', status: 'ok',
             mint: o.mint, symbol: o.symbol, sol: r.sol ?? 0, tokens: -(r.tokens ?? 0), estimated: !r.confirmed, auto: true, signature: r.signature, at: new Date().toISOString() });
           title = 'Vendu automatiquement · ' + sym;
           body = label + '. Votre wallet rapide a vendu ' + pctTxt(Number(o.pct)) + ' %' + (r.sol ? ' : +' + solTxt(r.sol) + ' SOL' : '') + '.';

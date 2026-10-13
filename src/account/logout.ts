@@ -1,6 +1,6 @@
 import { studio } from '../legacy/bridge';
 import { disablePush } from '../notify/push';
-import { leaveDemoGuest, markLeaving } from '../lib/guest';
+import { markLeaving } from '../lib/guest';
 import { detachCloud } from '../data/cloud';
 
 /**
@@ -15,6 +15,5 @@ export async function logoutEverywhere(signOut: (all?: boolean) => Promise<unkno
   await detachCloud().catch(() => {});
   await signOut(all).catch(() => {});
   await studio()?.hub?.signOut().catch(() => {});
-  leaveDemoGuest();
   location.replace('/connexion');
 }
