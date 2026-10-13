@@ -192,12 +192,16 @@ export function SignInPanel({ intent, onHide, standalone, signup }: { intent: Si
 
       {step === 'add' && (<>
         {head('Ajouter un wallet', 'Connectez un wallet puis signez un message gratuit : il est ajouté à votre compte. Aucune transaction n\'est autorisée.')}
-        {srv && !srv.address && (
+        {srv && (<>
           <button type="button" className="ts-si-opt ts-si-srv" onClick={() => { close(); setTimeout(() => openServerWallet('create'), 0); }}>
             <QuickMark />
-            <span className="ts-si-n">Wallet rapide<small>Créé sur votre compte : il signe seul, sans fenêtre · recommandé pour les ordres automatiques</small></span><em className="ts-si-tag ok">Conseillé</em>
+            <span className="ts-si-n">{srv.wallets.length ? 'Nouveau wallet rapide (n°' + (srv.wallets.reduce((m, x) => Math.max(m, x.num), 0) + 1) + ')' : 'Wallet rapide'}<small>Créé sur votre compte : il signe seul, sans fenêtre · recommandé pour les ordres automatiques</small></span>{!srv.wallets.length && <em className="ts-si-tag ok">Conseillé</em>}
           </button>
-        )}
+          <button type="button" className="ts-si-opt" onClick={() => { close(); setTimeout(() => openServerWallet('import'), 0); }}>
+            <QuickMark />
+            <span className="ts-si-n">Wallet par clé secrète<small>Importez un wallet existant (Phantom, Solflare…) comme wallet rapide de votre compte</small></span>
+          </button>
+        </>)}
         {walletList}
       </>)}
 

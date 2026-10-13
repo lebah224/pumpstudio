@@ -5,19 +5,21 @@ import { supabase } from '../lib/supabase';
 import { pwError } from '../lib/password';
 import { PasswordMeter } from '../ui/PasswordMeter';
 import { Sol } from '../ui/Sol';
-import { createServerWallet, deleteServerWallet, exportServerWallet, importServerWallet, setServerLimits, useServerWallet, withdrawServerWallet } from './api';
+import { createServerWallet, deleteServerWallet, exportServerWallet, importServerWallet, selectServerWallet, setServerLimits, srvLabel, useServerWallet, withdrawServerWallet } from './api';
 
-export type SrvMode = 'create' | 'withdraw' | 'limits' | 'export' | 'delete';
-export const openServerWallet = (mode: SrvMode) => window.dispatchEvent(new CustomEvent('ts-srv', { detail: mode }));
+export type SrvMode = 'create' | 'import' | 'withdraw' | 'limits' | 'export' | 'delete';
+/** address : wallet rapide visé (sinon le wallet actif) */
+export const openServerWallet = (mode: SrvMode, address?: string) => window.dispatchEvent(new CustomEvent('ts-srv', { detail: { mode, address } }));
 
 const short = (a: string) => a.slice(0, 4) + '…' + a.slice(-4);
 const nf = (n: number, d = 4) => n.toLocaleString('fr-FR', { maximumFractionDigits: d });
 
-/** Fenêtre du wallet rapide serveur : création, retrait, plafonds, export de la clé, suppression */
+/** Fenêtre des wallets rapides : création, ajout par clé secrète, retrait, plafonds, export de la clé, suppression */
 export function ServerWalletDialog() {
   const { user } = useAuth();
   const srv = useServerWallet();
   const [mode, setMode] = useState<SrvMode | null>(null);
+  const [target, setTarget] = useState<string | null>(null);
   const [how, setHow] = useState<'new' | 'move' | 'key'>('new');
   const [pw, setPw] = useState(''); const [pw2, setPw2] = useState('');
   const [secret, setSecret] = useState(''); const [ack, setAck] = useState(false);
@@ -31,10 +33,12 @@ export function ServerWalletDialog() {
 
   useEffect(() => {
     const f = (e: Event) => {
-      const m = (e as CustomEvent).detail as SrvMode;
-      setMode(m); setErr(null); setPw(''); setPw2(''); setSecret(''); setAck(false); setShown(null); setAmount(''); setAll(false);
-      setHow(quick ? 'move' : 'new');
-      setCap(String(srv?.daily_cap_sol ?? 10)); setAlert(String(srv?.alert_balance_sol ?? 5));
+      const d = (e as CustomEvent).detail as SrvMode | { mode: SrvMode; address?: string };
+      const m = typeof d === 'string' ? d : d.mode, addr = (typeof d === 'string' ? null : d.address) || srv?.address || null;
+      const tw = srv?.wallets.find((x) => x.address === addr);
+      setMode(m); setTarget(addr); setErr(null); setPw(''); setPw2(''); setSecret(''); setAck(false); setShown(null); setAmount(''); setAll(false);
+      setHow(m === 'import' ? 'key' : quick && !srv?.wallets.length ? 'move' : 'new');
+      setCap(String(tw?.daily_cap_sol ?? 10)); setAlert(String(tw?.alert_balance_sol ?? 5));
       // un wallet ajouté il y a moins de 24 h ne reçoit pas encore de retraits (sauf le wallet de connexion du compte)
       if (m === 'withdraw' && user) supabase.from('wallets').select('address, verified_at').eq('user_id', user.id).then(({ data }) => {
         const own = walletOf(user);
@@ -45,76 +49,89 @@ export function ServerWalletDialog() {
     window.addEventListener('ts-srv', f); return () => window.removeEventListener('ts-srv', f);
   }, [srv, user, quick]);
   if (!mode || !user) return null;
+  const tw = srv?.wallets.find((x) => x.address === target) ?? null;
+  const first = !srv?.hasPassword;   // premier wallet rapide : son mot de passe protégera tous les suivants
+  const adding = mode === 'create' || mode === 'import';
   const close = () => { setMode(null); setShown(null); setPw(''); };
 
   async function submit(e: FormEvent) {
     e.preventDefault(); setErr(null); setBusy(true);
     try {
-      if (mode === 'create') {
-        const weak = pwError(pw); if (weak) throw new Error(weak);
-        if (pw !== pw2) throw new Error('Les deux mots de passe sont différents.');
+      if (adding) {
+        if (first) {
+          const weak = pwError(pw); if (weak) throw new Error(weak);
+          if (pw !== pw2) throw new Error('Les deux mots de passe sont différents.');
+        } else if (!pw) throw new Error('Saisissez le mot de passe de vos wallets rapides.');
         if (!ack) throw new Error('Cochez la case pour confirmer.');
-        let addr: string;
-        if (how === 'new') addr = await createServerWallet(pw);
+        let r: { address: string; num: number };
+        if (how === 'new') r = await createServerWallet(pw);
         else if (how === 'move') {
           const h = studio()?.hub; let kp = h?.quickKeypair();
           if (!kp && (await h?.quickUnlock())) kp = h?.quickKeypair();
           if (!kp) throw new Error('Déverrouillez d\'abord votre wallet rapide.');
           const b58 = (window.PumpStudio as unknown as { b58: (u: Uint8Array) => string }).b58;
-          addr = await importServerWallet(pw, b58(kp.secretKey));
-          h?.legacyDrop();   // un seul wallet rapide : la copie du navigateur est retirée
-        } else addr = await importServerWallet(pw, secret.trim());
-        await studio()?.hub?.useServer(true);
-        toast('Wallet rapide prêt', short(addr) + ' signe maintenant vos transactions, sans fenêtre de confirmation.');
+          r = await importServerWallet(pw, b58(kp.secretKey));
+          h?.legacyDrop();   // la copie du navigateur est retirée : le wallet vit maintenant sur le compte
+        } else {
+          if (!secret.trim()) throw new Error('Collez la clé secrète du wallet.');
+          r = await importServerWallet(pw, secret.trim());
+        }
+        if (first) await selectServerWallet(r.address);
+        toast(srvLabel(r) + ' prêt', short(r.address) + (first ? ' signe maintenant vos transactions, sans fenêtre de confirmation.' : ' · choisissez-le dans Portefeuille pour qu\'il signe.'));
         close(); return;
       }
-      if (!pw) throw new Error('Saisissez le mot de passe du wallet rapide.');
+      if (!target) throw new Error('Aucun wallet rapide choisi.');
+      if (!pw) throw new Error('Saisissez le mot de passe de vos wallets rapides.');
       if (mode === 'withdraw') {
         if (!to) throw new Error('Choisissez un wallet de destination.');
         const n = Number(amount.replace(',', '.'));
         if (!all && !(n > 0)) throw new Error('Montant invalide.');
-        const r = await withdrawServerWallet(pw, to, all ? 'max' : n);
+        const r = await withdrawServerWallet(target, pw, to, all ? 'max' : n);
         toast('Retrait envoyé', nf(r.sol) + ' SOL → ' + short(to)); close();
       } else if (mode === 'limits') {
-        await setServerLimits(pw, Number(cap.replace(',', '.')), Number(alert.replace(',', '.')));
+        await setServerLimits(target, pw, Number(cap.replace(',', '.')), Number(alert.replace(',', '.')));
         toast('Plafonds enregistrés', ''); close();
       } else if (mode === 'export') {
-        setShown(await exportServerWallet(pw)); setPw('');
+        setShown(await exportServerWallet(target, pw)); setPw('');
       } else if (mode === 'delete') {
-        await deleteServerWallet(pw, ack); toast('Wallet rapide supprimé', '', 'a'); close();
+        await deleteServerWallet(target, pw, ack); toast((tw ? srvLabel(tw) : 'Wallet rapide') + ' supprimé', 'Les numéros des autres wallets ne changent pas.', 'a'); close();
       }
     } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
   }
 
-  const PW = (label = 'Mot de passe du wallet rapide', auto = 'current-password') => <label className="field"><span className="ts-lbl">{label}</span><input type="password" autoComplete={auto} value={pw} onChange={(e) => setPw(e.target.value)} autoFocus /></label>;
-  const TITLE: Record<SrvMode, string> = { create: 'Créer mon wallet rapide', withdraw: 'Retirer vers votre wallet', limits: 'Plafonds du wallet rapide', export: 'Exporter la clé privée', delete: 'Supprimer le wallet rapide' };
+  const PW = (label = 'Mot de passe de vos wallets rapides', auto = 'current-password') => <label className="field"><span className="ts-lbl">{label}</span><input type="password" autoComplete={auto} value={pw} onChange={(e) => setPw(e.target.value)} autoFocus /></label>;
+  const nameOf = tw ? srvLabel(tw) : 'Wallet rapide';
+  const TITLE: Record<SrvMode, string> = { create: first ? 'Créer mon wallet rapide' : 'Nouveau wallet rapide', import: 'Ajouter un wallet par clé secrète', withdraw: 'Retirer · ' + nameOf, limits: 'Plafonds · ' + nameOf, export: 'Exporter la clé · ' + nameOf, delete: 'Supprimer · ' + nameOf };
 
   return (
     <div className="ts-modal" role="dialog" aria-modal="true" aria-label={TITLE[mode]} onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
       <form className="ts-modal-box ts-srv" onSubmit={submit}>
         <button type="button" className="ts-x" aria-label="Fermer" onClick={close}>×</button>
         <div className="ts-si-h"><b>{TITLE[mode]}</b>
-          <span>{mode === 'create' ? 'Un wallet de trading rattaché à votre compte : sa clé est gardée chiffrée par TokenStudio. Il signe seul, sans fenêtre de confirmation, dans la limite de vos plafonds : trades et ventes automatiques de vos ordres.'
-            : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à votre compte depuis plus de 24 heures. Un code de confirmation vous sera demandé.'
+          <span>{adding ? (first ? 'Un wallet de trading rattaché à votre compte : sa clé est gardée chiffrée par TokenStudio. Il signe seul, sans fenêtre de confirmation, dans la limite de vos plafonds : trades et ventes automatiques de vos ordres.'
+              : 'Il prend le numéro suivant (n°' + ((srv?.wallets.reduce((m, x) => Math.max(m, x.num), 0) ?? 0) + 1) + ') et se protège avec le même mot de passe que vos autres wallets rapides.')
+            : mode === 'withdraw' ? 'Les retraits ne vont que vers les wallets liés à votre compte depuis plus de 24 heures.'
             : mode === 'limits' ? 'TokenStudio refuse toute dépense au-delà du plafond du jour.'
             : mode === 'export' ? 'La clé donne un accès total aux fonds de ce wallet. Gardez-la hors ligne et ne la partage avec personne.'
             : 'La clé chiffrée est définitivement effacée. Sans export préalable, les fonds restants seraient perdus.'}</span></div>
 
-        {mode === 'create' && (<>
+        {adding && (<>
           <div className="seg sm ts-srv-how" role="group" aria-label="Origine du wallet">
             {quick && <button type="button" className={how === 'move' ? 'on' : ''} onClick={() => setHow('move')}>Mon ancien wallet rapide</button>}
             <button type="button" className={how === 'new' ? 'on' : ''} onClick={() => setHow('new')}>Nouveau wallet</button>
-            <button type="button" className={how === 'key' ? 'on' : ''} onClick={() => setHow('key')}>Clé privée</button>
+            <button type="button" className={how === 'key' ? 'on' : ''} onClick={() => setHow('key')}>Clé secrète</button>
           </div>
           {how === 'move' && quick && <p className="muted ts-small">Votre ancien wallet rapide <b className="mono">{short(quick.pk)}</b> devient le wallet rapide de votre compte, à la même adresse et avec ses fonds. Rien n'est transféré sur la blockchain.</p>}
-          {how === 'key' && <label className="field"><span className="ts-lbl">Clé privée (base58 ou tableau de 64 nombres)</span><input value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="off" spellCheck={false} /></label>}
-          {PW('Mot de passe du wallet rapide', 'new-password')}
-          <PasswordMeter value={pw} />
-          <label className="field"><span className="ts-lbl">Confirmez le mot de passe</span><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
+          {how === 'key' && <label className="field"><span className="ts-lbl">Clé secrète (base58, comme dans Phantom, ou tableau de 64 nombres)</span><input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="off" spellCheck={false} /></label>}
+          {first ? (<>
+            {PW('Mot de passe de vos wallets rapides', 'new-password')}
+            <PasswordMeter value={pw} />
+            <label className="field"><span className="ts-lbl">Confirmez le mot de passe</span><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
+          </>) : PW()}
           <ul className="ts-srv-rules">
             <li>Il ne signe que des achats, ventes, lancements et récupérations de frais : jamais de virement ni de transfert de tokens.</li>
             <li>Plafond de dépense : <Sol v={10} d={0} /> par jour, réglable. Votre limite par achat s'applique aussi.</li>
-            <li>Retraits uniquement vers vos wallets liés depuis plus de 24 h, avec ce mot de passe et un code de confirmation.</li>
+            <li>Retraits uniquement vers vos wallets liés depuis plus de 24 h, avec ce mot de passe.</li>
           </ul>
           <label className="check"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} /><span>Je comprends que TokenStudio garde la clé de ce wallet. Je n'y laisse que ce que je suis prêt à risquer.</span></label>
         </>)}
@@ -133,7 +150,7 @@ export function ServerWalletDialog() {
             <label className="field"><span className="ts-lbl">Plafond par jour <small>SOL</small></span><input inputMode="decimal" value={cap} onChange={(e) => setCap(e.target.value)} /></label>
             <label className="field"><span className="ts-lbl">Alerte de solde <small>SOL</small></span><input inputMode="decimal" value={alert} onChange={(e) => setAlert(e.target.value)} /></label>
           </div>
-          <p className="muted ts-small">Dépensé aujourd'hui : <Sol v={srv?.spent_today ?? 0} d={3} /> sur <Sol v={srv?.daily_cap_sol ?? 10} d={2} />. Entre 0,1 et 100 SOL par jour.</p>
+          <p className="muted ts-small">Dépensé aujourd'hui : <Sol v={tw?.spent_today ?? 0} d={3} /> sur <Sol v={tw?.daily_cap_sol ?? 10} d={2} />. Entre 0,1 et 100 SOL par jour.</p>
           {PW()}
         </>)}
 
@@ -149,7 +166,7 @@ export function ServerWalletDialog() {
         {err && <div className="ts-note bad" role="alert">{err}</div>}
         <div className="ts-row" style={{ marginTop: 12 }}>
           <button type="button" className="btn ghost" onClick={close}>{shown ? 'Fermer' : 'Annuler'}</button>
-          {!shown && <button className={'btn ' + (mode === 'delete' ? 'danger' : 'primary')} disabled={busy}>{busy ? 'Patientez…' : mode === 'create' ? (how === 'new' ? 'Créer le wallet rapide' : 'Placer sur mon compte') : mode === 'withdraw' ? 'Retirer' : mode === 'limits' ? 'Enregistrer' : mode === 'export' ? 'Afficher la clé' : 'Supprimer'}</button>}
+          {!shown && <button className={'btn ' + (mode === 'delete' ? 'danger' : 'primary')} disabled={busy}>{busy ? 'Patientez…' : adding ? (how === 'new' ? 'Créer le wallet rapide' : how === 'key' ? 'Ajouter ce wallet' : 'Placer sur mon compte') : mode === 'withdraw' ? 'Retirer' : mode === 'limits' ? 'Enregistrer' : mode === 'export' ? 'Afficher la clé' : 'Supprimer'}</button>}
         </div>
       </form>
     </div>

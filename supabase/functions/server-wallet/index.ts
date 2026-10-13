@@ -3,13 +3,14 @@
 // Politique de signature : seulement des transactions de trading (pump.fun, PumpSwap, frais de créateur, comptes de
 // tokens), simulées avant signature ; le SOL qui sort est compté dans la limite par achat et le plafond du jour.
 // Retraits : uniquement vers les wallets liés et prouvés du compte, depuis plus de 24 heures (sauf le wallet de connexion).
-// Actions sensibles (retrait, export, hausse du plafond, suppression) : mot de passe du wallet + code de confirmation.
+// Plusieurs wallets rapides par compte (n°1, n°2…), protégés par un seul mot de passe, demandé pour les actions
+// sensibles (retrait, envoi, export, plafonds, suppression, nouveau wallet).
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
 import { Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction, VersionedTransaction } from 'npm:@solana/web3.js@1.98.4';
 import bs58 from 'npm:bs58@6.0.0';
 import { Buffer } from 'node:buffer';
 import type { User } from 'npm:@supabase/supabase-js@2.117.3';
-import { alertMail, passwordError, rate, requireStepUp, Fail as Need } from '../_shared/security.ts';
+import { alertMail, passwordError, rate, Fail as Need } from '../_shared/security.ts';
 
 const HOSTS = [
   /^tokenstudio-sol\.vercel\.app$/,
@@ -78,16 +79,32 @@ async function pwHash(pw: string, salt: Uint8Array, iter: number) {
 }
 const same = (a: string, b: string) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
 
-type Row = { address: string; daily_cap_sol: number; alert_balance_sol: number; enc: string; iv: string; pw_hash: string; pw_salt: string; pw_iter: number; fails: number; locked_until: string | null; spent_today: number };
-async function load(uid: string): Promise<Row | null> {
-  const { data, error } = await admin.rpc('srvw_get', { uid });
+type Row = { address: string; num: number; daily_cap_sol: number; alert_balance_sol: number; enc: string; iv: string; spent_today: number };
+type Info = { address: string; num: number; daily_cap_sol: number; alert_balance_sol: number; spent_today: number; created_at: string };
+async function list(uid: string): Promise<Info[]> {
+  const { data, error } = await admin.rpc('sw_list', { uid });
+  if (error) throw new Fail(500, 'Lecture des wallets impossible.');
+  return (data as Info[]) ?? [];
+}
+/** wallet visé (adresse), sinon le n°1 */
+async function load(uid: string, addr?: unknown): Promise<Row | null> {
+  let a = typeof addr === 'string' && addr ? addr : null;
+  if (!a) { const L = await list(uid); a = L[0]?.address ?? null; if (!a) return null; }
+  const { data, error } = await admin.rpc('sw_get', { uid, addr: a });
   if (error) throw new Fail(500, 'Lecture du wallet impossible.');
   return (data as Row[])?.[0] ?? null;
 }
-async function checkPw(uid: string, row: Row, pw: unknown) {
-  if (row.locked_until && Date.parse(row.locked_until) > Date.now()) throw new Fail(429, 'Trop d\'essais : réessayez dans 15 minutes.');
-  const ok = typeof pw === 'string' && same(await pwHash(pw, unb64(row.pw_salt), row.pw_iter), row.pw_hash);
-  await admin.rpc('srvw_pw_result', { uid, ok });
+type Pw = { pw_hash: string; pw_salt: string; pw_iter: number; fails: number; locked_until: string | null };
+async function pwRow(uid: string): Promise<Pw | null> {
+  const { data } = await admin.rpc('sw_pw_get', { uid });
+  return (data as Pw[])?.[0] ?? null;
+}
+async function checkPw(uid: string, pw: unknown) {
+  const r = await pwRow(uid);
+  if (!r) throw new Fail(404, 'Aucun mot de passe de wallet rapide sur ce compte.');
+  if (r.locked_until && Date.parse(r.locked_until) > Date.now()) throw new Fail(429, 'Trop d\'essais : réessayez dans 15 minutes.');
+  const ok = typeof pw === 'string' && same(await pwHash(pw, unb64(r.pw_salt), r.pw_iter), r.pw_hash);
+  await admin.rpc('sw_pw_result', { uid, ok });
   if (!ok) throw new Fail(403, 'Mot de passe incorrect.');
 }
 const audit = (uid: string, event: string, detail: Record<string, unknown>) => admin.from('audit_log').insert({ user_id: uid, event, detail });
@@ -150,7 +167,7 @@ async function signSend(uid: string, row: Row, raw: unknown, sell = false) {
   const maxBuy = Number(pref?.max_buy_sol ?? 1);
   if (spent > maxBuy + 0.05) throw new Fail(403, 'Au-delà de votre limite par achat (' + maxBuy + ' SOL). Modifiez-la dans Préférences si c\'est voulu.');
   const counted = spent > 0.001 ? spent : 0;
-  if (counted) { const { error } = await admin.rpc('srvw_reserve', { uid, sol: counted }); if (error) throw new Fail(403, error.message); }
+  if (counted) { const { error } = await admin.rpc('sw_reserve', { uid, addr: row.address, sol: counted }); if (error) throw new Fail(403, error.message); }
   try {
     const kp = await open(row, uid + ':' + row.address);
     if (kp.publicKey.toBase58() !== row.address) throw new Fail(500, 'Clé incohérente.');
@@ -161,7 +178,7 @@ async function signSend(uid: string, row: Row, raw: unknown, sell = false) {
     await audit(uid, 'server_wallet_tx', { signature, spent_sol: Number(spent.toFixed(6)) });
     return { signature, raw: signed, spent };
   } catch (e) {
-    if (counted) await admin.rpc('srvw_release', { uid, sol: counted });
+    if (counted) await admin.rpc('sw_release', { uid, addr: row.address, sol: counted });
     throw e;
   }
 }
@@ -175,12 +192,15 @@ async function tokenHeld(owner: string, mint: string) {
   return { raw, dec };
 }
 async function autoSell(uid: string, body: Record<string, unknown>) {
-  const row = await load(uid);
-  if (!row) throw new Fail(404, 'no_wallet');
   const mint = String(body.mint ?? '');
   if (!B58RE.test(mint)) throw new Fail(400, 'Token invalide.');
-  const held = await tokenHeld(row.address, mint);
-  if (held.raw <= 0n) throw new Fail(409, 'no_tokens');
+  const all = await list(uid);
+  if (!all.length) throw new Fail(404, 'no_wallet');
+  // le wallet rapide qui détient le plus de ce token vend
+  let best: { addr: string; held: { raw: bigint; dec: number } } | null = null;
+  for (const w of all) { const h = await tokenHeld(w.address, mint); if (h.raw > 0n && (!best || h.raw > best.held.raw)) best = { addr: w.address, held: h }; }
+  if (!best) throw new Fail(409, 'no_tokens');
+  const row = (await load(uid, best.addr))!, held = best.held;
   const pct = Math.min(100, Math.max(0, Number(body.pct) || 100)), tok = Number(body.tokens);
   let amount = tok > 0 ? BigInt(Math.floor(tok * 10 ** held.dec)) : held.raw * BigInt(Math.round(pct * 100)) / 10000n;
   if (amount > held.raw) amount = held.raw;
@@ -234,7 +254,6 @@ async function withdraw(user: User, row: Row, to: unknown, amount: unknown) {
   const fee = 5000;
   const lam = amount === 'max' ? bal - fee : Math.round(Number(amount) * 1e9);
   if (!(lam > 0) || lam + fee > bal) throw new Fail(400, 'Montant invalide ou solde insuffisant.');
-  await requireStepUp(uid, 'withdraw');
   const kp = await open(row, uid + ':' + row.address);
   const { value } = await rpc<{ value: { blockhash: string } }>('getLatestBlockhash', [{ commitment: 'confirmed' }]);
   const tx = new Transaction({ feePayer: kp.publicKey, recentBlockhash: value.blockhash }).add(SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(to), lamports: lam }));
@@ -355,7 +374,6 @@ async function vaultSend(user: User, row: Row, stable: unknown, to: unknown, amo
   let raw = amount === 'max' ? held : BigInt(Math.floor(Number(amount) * 10 ** S.dec));
   if (raw > held) throw new Fail(400, 'Solde ' + stable + ' insuffisant.');
   if (raw < 1_000_000n) throw new Fail(400, 'Minimum 1 ' + stable + '.');
-  if (!rule) await requireStepUp(uid, 'withdraw');
   const kp = await open(row, uid + ':' + row.address);
   const src = new PublicKey(ataOf(row.address, S.mint)), dst = new PublicKey(ataOf(to, S.mint)), mint = new PublicKey(S.mint), owner = new PublicKey(to);
   const data = new Uint8Array(10); data[0] = 12; new DataView(data.buffer).setBigUint64(1, raw, true); data[9] = S.dec;
@@ -388,16 +406,18 @@ function parseSecret(s: unknown): Keypair {
   if (bytes.length !== 64) throw new Fail(400, 'Clé invalide : 64 octets attendus.');
   return Keypair.fromSecretKey(bytes);
 }
+// nouveau wallet (créé ou importé) : le premier fixe le mot de passe du compte, les suivants le demandent
 async function create(uid: string, pw: unknown, kp: Keypair) {
-  const weak = passwordError(pw); if (weak) throw new Fail(400, weak);
+  if (await pwRow(uid)) await checkPw(uid, pw);
+  else { const weak = passwordError(pw); if (weak) throw new Fail(400, weak); }
   const addr = kp.publicKey.toBase58();
   const { data: linked } = await admin.from('wallets').select('user_id').eq('address', addr).maybeSingle();
   if (linked && linked.user_id !== uid) throw new Fail(409, 'Ce wallet appartient à un autre compte.');
-  const salt = crypto.getRandomValues(new Uint8Array(16));
   const s = await seal(kp.secretKey, uid + ':' + addr);
-  const { error } = await admin.rpc('srvw_create', { uid, addr, p_enc: s.enc, p_iv: s.iv, p_hash: await pwHash(pw as string, salt, ITER), p_salt: b64(salt), p_iter: ITER });
-  if (error) throw new Fail(/duplicate|unique/i.test(error.message) ? 409 : 500, /duplicate|unique/i.test(error.message) ? 'Vous avez déjà un wallet rapide serveur, ou cette adresse est déjà utilisée.' : 'Création impossible.');
-  return { address: addr };
+  const { data: num, error } = await admin.rpc('sw_create', { uid, addr, p_enc: s.enc, p_iv: s.iv });
+  if (error) throw new Fail(/duplicate|unique/i.test(error.message) ? 409 : /20 wallets/.test(error.message) ? 400 : 500, /duplicate|unique/i.test(error.message) ? 'Ce wallet est déjà enregistré comme wallet rapide.' : /20 wallets/.test(error.message) ? error.message : 'Création impossible.');
+  if (!(await pwRow(uid))) { const salt = crypto.getRandomValues(new Uint8Array(16)); await admin.rpc('sw_pw_set', { uid, p_hash: await pwHash(pw as string, salt, ITER), p_salt: b64(salt), p_iter: ITER }); }
+  return { address: addr, num: num as number };
 }
 
 Deno.serve(async (req) => {
@@ -415,7 +435,7 @@ Deno.serve(async (req) => {
       if (b.action === 'auto_sell' && typeof b.uid === 'string') return json(200, await autoSell(b.uid, b));
       // règles automatiques du coffre-fort (fonction vault)
       if ((b.action === 'vault_swap' || b.action === 'vault_send') && typeof b.uid === 'string') {
-        const row = await load(b.uid); if (!row) throw new Fail(404, 'no_wallet');
+        const row = await load(b.uid, b.address); if (!row) throw new Fail(404, 'no_wallet');
         const rule = typeof b.rule === 'string' ? b.rule : 'auto';
         if (b.action === 'vault_swap') return json(200, await vaultSwap(b.uid, row, b.from, b.to, b.amount, rule));
         const { data: { user: u } } = await admin.auth.admin.getUserById(b.uid);
@@ -440,17 +460,21 @@ Deno.serve(async (req) => {
     else if (action !== 'status') await rate('sw:' + uid, 60, 3600);
     if (action === 'create') return json(200, await create(uid, body.password, Keypair.generate()));
     if (action === 'import') { const kp = parseSecret(body.secret); const r = await create(uid, body.password, kp); await audit(uid, 'server_wallet_imported', { address: r.address }); return json(200, r); }
-    const row = await load(uid);
-    if (action === 'status') return json(200, row ? { address: row.address, daily_cap_sol: Number(row.daily_cap_sol), alert_balance_sol: Number(row.alert_balance_sol), spent_today: Number(row.spent_today), locked: !!(row.locked_until && Date.parse(row.locked_until) > Date.now()) } : { address: null });
-    if (!row) throw new Fail(404, 'Aucun wallet rapide serveur sur ce compte.');
+    if (action === 'status') {
+      const [L, pw] = await Promise.all([list(uid), pwRow(uid)]);
+      return json(200, { wallets: L.map((w) => ({ address: w.address, num: w.num, daily_cap_sol: Number(w.daily_cap_sol), alert_balance_sol: Number(w.alert_balance_sol), spent_today: Number(w.spent_today) })),
+        hasPassword: !!pw, locked: !!(pw?.locked_until && Date.parse(pw.locked_until) > Date.now()) });
+    }
+    // wallet visé par son adresse (sinon le n°1)
+    const row = await load(uid, body.address);
+    if (!row) throw new Fail(404, body.address ? 'Ce wallet rapide n\'existe pas sur votre compte.' : 'Aucun wallet rapide sur ce compte.');
     if (action === 'sign_send') return json(200, await signSend(uid, row, body.tx));
     if (action === 'vault_swap') return json(200, await vaultSwap(uid, row, body.from, body.to, body.amount));
-    await checkPw(uid, row, body.password);
+    await checkPw(uid, body.password);
     if (action === 'withdraw') return json(200, await withdraw(user, row, body.to, body.amount));
     if (action === 'vault_send') return json(200, await vaultSend(user, row, body.stable, body.to, body.amount));
     if (action === 'export') {
-      await requireStepUp(uid, 'export_key');
-      const kp = await open(row, uid + ':' + row.address); await audit(uid, 'server_wallet_export', {});
+      const kp = await open(row, uid + ':' + row.address); await audit(uid, 'server_wallet_export', { address: row.address });
       alertMail(user, 'export_key').catch(() => {});
       return json(200, { secret: bs58.encode(kp.secretKey) });
     }
@@ -458,16 +482,14 @@ Deno.serve(async (req) => {
       const cap = Number(body.daily_cap_sol), alert = Number(body.alert_balance_sol);
       if (!(cap >= 0.1 && cap <= 100) || !(alert >= 0 && alert <= 100000)) throw new Fail(400, 'Plafond entre 0,1 et 100 SOL par jour.');
       const before = Number(row.daily_cap_sol);
-      if (cap > before) await requireStepUp(uid, 'limits_up');   // baisser le plafond ne demande pas de code
-      await admin.rpc('srvw_limits', { uid, cap, alert });
-      if (cap !== before) { await audit(uid, 'server_wallet_limits', { before, after: cap }); alertMail(user, 'limits', { before, after: cap }).catch(() => {}); }
+      await admin.rpc('sw_limits', { uid, addr: row.address, cap, alert });
+      if (cap !== before) alertMail(user, 'limits', { before, after: cap }).catch(() => {});
       return json(200, { ok: true });
     }
     if (action === 'delete') {
       const bal = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
       if (bal > 1_000_000 && body.force !== true) throw new Fail(409, 'Le wallet contient encore ' + (bal / 1e9).toFixed(4) + ' SOL : retirez-les d\'abord.');
-      await requireStepUp(uid, 'delete_wallet');
-      await admin.rpc('srvw_delete', { uid }); await audit(uid, 'server_wallet_deleted', { address: row.address });
+      await admin.rpc('sw_delete', { uid, addr: row.address });
       alertMail(user, 'delete_wallet').catch(() => {});
       return json(200, { ok: true });
     }

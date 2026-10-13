@@ -144,9 +144,8 @@ async function ruleSave(uid: string, b: Record<string, unknown>) {
   const kind = String(b.kind ?? ''), stable = b.stable === 'USDC' ? 'USDC' : 'USDT';
   const params = await cleanParams(uid, kind, (b.params ?? {}) as Record<string, unknown>);
   if (kind === 'send') {
-    const { data: sw } = await admin.from('server_wallets').select('address').eq('user_id', uid).maybeSingle();
-    if (!sw) throw new Fail(400, 'L\'envoi automatique demande le wallet rapide : créez-le d\'abord dans Portefeuille.');
-    await requireStepUp(uid, 'withdraw');   // une règle d'envoi déplace des fonds hors du wallet : code de confirmation
+    const { data: sw } = await admin.from('server_wallets').select('address').eq('user_id', uid).limit(1);
+    if (!sw?.length) throw new Fail(400, 'L\'envoi automatique demande le wallet rapide : créez-le d\'abord dans Portefeuille.');
   }
   const id = typeof b.id === 'string' && /^[0-9a-f-]{36}$/.test(b.id) ? b.id : null;
   const row = { kind, stable, params, active: b.active !== false, next_at: kind === 'schedule' ? new Date().toISOString() : null, last_result: null };
@@ -198,9 +197,10 @@ async function runRules(key: string) {
   if (!rules.length) return { rules: 0, done: 0 };
   const users = [...new Set(rules.map((r) => r.user_id))];
   const [{ data: sws }, { data: wls }] = await Promise.all([
-    admin.from('server_wallets').select('user_id,address').in('user_id', users),
+    admin.from('server_wallets').select('user_id,address,num').in('user_id', users).order('num', { ascending: false }),
     admin.from('wallets').select('user_id,address,created_at').in('user_id', users).order('created_at'),
   ]);
+  // classés du plus grand numéro au plus petit : le wallet rapide n°1 de chaque compte reste
   const server = new Map(((sws ?? []) as { user_id: string; address: string }[]).map((x) => [x.user_id, x.address]));
   const ext = new Map<string, string>(); ((wls ?? []) as { user_id: string; address: string }[]).forEach((x) => { if (!ext.has(x.user_id)) ext.set(x.user_id, x.address); });
   let market: { price: number; change24: number } | null = null;

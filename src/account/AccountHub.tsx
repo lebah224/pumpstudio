@@ -8,7 +8,6 @@ import { detect, walletById } from '../wallets/catalog';
 import { linkWallet } from '../wallets/walletAuth';
 import { useAccountStatus, useLinkedWallets } from '../wallets/useWallets';
 import { logoutEverywhere } from './logout';
-import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 import { useProfile } from './profile';
 import { UserAvatar } from './Avatar';
 import { Sol } from '../ui/Sol';
@@ -170,22 +169,10 @@ export function AccountHub({ mobile }: { mobile?: boolean }) {
         </div>
         <div className="ts-hub-row"><button type="button" className="btn sm" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}Modifier le profil</button>{!me?.username && <span className="ts-hub-note">Choisissez votre nom d'utilisateur</span>}</div>
       </section>
-      <section className="ts-hub-sec">
-        <div className="ts-hub-h">Wallets{linked && <em>{linked.length} lié{linked.length > 1 ? 's' : ''} au compte</em>}</div>
-        {srv && walletRow('srv')}
-        {quick && walletRow('quick')}
-        {ext && walletRow('ext')}
-        {!ext && !quick && !srv && <p className="ts-hub-note">Aucun wallet connecté.</p>}
-        {st.quickSaved && <div className="ts-hub-legacy"><small>Votre ancien wallet rapide <span className="mono">{short(st.quickSaved.pk)}</span> est encore dans ce navigateur.</small><button type="button" className="ts-hub-pill warn" data-hub-item onClick={act(() => hub?.legacyMigrate())}>Transférer sur mon compte</button></div>}
-        <div className="ts-hub-row">
-          {!srv && <button type="button" className="btn sm primary" data-hub-item onClick={act(() => openServerWallet('create'))}>{I.bolt}Créer mon wallet rapide</button>}
-          <button type="button" className="btn sm" data-hub-item onClick={act(() => openSignIn({ start: 'add' }))}>{I.plus}Ajouter un wallet</button>
-          {(ext || quick || srv) && <button type="button" className="btn sm ghost" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}Portefeuille</button>}
-        </div>
-      </section>
+      {st.quickSaved && <section className="ts-hub-sec"><div className="ts-hub-legacy"><small>Votre ancien wallet rapide <span className="mono">{short(st.quickSaved.pk)}</span> est encore dans ce navigateur.</small><button type="button" className="ts-hub-pill warn" data-hub-item onClick={act(() => hub?.legacyMigrate())}>Transférer sur mon compte</button></div></section>}
       <nav className="ts-hub-sec ts-hub-menu" aria-label="Compte">
         <button type="button" data-hub-item onClick={act(() => openTab('profile'))}>{I.user}<span>Mon compte</span><em>profil, wallets</em></button>
-        <button type="button" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}<span>Portefeuille</span><em>solde, dépôt, retrait</em></button>
+        <button type="button" data-hub-item onClick={act(() => goTo('wallet'))}>{I.wallet}<span>Portefeuille</span><em>wallets, solde, dépôt, retrait</em></button>
         <button type="button" data-hub-item onClick={act(() => openTab('prefs'))}>{I.sliders}<span>Préférences</span><em>trading, studio, notifications</em></button>
         <button type="button" data-hub-item onClick={act(() => hub?.appearance())}>{I.palette}<span>Apparence</span><em>{(THEME_NAMES[st.theme] ?? st.theme) + ' · ' + (DEPTH_NAMES[st.depth] ?? st.depth)}</em></button>
         <button type="button" data-hub-item onClick={act(() => goTo('settings'))}>{I.gear}<span>Réglages avancés</span><em>RPC, vitesse, frais</em></button>

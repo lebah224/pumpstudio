@@ -94,9 +94,15 @@
   // Wallet rapide serveur : sa clé reste sur le serveur, qui signe selon sa politique (trading seulement, plafonds)
   const SRVW = { id: 'server', name: 'Wallet rapide', pk: null, prov: null };
   let SRVPK = null;
+  // numéro d'un wallet rapide du compte (n°1, n°2… dans l'ordre de création)
+  const srvNum = (pk) => { const w = window.TSServerWallet && window.TSServerWallet.wallets.find((x) => x.address === pk); return w ? w.num : null; };
+  const srvName = (pk) => { const n = srvNum(pk); return 'Wallet rapide' + (n ? ' n°' + n : ''); };
+  // wallet choisi pour une opération précise (lancement) : prioritaire le temps de cette opération
+  let SIGNER = null;
   Object.defineProperty(S, 'wallet', {
     get() {
-      if (cfg.useSrv && SRVPK && window.TSServerWallet) { SRVW.pk = SRVPK; return SRVW; }
+      if (SIGNER) return SIGNER;
+      if (cfg.useSrv && SRVPK && window.TSServerWallet) { SRVW.pk = SRVPK; SRVW.name = srvName(SRVPK); return SRVW; }
       if (cfg.useSess && SESSREC) { SESSW.pk = SESSREC.pk; return SESSW; } return S.ext;
     },
     set(v) { S.ext = v; }, enumerable: true,
@@ -477,7 +483,7 @@
     const w = S.wallet; if (!w || w.id !== 'session' || SESSW.kp) return true;   // wallet serveur : rien à déverrouiller
     return sessUnlock(true);
   }
-  const signLabel = () => S.wallet && S.wallet.id === 'server' ? 'Signature par le wallet rapide' : S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans votre wallet';
+  const signLabel = () => S.wallet && S.wallet.id === 'server' ? 'Signature par le ' + srvName(S.wallet.pk).replace('Wallet', 'wallet') : S.wallet && S.wallet.id === 'session' ? 'Signature par le wallet rapide' : 'Signature dans votre wallet';
 
   async function sessCreate(noPanel) {
     if (!(window.crypto && crypto.subtle)) return toast('Navigateur incompatible', 'Le chiffrement exige une page https ou localhost.', 'r');
@@ -962,7 +968,7 @@
     if (w.id === 'server') {
       if (!window.TSServerWallet) throw new Error('Wallet rapide indisponible : reconnectez-vous à votre compte.');
       if (extraSigners && extraSigners.length) tx.sign(extraSigners);   // ex. clé du mint au lancement
-      const r = await window.TSServerWallet.signSend(bytesToB64(tx.serialize()));
+      const r = await window.TSServerWallet.signSend(bytesToB64(tx.serialize()), w.pk);
       INFLIGHT[r.signature] = { raw: r.raw, viaSender: false };
       return r.signature;
     }
@@ -1118,11 +1124,36 @@
     const j = await r.json(); if (!j.metadataUri) throw new Error('Réponse inattendue de pump.fun.');
     return j.metadataUri;
   }
+  // wallets capables de lancer : chaque wallet rapide du compte et le wallet connecté (Phantom…)
+  function launchWallets() {
+    const L = (window.TSServerWallet ? window.TSServerWallet.wallets : []).map((x) => ({ id: 'server', name: 'Wallet rapide n°' + x.num, pk: x.address, prov: null }));
+    if (S.ext) L.push(S.ext);
+    return L;
+  }
+  // Avec quel wallet lancer ? Demandé dès qu'il y a plusieurs possibilités
+  async function pickLaunchWallet() {
+    const L = launchWallets();
+    if (L.length < 2) return S.wallet;
+    const bals = await Promise.all(L.map((w) => rpc('getBalance', [w.pk, { commitment: 'confirmed' }]).then((r) => r.value / 1e9).catch(() => null)));
+    const cur = S.wallet ? L.findIndex((w) => w.pk === S.wallet.pk) : 0;
+    const html = '<p>Ce wallet paie la création et l\'achat du créateur, puis reçoit les tokens.</p><div class="lw-list" role="radiogroup" aria-label="Wallet qui lance">' +
+      L.map((w, i) => '<label class="cr-opt"><input type="radio" name="lwWho" value="' + i + '"' + (i === Math.max(0, cur) ? ' checked' : '') + '><span><b>' + esc(w.name) + ' · <span class="mono">' + short(w.pk) + '</span></b><small>' +
+        (bals[i] == null ? 'solde indisponible' : fSol(bals[i], 4) + ' disponibles') + (w.id === 'server' ? ' · signe sans fenêtre' : ' · signature dans ' + esc(w.name)) + '</small></span></label>').join('') + '</div>';
+    const i = await modal('Avec quel wallet lancer ?', html, [{ label: 'Annuler' }, { label: 'Continuer', cls: 'primary' }], true);
+    if (i !== 1) return null;
+    const v = document.querySelector('input[name="lwWho"]:checked');
+    return L[v ? +v.value : Math.max(0, cur)];
+  }
   async function launch() {
     const R = readiness();
     if (R.blocking.length) { toast('Pas encore prêt', R.blocking[0], 'a'); return; }
     if (needAccount()) return;
-    if (!S.wallet) return walletMenu();
+    if (!S.wallet && !launchWallets().length) return walletMenu();
+    const W = await pickLaunchWallet(); if (!W) return;
+    SIGNER = W;
+    try { await launchWith(); } finally { SIGNER = null; renderAll(); }
+  }
+  async function launchWith() {
     if (!(await ensureSigner())) return;
     const d = S.draft, PL = PLATFORMS.pump, dev = num(d.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null;
     // Créateur affiché sur pump.fun : le wallet principal (Phantom…) de préférence, même quand le wallet rapide signe
@@ -3928,7 +3959,7 @@
       ctx: () => {
         const w = S.wallet;
         return { solUsd: S.solUsd, bal: S.bal,
-          wallet: w ? { kind: w.id === 'server' ? 'server' : w.id === 'session' ? 'legacy' : 'ext', pk: w.pk, name: w.id === 'server' ? 'Wallet rapide' : w.name } : null };
+          wallet: w ? { kind: w.id === 'server' ? 'server' : w.id === 'session' ? 'legacy' : 'ext', pk: w.pk, name: w.name } : null };
       },
       signSend: async (b64) => {
         const tx = W3().VersionedTransaction.deserialize(b64ToBytes(b64));
