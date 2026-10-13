@@ -6,6 +6,7 @@ import { AreaChart, Donut, QrCode, type Slice } from './charts';
 import { selectServerWallet, srvLabel, useServerWallet } from '../serverWallet/api';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 import { Sol } from '../ui/Sol';
+import { supabase } from '../lib/supabase';
 import { activity, balanceOf, balanceSeries, forget, holdings, solHistory, type Holding, type Pt, type Range, type Tx } from './walletData';
 
 // Couleurs de répartition (palette catégorielle validée pour fond sombre, ordre fixe) et « Autres » en neutre
@@ -25,6 +26,17 @@ const ago = (t: number) => {
   return new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 };
 const fmtT = (r: Range) => (t: number) => (r === '1d' ? new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
+// retirer un wallet externe : déconnexion de l'outil et, s'il était lié au compte, retrait de la liste (les fonds ne bougent pas)
+async function removeExt(pk: string, name: string) {
+  if (!window.confirm('Retirer ' + name + ' (' + short(pk) + ') ? Il sera déconnecté et retiré de votre compte. Vos fonds restent dans ' + name + '.')) return;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) { const { error } = await supabase.from('wallets').delete().eq('user_id', user.id).eq('address', pk); if (error) throw error; }
+    await studio()?.hub?.disconnect();
+    window.dispatchEvent(new Event('ts-wallets-changed'));
+    toast('Wallet retiré', name + ' · ' + short(pk));
+  } catch { toast('Retrait impossible', 'Réessayez dans un instant.', 'r'); }
+}
 const copy = async (pk: string) => { try { await navigator.clipboard.writeText(pk); toast('Adresse copiée', short(pk)); } catch { toast('Copie impossible', 'Sélectionnez l\'adresse et copiez-la à la main.', 'a'); } };
 
 function useHub(): HubState | null {
@@ -200,6 +212,7 @@ export function WalletPage() {
             {isSrv && tw && <button type="button" className="ts-wp-act" onClick={() => openServerWallet('export', tw.address)}><span className="ts-wp-aic">⚿</span>Clé privée</button>}
             <button type="button" className="ts-wp-act" onClick={() => copy(pk)}><span className="ts-wp-aic">⧉</span>Copier</button>
             <a className="ts-wp-act" href={'https://solscan.io/account/' + pk} target="_blank" rel="noopener noreferrer"><span className="ts-wp-aic">↗</span>Solscan</a>
+            {which === 'ext' && ext && <button type="button" className="ts-wp-act" title={'Déconnecter ' + ext.name + ' et le retirer de votre compte'} onClick={() => removeExt(ext.pk, ext.name)}><span className="ts-wp-aic">⊖</span>Retirer le wallet</button>}
           </div>
 
           <div className="ts-wp-ctl">
