@@ -5,13 +5,44 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "pumpstudio.vercel.app"
+        }
+      ],
+      "destination": "https://tokenstudio-sol.vercel.app/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
-    { "source": "/connexion", "destination": "/" },
-    { "source": "/inscription", "destination": "/" },
-    { "source": "/conditions", "destination": "/" },
-    { "source": "/confidentialite", "destination": "/" },
-    { "source": "/risques", "destination": "/" },
-    { "source": "/mentions-legales", "destination": "/" }
+    {
+      "source": "/connexion",
+      "destination": "/"
+    },
+    {
+      "source": "/inscription",
+      "destination": "/"
+    },
+    {
+      "source": "/conditions",
+      "destination": "/"
+    },
+    {
+      "source": "/confidentialite",
+      "destination": "/"
+    },
+    {
+      "source": "/risques",
+      "destination": "/"
+    },
+    {
+      "source": "/mentions-legales",
+      "destination": "/"
+    }
   ],
   "headers": [
     {
