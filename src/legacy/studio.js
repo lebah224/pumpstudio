@@ -1141,7 +1141,7 @@
     const cur = S.wallet ? L.findIndex((w) => w.pk === S.wallet.pk) : 0;
     const html = '<p>Ce wallet paie la création et l\'achat du créateur, puis reçoit les tokens.</p><div class="lw-list" role="radiogroup" aria-label="Wallet qui lance">' +
       L.map((w, i) => '<label class="cr-opt"><input type="radio" name="lwWho" value="' + i + '"' + (i === Math.max(0, cur) ? ' checked' : '') + '><span><b>' + esc(w.name) + ' · <span class="mono">' + short(w.pk) + '</span></b><small>' +
-        (bals[i] == null ? 'solde indisponible' : fSol(bals[i], 4) + ' disponibles') + (w.id === 'server' ? ' · signe sans fenêtre' : ' · signature dans ' + esc(w.name)) + '</small></span></label>').join('') + '</div>';
+        (bals[i] == null ? 'solde indisponible' : fSolH(bals[i], 4) + ' disponibles') + (w.id === 'server' ? ' · signe sans fenêtre' : ' · signature dans ' + esc(w.name)) + '</small></span></label>').join('') + '</div>';
     const i = await modal('Avec quel wallet lancer ?', html, [{ label: 'Annuler' }, { label: 'Continuer', cls: 'primary' }], true);
     if (i !== 1) return null;
     const v = document.querySelector('input[name="lwWho"]:checked');
@@ -2437,6 +2437,7 @@
     const wb = $('walletBtn'); if (wb) wb.classList.toggle('primary', !S.wallet);
     const rs = $('rpcStatus');
     rs.innerHTML = '<span class="dot ' + (S.rpcOk ? 'on' : S.rpcOk === false ? '' : 'wait') + '"></span><span>' + (S.rpcOk ? 'Solana connecté' + (cfg.rpc ? ' · Helius' : '') : S.rpcOk === false ? 'Solana injoignable' : 'Connexion Solana…') + '</span>';
+    if (S.page === 'launch') renderDevMeta();
     const fb = $('filebar'); if (fb) { fb.hidden = location.protocol !== 'file:'; fb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>Studio ouvert comme fichier.</b> Phantom ne peut pas s\'y connecter : ouvrez la version en ligne (https) ou via localhost.</span><button class="btn sm" id="fileHelp" type="button">Comment faire</button>'; }
     const rb = $('rpcbar'); if (rb) { rb.hidden = S.rpcOk !== false; rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Votre RPC ne répond pas.</b> Vérifiez l\'adresse dans Réglages.' : window.TSRelay ? '<b>La connexion Solana de TokenStudio ne répond pas pour le moment.</b> Réessayez dans une minute, ou collez votre clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connectez-vous à votre compte pour utiliser la connexion Solana de TokenStudio, ou collez votre clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
     const sc = (attr, dot, label, val) => '<button class="sc-it" type="button" ' + attr + '><span class="dot ' + dot + '"></span>' + label + '<em>' + val + '</em></button>';
@@ -2902,7 +2903,19 @@
     const cnt = (id, v, max) => { const el = $(id); el.textContent = (v || '').length + ' / ' + max; el.classList.toggle('over', (v || '').length > max); };
     cnt('cName', S.draft.name, 32); cnt('cSymbol', S.draft.symbol, 10); cnt('cDesc', S.draft.desc, 1000);
   }
+  // sous le montant : équivalent en dollars et solde du wallet qui signera (≈ 0,03 SOL de frais en plus)
+  function renderDevMeta() {
+    const el = $('devMeta'); if (!el) return;
+    const dev = num(S.draft.dev) || 0, w = S.wallet, bal = S.bal, p = S.solUsd;
+    const usd = (x) => p ? fUsdS(x * p) : null;
+    const left = dev > 0 && p ? '<span class="dm-usd">≈ ' + usd(dev) + '</span>' : '';
+    const low = w && bal != null && bal < dev + 0.03;
+    const right = w ? '<span class="dm-bal' + (low ? ' low' : '') + '" title="' + esc(w.name) + ' · ' + short(w.pk) + '">' + esc(w.name) + ' · ' + (bal == null ? '…' : fSol(bal, 3) + (p ? ' <i>≈ ' + usd(bal) + '</i>' : '')) + (low ? ' · solde insuffisant' : '') + '</span>' : '<span class="dm-bal">Aucun wallet connecté</span>';
+    const html = left + right;
+    if (el.innerHTML !== html) el.innerHTML = html;
+  }
   function renderDevQuote() {
+    renderDevMeta();
     const dev = num(S.draft.dev) || 0, q = dev > 0 ? quoteBuy(INIT_CURVE, dev) : null, st = curveStats(INIT_CURVE);
     $('devQuote').innerHTML = '<div class="kv">' + (q ? '<span>Vous recevez</span><span>' + fTok(q.tokens) + ' tokens</span><span>Part de l\'offre</span><span class="' + (q.supplyPct > cfg.devMaxPct ? 'neg' : q.supplyPct > 5 ? 'warn' : 'pos') + '">' + fPct(q.supplyPct, 2) + '</span><span>Capitalisation après</span><span>' + (S.solUsd ? fUsd(q.mcapAfterSol * S.solUsd) : fSol(q.mcapAfterSol, 1)) + '</span><span>Frais estimés</span><span>' + fSolH(q.fees, 4) + '</span>'
       : '<span>Achat du créateur</span><span>aucun</span><span>Capitalisation de départ</span><span>' + (S.solUsd ? fUsd(st.mcapSol * S.solUsd) : fSol(st.mcapSol, 1)) + '</span>') + '</div>';

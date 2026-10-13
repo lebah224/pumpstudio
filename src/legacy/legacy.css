@@ -390,6 +390,11 @@ fieldset.dirty .actions{display:flex}
 .amt input:focus{outline:none;border-color:var(--accent);box-shadow:var(--focus)}
 .amt em{font-style:normal;color:var(--muted);font-family:var(--mono);font-size:14px}
 .presets{display:flex;gap:6px;margin:10px 0 12px;flex-wrap:wrap}
+.dev-meta{display:flex;justify-content:space-between;gap:4px 12px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--dim);font-family:var(--mono);font-variant-numeric:tabular-nums;min-height:16px}
+.dev-meta .dm-usd{color:var(--muted)}
+.dev-meta .dm-bal{margin-left:auto;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev-meta .dm-bal i{font-style:normal;opacity:.75}
+.dev-meta .dm-bal.low{color:var(--amber)}
 .presets button{flex:1;min-width:56px;font-family:var(--mono)}
 .quote{background:var(--bg);border:1px solid var(--line2);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .quote .kv{font-size:13.5px}
