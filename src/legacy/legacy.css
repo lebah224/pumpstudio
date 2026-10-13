@@ -908,6 +908,8 @@ textarea{font:inherit;color:inherit}
 .d-ic svg.i{width:15px;height:15px}
 .d-tv{font-family:var(--mono);font-size:25px;font-weight:500;letter-spacing:-.7px;margin-top:10px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .d-tv small{font-size:13px;color:var(--muted);letter-spacing:0;margin-left:3px}
+.d-tv{overflow:hidden;text-overflow:ellipsis}
+.d-tv .sol[data-usd]::after{display:block;margin:2px 0 0;font-size:11.5px;letter-spacing:0}
 .d-ts{font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .d-tile canvas{width:100%;display:block;margin-top:8px}
 /* répartition */
