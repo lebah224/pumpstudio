@@ -60,8 +60,6 @@ export function WalletPage() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [receive, setReceive] = useState(false);
-  const [bals, setBals] = useState<Record<string, number | null>>({});
-  const [balsAt, setBalsAt] = useState(0);
 
   const ext = st?.ext ?? null, quick = st?.quick ?? null, srv = st?.srv ?? null;
   const srvList = srvSt?.wallets ?? [];
@@ -72,13 +70,6 @@ export function WalletPage() {
   const tw = which === 'srv' ? pickSrv ?? srvList.find((w) => w.address === srvSt?.address) ?? srvList[0] ?? null : null;
   const pk = which === 'ext' ? ext!.pk : which === 'quick' ? quick!.pk : which === 'srv' ? tw?.address ?? null : null;
   const solUsd = st?.solUsd ?? price[price.length - 1]?.v ?? null;
-  const allPks = [...srvList.map((w) => w.address), ...(ext ? [ext.pk] : []), ...(quick ? [quick.pk] : [])].join(',');
-  useEffect(() => {
-    if (!visible || !allPks) return;
-    let alive = true;
-    allPks.split(',').forEach((a) => { balanceOf(a).then((v) => { if (alive) setBals((o) => ({ ...o, [a]: v })); }).catch(() => {}); });
-    return () => { alive = false; };
-  }, [visible, allPks, balsAt]);
 
   const load = useCallback(async (force = false) => {
     if (!pk) return;
@@ -165,69 +156,22 @@ export function WalletPage() {
 
   return (
     <div className="ts-wp">
-      {/* tous les wallets : solde, rôle et actions */}
-      <section className="card ts-wl">
-        <div className="ts-wl-h">
-          <div><h3>Mes wallets</h3><p>{srvList.length} wallet{srvList.length > 1 ? 's' : ''} rapide{srvList.length > 1 ? 's' : ''}{ext ? ' · ' + ext.name + ' connecté' : ''} · soldes lus sur la blockchain</p></div>
-          <div className="ts-wl-tools">
-            <button type="button" className="btn sm primary" onClick={() => openServerWallet('create')}>+ Nouveau wallet rapide</button>
-            <button type="button" className="btn sm" onClick={() => openServerWallet('import')}>Importer une clé secrète</button>
-            <button type="button" className="btn sm ghost" disabled={busy} onClick={() => { load(true); setBalsAt(Date.now()); }}>{busy ? 'Actualisation…' : 'Actualiser'}</button>
-          </div>
+      {/* choix du wallet affiché : wallets rapides, puis wallets externes */}
+      <div className="ts-wp-bar">
+        <div className="ts-wp-tabs" role="tablist" aria-label="Wallet affiché">
+          {srvList.length > 0 && <span className="ts-wp-grp" aria-hidden="true">Rapides</span>}
+          {srvList.map((w) => <button key={w.address} type="button" role="tab" aria-selected={tw?.address === w.address && isSrv} className={tw?.address === w.address && isSrv ? 'on' : ''} onClick={() => setPick('srv:' + w.address)}><span className="ts-wmark quick ts-wnum" aria-hidden="true">{w.num}</span><span><b>{srvLabel(w)}{srv?.active && srvSt?.address === w.address && <em className="ts-wp-signs"> · signe</em>}</b><small className="mono">{short(w.address)}</small></span></button>)}
+          {(ext || quick) && <span className="ts-wp-grp ts-wp-sep" aria-hidden="true">Externes</span>}
+          {ext && <button type="button" role="tab" aria-selected={which === 'ext'} className={which === 'ext' ? 'on' : ''} onClick={() => setPick('ext')}><WalletMark w={walletById(ext.id) ?? { name: ext.name, color: '#7c8595' }} /><span><b>{ext.name}</b><small className="mono">{short(ext.pk)}</small></span></button>}
+          {quick && <button type="button" role="tab" aria-selected={which === 'quick'} className={which === 'quick' ? 'on' : ''} onClick={() => setPick('quick')}><span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span><span><b>Ancien wallet rapide</b><small className="mono">{short(quick.pk)}</small></span></button>}
         </div>
-        <div className="ts-wl-table" role="table" aria-label="Mes wallets">
-          <div className="ts-wl-row ts-wl-head" role="row"><span role="columnheader">Wallet</span><span role="columnheader">Solde</span><span role="columnheader">Rôle</span><span role="columnheader" className="ts-wl-acts-h">Actions</span></div>
-          <div className="ts-wl-group" role="row"><span role="cell"><b>Wallets rapides</b><small>Clés chiffrées sur votre compte · ils signent seuls, sans fenêtre</small></span></div>
-          {!srvList.length && <div className="ts-wl-empty" role="row"><span role="cell">Aucun wallet rapide. <button type="button" className="btn sm" onClick={() => openServerWallet('create')}>Créer le premier</button></span></div>}
-          {srvList.map((w) => {
-            const on = tw?.address === w.address && which === 'srv', sg = srv?.active && srvSt?.address === w.address;
-            return (
-              <div key={w.address} role="row" className={'ts-wl-row' + (on ? ' on' : '')}>
-                <span role="cell" className="ts-wl-idc"><button type="button" className="ts-wl-id" onClick={() => setPick('srv:' + w.address)} aria-pressed={on}>
-                  <span className="ts-wmark quick ts-wnum" aria-hidden="true">{w.num}</span>
-                  <span><b>{srvLabel(w)}</b><small><span className="mono">{short(w.address)}</span>{w.label ? ' · n°' + w.num : ''}</small></span>
-                </button></span>
-                <span role="cell" className="ts-wl-bal mono">{bals[w.address] != null ? <Sol v={bals[w.address]!} d={4} /> : '…'}</span>
-                <span role="cell">{sg ? <span className="ts-hub-pill ok">Signe</span> : <button type="button" className="ts-hub-pill" onClick={() => selectServerWallet(w.address)}>Utiliser</button>}</span>
-                <span role="cell" className="ts-wl-acts">
-                  <button type="button" className="btn sm ghost" onClick={() => openServerWallet('withdraw', w.address)}>Retirer</button>
-                  <button type="button" className="btn sm ghost" onClick={() => openServerWallet('export', w.address)}>Clé privée</button>
-                  <button type="button" className="btn sm ghost" onClick={() => openServerWallet('rename', w.address)}>Renommer</button>
-                  <button type="button" className="btn sm ghost" onClick={() => copy(w.address)} aria-label={'Copier l\'adresse de ' + srvLabel(w)}>Copier</button>
-                </span>
-              </div>
-            );
-          })}
-          <div className="ts-wl-group" role="row"><span role="cell"><b>Wallets externes</b><small>Phantom, Solflare, Binance Wallet… · la clé reste dans l'extension, chaque transaction s'y signe</small></span></div>
-          {!ext && <div className="ts-wl-empty" role="row"><span role="cell">Aucun wallet externe connecté. <button type="button" className="btn sm" onClick={() => window.dispatchEvent(new CustomEvent('ts-connect'))}>Connecter un wallet</button></span></div>}
-          {ext && (
-            <div role="row" className={'ts-wl-row' + (which === 'ext' ? ' on' : '')}>
-              <span role="cell" className="ts-wl-idc"><button type="button" className="ts-wl-id" onClick={() => setPick('ext')} aria-pressed={which === 'ext'}>
-                <WalletMark w={walletById(ext.id) ?? { name: ext.name, color: '#7c8595' }} />
-                <span><b>{ext.name}</b><small className="mono">{short(ext.pk)}</small></span>
-              </button></span>
-              <span role="cell" className="ts-wl-bal mono">{bals[ext.pk] != null ? <Sol v={bals[ext.pk]!} d={4} /> : '…'}</span>
-              <span role="cell">{signer === 'ext' ? <span className="ts-hub-pill ok">Signe</span> : <button type="button" className="ts-hub-pill" onClick={() => hub?.useExt()}>Utiliser</button>}</span>
-              <span role="cell" className="ts-wl-acts">
-                {srvList.length > 0 && <button type="button" className="btn sm ghost" onClick={() => hub?.walletAction('fund')}>Alimenter un wallet rapide</button>}
-                <button type="button" className="btn sm ghost" onClick={() => copy(ext.pk)}>Copier</button>
-                <span className="dim ts-wl-note">Clé gardée par {ext.name}</span>
-              </span>
-            </div>
-          )}
-          {quick && (
-            <div role="row" className={'ts-wl-row' + (which === 'quick' ? ' on' : '')}>
-              <span role="cell" className="ts-wl-idc"><button type="button" className="ts-wl-id" onClick={() => setPick('quick')} aria-pressed={which === 'quick'}>
-                <span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span>
-                <span><b>Ancien wallet rapide</b><small className="mono">{short(quick.pk)}</small></span>
-              </button></span>
-              <span role="cell" className="ts-wl-bal mono">{bals[quick.pk] != null ? <Sol v={bals[quick.pk]!} d={4} /> : '…'}</span>
-              <span role="cell"><span className="ts-hub-pill">Dans ce navigateur</span></span>
-              <span role="cell" className="ts-wl-acts"><button type="button" className="btn sm ghost" onClick={() => hub?.legacyMigrate()}>Transférer sur mon compte</button><button type="button" className="btn sm ghost" onClick={() => hub?.legacyExport()}>Clé privée</button></span>
-            </div>
-          )}
+        <div className="ts-wp-add">
+          <button type="button" className="btn sm" onClick={() => openServerWallet('create')}>+ Wallet rapide</button>
+          <button type="button" className="btn sm ghost" onClick={() => openServerWallet('import')}>Ajouter par clé secrète</button>
         </div>
-      </section>
+        <span className="ts-wp-live"><span className="dot on" />Soldes réels, lus sur la blockchain</span>
+        <button type="button" className="btn sm ghost" disabled={busy} onClick={() => load(true)}>{busy ? 'Actualisation…' : 'Actualiser'}</button>
+      </div>
 
       {err && <div className="ts-note warn ts-wp-err"><span>{err}</span><button type="button" className="btn sm" onClick={() => goTo('settings')}>Ouvrir les réglages</button></div>}
 
@@ -316,6 +260,7 @@ export function WalletPage() {
             {bal != null && tw.alert_balance_sol != null && bal > tw.alert_balance_sol && <div className="ts-note warn">Solde au-dessus de votre seuil d'alerte (<Sol v={tw.alert_balance_sol} d={2} />) : pensez à retirer les gains vers votre wallet principal.</div>}
             <div className="ts-wp-secb">
               <button type="button" className="btn sm" onClick={() => openServerWallet('export', tw.address)}>Afficher la clé privée</button>
+              <button type="button" className="btn sm ghost" onClick={() => openServerWallet('rename', tw.address)}>Renommer</button>
               <button type="button" className="btn sm ghost" onClick={() => openServerWallet('limits', tw.address)}>Plafonds</button>
               <button type="button" className="btn sm ghost danger" onClick={() => openServerWallet('delete', tw.address)}>Supprimer</button>
             </div>

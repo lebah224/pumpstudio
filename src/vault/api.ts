@@ -10,7 +10,7 @@ export type Quote = { from: Asset; to: Asset; in: number; out: number; minOut: n
 export type RuleKind = 'surplus' | 'profit' | 'drop' | 'schedule' | 'send';
 export type Rule = { id: string; kind: RuleKind; stable: Stable; params: Record<string, number | string>; active: boolean; last_run_at: string | null; last_result: Record<string, unknown> | null; next_at: string | null; created_at: string };
 export type Dest = { id: string; address: string; label: string; created_at: string };
-export type Move = { id?: string; kind: 'protect' | 'release' | 'send'; stable: string; sol: number | null; stable_amount: number | null; dest?: string | null; signature?: string | null; auto?: boolean; status?: string; error?: string | null; created_at: string };
+export type Move = { id?: string; wallet?: string | null; kind: 'protect' | 'release' | 'send'; stable: string; sol: number | null; stable_amount: number | null; dest?: string | null; signature?: string | null; auto?: boolean; status?: string; error?: string | null; created_at: string };
 
 type Ctx = {
   solUsd: number | null; bal: number | null;

@@ -9,6 +9,7 @@ import {
   balances, bridge, convert, getQuote, loadDests, loadMoves, loadRules, sendTo, solMarket, vault,
   type Asset, type Ctx, type Dest, type Move, type Quote, type Rule, type RuleKind, type Stable,
 } from './api';
+import { VaultChart } from './VaultChart';
 import '../styles/vault.css';
 
 const nf = (v: number, d = 2) => v.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -40,6 +41,7 @@ const ICON = {
   wallet: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2" /><path d="M22 11h-6a2 2 0 000 4h6v-4z" /></svg>,
   bolt: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg>,
   send: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z" /></svg>,
+  gear: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" /></svg>,
   x: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>,
 };
 
@@ -95,17 +97,8 @@ export function VaultPage() {
 
   return (
     <div className="vt">
-      <div className="vt-wbar">
-        <span className="vt-wbar-l">{ICON.wallet}<span><b>Wallet du coffre</b><small>Celui qui convertit, envoie et applique vos règles.</small></span></span>
-        {options.length ? (
-          <div className="vt-wpick" role="radiogroup" aria-label="Wallet du coffre">
-            {options.map((o) => (
-              <button key={o.pk} type="button" role="radio" aria-checked={chosen?.pk === o.pk} className={chosen?.pk === o.pk ? 'on' : ''} onClick={() => choose(o.pk)}>
-                <b>{o.name}</b><small className="mono">{short(o.pk)} · {o.kind === 'server' ? 'signe seul' : 'signature dans ' + o.name}</small>
-              </button>
-            ))}
-          </div>
-        ) : <span className="dim">Aucun wallet disponible</span>}
+      <div className="vt-top">
+        <VaultSettings options={options} chosen={chosen} onChoose={choose} />
       </div>
       <section className="card vt-hero">
         <div className="vt-hero-l">
@@ -124,6 +117,8 @@ export function VaultPage() {
         </div>
       </section>
 
+      <VaultChart wallet={chosen?.pk ?? null} moves={moves} stableNow={bal ? stableTotal : null} />
+
       {!vctx.wallet && <div className="ts-note warn">Connectez un wallet (menu en haut à droite) ou créez votre wallet rapide pour utiliser le coffre-fort.</div>}
 
       <div className="vt-grid">
@@ -135,6 +130,43 @@ export function VaultPage() {
         <HistoryCard moves={moves} account={account} />
       </div>
       <p className="dim vt-foot">Les conversions passent par Jupiter, au meilleur prix du marché. L'USDT (Tether) et l'USDC (Circle) suivent le dollar mais dépendent de leur émetteur. Rien de ceci n'est un conseil en investissement.</p>
+    </div>
+  );
+}
+
+/* ---------- réglages du coffre : wallet qui convertit, envoie et applique les règles ---------- */
+type Opt = NonNullable<Ctx['wallet']>;
+function VaultSettings({ options, chosen, onChoose }: { options: Opt[]; chosen: Opt | null; onChoose: (pk: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const out = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', out); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', out); document.removeEventListener('keydown', esc); };
+  }, [open]);
+  return (
+    <div className="vt-set" ref={root}>
+      <button type="button" className="btn sm vt-set-btn" aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((o) => !o)}>
+        {ICON.gear}<span>Réglages</span><small className="dim">{chosen ? chosen.name : 'aucun wallet'}</small>
+      </button>
+      {open && (
+        <div className="vt-set-pop" role="dialog" aria-label="Réglages du coffre">
+          <div className="vt-set-h"><b>Wallet du coffre</b><small className="dim">Celui qui convertit, envoie et applique vos règles automatiques. Choix gardé sur cet appareil.</small></div>
+          {options.length ? (
+            <div className="vt-set-list" role="radiogroup" aria-label="Wallet du coffre">
+              {options.map((o) => (
+                <label key={o.pk} className={chosen?.pk === o.pk ? 'on' : ''}>
+                  <input type="radio" name="vt-wallet" checked={chosen?.pk === o.pk} onChange={() => { onChoose(o.pk); setOpen(false); }} />
+                  <span><b>{o.name}</b><small className="mono dim">{short(o.pk)} · {o.kind === 'server' ? 'signe seul' : 'signature dans ' + o.name}</small></span>
+                </label>
+              ))}
+            </div>
+          ) : <p className="dim vt-small">Aucun wallet disponible : connectez un wallet ou créez un wallet rapide.</p>}
+          <button type="button" className="btn sm ghost" onClick={() => { setOpen(false); openServerWallet('create'); }}>+ Nouveau wallet rapide</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -226,7 +258,7 @@ function RulesCard({ ctx, account, rules, dests, hasServer, serverActive, onChan
   else body = (<>
     <div className={'ts-note ' + (serverActive ? 'good' : 'info')}>
       {serverActive ? <><b>Automatique.</b> Les nouvelles règles sont appliquées par le <b>{ctx.wallet?.name}</b>, même outil fermé (vérification chaque minute).</>
-        : hasServer ? <>Avec {ctx.wallet?.name ?? 'ce wallet'}, chaque conversion demande votre signature. Choisissez un <b>wallet rapide</b> en haut de la page pour que les règles s'appliquent seules.</>
+        : hasServer ? <>Avec {ctx.wallet?.name ?? 'ce wallet'}, chaque conversion demande votre signature. Choisissez un <b>wallet rapide</b> dans les réglages du coffre pour que les règles s'appliquent seules.</>
         : <>Avec {ctx.wallet?.name ?? 'votre wallet'}, chaque conversion demande votre signature : vous recevez une notification quand une règle se déclenche. <button type="button" className="btn sm" onClick={() => openServerWallet('create')}>Créer le wallet rapide</button> pour tout automatiser.</>}
     </div>
     {!rules ? <div className="empty"><b>Chargement…</b></div> : !rules.length && !adding ? <div className="empty"><b>Aucune règle</b><span>Ajoutez-en une pour protéger vos SOL sans y penser.</span></div> : (
