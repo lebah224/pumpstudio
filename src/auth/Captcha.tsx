@@ -95,7 +95,8 @@ export function HumanGate() {
 /** La case elle-même */
 export function Captcha() {
   const el = useRef<HTMLDivElement>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | false>(false);
+  const [tries, setTries] = useState(0);
   useEffect(() => {
     if (!captchaOn() || !el.current) return;
     let id: string | null = null, alive = true;
@@ -103,19 +104,26 @@ export function Captcha() {
       if (!alive || !el.current) return;
       id = ts.render(el.current, {
         sitekey: CAPTCHA_SITE_KEY, theme: 'dark', size: 'flexible', appearance: 'always', language: lang(),
+        retry: 'auto', 'retry-interval': 4000, 'refresh-expired': 'auto',
         callback: (v: string) => { setFailed(false); set(v); },
         'expired-callback': () => set(null),
-        'error-callback': () => { set(null); setFailed(true); },
+        'error-callback': (code?: string) => { set(null); setFailed(String(code ?? '')); return true; },
       });
       widget = id;
-    }).catch(() => setFailed(true));
+    }).catch(() => setFailed('load'));
     return () => { alive = false; if (id && window.turnstile) { try { window.turnstile.remove(id); } catch { /* déjà retirée */ } } if (widget === id) widget = null; set(null); };
-  }, []);
+  }, [tries]);
   if (!captchaOn()) return null;
   return (
     <div className="ts-captcha">
       <div ref={el} className="ts-captcha-box" />
-      {failed && <p className="ts-captcha-err" role="alert">{t('La vérification anti-robot ne se charge pas. Désactivez votre bloqueur de contenu pour ce site, puis rechargez la page.', 'The anti-robot check didn\'t load. Disable your content blocker for this site, then reload the page.')}</p>}
+      {failed !== false && (
+        <div className="ts-captcha-err" role="alert">
+          <p>{t('La vérification de sécurité n\'arrive pas à se charger sur cet appareil.', 'The security check can\'t load on this device.')}{failed && failed !== 'load' ? <small> ({t('code', 'code')} {failed})</small> : null}</p>
+          <p>{t('Vérifiez votre connexion. Si vous êtes dans le navigateur intégré d\'une application (wallet, réseau social…), avec un VPN, un bloqueur de publicités ou un « DNS privé », désactivez-le ou ouvrez le site dans Chrome ou Safari.', 'Check your connection. If you are in an app\'s built-in browser (wallet, social app…), or use a VPN, an ad blocker or a "private DNS", turn it off or open the site in Chrome or Safari.')}</p>
+          <button type="button" className="btn sm" onClick={() => { setFailed(false); setTries((n) => n + 1); }}>{t('Réessayer', 'Try again')}</button>
+        </div>
+      )}
     </div>
   );
 }
