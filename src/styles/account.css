@@ -510,3 +510,4 @@
 .ts-gmark{width:18px;height:18px;flex:none}
 .ts-human .ts-modal-box{max-width:420px}
 .ts-human .ts-captcha{margin:14px 0 4px}
+.ts-srv-picks{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 10px}

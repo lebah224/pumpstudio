@@ -2,7 +2,8 @@
 // sauf export demandé avec le mot de passe du wallet.
 // Politique de signature : seulement des transactions de trading (pump.fun, PumpSwap, frais de créateur, comptes de
 // tokens), simulées avant signature ; le SOL qui sort est compté dans la limite par achat et le plafond du jour.
-// Retraits : uniquement vers les wallets liés et prouvés du compte, depuis plus de 24 heures (sauf le wallet de connexion).
+// Retraits de SOL : vers l'adresse Solana saisie, avec le mot de passe ; un e-mail d'alerte part à chaque retrait.
+// Envois du coffre-fort (USDT/USDC) : vers les wallets liés ou les adresses enregistrées, après 24 heures.
 // Plusieurs wallets rapides par compte (n°1, n°2…), protégés par un seul mot de passe, demandé pour les actions
 // sensibles (retrait, envoi, export, plafonds, suppression, nouveau wallet).
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
@@ -248,21 +249,23 @@ async function destination(user: User, to: string) {
 }
 async function withdraw(user: User, row: Row, to: unknown, amount: unknown) {
   const uid = user.id;
-  if (typeof to !== 'string') throw new Fail(400, 'Adresse de destination manquante.');
-  await destination(user, to);
+  const dest = typeof to === 'string' ? to.trim() : '';
+  if (!B58RE.test(dest)) throw new Fail(400, 'Adresse de destination invalide.');
+  try { new PublicKey(dest); } catch { throw new Fail(400, 'Adresse de destination invalide.'); }
+  if (dest === row.address) throw new Fail(400, 'C\'est l\'adresse de ce wallet rapide lui-même.');
   const bal = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;
   const fee = 5000;
   const lam = amount === 'max' ? bal - fee : Math.round(Number(amount) * 1e9);
   if (!(lam > 0) || lam + fee > bal) throw new Fail(400, 'Montant invalide ou solde insuffisant.');
   const kp = await open(row, uid + ':' + row.address);
   const { value } = await rpc<{ value: { blockhash: string } }>('getLatestBlockhash', [{ commitment: 'confirmed' }]);
-  const tx = new Transaction({ feePayer: kp.publicKey, recentBlockhash: value.blockhash }).add(SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(to), lamports: lam }));
+  const tx = new Transaction({ feePayer: kp.publicKey, recentBlockhash: value.blockhash }).add(SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(dest), lamports: lam }));
   tx.sign(kp);
   const raw = b64(tx.serialize());
   await rpc('sendTransaction', [raw, { encoding: 'base64', maxRetries: 3 }]);
   const signature = bs58.encode(tx.signature!);
-  await audit(uid, 'server_wallet_withdraw', { signature, to, sol: lam / 1e9 });
-  alertMail(user, 'withdraw', { sol: Number((lam / 1e9).toFixed(6)), to, signature }).catch(() => {});
+  await audit(uid, 'server_wallet_withdraw', { signature, to: dest, sol: lam / 1e9 });
+  alertMail(user, 'withdraw', { sol: Number((lam / 1e9).toFixed(6)), to: dest, signature }).catch(() => {});
   return { signature, raw, sol: lam / 1e9 };
 }
 
