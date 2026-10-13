@@ -142,7 +142,14 @@ async function cleanParams(uid: string, kind: string, p: Record<string, unknown>
 }
 async function ruleSave(uid: string, b: Record<string, unknown>) {
   const kind = String(b.kind ?? ''), stable = b.stable === 'USDC' ? 'USDC' : 'USDT';
-  const params = await cleanParams(uid, kind, (b.params ?? {}) as Record<string, unknown>);
+  const raw = (b.params ?? {}) as Record<string, unknown>;
+  const params: Record<string, unknown> = await cleanParams(uid, kind, raw);
+  // wallet rapide qui applique la règle (sinon le n°1)
+  if (typeof raw.wallet === 'string' && B58.test(raw.wallet)) {
+    const { data: own } = await admin.from('server_wallets').select('address').eq('user_id', uid).eq('address', raw.wallet).maybeSingle();
+    if (!own) throw new Fail(400, 'Ce wallet rapide n\'existe pas sur votre compte.');
+    params.wallet = raw.wallet;
+  }
   if (kind === 'send') {
     const { data: sw } = await admin.from('server_wallets').select('address').eq('user_id', uid).limit(1);
     if (!sw?.length) throw new Fail(400, 'L\'envoi automatique demande le wallet rapide : créez-le d\'abord dans Portefeuille.');
@@ -202,6 +209,7 @@ async function runRules(key: string) {
   ]);
   // classés du plus grand numéro au plus petit : le wallet rapide n°1 de chaque compte reste
   const server = new Map(((sws ?? []) as { user_id: string; address: string }[]).map((x) => [x.user_id, x.address]));
+  const owned = new Set(((sws ?? []) as { user_id: string; address: string }[]).map((x) => x.user_id + ':' + x.address));
   const ext = new Map<string, string>(); ((wls ?? []) as { user_id: string; address: string }[]).forEach((x) => { if (!ext.has(x.user_id)) ext.set(x.user_id, x.address); });
   let market: { price: number; change24: number } | null = null;
   try { market = await solMarket(); } catch { market = null; }
@@ -210,7 +218,8 @@ async function runRules(key: string) {
   const now = Date.now(); let done = 0;
   for (const r of rules) {
     if (done >= 8) break;   // au plus 8 opérations par minute : les suivantes passent à la minute d'après
-    const srv = server.get(r.user_id), wallet = srv ?? ext.get(r.user_id);
+    const pw = typeof r.params.wallet === 'string' && owned.has(r.user_id + ':' + r.params.wallet) ? r.params.wallet : null;
+    const srv = pw ?? server.get(r.user_id), wallet = srv ?? ext.get(r.user_id);
     if (!wallet) continue;
     const last = r.last_run_at ? Date.parse(r.last_run_at) : 0, P = r.params as Record<string, number & string>;
     if (r.last_result?.ok === false && now - last < 30 * 60_000) continue;   // échec récent : nouvel essai dans 30 min
@@ -253,11 +262,11 @@ async function runRules(key: string) {
         done++; continue;
       }
       if (r.kind === 'send') {
-        const res = await internal('vault_send', { uid: r.user_id, stable: r.stable, to: P.to, amount: 'max', rule: r.id }, key);
+        const res = await internal('vault_send', { uid: r.user_id, address: srv, stable: r.stable, to: P.to, amount: 'max', rule: r.id }, key);
         await admin.from('vault_rules').update({ last_result: { ok: true, sig: res.signature, amount: res.amount } }).eq('id', r.id);
         await push(r.user_id, 'Coffre-fort · envoi effectué', fr(res.amount ?? 0, 2) + ' ' + r.stable + ' envoyés vers votre adresse enregistrée.');
       } else {
-        const res = await internal('vault_swap', { uid: r.user_id, from: 'SOL', to: r.stable, amount: Number(amount.toFixed(6)), rule: r.id }, key);
+        const res = await internal('vault_swap', { uid: r.user_id, address: srv, from: 'SOL', to: r.stable, amount: Number(amount.toFixed(6)), rule: r.id }, key);
         await admin.from('vault_rules').update({ last_result: { ok: true, sig: res.signature, sol: res.sol, stable: res.stable, cursor }, next_at: nextAt }).eq('id', r.id);
         await push(r.user_id, 'Coffre-fort · ' + why, fr(res.sol ?? amount) + ' SOL convertis en ' + fr(res.stable ?? 0, 2) + ' ' + r.stable + '.');
       }

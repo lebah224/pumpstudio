@@ -3,7 +3,7 @@ import { studio, toast } from '../legacy/bridge';
 import { useAuth } from '../auth/AuthContext';
 import { readable } from '../auth/SignIn';
 import { Sol } from '../ui/Sol';
-import { useServerWallet } from '../serverWallet/api';
+import { srvByAddress, srvLabel, useServerWallet } from '../serverWallet/api';
 import { openServerWallet } from '../serverWallet/ServerWalletDialog';
 import {
   balances, bridge, convert, getQuote, loadDests, loadMoves, loadRules, sendTo, solMarket, vault,
@@ -37,6 +37,7 @@ function useVisible() {
 const ICON = {
   shield: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>,
   swap: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3" /></svg>,
+  wallet: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2" /><path d="M22 11h-6a2 2 0 000 4h6v-4z" /></svg>,
   bolt: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg>,
   send: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z" /></svg>,
   x: <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>,
@@ -55,11 +56,23 @@ export function VaultPage() {
   const [dests, setDests] = useState<Dest[] | null>(null);
   const [moves, setMoves] = useState<Move[] | null>(null);
   const account = !!user;
+  // wallet du coffre : un wallet rapide (n°…) ou le wallet connecté (Phantom…), choisi sur cet appareil
+  const PICK = 'ts_vault_wallet';
+  const [pick, setPick] = useState<string | null>(() => { try { return localStorage.getItem(PICK); } catch { return null; } });
+  const extW = studio()?.hub?.state().ext ?? null;
+  const options: NonNullable<Ctx['wallet']>[] = [
+    ...(srvSt?.wallets ?? []).map((w) => ({ kind: 'server' as const, pk: w.address, name: srvLabel(w) })),
+    ...(extW ? [{ kind: 'ext' as const, pk: extW.pk, name: extW.name }] : []),
+  ];
+  const chosen = options.find((o) => o.pk === pick) ?? (ctx?.wallet && options.find((o) => o.pk === ctx.wallet!.pk)) ?? options[0] ?? null;
+  const choose = (pk: string) => { setPick(pk); try { localStorage.setItem(PICK, pk); } catch { /* navigation privée */ } };
+  const vctx: Ctx | null = ctx ? { ...ctx, wallet: chosen } : null;
 
   const refreshBal = useCallback(async () => {
-    if (!ctx?.wallet) { setBal(null); return; }
-    try { setBal(await balances(ctx.wallet.pk)); setBalErr(null); } catch (e) { setBalErr(readable(e)); }
-  }, [ctx?.wallet?.pk]);   // eslint-disable-line react-hooks/exhaustive-deps
+    if (!chosen) { setBal(null); return; }
+    try { setBal(await balances(chosen.pk)); setBalErr(null); } catch (e) { setBalErr(readable(e)); }
+  }, [chosen?.pk]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setBal(null); }, [chosen?.pk]);
   const bal = realBal;
   const latest = useRef({ refreshBal, refreshLists: async () => {} });
   const refreshLists = useCallback(async () => {
@@ -78,11 +91,22 @@ export function VaultPage() {
   const stableTotal = bal ? bal.USDT + bal.USDC : 0, solUsdV = bal && price ? bal.SOL * price : null;
   const total = solUsdV != null ? solUsdV + stableTotal : null;
   const share = total ? (stableTotal / total) * 100 : 0;
-  if (!visible || !ctx) return null;
+  if (!visible || !ctx || !vctx) return null;
 
-  const wLabel = ctx.wallet ? ctx.wallet.name + ' · ' + short(ctx.wallet.pk) : 'Aucun wallet';
   return (
     <div className="vt">
+      <div className="vt-wbar">
+        <span className="vt-wbar-l">{ICON.wallet}<span><b>Wallet du coffre</b><small>Celui qui convertit, envoie et applique vos règles.</small></span></span>
+        {options.length ? (
+          <div className="vt-wpick" role="radiogroup" aria-label="Wallet du coffre">
+            {options.map((o) => (
+              <button key={o.pk} type="button" role="radio" aria-checked={chosen?.pk === o.pk} className={chosen?.pk === o.pk ? 'on' : ''} onClick={() => choose(o.pk)}>
+                <b>{o.name}</b><small className="mono">{short(o.pk)} · {o.kind === 'server' ? 'signe seul' : 'signature dans ' + o.name}</small>
+              </button>
+            ))}
+          </div>
+        ) : <span className="dim">Aucun wallet disponible</span>}
+      </div>
       <section className="card vt-hero">
         <div className="vt-hero-l">
           <span className="vt-eyebrow">{ICON.shield}Valeur protégée</span>
@@ -97,18 +121,17 @@ export function VaultPage() {
         <div className="vt-split" aria-label={'Part protégée : ' + nf(share, 0) + ' %'}>
           <div className="vt-split-bar"><i style={{ width: Math.min(100, share) + '%' }} /></div>
           <span><b>{nf(share, 0)} %</b> à l'abri en dollars · {nf(100 - share, 0)} % en SOL</span>
-          <span className="vt-wallet">{wLabel}</span>
         </div>
       </section>
 
-      {!ctx.wallet && <div className="ts-note warn">Connectez un wallet (menu en haut à droite) ou créez votre wallet rapide pour utiliser le coffre-fort.</div>}
+      {!vctx.wallet && <div className="ts-note warn">Connectez un wallet (menu en haut à droite) ou créez votre wallet rapide pour utiliser le coffre-fort.</div>}
 
       <div className="vt-grid">
-        <ConvertCard ctx={ctx} bal={bal} price={price} onDone={after} />
-        <RulesCard ctx={ctx} account={account} rules={rules} dests={dests} hasServer={!!srvSt?.address} serverActive={ctx.wallet?.kind === 'server'} onChange={refreshLists} />
+        <ConvertCard ctx={vctx} bal={bal} price={price} onDone={after} />
+        <RulesCard ctx={vctx} account={account} rules={rules} dests={dests} hasServer={!!srvSt?.address} serverActive={vctx.wallet?.kind === 'server'} onChange={refreshLists} />
       </div>
       <div className="vt-grid">
-        <DestCard ctx={ctx} account={account} dests={dests} bal={bal} onChange={after} />
+        <DestCard ctx={vctx} account={account} dests={dests} bal={bal} onChange={after} />
         <HistoryCard moves={moves} account={account} />
       </div>
       <p className="dim vt-foot">Les conversions passent par Jupiter, au meilleur prix du marché. L'USDT (Tether) et l'USDC (Circle) suivent le dollar mais dépendent de leur émetteur. Rien de ceci n'est un conseil en investissement.</p>
@@ -202,8 +225,8 @@ function RulesCard({ ctx, account, rules, dests, hasServer, serverActive, onChan
   if (!account) body = <div className="empty"><b>Connectez-vous pour automatiser</b><span>Les règles automatiques sont enregistrées sur votre compte et surveillées en continu.</span></div>;
   else body = (<>
     <div className={'ts-note ' + (serverActive ? 'good' : 'info')}>
-      {serverActive ? <><b>Automatique.</b> Votre wallet rapide applique les règles lui-même, même outil fermé (vérification chaque minute).</>
-        : hasServer ? <>Le wallet actif est {ctx.wallet?.name}. Les règles s'appliquent à votre <b>wallet rapide</b> ; sans lui, vous recevez une notification pour signer.</>
+      {serverActive ? <><b>Automatique.</b> Les nouvelles règles sont appliquées par le <b>{ctx.wallet?.name}</b>, même outil fermé (vérification chaque minute).</>
+        : hasServer ? <>Avec {ctx.wallet?.name ?? 'ce wallet'}, chaque conversion demande votre signature. Choisissez un <b>wallet rapide</b> en haut de la page pour que les règles s'appliquent seules.</>
         : <>Avec {ctx.wallet?.name ?? 'votre wallet'}, chaque conversion demande votre signature : vous recevez une notification quand une règle se déclenche. <button type="button" className="btn sm" onClick={() => openServerWallet('create')}>Créer le wallet rapide</button> pour tout automatiser.</>}
     </div>
     {!rules ? <div className="empty"><b>Chargement…</b></div> : !rules.length && !adding ? <div className="empty"><b>Aucune règle</b><span>Ajoutez-en une pour protéger vos SOL sans y penser.</span></div> : (
@@ -211,7 +234,7 @@ function RulesCard({ ctx, account, rules, dests, hasServer, serverActive, onChan
         const K = KINDS.find((x) => x.k === r.kind)!, lr = r.last_result as { ok?: boolean; error?: string; notified?: boolean } | null;
         return (
           <li key={r.id} className={r.active ? '' : 'off'}>
-            <div className="vt-rule-t"><b>{K.t}</b><span>{describe(r, dests)}</span>
+            <div className="vt-rule-t"><b>{K.t}{(() => { const w = srvByAddress(String(r.params.wallet ?? '')); return <em className="vt-rule-w"> · {w ? srvLabel(w) : 'Wallet rapide n°1'}</em>; })()}</b><span>{describe(r, dests)}</span>
               <small className="dim">{lr?.ok === false ? <span className="down">Dernier essai en échec : {lr.error}</span> : r.last_run_at ? (lr?.notified ? 'Notification envoyée ' : 'Exécutée ') + ago(r.last_run_at) : 'Pas encore déclenchée'}</small></div>
             <label className="vt-switch" title={r.active ? 'Désactiver' : 'Activer'}><input type="checkbox" checked={r.active} disabled={!!busy} onChange={(e) => run(r.id, () => vault('rule_toggle', { id: r.id, active: e.target.checked }))} /><span aria-hidden="true" /><em className="sr">{r.active ? 'Active' : 'En pause'}</em></label>
             <button type="button" className="vt-x" aria-label="Supprimer la règle" disabled={!!busy} onClick={() => { if (window.confirm('Supprimer cette règle ?')) run(r.id, () => vault('rule_delete', { id: r.id }), 'Règle supprimée'); }}>{ICON.x}</button>
@@ -219,7 +242,7 @@ function RulesCard({ ctx, account, rules, dests, hasServer, serverActive, onChan
         );
       })}</ul>
     )}
-    {adding ? <RuleForm dests={dests ?? []} hasServer={hasServer} onCancel={() => setAdding(false)} onSaved={() => { setAdding(false); onChange(); }} />
+    {adding ? <RuleForm wallet={serverActive ? ctx.wallet?.pk ?? null : null} dests={dests ?? []} hasServer={hasServer} onCancel={() => setAdding(false)} onSaved={() => { setAdding(false); onChange(); }} />
       : <button type="button" className="btn vt-add" disabled={(rules?.length ?? 0) >= 10} onClick={() => setAdding(true)}>+ Ajouter une règle</button>}
   </>);
   return (
@@ -229,7 +252,7 @@ function RulesCard({ ctx, account, rules, dests, hasServer, serverActive, onChan
     </section>
   );
 }
-function RuleForm({ dests, hasServer, onCancel, onSaved }: { dests: Dest[]; hasServer: boolean; onCancel: () => void; onSaved: () => void }) {
+function RuleForm({ wallet, dests, hasServer, onCancel, onSaved }: { wallet: string | null; dests: Dest[]; hasServer: boolean; onCancel: () => void; onSaved: () => void }) {
   const [kind, setKind] = useState<RuleKind>('surplus');
   const [stable, setStable] = useState<Stable>('USDT');
   const [p, setP] = useState<Record<string, string>>({ above: '5', keep: '2', drop: '10', pct: '50', amount: '0.5', every: 'week', min: '100', to: dests[0]?.address ?? '' });
@@ -246,6 +269,7 @@ function RuleForm({ dests, hasServer, onCancel, onSaved }: { dests: Dest[]; hasS
     for (const k of nums[kind]) P[k] = parse(p[k] ?? '');
     if (kind === 'schedule') P.every = p.every!;
     if (kind === 'send') P.to = p.to!;
+    if (wallet) P.wallet = wallet;
     try { await vault('rule_save', { kind, stable, params: P }); toast('Règle enregistrée', KINDS.find((x) => x.k === kind)!.t); onSaved(); }
     catch (e2) { setErr(readable(e2)); } finally { setBusy(false); }
   }

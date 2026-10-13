@@ -104,3 +104,15 @@
   .vt-moves li{flex-wrap:wrap}
   .vt-m-v{flex-basis:100%;text-align:left;padding-left:40px}
 }
+
+/* wallet du coffre */
+.vt-wbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.vt-wbar-l{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 220px}
+.vt-wbar-l>span{display:flex;flex-direction:column;line-height:1.3}
+.vt-wbar-l small{color:var(--muted);font-size:12.5px}
+.vt-wpick{display:flex;gap:8px;flex-wrap:wrap}
+.vt-wpick button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border-radius:11px;border:1px solid var(--line2);background:var(--bg);color:var(--text);font:inherit;cursor:pointer;text-align:left}
+.vt-wpick button small{color:var(--dim);font-size:11.5px}
+.vt-wpick button.on{border-color:var(--accent-line);background:color-mix(in oklab,var(--accent) 9%,var(--bg))}
+.vt-wpick button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.vt-rule-w{font-style:normal;font-weight:500;color:var(--muted);font-size:12.5px}

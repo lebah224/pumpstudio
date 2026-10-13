@@ -3961,10 +3961,12 @@
         return { solUsd: S.solUsd, bal: S.bal,
           wallet: w ? { kind: w.id === 'server' ? 'server' : w.id === 'session' ? 'legacy' : 'ext', pk: w.pk, name: w.name } : null };
       },
-      signSend: async (b64) => {
+      // signature par le wallet connecté (Phantom…) choisi dans le coffre, même si un wallet rapide signe ailleurs
+      signSend: async (b64, pk) => {
         const tx = W3().VersionedTransaction.deserialize(b64ToBytes(b64));
         const v = await simulate(tx); if (v.err) throw new Error(simError(v));
-        const sig = await signAndSend(tx); await confirmSig(sig); refreshBal();
+        const w = S.ext && (!pk || S.ext.pk === pk) ? S.ext : S.wallet;
+        const sig = await signAndSend(tx, null, w); await confirmSig(sig); refreshBal();
         return sig;
       },
     },

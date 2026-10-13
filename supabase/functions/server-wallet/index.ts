@@ -247,6 +247,24 @@ async function destination(user: User, to: string) {
   const age = (Date.now() - since) / 3600_000;
   if (age < DELAY_H) throw new Fail(403, 'Cette destination a été ajoutée il y a moins de 24 heures : par sécurité, elle pourra recevoir des fonds dans ' + Math.ceil(DELAY_H - age) + ' h.', { code: 'cooldown' });
 }
+// transaction simple signée par le wallet rapide : blockhash et vérification au même niveau (« confirmed »),
+// nouvel essai avec un blockhash neuf si le nœud ne le connaît pas encore
+async function sendSimple(kp: Keypair, ixs: TransactionInstruction[]) {
+  for (let i = 0; ; i++) {
+    const { value } = await rpc<{ value: { blockhash: string } }>('getLatestBlockhash', [{ commitment: 'confirmed' }]);
+    const tx = new Transaction({ feePayer: kp.publicKey, recentBlockhash: value.blockhash }).add(...ixs);
+    tx.sign(kp);
+    const raw = b64(tx.serialize());
+    try {
+      await rpc('sendTransaction', [raw, { encoding: 'base64', preflightCommitment: 'confirmed', maxRetries: 3 }]);
+      return { raw, signature: bs58.encode(tx.signature!) };
+    } catch (e) {
+      if (i < 2 && /blockhash not found/i.test((e as Error).message)) { await new Promise((res) => setTimeout(res, 800)); continue; }
+      if (/insufficient|0x1\b/i.test((e as Error).message)) throw new Fail(400, 'Solde insuffisant pour ce retrait et ses frais.');
+      throw e;
+    }
+  }
+}
 async function withdraw(user: User, row: Row, to: unknown, amount: unknown) {
   const uid = user.id;
   const dest = typeof to === 'string' ? to.trim() : '';
@@ -258,15 +276,11 @@ async function withdraw(user: User, row: Row, to: unknown, amount: unknown) {
   const lam = amount === 'max' ? bal - fee : Math.round(Number(amount) * 1e9);
   if (!(lam > 0) || lam + fee > bal) throw new Fail(400, 'Montant invalide ou solde insuffisant.');
   const kp = await open(row, uid + ':' + row.address);
-  const { value } = await rpc<{ value: { blockhash: string } }>('getLatestBlockhash', [{ commitment: 'confirmed' }]);
-  const tx = new Transaction({ feePayer: kp.publicKey, recentBlockhash: value.blockhash }).add(SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(dest), lamports: lam }));
-  tx.sign(kp);
-  const raw = b64(tx.serialize());
-  await rpc('sendTransaction', [raw, { encoding: 'base64', maxRetries: 3 }]);
-  const signature = bs58.encode(tx.signature!);
+  const { raw, signature } = await sendSimple(kp, [SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: new PublicKey(dest), lamports: lam })]);
+  const confirmed = await confirm(signature);
   await audit(uid, 'server_wallet_withdraw', { signature, to: dest, sol: lam / 1e9 });
   alertMail(user, 'withdraw', { sol: Number((lam / 1e9).toFixed(6)), to: dest, signature }).catch(() => {});
-  return { signature, raw, sol: lam / 1e9 };
+  return { signature, raw, sol: lam / 1e9, confirmed };
 }
 
 /* ---------- coffre-fort : SOL ↔ USDT/USDC dans le wallet rapide (Jupiter), envoi des stablecoins ---------- */
@@ -380,19 +394,14 @@ async function vaultSend(user: User, row: Row, stable: unknown, to: unknown, amo
   const kp = await open(row, uid + ':' + row.address);
   const src = new PublicKey(ataOf(row.address, S.mint)), dst = new PublicKey(ataOf(to, S.mint)), mint = new PublicKey(S.mint), owner = new PublicKey(to);
   const data = new Uint8Array(10); data[0] = 12; new DataView(data.buffer).setBigUint64(1, raw, true); data[9] = S.dec;
-  const { value } = await rpc<{ value: { blockhash: string } }>('getLatestBlockhash', [{ commitment: 'confirmed' }]);
-  const tx = new Transaction({ feePayer: kp.publicKey, recentBlockhash: value.blockhash }).add(
+  const { signature } = await sendSimple(kp, [
     // compte de tokens du destinataire (créé s'il n'existe pas encore)
     new TransactionInstruction({ programId: new PublicKey(ATA), data: Buffer.from([1]), keys: [
       { pubkey: kp.publicKey, isSigner: true, isWritable: true }, { pubkey: dst, isSigner: false, isWritable: true }, { pubkey: owner, isSigner: false, isWritable: false },
       { pubkey: mint, isSigner: false, isWritable: false }, { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, { pubkey: new PublicKey(TOKEN), isSigner: false, isWritable: false }] }),
     new TransactionInstruction({ programId: new PublicKey(TOKEN), data: Buffer.from(data), keys: [
       { pubkey: src, isSigner: false, isWritable: true }, { pubkey: mint, isSigner: false, isWritable: false }, { pubkey: dst, isSigner: false, isWritable: true }, { pubkey: kp.publicKey, isSigner: true, isWritable: false }] }),
-  );
-  tx.sign(kp);
-  const signed = b64(tx.serialize());
-  await rpc('sendTransaction', [signed, { encoding: 'base64', maxRetries: 3 }]);
-  const signature = bs58.encode(tx.signature!);
+  ]);
   const confirmed = await confirm(signature);
   const amt = Number(raw) / 10 ** S.dec;
   await logMove(uid, row.address, { kind: 'send', stable: String(stable), stable_amount: amt, dest: to, signature, auto: !!rule, rule_id: rule, status: 'ok' });

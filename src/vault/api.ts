@@ -16,7 +16,7 @@ type Ctx = {
   solUsd: number | null; bal: number | null;
   wallet: { kind: 'server' | 'ext' | 'legacy'; pk: string; name: string } | null;
 };
-type VaultBridge = { ctx: () => Ctx; signSend: (b64: string) => Promise<string> };
+type VaultBridge = { ctx: () => Ctx; signSend: (b64: string, pk?: string) => Promise<string> };
 export const bridge = () => (window.PumpStudio as unknown as { vault?: VaultBridge } | undefined)?.vault;
 export type { Ctx };
 
@@ -32,11 +32,11 @@ export async function convert(ctx: Ctx, from: Asset, to: Asset, amount: number):
   if (!w) throw new Error('Connectez un wallet pour utiliser le coffre-fort.');
   if (w.kind === 'legacy') throw new Error('L\'ancien wallet rapide du navigateur ne signe plus : utilisez le wallet rapide du compte ou votre wallet.');
   if (w.kind === 'server') {
-    const r = await srv<{ signature: string; stable: number; sol: number }>('vault_swap', { from, to, amount });
+    const r = await srv<{ signature: string; stable: number; sol: number }>('vault_swap', { from, to, amount, address: w.pk });
     return { signature: r.signature, out: from === 'SOL' ? r.stable : r.sol };
   }
   const b = await vault<{ tx: string; quote: Quote }>('build', { from, to, amount, owner: w.pk });
-  const signature = await B!.signSend(b.tx);
+  const signature = await B!.signSend(b.tx, w.pk);
   const protect = from === 'SOL';
   await supabase.from('vault_moves').insert({ kind: protect ? 'protect' : 'release', stable: protect ? to : from, sol: protect ? amount : b.quote.out, stable_amount: protect ? b.quote.out : amount, wallet: w.pk, signature, status: 'ok' });
   return { signature, out: b.quote.out };
@@ -47,13 +47,13 @@ export async function sendTo(ctx: Ctx, asset: Asset, to: string, amount: number 
   const w = ctx.wallet;
   if (!w) throw new Error('Connectez un wallet pour envoyer.');
   if (w.kind === 'server') {
-    if (asset === 'SOL') return (await srv<{ signature: string }>('withdraw', { password, to, amount })).signature;
-    return (await srv<{ signature: string }>('vault_send', { password, stable: asset, to, amount })).signature;
+    if (asset === 'SOL') return (await srv<{ signature: string }>('withdraw', { address: w.pk, password, to, amount })).signature;
+    return (await srv<{ signature: string }>('vault_send', { address: w.pk, password, stable: asset, to, amount })).signature;
   }
   if (asset === 'SOL') throw new Error('Envoyez vos SOL directement depuis votre wallet.');
   if (amount === 'max') throw new Error('Indiquez un montant.');
   const b = await vault<{ tx: string; amount: number }>('send_tx', { stable: asset, to, amount, owner: w.pk });
-  const signature = await bridge()!.signSend(b.tx);
+  const signature = await bridge()!.signSend(b.tx, w.pk);
   await supabase.from('vault_moves').insert({ kind: 'send', stable: asset, stable_amount: amount, wallet: w.pk, dest: to, signature, status: 'ok' });
   return signature;
 }
