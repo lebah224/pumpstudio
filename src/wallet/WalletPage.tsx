@@ -159,9 +159,8 @@ export function WalletPage() {
       {/* choix du wallet affiché : wallets rapides, puis wallets externes */}
       <div className="ts-wp-bar">
         <div className="ts-wp-tabs" role="tablist" aria-label="Wallet affiché">
-          {srvList.length > 0 && <span className="ts-wp-grp" aria-hidden="true">Rapides</span>}
           {srvList.map((w) => <button key={w.address} type="button" role="tab" aria-selected={tw?.address === w.address && isSrv} className={tw?.address === w.address && isSrv ? 'on' : ''} onClick={() => setPick('srv:' + w.address)}><span className="ts-wmark quick ts-wnum" aria-hidden="true">{w.num}</span><span><b>{srvLabel(w)}{srv?.active && srvSt?.address === w.address && <em className="ts-wp-signs"> · signe</em>}</b><small className="mono">{short(w.address)}</small></span></button>)}
-          {(ext || quick) && <span className="ts-wp-grp ts-wp-sep" aria-hidden="true">Externes</span>}
+          {srvList.length > 0 && (ext || quick) && <span className="ts-wp-sep" aria-hidden="true" />}
           {ext && <button type="button" role="tab" aria-selected={which === 'ext'} className={which === 'ext' ? 'on' : ''} onClick={() => setPick('ext')}><WalletMark w={walletById(ext.id) ?? { name: ext.name, color: '#7c8595' }} /><span><b>{ext.name}</b><small className="mono">{short(ext.pk)}</small></span></button>}
           {quick && <button type="button" role="tab" aria-selected={which === 'quick'} className={which === 'quick' ? 'on' : ''} onClick={() => setPick('quick')}><span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span><span><b>Ancien wallet rapide</b><small className="mono">{short(quick.pk)}</small></span></button>}
         </div>

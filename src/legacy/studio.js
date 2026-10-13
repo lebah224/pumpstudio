@@ -639,16 +639,19 @@
   async function sessFund() {
     if (!S.ext) { toast('Wallet non connecté', 'Connectez Phantom (ou un autre wallet) pour alimenter votre wallet rapide.', 'a'); return; }
     if (!SRVPK) { toast('Pas encore de wallet rapide', 'Créez d\'abord votre wallet rapide, puis alimentez-le depuis ' + S.ext.name + '.', 'a'); try { window.dispatchEvent(new CustomEvent('ts-srv', { detail: 'create' })); } catch (e) {} return; }
-    const ext = S.ext, to = SRVPK;
+    const ext = S.ext, list = window.TSServerWallet ? window.TSServerWallet.wallets : [];
+    let to = list.some((w) => w.address === SRVPK) ? SRVPK : (list[0] ? list[0].address : SRVPK);
     let have = S.extBal; try { have = (await rpc('getBalance', [ext.pk, { commitment: 'confirmed' }])).value / 1e9; } catch (e) {}
     const max = have != null ? Math.max(0, have - 0.003) : null;   // garde de quoi payer les frais du wallet
-    const i = await modal('Alimenter le wallet rapide', '<p>Virement de SOL depuis <b>' + esc(ext.name) + '</b> <span class="mono">' + short(ext.pk) + '</span> vers votre wallet rapide <span class="mono">' + short(to) + '</span>. ' + esc(ext.name) + ' vous demandera de signer.</p>' +
+    const i = await modal('Alimenter le wallet rapide', '<p>Virement de SOL depuis <b>' + esc(ext.name) + '</b> <span class="mono">' + short(ext.pk) + '</span> vers ' + (list.length > 1 ? 'le wallet rapide choisi' : 'votre wallet rapide <span class="mono">' + short(to) + '</span>') + '. ' + esc(ext.name) + ' vous demandera de signer.</p>' +
+      (list.length > 1 ? '<div class="field"><label for="fundTo">Wallet à alimenter</label><select class="sel" id="fundTo">' + list.map((w) => '<option value="' + esc(w.address) + '"' + (w.address === to ? ' selected' : '') + '>' + esc(srvName(w.address)) + ' · ' + short(w.address) + '</option>').join('') + '</select></div>' : '') +
       '<div class="field"><label for="fundAmt">Montant' + (max != null ? ' <small>disponible : ' + fSolH(have, 4) + '</small>' : '') + '</label><span class="unit"><input id="fundAmt" type="number" min="0.001" step="any" value="' + (max != null ? Math.min(0.3, Math.floor(max * 1000) / 1000) : 0.3) + '"><em>SOL</em></span></div>' +
       (max != null ? '<div class="row-btns">' + [0.1, 0.5, 1].filter((v) => v <= max).map((v) => '<button class="btn sm" type="button" data-fundset="' + v + '">' + fSolH(v, 1) + '</button>').join('') + '<button class="btn sm" type="button" data-fundset="' + Math.floor(max * 1e6) / 1e6 + '">Maximum</button></div>' : '') +
       '<p class="muted" style="font-size:13.5px">Conseil : juste de quoi couvrir vos achats et les frais (environ 0,03 SOL pour un lancement). Les plafonds de votre wallet rapide s\'appliquent ensuite.</p>',
       [{ label: 'Annuler' }, { label: 'Alimenter', cls: 'primary', keep: true }], true);
     if (i !== 1) return;
     const amt = num($('fundAmt').value);
+    if ($('fundTo') && list.some((w) => w.address === $('fundTo').value)) to = $('fundTo').value;
     if (!(amt >= 0.001) || amt > 1000) return toast('Montant invalide', 'Entre 0,001 et 1 000 SOL.', 'r');
     if (max != null && amt > max) return toast('Solde insuffisant', ext.name + ' a ' + fSol(have, 4) + ' (frais du virement compris).', 'r');
     closeModal();
@@ -659,8 +662,8 @@
       { label: 'Confirmation sur la blockchain', run: async (x) => await confirmSig(x.sig) },
     ]);
     if (!ctx.error) {
-      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSolH(amt, 4) + ' envoyés sur votre wallet rapide. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
-      toast('Wallet rapide alimenté', '+' + fSol(amt, 4), 'g'); S.bal = null; refreshBal(); renderAll();
+      $('mBody').insertAdjacentHTML('beforeend', '<div class="notice good">' + fSolH(amt, 4) + ' envoyés sur ' + esc(srvName(to)) + '. <a href="' + solscan(ctx.sig) + '" target="_blank" rel="noopener">Voir sur Solscan</a></div>');
+      toast(srvName(to) + ' alimenté', '+' + fSol(amt, 4), 'g'); S.bal = null; refreshBal(); renderAll();
     }
   }
   // Ancien wallet rapide du navigateur → wallet rapide du compte (même adresse, mêmes fonds), puis retiré d'ici
