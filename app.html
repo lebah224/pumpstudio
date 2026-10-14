@@ -36,21 +36,22 @@
     <button class="icon-btn side-x" id="sideClose" type="button" aria-label="Fermer le menu"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div class="logo"><div class="mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><path d="M4 18c7 0 11-3.5 15.5-13"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg></div><span>Token<b>Studio</b></span></div>
     <button class="cmdk" id="cmdkBtn" type="button" aria-label="Ouvrir la palette de commandes"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Rechercher</span><kbd>Ctrl K</kbd></button>
-    <nav class="menu" id="menu">
-      <div class="menu-label">Vue d'ensemble</div>
-      <button data-page="dash" type="button" class="active"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/></svg>Tableau de bord</button>
-      <button data-page="wallet" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2"/><path d="M22 11h-6a2 2 0 000 4h6v-4z"/></svg>Portefeuille</button>
-      <button data-page="vault" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.2"/><path d="M12 9.3v1M12 14.7v1M15.2 12.5h-1M9.8 12.5h-1M7 20v1.5M17 20v1.5"/></svg>Coffre-fort</button>
+    <nav class="menu" id="menu" aria-label="Navigation principale">
+      <div class="menu-label">Trading</div>
+      <button data-page="dash" type="button" class="active"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/></svg><span class="ml">Tableau de bord</span><span class="ms">Accueil</span></button>
+      <button data-page="trade" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span class="ml">Trader</span><span class="ms">Trader</span></button>
+      <button data-page="orders" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="ml">Ordres préparés</span><span class="ms">Ordres</span><span class="count" id="cOrders">0</span></button>
+      <button data-page="mine" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="ml">Mes tokens</span><span class="ms">Tokens</span><span class="count" id="cMine">0</span></button>
+      <button data-page="journal" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span class="ml">Journal</span><span class="ms">Journal</span><span class="count" id="cJournal">0</span></button>
       <div class="menu-label">Créer</div>
-      <button data-page="launch" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg>Lancer un token</button>
-      <button data-page="social" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-11.8 7L4 20l1.1-4.6A8 8 0 1121 12z"/></svg>Communication</button>
-      <button data-page="dist" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/></svg>Diffusion</button>
-      <div class="menu-label">Suivre</div>
-      <button data-page="mine" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Mes tokens<span class="count" id="cMine">0</span></button>
-      <button data-page="trade" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Trader</button>
-      <button data-page="orders" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Ordres préparés<span class="count" id="cOrders">0</span></button>
-      <button data-page="journal" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Journal<span class="count" id="cJournal">0</span></button>
+      <button data-page="launch" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 19c1-4 3-7 7-9M12 10c3-3 6-4 9-4-1 3-1 6-4 9-2 2-5 3-7 3"/><circle cx="15" cy="9" r="1.5"/><path d="M7 14l-3 1 1-3"/></svg><span class="ml">Lancer un token</span><span class="ms">Lancer</span></button>
+      <button data-page="social" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-11.8 7L4 20l1.1-4.6A8 8 0 1121 12z"/></svg><span class="ml">Communication</span><span class="ms">Messages</span></button>
+      <button data-page="dist" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/></svg><span class="ml">Diffusion</span><span class="ms">Diffusion</span></button>
+      <div class="menu-label">Fonds</div>
+      <button data-page="wallet" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h13a2 2 0 002-2v-2"/><path d="M22 11h-6a2 2 0 000 4h6v-4z"/></svg><span class="ml">Portefeuille</span><span class="ms">Wallet</span></button>
+      <button data-page="vault" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.2"/><path d="M12 9.3v1M12 14.7v1M15.2 12.5h-1M9.8 12.5h-1M7 20v1.5M17 20v1.5"/></svg><span class="ml">Coffre-fort</span><span class="ms">Coffre</span></button>
     </nav>
+    <button class="rail-set" data-page="settings" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg><span class="ml">Réglages</span><span class="ms">Réglages</span></button>
     <button class="side-col" id="sideCol" type="button" title="Réduire le menu"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg><span>Réduire le menu</span></button>
     <div class="side-foot"><div class="sc-title">État du studio</div><div class="sc-list" id="sideCheck"></div><div class="sc-note">Votre clé privée ne quitte jamais votre wallet.</div></div>
   </aside>
@@ -61,6 +62,7 @@
       <div class="topbar">
         <div><div class="page-eyebrow" id="pageEyebrow">Créer</div><div class="page-title" id="pageTitle">Lancer un token</div><div class="page-sub" id="pageSub">Du concept à la publication sur pump.fun</div></div>
         <div class="spacer"></div>
+        <button class="top-search" id="cmdkTop" type="button" aria-label="Rechercher un token, un créateur, un wallet ou une page"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Token, créateur, wallet, page…</span><kbd>Ctrl K</kbd></button>
         <div class="status" id="rpcStatus"><span class="dot"></span><span>RPC non testé</span></div>
         <div class="ts-hub-slot" id="ts-hub"></div>
       </div>
@@ -76,7 +78,21 @@
           <div class="d-bar"><div><div class="d-hello" id="dHello">Bonjour</div><div class="d-date" id="dDate"></div></div><div class="spacer"></div><div class="d-live" id="dLive"></div></div>
           <div class="keyscard" id="keysCard" hidden></div>
           <div class="dgrid">
-            <article class="dcard d-hero s5">
+            <div class="d-tiles s12" id="dTiles"></div>
+            <article class="dcard s8">
+              <div class="d-head"><div><div class="d-eye"><span>Prix du SOL</span><span class="d-src" id="dSolSrc">Binance</span></div><div class="d-price"><span id="dSol">—</span><span class="d-chg" id="dSolChg"></span></div></div><div class="spacer"></div><div class="seg d-seg sm" id="dRange" role="group" aria-label="Période"><button type="button" data-drange="1d" class="on">24 h</button><button type="button" data-drange="7d">7 j</button><button type="button" data-drange="30d">30 j</button></div></div>
+              <canvas class="dcv" id="dSolCv" height="196"></canvas>
+              <div class="d-foot" id="dSolFoot"></div>
+            </article>
+            <article class="dcard s4 d-feed">
+              <div class="d-head"><div><div class="d-eye"><span>Dernières opérations</span></div></div><div class="spacer"></div><button class="btn sm" data-page="journal" type="button">Journal</button></div>
+              <div class="d-list" id="dOps"></div>
+            </article>
+            <article class="dcard s8">
+              <div class="d-head"><div><div class="d-eye"><span>Ordres actifs</span></div><div class="d-note">Distance au déclenchement</div></div><div class="spacer"></div><button class="btn sm" data-page="orders" type="button">Tout voir</button></div>
+              <div class="d-list" id="dOrders"></div>
+            </article>
+            <article class="dcard d-hero s4">
               <div class="d-eye"><span>Portefeuille</span><span class="spacer"></span><button class="btn sm ghost" data-page="wallet" type="button">Ouvrir</button></div>
               <div class="d-big" id="dBal">—</div>
               <div class="d-sub" id="dBalS">wallet non connecté</div>
@@ -88,12 +104,6 @@
                 <button class="btn" data-dact="radar" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Radar</button>
               </div>
             </article>
-            <article class="dcard s7">
-              <div class="d-head"><div><div class="d-eye"><span>Prix du SOL</span><span class="d-src" id="dSolSrc">Binance</span></div><div class="d-price"><span id="dSol">—</span><span class="d-chg" id="dSolChg"></span></div></div><div class="spacer"></div><div class="seg d-seg sm" id="dRange" role="group" aria-label="Période"><button type="button" data-drange="1d" class="on">24 h</button><button type="button" data-drange="7d">7 j</button><button type="button" data-drange="30d">30 j</button></div></div>
-              <canvas class="dcv" id="dSolCv" height="196"></canvas>
-              <div class="d-foot" id="dSolFoot"></div>
-            </article>
-            <div class="d-tiles s12" id="dTiles"></div>
             <article class="dcard s8">
               <div class="d-head"><div><div class="d-eye"><span>Flux net cumulé</span></div><div class="d-note" id="dFlowNote">SOL reçu moins SOL dépensé, opération par opération</div></div></div>
               <canvas class="dcv" id="dFlowCv" height="230"></canvas>
@@ -106,14 +116,6 @@
               <div class="d-head"><div><div class="d-eye"><span>Activité · 14 jours</span></div><div class="d-note">Opérations par jour</div></div></div>
               <canvas class="dcv" id="dActCv" height="200"></canvas>
               <div class="d-legend row" id="dActLeg"></div>
-            </article>
-            <article class="dcard s6">
-              <div class="d-head"><div><div class="d-eye"><span>Ordres actifs</span></div><div class="d-note">Distance au déclenchement</div></div><div class="spacer"></div><button class="btn sm" data-page="orders" type="button">Tout voir</button></div>
-              <div class="d-list" id="dOrders"></div>
-            </article>
-            <article class="dcard s6">
-              <div class="d-head"><div><div class="d-eye"><span>Dernières opérations</span></div></div><div class="spacer"></div><button class="btn sm" data-page="journal" type="button">Journal</button></div>
-              <div class="d-list" id="dOps"></div>
             </article>
             <article class="dcard s12">
               <div class="d-head"><div><div class="d-eye"><span>Tokens lancés</span></div><div class="d-note">Depuis le studio · capitalisation lue sur la courbe de liaison</div></div><div class="spacer"></div><button class="btn sm" data-page="mine" type="button">Mes tokens</button></div>

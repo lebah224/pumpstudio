@@ -2440,11 +2440,11 @@
     if (S.page === 'launch') renderDevMeta();
     const fb = $('filebar'); if (fb) { fb.hidden = location.protocol !== 'file:'; fb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>Studio ouvert comme fichier.</b> Phantom ne peut pas s\'y connecter : ouvrez la version en ligne (https) ou via localhost.</span><button class="btn sm" id="fileHelp" type="button">Comment faire</button>'; }
     const rb = $('rpcbar'); if (rb) { rb.hidden = S.rpcOk !== false; rb.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>' + (cfg.rpc ? '<b>Votre RPC ne répond pas.</b> Vérifiez l\'adresse dans Réglages.' : window.TSRelay ? '<b>La connexion Solana de TokenStudio ne répond pas pour le moment.</b> Réessayez dans une minute, ou collez votre clé Helius gratuite dans Réglages.' : '<b>Le RPC public de Solana bloque cette page.</b> Connectez-vous à votre compte pour utiliser la connexion Solana de TokenStudio, ou collez votre clé Helius gratuite dans Réglages.') + '</span><button class="btn sm" data-page="settings" type="button">Ouvrir les réglages</button>'; }
-    const sc = (attr, dot, label, val) => '<button class="sc-it" type="button" ' + attr + '><span class="dot ' + dot + '"></span>' + label + '<em>' + val + '</em></button>';
+    const sc = (attr, dot, label, val) => '<button class="sc-it" type="button" title="' + esc(label + ' · ' + val) + '" ' + attr + '><span class="dot ' + dot + '"></span><span class="sc-l">' + label + '</span><em>' + val + '</em></button>';
     $('sideCheck').innerHTML =       sc('data-sc="pp" data-page="settings"', 'wait', 'Flux direct', '…') +
       sc('data-page="settings"', S.rpcOk ? 'on' : S.rpcOk === false ? 'bad' : 'wait', 'Connexion Solana', S.rpcOk ? rpcKind() : S.rpcOk === false ? 'en erreur' : 'non testée');
     ppStatus(); renderWalletCard();
-    $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length;
+    $('cMine').textContent = S.tokens.length; $('cOrders').textContent = S.orders.filter((o) => o.active).length; { const n = S.orders.filter((o) => o.active).length, bo = $('bOrders'); if (bo) { bo.hidden = !n; bo.textContent = n; } } $('cJournal').textContent = S.journal.length; ['cMine', 'cOrders', 'cJournal'].forEach((id) => { const c = $(id); if (c) c.toggleAttribute('data-z', c.textContent === '0'); });
     try { window.dispatchEvent(new CustomEvent('pstudio-state')); } catch (e) {}
   }
   // Toute opération demande un compte connecté (le menu de compte transmet l'état de connexion)
@@ -2609,11 +2609,15 @@
     const weeks = []; for (let i = 7; i >= 0; i--) { const a = Date.now() - (i + 1) * 6048e5, b = Date.now() - i * 6048e5; weeks.push(S.tokens.filter((t) => t.createdAt >= a && t.createdAt < b).length); }
     const okAsc = ok.slice().sort((a, b) => a.t - b.t); let cum = 0; const flowVals = [0].concat(okAsc.map((j) => (cum += j.sol || 0)));
     const tile = (id, ic, l, v, sub, c) => '<div class="d-tile"><div class="d-tl"><span class="d-ic">' + ic + '</span>' + l + '</div><div class="d-tv ' + (c || '') + '">' + v + '</div><div class="d-ts">' + sub + '</div><canvas id="' + id + '" height="38"></canvas></div>';
+    const balSub = w ? (S.bal != null && S.solUsd ? '≈ ' + fUsd(S.bal * S.solUsd) + ' · ' : '') + (w.id === 'session' ? 'Wallet rapide' : w.name) : 'aucun wallet connecté';
     $('dTiles').innerHTML =
+      tile('dSpBal', IC.wallet || IC.pulse, 'Solde', $('dBal').innerHTML, esc(balSub)) +
+      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? '<span class="sol" data-sol="' + net + '">' + (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small></span>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : ''), cls(net)) +
       tile('dSpTok', IC.spark, 'Tokens lancés', String(S.tokens.length), S.tokens.filter((t) => Date.now() - t.createdAt < 6048e5).length + ' cette semaine') +
-      tile('dSpOrd', IC.shield, 'Ordres actifs', String(act.length), act.length ? kinds.tp + ' objectifs · ' + kinds.sl + ' stops' + (kinds.trail ? ' · ' + kinds.trail + ' suiveurs' : '') : 'aucun ordre surveillé') +
-      tile('dSpFlow', IC.pulse, 'Flux net', ok.length ? '<span class="sol" data-sol="' + net + '">' + (net > 0 ? '+' : '') + fr(net, 3) + '<small> SOL</small></span>' : '—', ok.length + ' opération' + (ok.length > 1 ? 's' : ''), cls(net));
+      tile('dSpOrd', IC.shield, 'Ordres actifs', String(act.length), act.length ? kinds.tp + ' objectifs · ' + kinds.sl + ' stops' + (kinds.trail ? ' · ' + kinds.trail + ' suiveurs' : '') : 'aucun ordre surveillé');
+
     sparkline($('dSpTok'), weeks, K.accent);
+    sparkline($('dSpBal'), H && H.length > 1 ? H.map((p) => p.v) : null, K.accent);
     { const el = $('dSpOrd'), parts = [[kinds.tp, K.green], [kinds.sl, K.red], [kinds.trail, K.blue]]; const bar = document.createElement('div'); bar.className = 'd-split'; bar.innerHTML = act.length ? parts.filter((x) => x[0]).map((x) => '<i style="flex:' + x[0] + ';background:' + x[1] + '"></i>').join('') : '<i style="flex:1;background:var(--panel3)"></i>'; el.replaceWith(bar); }
     sparkline($('dSpFlow'), flowVals.length > 1 ? flowVals : null, net >= 0 ? K.green : K.red);
     // flux net cumulé
@@ -3905,6 +3909,7 @@
   }
   document.querySelectorAll('#menu button[data-page]').forEach((b) => {
     [...b.childNodes].forEach((n) => { if (n.nodeType === 3 && n.textContent.trim()) { const sp = document.createElement('span'); sp.className = 'ml'; sp.textContent = n.textContent; b.replaceChild(sp, n); b.title = n.textContent.trim(); } });
+    const ml = b.querySelector('.ml'); if (ml) b.title = ml.textContent.trim();
   });
   document.querySelectorAll('#menu .menu-label').forEach((l) => l.insertAdjacentHTML('beforebegin', '<div class="menu-sep" aria-hidden="true"></div>'));
   try { if (localStorage.getItem('pstudio_sidemin') === '1') APP.classList.add('side-min'); } catch (e) {}
@@ -3976,6 +3981,7 @@
   $('palList').addEventListener('mousemove', (e) => { const b = e.target.closest('[data-pal-i]'); if (b && +b.dataset.palI !== PAL.sel) { PAL.sel = +b.dataset.palI; palRender(); } });
   $('pal').addEventListener('mousedown', (e) => { if (e.target === $('pal')) palClose(); });
   $('cmdkBtn').addEventListener('click', palOpen);
+  { const ct = $('cmdkTop'); if (ct) ct.addEventListener('click', palOpen); }
   document.addEventListener('click', (e) => { const b = e.target.closest('[data-sc="wallet"]'); if (b) walletMenu(); });
   document.addEventListener('keydown', (e) => {
     const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
@@ -3986,7 +3992,7 @@
     else if (e.key === 'ArrowUp') { e.preventDefault(); PAL.sel = (PAL.sel - 1 + PAL.items.length) % Math.max(1, PAL.items.length); palRender(); }
     else if (e.key === 'Enter') { e.preventDefault(); palRun(PAL.sel); }
   });
-  if (/Mac|iPhone|iPad/.test(navigator.platform || '')) { const k = document.querySelector('#cmdkBtn kbd'); if (k) k.textContent = '⌘ K'; }
+  if (/Mac|iPhone|iPad/.test(navigator.platform || '')) document.querySelectorAll('#cmdkBtn kbd, #cmdkTop kbd').forEach((k) => { k.textContent = '⌘ K'; });
 
   /* ================================================================ démarrage */
   function libReady() { return !!(window.solanaWeb3 && window.solanaWeb3.PublicKey && window.PumpKit); }

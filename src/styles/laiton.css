@@ -164,3 +164,75 @@ tbody tr.selrow{background:linear-gradient(90deg,#221c12,transparent);box-shadow
 .ord-grid .orow .ot{flex:none}
 .ord-grid .orow .oa{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
 @media (max-width:760px){.ord-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- barre d'icônes (ordinateur) : icône et nom court, Réglages en bas ---------- */
+.menu .ms,.rail-set .ms{display:none}
+.rail-set{display:flex;align-items:center;gap:11px;margin:4px 12px 0;background:none;border:0;border-radius:12px;padding:9px 11px;color:var(--muted);cursor:pointer;font:inherit;font-weight:500;min-height:40px}
+.rail-set:hover{background:var(--panel);color:var(--text)}
+.top-search{display:none}
+@media (min-width:901px){
+  .app,.app.side-min{grid-template-columns:76px minmax(0,1fr)}
+  .side{width:76px;align-items:center;padding:16px 0 14px;overflow:visible}
+  .side .logo{padding:0 0 18px;justify-content:center}
+  .side .logo>span,.side .cmdk,.side .menu-label,.side-col,.sc-title,.sc-note,.sc-l,.sc-it em{display:none !important}
+  .side .logo .mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ecd29a,#9c7a3c);border:0;color:var(--on-accent)}
+  .menu{padding:0;gap:4px;align-items:center;flex:1}
+  .menu-sep{display:block;width:36px;height:1px;background:var(--line);margin:6px 0}
+  .menu button,.rail-set{position:relative;flex-direction:column;justify-content:center;gap:4px;width:60px;min-height:0;padding:8px 0 6px;margin:0;border-radius:12px;font-size:10.5px;font-weight:500;color:var(--dim);text-align:center}
+  .menu button .ml,.rail-set .ml{display:none}
+  .menu button .ms,.rail-set .ms{display:block;line-height:1.1;white-space:nowrap}
+  .menu button svg.i,.rail-set svg.i{width:20px;height:20px}
+  .menu button:hover,.rail-set:hover{background:var(--panel2);color:var(--text);box-shadow:none}
+  .menu button.active{background:var(--accent-bg);color:var(--accent-ink);box-shadow:inset 0 0 0 1px var(--accent-line)}
+  .menu button.active svg.i{color:var(--accent)}
+  /* compteur en pastille sur l'icône */
+  .menu .count,.app.side-min .menu .count{display:block !important;position:absolute;top:3px;right:6px;min-width:0;padding:0 5px;font-size:10px;line-height:15px;border-radius:999px;background:var(--panel3);color:var(--muted)}
+  .menu .count:empty,.menu .count[data-z]{display:none !important}
+  /* état du studio : deux points en bas de la barre, détail au survol */
+  .side-foot{margin-top:auto;padding:10px 0 4px;border:0;align-items:center;gap:0;display:flex !important}
+  .sc-list{flex-direction:row;gap:2px}
+  .sc-it{width:26px;height:26px;padding:0;justify-content:center;border-radius:8px}
+  .rail-set{order:9}
+  /* en-tête : recherche à droite du titre */
+  .top-search{display:flex;align-items:center;gap:10px;width:min(340px,32vw);height:40px;padding:0 12px;border-radius:11px;background:var(--panel);border:1px solid var(--line2);color:var(--dim);font:inherit;font-size:13px;cursor:pointer;text-align:left}
+  .top-search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-search:hover{border-color:var(--accent-line);color:var(--muted)}
+  .topbar{gap:12px}
+}
+
+/* ---------- Accueil : indicateurs en haut, marché + activité, ordres + portefeuille ---------- */
+.d-tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.d-tile{border-radius:var(--r);padding:12px 14px 8px}
+.d-tl{font-size:var(--lt-head);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.d-tv{font-family:var(--mono);font-size:21px;font-weight:500}
+.d-hero #dBal,.d-hero #dBalS{display:none}
+.d-hero .d-hstats{margin-top:4px}
+.dgrid{gap:12px}
+.dcard{border-radius:var(--r)}
+.d-feed .d-list{max-height:330px;overflow:auto}
+@media (max-width:1180px){.d-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.dgrid>.s4,.dgrid>.s8,.dgrid>.d-hero,.dgrid>.d-hero+.dcard{grid-column:1/-1}}
+
+/* ---------- Portefeuille : une carte par wallet avec son solde ---------- */
+.ts-wp-bar{flex-wrap:wrap}
+.ts-wp-tabs{flex:1 1 100%;display:grid !important;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;overflow:visible !important;padding:0 !important;background:none !important;border:0 !important}
+.ts-wp-tabs>button{display:flex !important;flex-direction:column;align-items:stretch !important;gap:12px;padding:14px 16px !important;border-radius:var(--r) !important;border:1px solid var(--line) !important;background:var(--panel) !important;text-align:left;min-height:0;box-shadow:none !important}
+.ts-wp-tabs>button:hover{border-color:var(--line2) !important}
+.ts-wp-tabs>button.on{border-color:var(--accent-line) !important;background:linear-gradient(180deg,#191510,var(--panel)) !important}
+.ts-wp-tabs .ts-wp-sep{display:none}
+.ts-wc-h{display:flex;align-items:center;gap:10px;min-width:0}
+.ts-wc-h>span:not(.ts-wmark){display:flex;flex-direction:column;min-width:0}
+.ts-wc-h b{font-weight:600}
+.ts-wc-h small{color:var(--dim);font-size:12px}
+.ts-wc-tag{margin-left:auto;font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:6px;color:var(--accent-ink);background:var(--accent-bg)}
+.ts-wc-bal{display:flex;flex-direction:column;gap:2px}
+.ts-wc-bal b{font-size:22px;font-weight:500;color:var(--text)}
+.ts-wc-bal small{font-size:12px;color:var(--dim)}
+
+/* ---------- Coffre-fort : valeur protégée, puis deux colonnes ---------- */
+.vt-cols{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;align-items:start}
+.vt-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.vt-col>.card{margin:0}
+.vt-hero{border-color:#2b261c;background:linear-gradient(180deg,#15140f,var(--panel) 60%)}
+.vt-hero .vt-kv{border-radius:12px;background:var(--panel2);border-color:var(--line)}
+.vt-big{font-family:var(--display);letter-spacing:-.02em}
+@media (max-width:1000px){.vt-cols{grid-template-columns:minmax(0,1fr)}}

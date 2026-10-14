@@ -121,13 +121,16 @@ export function VaultPage() {
 
       {!vctx.wallet && <div className="ts-note warn">Connectez un wallet (menu en haut à droite) ou créez votre wallet rapide pour utiliser le coffre-fort.</div>}
 
-      <div className="vt-grid">
-        <ConvertCard ctx={vctx} bal={bal} price={price} onDone={after} />
-        <RulesCard ctx={vctx} account={account} rules={rules} dests={dests} hasServer={!!srvSt?.address} serverActive={vctx.wallet?.kind === 'server'} onChange={refreshLists} />
-      </div>
-      <div className="vt-grid">
-        <DestCard ctx={vctx} account={account} dests={dests} bal={bal} onChange={after} />
-        <HistoryCard moves={moves} account={account} />
+      {/* deux colonnes : conversion et mouvements à gauche, automatismes et destinations à droite */}
+      <div className="vt-cols">
+        <div className="vt-col">
+          <ConvertCard ctx={vctx} bal={bal} price={price} onDone={after} />
+          <HistoryCard moves={moves} account={account} />
+        </div>
+        <div className="vt-col">
+          <RulesCard ctx={vctx} account={account} rules={rules} dests={dests} hasServer={!!srvSt?.address} serverActive={vctx.wallet?.kind === 'server'} onChange={refreshLists} />
+          <DestCard ctx={vctx} account={account} dests={dests} bal={bal} onChange={after} />
+        </div>
       </div>
       <p className="dim vt-foot">Les conversions passent par Jupiter, au meilleur prix du marché. L'USDT (Tether) et l'USDC (Circle) suivent le dollar mais dépendent de leur émetteur. Rien de ceci n'est un conseil en investissement.</p>
     </div>

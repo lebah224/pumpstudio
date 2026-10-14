@@ -26,6 +26,15 @@ const ago = (t: number) => {
   return new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 };
 const fmtT = (r: Range) => (t: number) => (r === '1d' ? new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
+/** Solde d'un wallet sur sa carte (lecture mise en cache 15 s) */
+function CardBal({ pk }: { pk: string }) {
+  const [b, setB] = useState<number | null>(null);
+  useEffect(() => {
+    let on = true; const up = () => { balanceOf(pk).then((v) => { if (on) setB(v); }).catch(() => {}); };
+    up(); window.addEventListener('pstudio-state', up); return () => { on = false; window.removeEventListener('pstudio-state', up); };
+  }, [pk]);
+  return <span className="ts-wc-bal"><b className="mono">{b != null ? <Sol v={b} d={3} stack /> : '…'}</b></span>;
+}
 // retirer un wallet externe : déconnexion de l'outil et, s'il était lié au compte, retrait de la liste (les fonds ne bougent pas)
 async function removeExt(pk: string, name: string) {
   if (!window.confirm('Retirer ' + name + ' (' + short(pk) + ') ? Il sera déconnecté et retiré de votre compte. Vos fonds restent dans ' + name + '.')) return;
@@ -171,10 +180,10 @@ export function WalletPage() {
       {/* choix du wallet affiché : wallets rapides, puis wallets externes */}
       <div className="ts-wp-bar">
         <div className="ts-wp-tabs" role="tablist" aria-label="Wallet affiché">
-          {srvList.map((w) => <button key={w.address} type="button" role="tab" aria-selected={tw?.address === w.address && isSrv} className={tw?.address === w.address && isSrv ? 'on' : ''} onClick={() => setPick('srv:' + w.address)}><span className="ts-wmark quick ts-wnum" aria-hidden="true">{w.num}</span><span><b>{srvLabel(w)}{srv?.active && srvSt?.address === w.address && <em className="ts-wp-signs"> · signe</em>}</b><small className="mono">{short(w.address)}</small></span></button>)}
+          {srvList.map((w) => <button key={w.address} type="button" role="tab" aria-selected={tw?.address === w.address && isSrv} className={tw?.address === w.address && isSrv ? 'on' : ''} onClick={() => setPick('srv:' + w.address)}><span className="ts-wc-h"><span className="ts-wmark quick ts-wnum" aria-hidden="true">{w.num}</span><span><b>{srvLabel(w)}</b><small className="mono">{short(w.address)}</small></span>{srv?.active && srvSt?.address === w.address && <em className="ts-wc-tag">Signe</em>}</span><CardBal pk={w.address} /></button>)}
           {srvList.length > 0 && (ext || quick) && <span className="ts-wp-sep" aria-hidden="true" />}
-          {ext && <button type="button" role="tab" aria-selected={which === 'ext'} className={which === 'ext' ? 'on' : ''} onClick={() => setPick('ext')}><WalletMark w={walletById(ext.id) ?? { name: ext.name, color: '#7c8595' }} /><span><b>{ext.name}</b><small className="mono">{short(ext.pk)}</small></span></button>}
-          {quick && <button type="button" role="tab" aria-selected={which === 'quick'} className={which === 'quick' ? 'on' : ''} onClick={() => setPick('quick')}><span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span><span><b>Ancien wallet rapide</b><small className="mono">{short(quick.pk)}</small></span></button>}
+          {ext && <button type="button" role="tab" aria-selected={which === 'ext'} className={which === 'ext' ? 'on' : ''} onClick={() => setPick('ext')}><span className="ts-wc-h"><WalletMark w={walletById(ext.id) ?? { name: ext.name, color: '#7c8595' }} /><span><b>{ext.name}</b><small className="mono">{short(ext.pk)}</small></span>{signer === 'ext' && <em className="ts-wc-tag">Signe</em>}</span><CardBal pk={ext.pk} /></button>}
+          {quick && <button type="button" role="tab" aria-selected={which === 'quick'} className={which === 'quick' ? 'on' : ''} onClick={() => setPick('quick')}><span className="ts-wc-h"><span className="ts-wmark quick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z" /></svg></span><span><b>Ancien wallet rapide</b><small className="mono">{short(quick.pk)}</small></span></span><CardBal pk={quick.pk} /></button>}
         </div>
         <div className="ts-wp-add">
           <button type="button" className="btn sm" onClick={() => openServerWallet('create')}>+ Wallet rapide</button>
@@ -225,23 +234,6 @@ export function WalletPage() {
           <p className="ts-wp-foot">{series?.partial ? 'Historique partiel : reconstitué à partir des 25 dernières transactions. ' : ''}Courbe du SOL détenu{unit === 'usd' ? ', valorisé au prix du SOL à chaque instant' : ''}. Les tokens ne sont pas inclus dans la courbe.</p>
         </section>
 
-        {/* activité */}
-        {activityCard}
-        </div>
-        <div className="ts-wp-col">
-        {/* répartition */}
-        <section className="card ts-wp-alloc">
-          <div className="card-h"><h3>Répartition</h3><p>Valeur en dollars au prix actuel.</p></div>
-          {slices.length ? (
-            <div className="ts-wp-alloc-b">
-              <Donut items={slices} center={{ v: total != null ? usd(total) : '—', l: 'total' }} fmt={usd} />
-              <ul className="ts-legend">
-                {slices.map((x) => <li key={x.key}><i style={{ background: x.color }} /><b>{x.label}</b><span className="mono">{usd(x.value)}</span><small>{Math.round((x.value / (total || 1)) * 100)} % · {x.sub}</small></li>)}
-              </ul>
-            </div>
-          ) : <div className="ts-skel" style={{ height: 168 }} />}
-        </section>
-
         {/* tokens */}
         <section className="card ts-wp-toks">
           <div className="card-h"><h3>Tokens détenus</h3><p>{hold ? (hold.length ? hold.length + ' token' + (hold.length > 1 ? 's' : '') + ' · prix DexScreener' : 'Aucun token dans ce wallet') : 'Chargement…'}</p></div>
@@ -259,7 +251,22 @@ export function WalletPage() {
             </ul>
           )}
         </section>
-
+        </div>
+        <div className="ts-wp-col">
+        {/* activité */}
+        {activityCard}
+        {/* répartition */}
+        <section className="card ts-wp-alloc">
+          <div className="card-h"><h3>Répartition</h3><p>Valeur en dollars au prix actuel.</p></div>
+          {slices.length ? (
+            <div className="ts-wp-alloc-b">
+              <Donut items={slices} center={{ v: total != null ? usd(total) : '—', l: 'total' }} fmt={usd} />
+              <ul className="ts-legend">
+                {slices.map((x) => <li key={x.key}><i style={{ background: x.color }} /><b>{x.label}</b><span className="mono">{usd(x.value)}</span><small>{Math.round((x.value / (total || 1)) * 100)} % · {x.sub}</small></li>)}
+              </ul>
+            </div>
+          ) : <div className="ts-skel" style={{ height: 168 }} />}
+        </section>
 
         {/* gestion du wallet serveur */}
         {isSrv && tw && (
