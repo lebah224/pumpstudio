@@ -7,6 +7,7 @@ import { useLiveState } from './live';
 import { useAlertWatcher } from './alerts';
 import { StrategyDialog } from './StrategyDialog';
 import { SnipeDialog } from './SnipeDialog';
+import { CopyDialog } from './CopyDialog';
 import { BuyOrderDialog, BuyOrderList } from './BuyOrderDialog';
 import { StrategyList } from './StrategyCard';
 import { CreatorSheet, CreatorsView } from './CreatorsView';
@@ -85,6 +86,7 @@ export function TraderPage() {
         </>}
       <StrategyDialog />
       <SnipeDialog />
+      <CopyDialog />
       <BuyOrderDialog />
       <CreatorSheet onOpen={(m) => openMint(m)} />
       <TraderSheet onOpen={(m) => openMint(m)} />

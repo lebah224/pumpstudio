@@ -157,3 +157,4 @@
 .dc-cr .cr-disclaim{margin:0}
 @media (max-width:560px){.dc-tools{margin-left:0}}
 .dc-t .num{white-space:nowrap}
+.cr-l-m b.up{color:var(--green)} .cr-l-m b.down{color:var(--red)}

@@ -10,6 +10,8 @@ import {
   type TraderProfile, type Tracked,
 } from './traders';
 import { DiscoverSection } from './Discovery';
+import { openCopy } from './CopyDialog';
+import { useCopies, useCopyRuns, type Copy, type CopyRun } from './copies';
 import '../styles/creators.css';
 
 export { openTrader };
@@ -42,6 +44,8 @@ export function TradersView({ onOpen }: { onOpen: (mint: string) => void }) {
     catch (e2) { toast('Ajout impossible', readable(e2), 'r'); } finally { setBusy(false); }
   }
   const names = new Map((list ?? []).map((f) => [f.address, traderName(f)]));
+  const copies = useCopies();
+  const runs = useCopyRuns();
   return (
     <div className="cr-view">
       <section className="card cr-add">
@@ -58,7 +62,7 @@ export function TradersView({ onOpen }: { onOpen: (mint: string) => void }) {
           <div className="cr-h"><b>Acheteurs suivis</b><span className="dim">{list ? list.length : '…'}</span></div>
           {!list ? <div className="empty"><b>Chargement…</b></div> : !list.length ? (
             <div className="empty"><b>Aucun wallet suivi</b><span>Ouvrez un token, touchez une adresse dans ses <b>transactions</b> pour voir la fiche de l'acheteur, puis « Suivre ». Ou collez une adresse ci-dessus.</span></div>
-          ) : <ul className="cr-rows">{list.map((f) => <TrackedRow key={f.id} f={f} />)}</ul>}
+          ) : <ul className="cr-rows">{list.map((f) => <TrackedRow key={f.id} f={f} copy={copies?.find((c) => c.trader === f.address) ?? null} />)}</ul>}
         </section>
 
         <section className="card cr-feed">
@@ -78,12 +82,36 @@ export function TradersView({ onOpen }: { onOpen: (mint: string) => void }) {
         </section>
       </div>
 
+      {!!runs?.length && (
+        <section className="card cr-runs">
+          <div className="cr-h"><b>Copies</b><span className="dim">derniers achats copiés</span></div>
+          <ul>{runs.map((r) => <CopyRunRow key={r.id} r={r} name={names.get(r.trader) ?? shortAddr(r.trader)} onOpen={onOpen} />)}</ul>
+        </section>
+      )}
+
       <DiscoverSection onOpen={onOpen} />
     </div>
   );
 }
 
-function TrackedRow({ f }: { f: Tracked }) {
+const RUN_L: Record<CopyRun['status'], [string, string]> = {
+  pending: ['En cours', 'a'], sent: ['Envoyé', 'a'], bought: ['Acheté', 'g'], sold: ['Revendu', 'g'], failed: ['Échoué', 'r'], skipped: ['Ignoré', ''],
+};
+function CopyRunRow({ r, name, onOpen }: { r: CopyRun; name: string; onOpen: (mint: string) => void }) {
+  const [l, c] = RUN_L[r.status];
+  const pnl = r.status === 'sold' && r.sold_sol != null && r.sol != null ? r.sold_sol - r.sol : null;
+  return (
+    <li><button type="button" onClick={() => onOpen(r.mint)}>
+      <span className={'cr-run-st ' + c}>{l}</span>
+      <span className="cr-l-t"><b>{r.symbol ? '$' + r.symbol : shortAddr(r.mint)}</b><small>{name}{r.trader_sol != null ? ' avait acheté ' + r.trader_sol.toLocaleString('fr-FR', { maximumFractionDigits: 3 }) + ' SOL' : ''}{r.reason ? ' · ' + r.reason : ''}</small></span>
+      <span className="cr-l-m">
+        <b className={pnl == null ? '' : pnl >= 0 ? 'up' : 'down'}>{pnl != null ? <Sol v={pnl} d={3} /> : r.sol != null ? <Sol v={r.sol} d={3} /> : r.amount_sol != null ? <Sol v={r.amount_sol} d={3} /> : '—'}</b>
+        <small>{r.send_ms != null ? 'parti en ' + (r.send_ms / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' s · ' : ''}il y a {age(Date.parse(r.created_at))}</small></span>
+    </button></li>
+  );
+}
+
+function TrackedRow({ f, copy }: { f: Tracked; copy: Copy | null }) {
   const { p } = useTraderProfile(f.address);
   const [busy, setBusy] = useState(false);
   const toggle = async () => { setBusy(true); try { await updateTracked(f.id, { alerts: !f.alerts }); } catch (e) { toast('Action impossible', readable(e), 'r'); } finally { setBusy(false); } };
@@ -97,6 +125,9 @@ function TrackedRow({ f }: { f: Tracked }) {
         <span className="cr-row-k hide-s"><small>Résultat</small><b className={'mono ' + (S ? signed(S.pnlSol) : '')}>{S ? <Sol v={S.pnlSol} d={2} /> : '…'}</b></span>
         <span className="cr-row-k hide-m"><small>Dernier</small><b>{f.last_trade_at ? age(Date.parse(f.last_trade_at)) : S?.last ? age(S.last) : '—'}</b></span>
       </button>
+      <button type="button" className={'cr-auto' + (copy?.enabled ? ' on' : copy ? ' off' : '')} onClick={() => openCopy({ trader: f.address, name: traderName(f) })}
+        title={copy?.enabled ? 'Copie active : ' + copy.amount_sol + ' SOL par achat' : copy ? 'Copie en pause' : 'Copier ses achats'}>
+        {copy?.enabled ? <><i aria-hidden="true" />Copie · {Number(copy.amount_sol).toLocaleString('fr-FR')}</> : 'Copier'}</button>
       <label className="cr-bell" title={f.alerts ? 'Alertes d\'achat activées' : 'Alertes coupées'}>
         <input type="checkbox" checked={f.alerts} disabled={busy} onChange={toggle} /><span aria-hidden="true" /><em className="sr">Alerte à chaque achat</em>
       </label>
@@ -179,6 +210,7 @@ function Sheet({ address, onClose, onOpen }: { address: string; onClose: () => v
                   {[...new Set([...MINS, f.alert_min_sol])].sort((a, b) => a - b).map((v) => <option key={v} value={v}>{v === 0 ? 'tout montant' : v.toLocaleString('fr-FR') + ' SOL'}</option>)}
                 </select></label>
             </div>
+            <button type="button" className="btn sm primary" onClick={() => { onClose(); openCopy({ trader: address, name: traderName(f) }); }}>Copier ses achats</button>
             <button type="button" className="btn sm ghost danger" disabled={busy} onClick={() => run(() => untrack(f.id), 'Wallet retiré')}>Ne plus suivre</button>
           </>) : <button type="button" className="btn primary" disabled={busy || !list} onClick={() => run(() => track(address), 'Wallet suivi')}>Suivre cet acheteur</button>}
         </div>
