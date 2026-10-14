@@ -46,8 +46,10 @@
     var el = box(); el.textContent = ''; el.setAttribute('role', 'alert');
     var b = node('div', 'b');
     b.appendChild(node('div', 't', errs.length ? 'TokenStudio n\'a pas pu démarrer' : 'Le démarrage prend plus de temps que prévu'));
-    b.appendChild(node('div', 'm', errs.length
-      ? 'Une donnée enregistrée dans ce navigateur ou un fichier non chargé bloque l\'ouverture. « Réparer » efface les réglages locaux de l\'outil (votre compte reste connecté) puis recharge la page.'
+    b.appendChild(node('div', 'm', blocked
+      ? 'Un programme de cet ordinateur empêche le fichier principal de l\'outil d\'arriver dans la page : le plus souvent la protection web d\'un antivirus, ou une extension du navigateur (bloqueur de publicités, sécurité). Ouvrez l\'outil dans une fenêtre de navigation privée sans extensions pour vérifier, puis ajoutez ce site aux exceptions du programme en cause.'
+      : errs.length
+      ?'Une donnée enregistrée dans ce navigateur ou un fichier non chargé bloque l\'ouverture. « Réparer » efface les réglages locaux de l\'outil (votre compte reste connecté) puis recharge la page.'
       : 'Votre connexion est peut-être lente. Vous pouvez patienter, recharger, ou réparer si le problème revient.'));
     if (errs.length) b.appendChild(node('pre', '', errs.slice(0, 6).join('\n')));
     var r = node('div', 'r');
@@ -58,14 +60,39 @@
     try { fix.focus(); } catch (e) { /* rien */ }
   }
 
+  // fichier principal non chargé : on regarde ce que le serveur renvoie vraiment, puis on retente une fois sans cache
+  var retried = false;
+  function retry(src) {
+    if (retried) { fail(); return; }
+    retried = true;
+    loading();
+    fetch(src, { cache: 'no-store' }).then(function (r) {
+      return r.text().then(function (txt) {
+        errs.push('Vérification : réponse ' + r.status + ', ' + (r.headers.get('content-type') || 'type inconnu') + ', ' + txt.length + ' caractères');
+        if (!r.ok) throw new Error('réponse ' + r.status);
+        return import(src + '?r=' + Date.now());
+      });
+    }, function (e) {
+      errs.push('Vérification : le fichier est bloqué avant d\'arriver dans la page (' + (e && e.message ? e.message : e) + ')');
+      blocked = true;
+      throw e;
+    }).catch(function (e) {
+      if (!blocked) errs.push('Nouvel essai échoué : ' + String(e && e.message ? e.message : e).slice(0, 200));
+      fail();
+    });
+  }
+  var blocked = false;
+
   // erreurs du démarrage : scripts ou feuilles de style non chargés, erreurs JavaScript
   window.addEventListener('error', function (e) {
     var t = e.target;
     if (t && t !== window && (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && t.rel === 'stylesheet'))) {
       // une police externe non chargée n'empêche pas le démarrage : on l'ignore
       if (String(t.src || t.href || '').indexOf(location.origin) !== 0 && t.tagName === 'LINK') return;
-      errs.push('Fichier non chargé : ' + String(t.src || t.href || '').split('/').pop());
-      if (t.tagName === 'SCRIPT') fail();
+      var src = String(t.src || t.href || '');
+      errs.push('Fichier non chargé : ' + src.split('/').pop());
+      if (t.tagName === 'SCRIPT' && t.type === 'module' && src.indexOf(location.origin + '/assets/') === 0) retry(src);
+      else if (t.tagName === 'SCRIPT') fail();
       return;
     }
     if (e.message) {
