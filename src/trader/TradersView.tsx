@@ -73,7 +73,7 @@ export function TradersView({ onOpen }: { onOpen: (mint: string) => void }) {
             <ul className="cr-launches">{trades.map((t) => (
               <li key={t.id}><button type="button" onClick={() => onOpen(t.mint)}>
                 <span className={'cr-run-st tt-side ' + (t.side === 'buy' ? 'g' : 'r')}>{t.side === 'buy' ? 'Achat' : 'Vente'}</span>
-                <TokenLogo src={t.image} name={t.symbol || '?'} size={30} />
+                <TokenLogo src={t.image} mint={t.mint} name={t.symbol || '?'} size={30} />
                 <span className="cr-l-t"><b>{t.symbol ? '$' + t.symbol : shortAddr(t.mint)}</b><small>{names.get(t.trader) ?? shortAddr(t.trader)}{t.mcap_sol != null ? ' · capi. ' + Math.round(t.mcap_sol).toLocaleString('fr-FR') + ' SOL' : ''}</small></span>
                 <span className="cr-l-m"><b><Sol v={t.sol} d={3} /></b><small>il y a {age(Date.parse(t.at))}</small></span>
               </button></li>
@@ -185,7 +185,7 @@ function Sheet({ address, onClose, onOpen }: { address: string; onClose: () => v
                 <thead><tr><th>Token</th><th className="num">Misé</th><th className="num">Résultat</th><th className="hide-s">Entrée</th><th className="hide-s">Revendu</th><th>Dernier</th></tr></thead>
                 <tbody>{p.tokens.map((t) => (
                   <tr key={t.mint} tabIndex={0} onClick={() => onOpen(t.mint)} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(t.mint); }}>
-                    <td><span className="cr-coin"><TokenLogo src={t.image} name={t.symbol ?? '?'} size={26} /><b>{t.symbol ?? shortAddr(t.mint)}</b>{t.open && <em className="tr-badge a">en cours</em>}</span></td>
+                    <td><span className="cr-coin"><TokenLogo src={t.image} mint={t.mint} name={t.symbol ?? '?'} size={26} /><b>{t.symbol ?? shortAddr(t.mint)}</b>{t.open && <em className="tr-badge a">en cours</em>}</span></td>
                     <td className="num mono"><Sol v={t.buySol} d={2} /></td>
                     <td className={'num mono ' + (t.pnl == null ? 'dim' : signed(t.pnl))}>{t.pnl == null ? '—' : <><Sol v={t.pnl} d={2} />{t.roi != null && <small> {(t.roi >= 0 ? '+' : '') + Math.round(t.roi * 100)} %</small>}</>}</td>
                     <td className="hide-s dim">{secs(t.entrySec)}</td>

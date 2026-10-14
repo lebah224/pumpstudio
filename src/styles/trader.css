@@ -281,3 +281,13 @@
 }
 .an-creator .an-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:700px){.an-creator .an-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* logo cliquable et agrandissement */
+.tr-logo-btn{flex:none;display:inline-flex;padding:0;border:0;background:none;border-radius:50%;cursor:zoom-in;line-height:0}
+.tr-logo-btn:hover .tr-logo{box-shadow:0 0 0 2px var(--accent-line)}
+.tr-logo-btn:focus-visible{outline:none;box-shadow:var(--focus)}
+.tr-head .tr-logo-btn{grid-row:span 2}
+.tr-zoom-box.ts-modal-box{width:min(560px,100%);display:flex;flex-direction:column;align-items:center;gap:14px;padding:44px 20px 18px}
+.tr-zoom-box img{display:block;width:100%;max-width:min(480px,80vh);aspect-ratio:1;object-fit:contain;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
+.tr-zoom-f{display:flex;align-items:baseline;justify-content:space-between;gap:12px;width:100%;max-width:min(480px,80vh);font-size:14px}
+.tr-zoom-f a{font-size:13px;color:var(--accent)}
+@media (max-width:700px){.tr-head .tr-logo-btn{grid-row:auto}}

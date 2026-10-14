@@ -69,7 +69,7 @@ export function CreatorsView({ onOpen }: { onOpen: (mint: string) => void }) {
           ) : (
             <ul className="cr-launches">{launches.map((l) => (
               <li key={l.id}><button type="button" onClick={() => onOpen(l.mint)}>
-                <TokenLogo src={l.image} name={l.symbol || '?'} size={34} />
+                <TokenLogo src={l.image} mint={l.mint} name={l.symbol || '?'} size={34} />
                 <span className="cr-l-t"><b>{l.symbol || '?'}</b><small>{l.name || ''}</small></span>
                 <span className="cr-l-m"><b>{names.get(l.creator) ?? shortAddr(l.creator)}</b><small>il y a {age(Date.parse(l.launched_at))}</small></span>
               </button></li>
@@ -177,7 +177,7 @@ function Sheet({ address, onClose, onOpen }: { address: string; onClose: () => v
               <thead><tr><th>Token</th><th>Lancé</th><th className="num">Sommet</th><th className="num">Capi.</th><th className="hide-s">Créateur</th></tr></thead>
               <tbody>{p.coins.map((c) => { const b = behav.get(c.mint); return (
                 <tr key={c.mint} tabIndex={0} onClick={() => onOpen(c.mint)} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(c.mint); }}>
-                  <td><span className="cr-coin"><TokenLogo src={c.image} name={c.symbol} size={26} /><b>{c.symbol}</b>{c.complete && <em className="tr-badge g">migré</em>}</span></td>
+                  <td><span className="cr-coin"><TokenLogo src={c.image} mint={c.mint} name={c.symbol} size={26} /><b>{c.symbol}</b>{c.complete && <em className="tr-badge g">migré</em>}</span></td>
                   <td className="dim">{c.created ? age(c.created) : '—'}</td>
                   <td className="num mono">{fCompact(c.ath)}</td>
                   <td className="num mono">{fCompact(c.mcUsd)}</td>

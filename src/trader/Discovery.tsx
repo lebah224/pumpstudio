@@ -117,7 +117,7 @@ export function DiscoverSection({ onOpen }: { onOpen: (mint: string) => void }) 
         : <div className="empty"><b>Analyse des tokens qui marchent…</b><span>Chaque acheteur est vérifié sur tout son historique du token : jusqu'à une trentaine de secondes la première fois.</span></div>)
         : (<>
           {!!d.tokens.length && <div className="dc-src"><span className="dim">Tokens analysés</span>{d.tokens.map((t) => (
-            <button key={t.mint} type="button" className="dc-chip" onClick={() => onOpen(t.mint)}><TokenLogo src={t.image} name={t.symbol || '?'} size={18} />{t.symbol || shortAddr(t.mint)}</button>
+            <button key={t.mint} type="button" className="dc-chip" onClick={() => onOpen(t.mint)}><TokenLogo src={t.image} mint={t.mint} name={t.symbol || '?'} size={18} />{t.symbol || shortAddr(t.mint)}</button>
           ))}</div>}
           {!rows!.length ? <div className="empty"><b>Aucun gagnant hors robots pour l'instant</b><span>{hidden ? 'Cochez « Afficher les robots » pour voir les ' + hidden + ' wallets qui achètent dans les premières secondes.' : 'Réessayez dans quelques minutes.'}</span></div>
             : <TopBuyersTable rows={rows!} tracked={tracked} onOpen={onOpen} col="wins" />}

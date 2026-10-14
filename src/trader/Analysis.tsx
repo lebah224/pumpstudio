@@ -148,7 +148,7 @@ export function CreatorPanel({ a, info, onOpen }: { a: Analysis; info: TokenInfo
       {!others.length ? <p className="dim">Aucun autre token créé avec ce wallet.</p> : (
         <ul className="an-coins">{others.slice(0, 12).map((x) => (
           <li key={x.mint}><button type="button" onClick={() => onOpen(x.mint)}>
-            <TokenLogo src={x.image} name={x.symbol || x.name} size={28} />
+            <TokenLogo src={x.image} mint={x.mint} name={x.symbol || x.name} size={28} />
             <span className="an-coin-t"><b>{x.symbol}</b><small>{x.name} · il y a {age(x.created)}</small></span>
             <span className="an-coin-v mono">{fCompact(x.mcUsd)}<small>{x.complete ? 'migré' : 'courbe'} · record {fCompact(x.ath)}</small></span>
           </button></li>

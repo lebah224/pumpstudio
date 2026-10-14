@@ -100,7 +100,7 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
         <button type="button" className="btn ghost sm tr-back" onClick={onBack} aria-label="Retour au marché">
           <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Marché
         </button>
-        <TokenLogo src={info?.image} name={sym} size={46} />
+        <TokenLogo src={info?.image} name={sym} size={46} mint={mint} zoom />
         <div className="tr-head-t">
           <h2>{info?.name || 'Token'} <span className="tr-sym">{sym}</span>
             <button type="button" className="tr-fav" aria-pressed={favs.has(mint)} aria-label={favs.has(mint) ? 'Retirer des favoris' : 'Ajouter aux favoris'} onClick={() => favs.toggle(mint)}><Star on={favs.has(mint)} /></button>

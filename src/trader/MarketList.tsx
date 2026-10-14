@@ -166,7 +166,7 @@ export function MarketList({ onOpen, visible, query }: { onOpen: (r: Row) => voi
                   <td className="tr-c-fav"><button type="button" className="tr-fav" aria-label={favs.has(r.mint) ? 'Retirer des favoris' : 'Ajouter aux favoris'} aria-pressed={favs.has(r.mint)} onClick={(e) => { e.stopPropagation(); favs.toggle(r.mint); }}><Star on={favs.has(r.mint)} /></button></td>
                   <td className="tr-c-tok">
                     <div className="tr-tok">
-                      <TokenLogo src={r.image} name={r.symbol || r.name} />
+                      <TokenLogo src={r.image} name={r.symbol || r.name} mint={r.mint} zoom />
                       <div className="tr-tok-t">
                         <b>{r.symbol || '—'}<span className="tr-tok-n">{r.name}</span></b>
                         <small>{b.slice(0, 2).map((x) => <em key={x.t} className={'tr-badge ' + x.k} title={x.title}>{x.t}</em>)}{!b.length && <span className="dim mono">{r.mint.slice(0, 4)}…{r.mint.slice(-4)}</span>}</small>
