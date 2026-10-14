@@ -164,7 +164,8 @@ async function run(watchKey: string) {
   // ventes (en parallèle, chaque stratégie verrouillée)
   let sold = 0;
   await Promise.all(fires.map(async ({ s, rule, why }) => {
-    if (!(await admin.rpc('strategy_claim', { p_id: s.id })).data) return;
+    // règle prise une seule fois, même si l'écoute temps réel la remplit au même moment
+    if (!(await admin.rpc('strategy_claim_rule', { p_id: s.id, p_rule: rule.id })).data) return;
     const sym = s.symbol || s.mint.slice(0, 4);
     const r = await sell(s, rule, watchKey);
     const fired = [...new Set([...(s.state.fired ?? []), rule.id])];

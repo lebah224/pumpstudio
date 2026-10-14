@@ -3,12 +3,15 @@
 // un token, le lancement est enregistré et notifié dans la seconde.
 // Achat automatique : pour un créateur qui a une règle active, l'achat part dès l'avis de création (filtres lus dans
 // l'avis, wallet déjà prêt), en même temps que l'enregistrement ; la stratégie de sortie est attachée à la confirmation.
+// Ventes en temps réel : les stratégies de sortie actives sont évaluées à chaque transaction de leur token (abonnement
+// aux seuls tokens détenus) et la vente part aussitôt (voir _shared/exits.ts).
 // Lancée chaque minute par la tâche planifiée : chaque passage écoute ~75 s en arrière-plan, les passages se
 // chevauchent, il n'y a donc pas de trou d'écoute ; un même lancement n'est enregistré qu'une fois (base).
 import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
-import { buildDirect, checkBuy, fastBuy, hotWallet, rpc, settle, warm, type Hot } from '../_shared/fastbuy.ts';
+import { buildDirect, buildSell, checkBuy, checkSell, fastBuy, hotWallet, rpc, settle, warm, type Hot } from '../_shared/fastbuy.ts';
 import { PublicKey } from 'npm:@solana/web3.js@1.98.4';
+import { exitEngine, type Strat, type TradeMsg } from '../_shared/exits.ts';
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
@@ -46,6 +49,17 @@ async function blockTime(sig: string): Promise<number | null> {
     await new Promise((res) => setTimeout(res, 2000));
   }
   return null;
+}
+
+const exits = exitEngine(admin, (u, t, b, url, tag) => push(u, t, b, url, tag), () => keys?.watch ?? '');
+// abonnement aux transactions d'un token (stratégie de sortie), sur la connexion en cours
+let wsCur: WebSocket | null = null;
+const subMints = new Set<string>();
+function watchMints(list: Iterable<string>) {
+  const add = [...list].filter((m) => !subMints.has(m));
+  if (!add.length || wsCur?.readyState !== WebSocket.OPEN) return;
+  wsCur.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: add }));
+  add.forEach((m) => subMints.add(m));
 }
 
 async function watched(): Promise<Set<string>> {
@@ -134,8 +148,10 @@ async function snipeOne(s: Snipe, m: Msg, prev: number | undefined, at: number) 
   let strategy: string | null = null;
   if (s.exit_rules?.length && tokens > 0) {
     const { data } = await admin.from('strategies').insert({ user_id: s.user_id, mint, symbol: sym || null, wallet: s.wallet, creator: s.creator, entry_at: new Date().toISOString(),
-      entry_price: sol / tokens, entry_tokens: tokens, entry_sol: sol, slippage: s.exit_slippage, rules: s.exit_rules, status: 'active' }).select('id').maybeSingle();
+      entry_price: sol / tokens, entry_tokens: tokens, entry_sol: sol, slippage: s.exit_slippage, rules: s.exit_rules, status: 'active' }).select('*').maybeSingle();
     strategy = (data as { id: string } | null)?.id ?? null;
+    // ventes surveillées aussitôt, sur le flux en cours
+    if (data) { exits.add(data as Strat); watchMints([mint]); }
   }
   await admin.rpc('snipe_run_set', { p_id: run, p: { status: 'bought', sol, tokens, strategy_id: strategy } });
   await admin.from('audit_log').insert({ user_id: s.user_id, event: 'server_auto_buy', detail: { signature: sent.signature, mint, sol, tokens, send_ms: sendMs } });
@@ -170,21 +186,24 @@ async function ownFresh(mint: string, creator: string) {
 async function listen() {
   const end = Date.now() + LISTEN_MS;
   let creators = await watched();
-  await Promise.all([loadSnipes(), warm()]);
-  if (!creators.size) return { creators: 0 };
+  await Promise.all([loadSnipes(), warm(), exits.load()]);
+  if (!creators.size && !exits.size()) return { creators: 0, exits: 0 };
   const seen = new Set<string>();
   let found = 0, msgs = 0, ws: WebSocket | null = null, subscribed = new Set<string>();
   const connect = () => new Promise<void>((resolve) => {
-    ws = new WebSocket('wss://pumpportal.fun/api/data');
+    ws = wsCur = new WebSocket('wss://pumpportal.fun/api/data');
+    subMints.clear();
     // transactions des créateurs suivis + avis de création (filtré ici en mémoire, rien n'est stocké ni interrogé)
     ws.onopen = () => {
       subscribed = new Set(creators);
       ws!.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: [...creators] }));
       ws!.send(JSON.stringify({ method: 'subscribeNewToken' }));
+      watchMints(exits.mints());
     };
     ws.onmessage = (e) => {
       msgs++;
       let m: Msg; try { m = JSON.parse(String(e.data)); } catch { return; }
+      if (m.mint && subMints.has(m.mint)) exits.onTrade(m as TradeMsg);   // stratégie de sortie : évaluée tout de suite
       const who = m.traderPublicKey;
       if (!m.mint || !MINT.test(m.mint) || !who || !creators.has(who) || seen.has(m.mint)) return;
       seen.add(m.mint);
@@ -200,13 +219,15 @@ async function listen() {
   const refresh = setInterval(async () => {
     try {
       creators = await watched();
-      await loadSnipes();
+      await Promise.all([loadSnipes(), exits.load()]);
+      watchMints(exits.mints());
       const add = [...creators].filter((a) => !subscribed.has(a));
       if (add.length && ws?.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: add })); add.forEach((a) => subscribed.add(a)); }
     } catch { /* prochain essai */ }
   }, 15_000);
   // configuration pump.fun et blockhash toujours frais : rien à lire au moment de l'achat
-  const warmer = setInterval(() => { if (snipes.size) warm(); }, 8_000);
+  const warmer = setInterval(() => { if (snipes.size || exits.size()) warm(); }, 8_000);
+  const ticker = setInterval(() => exits.tick(), 1_000);   // conditions de durée
   try {
     while (Date.now() < end) {
       const closed = connect();
@@ -215,10 +236,10 @@ async function listen() {
       if (Date.now() < end) await new Promise((res) => setTimeout(res, 500));   // reconnexion rapide si le flux coupe
       else { try { (ws as WebSocket | null)?.close(); } catch { /* déjà fermé */ } }
     }
-  } finally { clearInterval(refresh); clearInterval(warmer); }
+  } finally { clearInterval(refresh); clearInterval(warmer); clearInterval(ticker); }
   // achats en cours de confirmation : on les mène au bout avant de rendre la main
-  await Promise.race([Promise.allSettled([...pending]), new Promise((res) => setTimeout(res, 45_000))]);
-  return { creators: creators.size, msgs, found, snipes: [...snipes.values()].reduce((a, L) => a + L.length, 0) };
+  await Promise.race([Promise.allSettled([...pending, exits.idle()]), new Promise((res) => setTimeout(res, 45_000))]);
+  return { creators: creators.size, msgs, found, snipes: [...snipes.values()].reduce((a, L) => a + L.length, 0), exits: exits.stats() };
 }
 
 Deno.serve(async (req) => {
@@ -228,7 +249,18 @@ Deno.serve(async (req) => {
   const key = req.headers.get('x-watch-key');
   if (!key || !same(key, k.watch)) return json(401, { error: 'Clé invalide.' });
   // contrôle à blanc : achat construit pour un wallet public approvisionné, vérifié puis simulé (jamais signé ni envoyé)
-  const body = await req.json().catch(() => ({})) as { dry?: string; payer?: string };
+  const body = await req.json().catch(() => ({})) as { dry?: string; payer?: string; drySell?: string };
+  // contrôle à blanc d'une vente : 50 % de ce que détient « payer » (un vrai détenteur), simulée, jamais signée
+  if (typeof body.drySell === 'string' && MINT.test(body.drySell) && typeof body.payer === 'string' && MINT.test(body.payer)) {
+    try {
+      const t1 = Date.now(), b = await buildSell(new PublicKey(body.payer), body.drySell, 50, 25, 0.003), t2 = Date.now();
+      if (!('tx' in b) || !b.tx) return json(200, { ok: false, result: b });
+      await checkSell(b.tx, body.payer, BigInt(Math.ceil(0.003 * 1.5e9)) + 1_000_000n);
+      const raw = btoa(String.fromCharCode(...b.tx.serialize()));
+      const sim = await rpc<{ value: { err: unknown; logs: string[] | null; unitsConsumed?: number } }>('simulateTransaction', [raw, { encoding: 'base64', sigVerify: false, replaceRecentBlockhash: true, commitment: 'processed' }]);
+      return json(200, { ok: !sim.value.err, build_ms: t2 - t1, tokens: b.tokens, err: sim.value.err, units: sim.value.unitsConsumed, logs: (sim.value.logs ?? []).slice(-6) });
+    } catch (e) { return json(200, { ok: false, error: (e as Error).message }); }
+  }
   if (typeof body.dry === 'string' && MINT.test(body.dry)) {
     const payer = new PublicKey(typeof body.payer === 'string' && MINT.test(body.payer) ? body.payer : '5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9'), t0 = Date.now();
     try {

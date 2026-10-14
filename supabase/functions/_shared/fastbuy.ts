@@ -194,6 +194,87 @@ export async function buildDirect(payer: PublicKey, mint: string, sol: number, s
   const msg = new TransactionMessage({ payerKey: user, recentBlockhash: W.hash!, instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: price }), ata, buy] }).compileToV0Message();
   return new VersionedTransaction(msg);
 }
+/* ---------- vente directe (courbe pump.fun) ---------- */
+// lit en une fois : programme du token, courbe, comptes de tokens possibles du vendeur
+async function sellState(payer: PublicKey, m: PublicKey) {
+  const curve = pda([seed('bonding-curve'), m.toBytes()], P_CURVE), a1 = ataOf(payer, m, TOKEN_PK), a2 = ataOf(payer, m, TOKEN22_PK);
+  const r = await rpc<{ value: ({ owner: string; data: [string, string] } | null)[] }>('getMultipleAccounts', [[m.toBase58(), curve.toBase58(), a1.toBase58(), a2.toBase58()], { encoding: 'base64', commitment: 'processed' }], 3000);
+  const [mi, ci, t1, t2] = r.value;
+  if (!mi || !ci) throw new Error('Courbe du token introuvable.');
+  const tp = mi.owner === TOKEN22 ? TOKEN22_PK : TOKEN_PK, ta = tp === TOKEN22_PK ? t2 : t1;
+  const c = unb64(ci.data[0]), dv = new DataView(c.buffer, c.byteOffset);
+  const held = ta ? new DataView(unb64(ta.data[0]).buffer).getBigUint64(64, true) : 0n;   // compte de tokens : montant à l'octet 64
+  return { curve, tp, ata: tp === TOKEN22_PK ? a2 : a1, held, vT: dv.getBigUint64(8, true), vS: dv.getBigUint64(16, true), complete: c[48] === 1,
+    creator: pkAt(c, 49), mayhem: c[81] === 1, cashback: c[82] === 1 };
+}
+export async function buildSell(payer: PublicKey, mint: string, pct: number, slippage: number, priority: number) {
+  if (!W.fee.length || !W.hash || Date.now() - W.hashAt > 45_000) await warm();
+  if (!W.fee.length || !W.hash) throw new Error('Configuration pump.fun indisponible.');
+  const m = new PublicKey(mint), st = await sellState(payer, m);
+  if (st.complete) return { migrated: true as const };
+  if (st.held <= 0n) return { empty: true as const };
+  let amount = st.held * BigInt(Math.round(Math.min(100, Math.max(1, pct)) * 100)) / 10_000n;
+  if (amount > st.held) amount = st.held;
+  // SOL attendus (frais comptés large : 3 %), minimum garanti = attendu × (1 − glissement)
+  const out = amount * st.vS / (st.vT + amount) * 9_700n / 10_000n;
+  const minOut = out - out * BigInt(Math.floor(slippage * 10)) / 1000n;
+  const user = payer, feeRecipient = pick(st.mayhem && W.reserved.length ? W.reserved : W.fee);
+  const keys = [
+    { pubkey: GLOBAL, isSigner: false, isWritable: false },
+    { pubkey: feeRecipient, isSigner: false, isWritable: true },
+    { pubkey: m, isSigner: false, isWritable: false },
+    { pubkey: st.curve, isSigner: false, isWritable: true },
+    { pubkey: ataOf(st.curve, m, st.tp), isSigner: false, isWritable: true },
+    { pubkey: st.ata, isSigner: false, isWritable: true },
+    { pubkey: user, isSigner: true, isWritable: true },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: pda([seed('creator-vault'), st.creator.toBytes()], P_CURVE), isSigner: false, isWritable: true },
+    { pubkey: st.tp, isSigner: false, isWritable: false },
+    { pubkey: EVENT_AUTH, isSigner: false, isWritable: false },
+    { pubkey: P_CURVE, isSigner: false, isWritable: false },
+    { pubkey: FEE_CONFIG, isSigner: false, isWritable: false },
+    { pubkey: P_FEE, isSigner: false, isWritable: false },
+    // comptes complémentaires du kit : (token « cashback » : compteur de volume), courbe v2, destinataire des frais de rachat
+    ...(st.cashback ? [{ pubkey: pda([seed('user_volume_accumulator'), user.toBytes()], P_CURVE), isSigner: false, isWritable: true }] : []),
+    { pubkey: pda([seed('bonding-curve-v2'), m.toBytes()], P_CURVE), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(pick(BUYBACK)), isSigner: false, isWritable: true },
+  ];
+  D ??= { buy: await disc('buy'), exact: await disc('buy_exact_sol_in'), sell: await disc('sell') };
+  const data = new Uint8Array(24); data.set(D.sell, 0); data.set(u64le(amount), 8); data.set(u64le(minOut), 16);
+  const ix = new TransactionInstruction({ programId: P_CURVE, keys, data: Buffer.from(data) });
+  const units = 120_000, price = Math.max(1, Math.round(priority * 1e9 * 1e6 / units));
+  const msg = new TransactionMessage({ payerKey: user, recentBlockhash: W.hash!, instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: price }), ix] }).compileToV0Message();
+  return { tx: new VersionedTransaction(msg), tokens: Number(amount) };
+}
+// relecture avant signature : budget de calcul et une vente pump.fun du wallet lui-même, rien d'autre
+export async function checkSell(tx: VersionedTransaction, payer: string, maxPriorityLamports: bigint) {
+  D ??= { buy: await disc('buy'), exact: await disc('buy_exact_sol_in'), sell: await disc('sell') };
+  const keys = tx.message.staticAccountKeys.map((k) => k.toBase58());
+  if (keys[0] !== payer || tx.message.addressTableLookups?.length) throw new Error('Vente refusée : transaction inattendue.');
+  let units = 200_000n, price = 0n, sells = 0;
+  for (const ix of tx.message.compiledInstructions) {
+    const pid = keys[ix.programIdIndex], d = ix.data;
+    if (pid === CB) { if (d[0] === 2) units = BigInt(u32(d, 1)); else if (d[0] === 3) price = u64(d, 1); continue; }
+    if (pid === CURVE && same8(d, D.sell) && keys[ix.accountKeyIndexes[6]!] === payer) { sells++; continue; }
+    throw new Error('Vente refusée : instruction non admise.');
+  }
+  if (sells !== 1) throw new Error('Vente refusée : vente pump.fun introuvable.');
+  if (units * price / 1_000_000n > maxPriorityLamports) throw new Error('Vente refusée : frais de priorité trop élevés.');
+}
+/** vend pct % de ce que détient le wallet (courbe pump.fun) ; migrated / empty : à traiter autrement */
+export async function fastSell(w: Hot, mint: string, pct: number, slippage: number, priority: number) {
+  const b = await buildSell(w.kp.publicKey, mint, pct, slippage, priority);
+  if ('migrated' in b || 'empty' in b) return b;
+  await checkSell(b.tx, w.address, BigInt(Math.ceil(priority * 1.5e9)) + 1_000_000n);
+  b.tx.sign([w.kp]);
+  const raw = b64(b.tx.serialize()), signature = bs58.encode(b.tx.signatures[0]!);
+  const sends = upstreams().map((url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(5000),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'sendTransaction', params: [raw, { encoding: 'base64', skipPreflight: true, maxRetries: 3 }] }) })
+    .then((x) => x.json()).then((j) => { if (j.error) throw new Error(j.error.message); return true; }));
+  await Promise.any(sends).catch(() => { throw new Error('Envoi de la vente impossible.'); });
+  return { signature };
+}
+
 /** prépare (programme pump.fun en direct), vérifie, signe et envoie un achat ; renvoie la signature dès l'envoi.
  *  gate : autorisation (prise de la règle, plafond du jour) obtenue pendant la préparation ; faux = rien n'est envoyé */
 export async function fastBuy(w: Hot, mint: string, sol: number, slippage: number, priority: number, gate: Promise<boolean>) {
@@ -232,11 +313,11 @@ export async function settle(signature: string, owner: string, mint: string, max
           [signature, { maxSupportedTransactionVersion: 0, commitment: 'confirmed', encoding: 'json' }], 5000).catch(() => null);
         if (t?.meta) {
           const tok = (L?: Bal[]) => (L ?? []).filter((b) => b.owner === owner && b.mint === mint).reduce((a, b) => a + (b.uiTokenAmount.uiAmount ?? 0), 0);
-          return { ok: true as const, sol: Math.max(0, (t.meta.preBalances[0]! - t.meta.postBalances[0]!) / 1e9), tokens: tok(t.meta.postTokenBalances) - tok(t.meta.preTokenBalances) };
+          return { ok: true as const, sol: Math.max(0, (t.meta.preBalances[0]! - t.meta.postBalances[0]!) / 1e9), received: Math.max(0, (t.meta.postBalances[0]! - t.meta.preBalances[0]!) / 1e9), tokens: tok(t.meta.postTokenBalances) - tok(t.meta.preTokenBalances) };
         }
         await new Promise((res) => setTimeout(res, 700));
       }
-      return { ok: true as const, sol: null, tokens: null };
+      return { ok: true as const, sol: null, received: null, tokens: null };
     }
   }
   return { ok: false as const, reason: 'Non confirmé après 30 s (transaction probablement perdue).' };

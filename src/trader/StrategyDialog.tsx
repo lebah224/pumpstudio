@@ -61,7 +61,7 @@ function Editor({ o, onClose }: { o: StrategyOpen; onClose: () => void }) {
         mint: o.mint, symbol: o.symbol, creator: o.creator, wallet: ex?.wallet ?? wallet, rules, slippage: slip, status: 'active', entry_at: at,
         entry_price: entryPrice && entryPrice > 0 ? entryPrice : null, entry_tokens: ex ? ex.entry_tokens : holder?.tokens ?? null, entry_sol: buy?.sol ?? null,
       }, ex?.id);
-      toast(ex ? 'Stratégie mise à jour' : 'Stratégie activée', o.symbol + ' · ' + rules.length + ' règle' + (rules.length > 1 ? 's' : '') + ', surveillées toutes les 5 secondes.', 'g');
+      toast(ex ? 'Stratégie mise à jour' : 'Stratégie activée', o.symbol + ' · ' + rules.length + ' règle' + (rules.length > 1 ? 's' : '') + ', surveillées en temps réel.', 'g');
       onClose();
     } catch (e2) { setErr(readable(e2)); } finally { setBusy(false); }
   }
@@ -71,7 +71,7 @@ function Editor({ o, onClose }: { o: StrategyOpen; onClose: () => void }) {
       <form className="ts-modal-box sg" onSubmit={submit}>
         <button type="button" className="ts-x" aria-label="Fermer" onClick={onClose}>×</button>
         <div className="ts-si-h"><b>Stratégie de sortie · {o.symbol}</b>
-          <span>Le serveur vérifie vos règles toutes les 5 secondes et vend avec votre wallet rapide, même outil fermé. La première règle remplie s'exécute ; chacune une seule fois.</span></div>
+          <span>Le serveur vérifie vos règles à chaque transaction du token et vend aussitôt avec votre wallet rapide, même outil fermé. La première règle remplie s'exécute ; chacune une seule fois.</span></div>
 
         <RulesEditor rules={rules} setRules={setRules} preset={preset} setPreset={setPreset} fired={fired} showPresets={!ex} />
 

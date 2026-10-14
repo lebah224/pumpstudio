@@ -79,7 +79,7 @@ export function StrategyCard({ mint, symbol, creator, priceSol, avg, held }: { m
         {s.status === 'error' ? <span className="down">Ventes en échec : {s.state.last_error ?? 'erreur inconnue'}. Vérifiez le solde de SOL du wallet pour les frais.</span>
           : s.status === 'done' ? (s.state.end === 'no_tokens' ? 'Terminée : le wallet rapide ne détient plus ce token.' : 'Terminée.')
           : s.status === 'paused' ? 'En pause : aucune vente ne part.'
-          : seen ? 'Vérifiée ' + ago(seen.at) + ' · toutes les 5 s, même outil fermé' : 'Première vérification dans quelques secondes…'}
+          : seen ? 'Surveillée en temps réel, même outil fermé · relevé ' + ago(seen.at) : 'Première vérification dans quelques secondes…'}
         {s.state.fails && s.status === 'active' ? <span className="down"> · dernier essai en échec, nouvel essai automatique</span> : null}
       </p>
     </div>

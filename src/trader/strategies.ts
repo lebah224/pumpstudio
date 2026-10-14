@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { studio } from '../legacy/bridge';
 
-// Stratégies de sortie : règles de vente appliquées par le serveur (toutes les 5 s), même outil fermé.
+// Stratégies de sortie : règles de vente appliquées par le serveur en temps réel (à chaque transaction du token,
+// relevé complet toutes les 5 s en secours), même outil fermé.
 
 export type CondKind = 'gain' | 'loss' | 'trail' | 'buys' | 'sells' | 'sell_sol' | 'creator_sell' | 'age' | 'mcap';
 export type Cond = { k: CondKind; v?: number; arm?: number };
