@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Sol } from '../ui/Sol';
 import { fPct, fPrice, fTok } from './format';
 import { solUsd } from './live';
+import { StrategyCard } from './StrategyCard';
 
 type Quote = { sol: number; tokens: number; minOut: number; impact: number; fees: number };
 type Pos = { bal: number; value: number; avg: number | null; spent: number; recv: number; pnl: number; price: number };
@@ -22,7 +23,7 @@ const PRIO: { v: number; l: string }[] = [{ v: 0.0001, l: 'Éco' }, { v: 0.0005,
 const parse = (s: string) => { const v = parseFloat(s.replace(',', '.').replace(/\s/g, '')); return isFinite(v) ? v : NaN; };
 
 /** Panneau d'achat et de vente : le studio prépare, vérifie et fait signer la transaction */
-export function TradePanel({ mint, symbol, priceSol, onPosition }: { mint: string; symbol: string; priceSol: number | null; onPosition: (p: Pos | null) => void }) {
+export function TradePanel({ mint, symbol, priceSol, creator, onPosition }: { mint: string; symbol: string; priceSol: number | null; creator: string | null; onPosition: (p: Pos | null) => void }) {
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [amt, setAmt] = useState('0.1');
   const [pct, setPct] = useState(100);
@@ -125,7 +126,7 @@ export function TradePanel({ mint, symbol, priceSol, onPosition }: { mint: strin
       {!cfg?.wallet && <p className="dim tr-small">Connectez un wallet pour trader : la transaction vous sera présentée avant signature.</p>}
 
       <div className="tr-pos">
-        <div className="tr-pos-h"><b>Ma position</b>{held > 0 && <button type="button" className="btn sm" onClick={() => st()?.trader?.newOrder(mint)}>Prise de profit / stop</button>}</div>
+        <div className="tr-pos-h"><b>Ma position</b>{held > 0 && <button type="button" className="btn sm ghost" title="Ordre simple : objectif, stop ou stop suiveur" onClick={() => st()?.trader?.newOrder(mint)}>Ordre simple</button>}</div>
         {!ready ? <p className="dim tr-small">Lecture…</p> : !(held > 0) && !pos?.spent ? <p className="dim tr-small">Aucune position sur ce token.</p> : (
           <dl className="tr-quote">
             <dt>Détenus</dt><dd className="mono">{fTok(held)} {symbol}</dd>
@@ -134,6 +135,7 @@ export function TradePanel({ mint, symbol, priceSol, onPosition }: { mint: strin
             <dt>Résultat</dt><dd className={pos!.pnl >= 0 ? 'up' : 'down'}><Sol v={pos!.pnl} />{pos!.spent > 0 && <span className="mono"> ({fPct(pos!.pnl / pos!.spent * 100)})</span>}</dd>
           </dl>
         )}
+        {ready && <StrategyCard mint={mint} symbol={symbol} creator={creator} priceSol={priceSol} avg={pos?.avg ?? null} held={held} />}
       </div>
     </div>
   );

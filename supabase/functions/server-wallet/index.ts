@@ -197,9 +197,11 @@ async function autoSell(uid: string, body: Record<string, unknown>) {
   if (!B58RE.test(mint)) throw new Fail(400, 'Token invalide.');
   const all = await list(uid);
   if (!all.length) throw new Fail(404, 'no_wallet');
-  // le wallet rapide qui détient le plus de ce token vend
+  // le wallet demandé (stratégie) s'il détient le token, sinon le wallet rapide qui en détient le plus
   let best: { addr: string; held: { raw: bigint; dec: number } } | null = null;
-  for (const w of all) { const h = await tokenHeld(w.address, mint); if (h.raw > 0n && (!best || h.raw > best.held.raw)) best = { addr: w.address, held: h }; }
+  const want = typeof body.address === 'string' ? all.find((w) => w.address === body.address) : undefined;
+  if (want) { const h = await tokenHeld(want.address, mint); if (h.raw > 0n) best = { addr: want.address, held: h }; }
+  if (!best) for (const w of all) { const h = await tokenHeld(w.address, mint); if (h.raw > 0n && (!best || h.raw > best.held.raw)) best = { addr: w.address, held: h }; }
   if (!best) throw new Fail(409, 'no_tokens');
   const row = (await load(uid, best.addr))!, held = best.held;
   const pct = Math.min(100, Math.max(0, Number(body.pct) || 100)), tok = Number(body.tokens);
@@ -208,7 +210,7 @@ async function autoSell(uid: string, body: Record<string, unknown>) {
   if (amount <= 0n) throw new Fail(409, 'no_tokens');
   const ui = Number(amount) / 10 ** held.dec, slippage = Math.min(50, Math.max(1, Number(body.slippage) || 25));
   const r = await fetch('https://pumpportal.fun/api/trade-local', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ publicKey: row.address, action: 'sell', mint, amount: ui, denominatedInSol: 'false', slippage, priorityFee: 0.0005, pool: 'auto' }), signal: AbortSignal.timeout(15_000) });
+    body: JSON.stringify({ publicKey: row.address, action: 'sell', mint, amount: ui, denominatedInSol: 'false', slippage, priorityFee: Math.min(0.005, Math.max(0.0001, Number(body.priority) || 0.0005)), pool: 'auto' }), signal: AbortSignal.timeout(15_000) });
   if (!r.ok) throw new Fail(502, 'PumpPortal ne peut pas préparer la vente (' + r.status + ').');
   const raw = b64(new Uint8Array(await r.arrayBuffer()));
   const before = (await rpc<{ value: number }>('getBalance', [row.address, { commitment: 'confirmed' }])).value;

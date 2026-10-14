@@ -179,7 +179,7 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
         </div>
 
         <aside className="tr-aside">
-          <TradePanel mint={mint} symbol={sym} priceSol={priceSol} onPosition={onPosition} />
+          <TradePanel mint={mint} symbol={sym} priceSol={priceSol} creator={info?.creator ?? seed?.creator ?? null} onPosition={onPosition} />
           {info?.description && <div className="card tr-desc"><h3>À propos</h3><p>{info.description}</p></div>}
           <PriceAlerts mint={mint} symbol={sym} mcUsd={mcUsd} />
         </aside>

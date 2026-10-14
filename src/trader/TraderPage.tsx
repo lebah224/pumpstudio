@@ -5,6 +5,8 @@ import { MarketList } from './MarketList';
 import { TokenView } from './TokenView';
 import { useLiveState } from './live';
 import { useAlertWatcher } from './alerts';
+import { StrategyDialog } from './StrategyDialog';
+import { StrategyList } from './StrategyCard';
 import '../styles/trader.css';
 
 function useVisible() {
@@ -59,7 +61,8 @@ export function TraderPage() {
       </form>
       {/* hors de la page, rien n'est suivi ni relu : la fiche se recharge au retour */}
       {!visible ? null : open ? <TokenView key={open.mint} mint={open.mint} seed={open.seed} onBack={() => setOpen(null)} onOpen={(m) => openMint(m)} />
-        : <MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} />}
+        : <><StrategyList onOpen={(m) => openMint(m)} /><MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} /></>}
+      <StrategyDialog />
     </div>
   );
 }
