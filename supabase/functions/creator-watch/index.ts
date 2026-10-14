@@ -1,6 +1,6 @@
-// Lancements des créateurs suivis : appelée toutes les 5 secondes par la tâche planifiée (clé de surveillance).
-// Une seule lecture des derniers tokens créés sur pump.fun, quel que soit le nombre de créateurs suivis ;
-// chaque lancement d'un créateur suivi est enregistré une fois par compte et notifié sur ses appareils.
+// Filet de sécurité des lancements des créateurs suivis (la détection principale est l'écoute continue creator-stream) :
+// appelée toutes les 30 secondes, elle relit les derniers tokens de chaque créateur suivi, et seulement eux.
+// Un lancement manqué par le flux est enregistré une fois par compte et notifié sur ses appareils.
 import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
 
@@ -28,18 +28,26 @@ async function push(uid: string, title: string, body: string, url: string, tag: 
 const img = (u: unknown) => { const v = typeof u === 'string' ? u : ''; const cid = v.match(/\/ipfs\/([A-Za-z0-9]{40,80})/); return cid ? 'https://ipfs.io/ipfs/' + cid[1] : /^https:\/\/\S{4,280}$/.test(v) ? v : null; };
 
 type Coin = { mint?: string; creator?: string; symbol?: string; name?: string; image_uri?: string; created_timestamp?: number };
-async function latest(): Promise<Coin[]> {
-  const r = await fetch('https://frontend-api-v3.pump.fun/coins?offset=0&limit=50&sort=created_timestamp&order=DESC&includeNsfw=true', { headers: PUMP_H, signal: AbortSignal.timeout(6000) });
-  if (!r.ok) throw new Error('pump.fun ' + r.status);
-  const j = await r.json();
-  return Array.isArray(j) ? j : (j?.coins ?? []);
+async function ofCreator(addr: string): Promise<Coin[]> {
+  try {
+    const r = await fetch('https://frontend-api-v3.pump.fun/coins-v2/user-created-coins/' + addr + '?offset=0&limit=5&includeNsfw=true', { headers: PUMP_H, signal: AbortSignal.timeout(6000) });
+    if (!r.ok) return [];
+    const j = await r.json();
+    return ((Array.isArray(j) ? j : (j?.coins ?? [])) as Coin[]).map((c) => ({ ...c, creator: c.creator ?? addr }));
+  } catch { return []; }
+}
+// par paquets de 8 pour ménager la source
+async function latest(addrs: string[]): Promise<Coin[]> {
+  const out: Coin[] = [];
+  for (let i = 0; i < addrs.length; i += 8) out.push(...(await Promise.all(addrs.slice(i, i + 8).map(ofCreator))).flat());
+  return out;
 }
 
 async function run() {
   const { data: w } = await admin.rpc('creators_watched');
   const watched = new Set(((w ?? []) as { address: string }[]).map((x) => x.address));
   if (!watched.size) return { creators: 0 };
-  const coins = await latest();
+  const coins = await latest([...watched]);
   const fresh = Date.now() - 10 * 60_000;   // au démarrage, on ignore les lancements trop anciens
   let found = 0, notified = 0;
   for (const c of coins) {
@@ -47,7 +55,7 @@ async function run() {
     const at = Number(c.created_timestamp) || Date.now();
     if (at < fresh) continue;
     found++;
-    const { data } = await admin.rpc('creator_launch_record', { p_creator: c.creator, p_mint: c.mint, p_symbol: String(c.symbol ?? '').slice(0, 32), p_name: String(c.name ?? '').slice(0, 80), p_image: img(c.image_uri), p_at: new Date(at).toISOString() });
+    const { data } = await admin.rpc('creator_launch_record2', { p_creator: c.creator, p_mint: c.mint, p_symbol: String(c.symbol ?? '').slice(0, 32), p_name: String(c.name ?? '').slice(0, 80), p_image: img(c.image_uri), p_at: new Date(at).toISOString(), p_sig: null, p_source: 'poll' });
     for (const u of (data ?? []) as { r_user: string; r_label: string | null }[]) {
       notified++;
       const who = u.r_label || c.creator.slice(0, 4) + '…' + c.creator.slice(-4);
