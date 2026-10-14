@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { MARKET_REGION } from './api';
 
 // Créateurs suivis : liste du compte, fiche d'analyse (fonction market) et lancements détectés par le serveur.
 
@@ -24,7 +25,7 @@ const memo = new Map<string, { at: number; p: Promise<CreatorProfile> }>();
 export function creatorProfile(address: string, force = false): Promise<CreatorProfile> {
   const c = memo.get(address);
   if (c && !force && Date.now() - c.at < 30_000) return c.p;
-  const p = supabase.functions.invoke('market', { body: { action: 'creator', address } }).then(async ({ data, error }) => {
+  const p = supabase.functions.invoke('market', { body: { action: 'creator', address }, region: MARKET_REGION }).then(async ({ data, error }) => {
     if (error) {
       let msg = 'Analyse du créateur indisponible. Réessayez dans un instant.';
       try { const j = await (error as { context?: Response }).context?.json(); if (j?.error) msg = j.error; } catch { /* réponse non JSON */ }
@@ -89,7 +90,9 @@ export function useLaunches() {
       .then(({ data }) => { if (alive) setList((data ?? []) as Launch[]); });
     load();
     const ch = supabase.channel('launches-' + Math.random().toString(36).slice(2)).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creator_launches' }, load).subscribe();
-    return () => { alive = false; supabase.removeChannel(ch); };
+    // créateur retiré : ses lancements sont effacés par le serveur, la liste se recharge
+    window.addEventListener('ts-creators', load);
+    return () => { alive = false; window.removeEventListener('ts-creators', load); supabase.removeChannel(ch); };
   }, []);
   return list;
 }

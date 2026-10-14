@@ -26,7 +26,9 @@ export function ScoreBadge({ p, size = 'sm' }: { p: CreatorProfile | null; size?
 /** Page « Créateurs » du Trader : liste suivie, ajout par adresse, derniers lancements */
 export function CreatorsView({ onOpen }: { onOpen: (mint: string) => void }) {
   const list = useFollowed();
-  const launches = useLaunches();
+  const allLaunches = useLaunches();
+  // seulement les créateurs encore suivis (un créateur retiré emporte ses lancements)
+  const launches = allLaunches && list ? allLaunches.filter((l) => list.some((c) => c.address === l.creator)) : null;
   const snipes = useSnipes();
   const runs = useSnipeRuns();
   const [addr, setAddr] = useState('');

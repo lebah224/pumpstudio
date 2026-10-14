@@ -1,3 +1,4 @@
+import { FunctionRegion } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 // Données de marché servies par la fonction serveur « market » (pump.fun, DEX Screener, GeckoTerminal)
@@ -15,8 +16,11 @@ export type Tab = 'trending' | 'new' | 'graduating' | 'migrated';
 export type Tf = '1s' | '15s' | '30s' | '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '6h' | '12h' | '24h';
 export const TF_SEC: Record<Tf, number> = { '1s': 1, '15s': 15, '30s': 30, '1m': 60, '5m': 300, '15m': 900, '30m': 1800, '1h': 3600, '4h': 14400, '6h': 21600, '12h': 43200, '24h': 86400 };
 
+// région du serveur de marché fixée : certaines sources refusent les demandes venant d'autres régions (Londres)
+export const MARKET_REGION = FunctionRegion.EuCentral1;
+
 async function call<T>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('market', { body });
+  const { data, error } = await supabase.functions.invoke('market', { body, region: MARKET_REGION });
   if (error) {
     let msg = 'Données de marché indisponibles. Réessayez dans un instant.';
     try { const j = await (error as { context?: Response }).context?.json(); if (j?.error) msg = j.error; } catch { /* réponse non JSON */ }
