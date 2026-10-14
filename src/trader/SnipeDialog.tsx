@@ -1,20 +1,17 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { studio, toast } from '../legacy/bridge';
+import { toast } from '../legacy/bridge';
 import { readable } from '../auth/SignIn';
-import { srvLabel, useServerWallet } from '../serverWallet/api';
-import { Sol } from '../ui/Sol';
+import { BuyFields, useBuySettings } from './BuySettings';
 import { PRESETS, condText, sellText, type Rule } from './strategies';
 import { Num, RulesEditor, rulesInvalid } from './StrategyDialog';
-import { SPEEDS, filterTexts, removeSnipe, saveSnipe, useSnipes, type Snipe, type SnipeFilters } from './snipes';
+import { filterTexts, removeSnipe, saveSnipe, useSnipes, type Snipe, type SnipeFilters } from './snipes';
 import '../styles/strategy.css';
 
 export type SnipeOpen = { creator: string; name: string };
 export const openSnipe = (d: SnipeOpen) => window.dispatchEvent(new CustomEvent('ts-snipe', { detail: d }));
 
-const AMOUNTS = [0.05, 0.1, 0.25, 0.5];
 const BUY_SLIPS = [15, 25, 35, 50];
 const SELL_SLIPS = [10, 15, 25, 35];
-type Hub = { rpc: <T>(m: string, p: unknown[]) => Promise<T> };
 
 /** Fenêtre « Achat automatique » d'un créateur suivi : montant, wallet, filtres, sortie attachée */
 export function SnipeDialog() {
@@ -30,14 +27,10 @@ export function SnipeDialog() {
 }
 
 function Editor({ o, ex, onClose }: { o: SnipeOpen; ex: Snipe | null; onClose: () => void }) {
-  const srv = useServerWallet();
-  const wallets = srv?.wallets ?? [];
-  const [wallet, setWallet] = useState<string | null>(ex?.wallet ?? srv?.address ?? wallets[0]?.address ?? null);
-  const [amount, setAmount] = useState(ex?.amount_sol ?? 0.1);
+  const b = useBuySettings(ex ? { wallet: ex.wallet, amount: ex.amount_sol, priority: ex.priority, slippage: Number(ex.slippage) } : {}, 25);
+  const { wallets, wallet, amount, priority, slip } = b;
   const [mode, setMode] = useState<'next' | 'every'>(ex?.mode ?? 'next');
   const [perDay, setPerDay] = useState(ex?.max_per_day ?? 3);
-  const [priority, setPriority] = useState(ex?.priority ?? 0.003);
-  const [slip, setSlip] = useState(ex ? Number(ex.slippage) : 25);
   const F0 = ex?.filters ?? {};
   const [devOn, setDevOn] = useState(F0.dev_min != null || F0.dev_max != null);
   const [devMin, setDevMin] = useState(F0.dev_min ?? 0.5);
@@ -56,25 +49,14 @@ function Editor({ o, ex, onClose }: { o: SnipeOpen; ex: Snipe | null; onClose: (
   const [consent, setConsent] = useState(!!ex);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [bal, setBal] = useState<number | null>(null);
 
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [onClose]);
-  useEffect(() => {
-    setBal(null);
-    const hub = studio()?.hub as unknown as Hub | undefined;
-    if (!wallet || !hub) return;
-    let alive = true;
-    hub.rpc<{ value: number }>('getBalance', [wallet, { commitment: 'confirmed' }]).then((r) => { if (alive) setBal(r.value / 1e9); }).catch(() => {});
-    return () => { alive = false; };
-  }, [wallet]);
 
   const filters: SnipeFilters = useMemo(() => ({
     ...(devOn ? { dev_min: devMin, dev_max: devMax } : {}), ...(pctOn ? { dev_pct: pct } : {}), ...(mcOn ? { mcap_max: mc } : {}), ...(gapOn ? { gap_min: gap } : {}),
   }), [devOn, devMin, devMax, pctOn, pct, mcOn, mc, gapOn, gap]);
-  const maxCost = amount * (1 + slip / 100);
-  const low = bal != null && bal < maxCost + priority + 0.005;
   const badDev = devOn && devMax < devMin;
-  const invalid = !wallet || !(amount >= 0.001 && amount <= 10) || badDev || (exitOn && rulesInvalid(rules)) || (mode === 'every' && !(perDay >= 1 && perDay <= 50));
+  const invalid = !b.valid || badDev || (exitOn && rulesInvalid(rules)) || (mode === 'every' && !(perDay >= 1 && perDay <= 50));
   const canSave = !busy && !invalid && consent;
 
   async function submit(e: FormEvent) {
@@ -103,27 +85,12 @@ function Editor({ o, ex, onClose }: { o: SnipeOpen; ex: Snipe | null; onClose: (
         {!wallets.length ? <div className="ts-note bad">Il faut un wallet rapide pour l'achat automatique : créez-en un dans Portefeuille.</div> : (<>
           <section className="sn-sec">
             <span className="sg-lbl">Achat</span>
-            <div className="sn-grid">
-              <label className="sg-field"><span className="sn-k">Wallet qui achète</span>
-                <select value={wallet ?? ''} onChange={(e) => setWallet(e.target.value)}>{wallets.map((w) => <option key={w.address} value={w.address}>{srvLabel(w)}</option>)}</select>
-                <small className={low ? 'sg-bad' : 'dim'}>{bal == null ? 'Solde…' : <>Solde <Sol v={bal} d={3} />{low ? ' : insuffisant pour cet achat' : ''}</>}</small></label>
-              <div className="sg-field"><span className="sn-k">Montant</span>
-                <div className="sn-amt"><Num v={amount} unit="SOL" label="Montant de l'achat" onChange={setAmount} />
-                  <div className="sg-sell" role="group" aria-label="Montants rapides">{AMOUNTS.map((a) => <button key={a} type="button" className={amount === a ? 'on' : ''} aria-pressed={amount === a} onClick={() => setAmount(a)}>{a.toLocaleString('fr-FR')}</button>)}</div></div></div>
-            </div>
-            <div className="sn-grid">
+            <BuyFields b={b} slips={BUY_SLIPS} slipNote="Au lancement le prix grimpe en quelques blocs :" middle={
               <div className="sg-field"><span className="sn-k">Quand</span>
                 <div className="sg-sell" role="radiogroup" aria-label="Quand acheter">
                   <button type="button" role="radio" aria-checked={mode === 'next'} className={mode === 'next' ? 'on' : ''} onClick={() => setMode('next')}>Prochain lancement</button>
                   <button type="button" role="radio" aria-checked={mode === 'every'} className={mode === 'every' ? 'on' : ''} onClick={() => setMode('every')}>Chaque lancement</button></div>
-                {mode === 'every' && <span className="sn-inline">au plus <Num v={perDay} unit="par jour" label="Achats par jour au plus" onChange={(v) => setPerDay(Math.round(v))} /></span>}</div>
-              <div className="sg-field"><span className="sn-k">Vitesse</span>
-                <div className="sg-sell" role="group" aria-label="Vitesse">{SPEEDS.map((s) => <button key={s.v} type="button" className={priority === s.v ? 'on' : ''} aria-pressed={priority === s.v} onClick={() => setPriority(s.v)}>{s.l}</button>)}</div>
-                <small className="dim">Frais de priorité : <Sol v={priority} d={3} /></small></div>
-            </div>
-            <div className="sg-field"><span className="sn-k">Glissement maximum à l'achat</span>
-              <div className="sg-sell" role="group" aria-label="Glissement à l'achat">{BUY_SLIPS.map((v) => <button key={v} type="button" className={slip === v ? 'on' : ''} aria-pressed={slip === v} onClick={() => setSlip(v)}>{v} %</button>)}</div>
-              <small className="dim">Au lancement le prix grimpe en quelques blocs : vous payez au plus <Sol v={maxCost} d={3} />.</small></div>
+                {mode === 'every' && <span className="sn-inline">au plus <Num v={perDay} unit="par jour" label="Achats par jour au plus" onChange={(v) => setPerDay(Math.round(v))} /></span>}</div>} />
           </section>
 
           <section className="sn-sec">

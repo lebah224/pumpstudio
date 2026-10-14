@@ -3,6 +3,7 @@ import { Sol } from '../ui/Sol';
 import { fPct, fPrice, fTok } from './format';
 import { solUsd } from './live';
 import { StrategyCard } from './StrategyCard';
+import { BuyOrdersCard } from './BuyOrderDialog';
 
 type Quote = { sol: number; tokens: number; minOut: number; impact: number; fees: number };
 type Pos = { bal: number; value: number; avg: number | null; spent: number; recv: number; pnl: number; price: number };
@@ -124,6 +125,7 @@ export function TradePanel({ mint, symbol, priceSol, creator, onPosition }: { mi
         {busy ? 'Préparation…' : side === 'buy' ? 'Acheter ' + symbol + (solIn > 0 ? ' · ' + solIn.toLocaleString('fr-FR') + ' SOL' : '') : 'Vendre ' + pct + ' % de ' + symbol}
       </button>
       {!cfg?.wallet && <p className="dim tr-small">Connectez un wallet pour trader : la transaction vous sera présentée avant signature.</p>}
+      {side === 'buy' && <BuyOrdersCard mint={mint} symbol={symbol} creator={creator} mcapUsd={priceSol && solUsd() ? priceSol * 1e9 * solUsd()! : null} />}
 
       <div className="tr-pos">
         <div className="tr-pos-h"><b>Ma position</b>{held > 0 && <button type="button" className="btn sm ghost" title="Ordre simple : objectif, stop ou stop suiveur" onClick={() => st()?.trader?.newOrder(mint)}>Ordre simple</button>}</div>

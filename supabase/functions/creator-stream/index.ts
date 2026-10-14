@@ -5,6 +5,7 @@
 // l'avis, wallet déjà prêt), en même temps que l'enregistrement ; la stratégie de sortie est attachée à la confirmation.
 // Ventes en temps réel : les stratégies de sortie actives sont évaluées à chaque transaction de leur token (abonnement
 // aux seuls tokens détenus) et la vente part aussitôt (voir _shared/exits.ts).
+// Achats programmés : les ordres d'achat actifs sont évalués de la même façon (voir _shared/entries.ts).
 // Lancée chaque minute par la tâche planifiée : chaque passage écoute ~75 s en arrière-plan, les passages se
 // chevauchent, il n'y a donc pas de trou d'écoute ; un même lancement n'est enregistré qu'une fois (base).
 import webpush from 'npm:web-push@3.6.7';
@@ -12,6 +13,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
 import { buildDirect, buildSell, checkBuy, checkSell, fastBuy, hotWallet, rpc, settle, warm, type Hot } from '../_shared/fastbuy.ts';
 import { PublicKey } from 'npm:@solana/web3.js@1.98.4';
 import { exitEngine, type Strat, type TradeMsg } from '../_shared/exits.ts';
+import { entryEngine } from '../_shared/entries.ts';
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
@@ -52,6 +54,9 @@ async function blockTime(sig: string): Promise<number | null> {
 }
 
 const exits = exitEngine(admin, (u, t, b, url, tag) => push(u, t, b, url, tag), () => keys?.watch ?? '');
+// achat programmé confirmé : sa stratégie de sortie est suivie aussitôt
+const entries = entryEngine(admin, (u, t, b, url, tag) => push(u, t, b, url, tag), (s) => { exits.add(s); watchMints([s.mint]); });
+const tracked = () => new Set([...exits.mints(), ...entries.mints()]);
 // abonnement aux transactions d'un token (stratégie de sortie), sur la connexion en cours
 let wsCur: WebSocket | null = null;
 const subMints = new Set<string>();
@@ -186,8 +191,8 @@ async function ownFresh(mint: string, creator: string) {
 async function listen() {
   const end = Date.now() + LISTEN_MS;
   let creators = await watched();
-  await Promise.all([loadSnipes(), warm(), exits.load()]);
-  if (!creators.size && !exits.size()) return { creators: 0, exits: 0 };
+  await Promise.all([loadSnipes(), warm(), exits.load(), entries.load()]);
+  if (!creators.size && !exits.size() && !entries.size()) return { creators: 0, exits: 0, entries: 0 };
   const seen = new Set<string>();
   let found = 0, msgs = 0, ws: WebSocket | null = null, subscribed = new Set<string>();
   const connect = () => new Promise<void>((resolve) => {
@@ -198,12 +203,13 @@ async function listen() {
       subscribed = new Set(creators);
       ws!.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: [...creators] }));
       ws!.send(JSON.stringify({ method: 'subscribeNewToken' }));
-      watchMints(exits.mints());
+      watchMints(tracked());
     };
     ws.onmessage = (e) => {
       msgs++;
       let m: Msg; try { m = JSON.parse(String(e.data)); } catch { return; }
-      if (m.mint && subMints.has(m.mint)) exits.onTrade(m as TradeMsg);   // stratégie de sortie : évaluée tout de suite
+      // stratégies de sortie et achats programmés : évalués tout de suite
+      if (m.mint && subMints.has(m.mint)) { exits.onTrade(m as TradeMsg); entries.onTrade(m as TradeMsg); }
       const who = m.traderPublicKey;
       if (!m.mint || !MINT.test(m.mint) || !who || !creators.has(who) || seen.has(m.mint)) return;
       seen.add(m.mint);
@@ -219,15 +225,15 @@ async function listen() {
   const refresh = setInterval(async () => {
     try {
       creators = await watched();
-      await Promise.all([loadSnipes(), exits.load()]);
-      watchMints(exits.mints());
+      await Promise.all([loadSnipes(), exits.load(), entries.load()]);
+      watchMints(tracked());
       const add = [...creators].filter((a) => !subscribed.has(a));
       if (add.length && ws?.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: add })); add.forEach((a) => subscribed.add(a)); }
     } catch { /* prochain essai */ }
   }, 15_000);
   // configuration pump.fun et blockhash toujours frais : rien à lire au moment de l'achat
-  const warmer = setInterval(() => { if (snipes.size || exits.size()) warm(); }, 8_000);
-  const ticker = setInterval(() => exits.tick(), 1_000);   // conditions de durée
+  const warmer = setInterval(() => { if (snipes.size || exits.size() || entries.size()) warm(); }, 8_000);
+  const ticker = setInterval(() => { exits.tick(); entries.tick(); }, 1_000);   // durées et échéances
   try {
     while (Date.now() < end) {
       const closed = connect();
@@ -238,8 +244,8 @@ async function listen() {
     }
   } finally { clearInterval(refresh); clearInterval(warmer); clearInterval(ticker); }
   // achats en cours de confirmation : on les mène au bout avant de rendre la main
-  await Promise.race([Promise.allSettled([...pending, exits.idle()]), new Promise((res) => setTimeout(res, 45_000))]);
-  return { creators: creators.size, msgs, found, snipes: [...snipes.values()].reduce((a, L) => a + L.length, 0), exits: exits.stats() };
+  await Promise.race([Promise.allSettled([...pending, exits.idle(), entries.idle()]), new Promise((res) => setTimeout(res, 45_000))]);
+  return { creators: creators.size, msgs, found, snipes: [...snipes.values()].reduce((a, L) => a + L.length, 0), exits: exits.stats(), entries: entries.stats() };
 }
 
 Deno.serve(async (req) => {

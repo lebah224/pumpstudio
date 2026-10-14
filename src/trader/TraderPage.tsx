@@ -7,6 +7,7 @@ import { useLiveState } from './live';
 import { useAlertWatcher } from './alerts';
 import { StrategyDialog } from './StrategyDialog';
 import { SnipeDialog } from './SnipeDialog';
+import { BuyOrderDialog, BuyOrderList } from './BuyOrderDialog';
 import { StrategyList } from './StrategyCard';
 import { CreatorSheet, CreatorsView } from './CreatorsView';
 import { useFollowed } from './creators';
@@ -72,11 +73,13 @@ export function TraderPage() {
             <button type="button" role="tab" aria-selected={mode === 'market'} className={mode === 'market' ? 'on' : ''} onClick={() => setM('market')}>Marché</button>
             <button type="button" role="tab" aria-selected={mode === 'creators'} className={mode === 'creators' ? 'on' : ''} onClick={() => setM('creators')}>Créateurs suivis{followed?.length ? <em>{followed.length}</em> : null}</button>
           </div>
+          <BuyOrderList onOpen={(m) => openMint(m)} />
           <StrategyList onOpen={(m) => openMint(m)} />
           {mode === 'creators' ? <CreatorsView onOpen={(m) => openMint(m)} /> : <MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} />}
         </>}
       <StrategyDialog />
       <SnipeDialog />
+      <BuyOrderDialog />
       <CreatorSheet onOpen={(m) => openMint(m)} />
     </div>
   );
