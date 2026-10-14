@@ -6,6 +6,7 @@ import { TokenView } from './TokenView';
 import { useLiveState } from './live';
 import { useAlertWatcher } from './alerts';
 import { StrategyDialog } from './StrategyDialog';
+import { SnipeDialog } from './SnipeDialog';
 import { StrategyList } from './StrategyCard';
 import { CreatorSheet, CreatorsView } from './CreatorsView';
 import { useFollowed } from './creators';
@@ -75,6 +76,7 @@ export function TraderPage() {
           {mode === 'creators' ? <CreatorsView onOpen={(m) => openMint(m)} /> : <MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} />}
         </>}
       <StrategyDialog />
+      <SnipeDialog />
       <CreatorSheet onOpen={(m) => openMint(m)} />
     </div>
   );

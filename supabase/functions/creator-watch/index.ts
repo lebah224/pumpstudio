@@ -48,7 +48,7 @@ async function run() {
   const watched = new Set(((w ?? []) as { address: string }[]).map((x) => x.address));
   if (!watched.size) return { creators: 0 };
   const coins = await latest([...watched]);
-  const fresh = Date.now() - 10 * 60_000;   // au démarrage, on ignore les lancements trop anciens
+  const fresh = Date.now() - 3 * 60_000;   // seulement les lancements récents (pas ceux d'avant le suivi)
   let found = 0, notified = 0;
   for (const c of coins) {
     if (!c.mint || !MINT.test(c.mint) || !c.creator || !watched.has(c.creator)) continue;

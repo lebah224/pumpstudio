@@ -47,12 +47,9 @@ function Editor({ o, onClose }: { o: StrategyOpen; onClose: () => void }) {
   }, [o.mint, ex]);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [onClose]);
 
-  const edit = (i: number, f: (r: Rule) => Rule) => { setPreset(null); setRules((L) => L.map((r, j) => (j === i ? f(r) : r))); };
-  const setCond = (i: number, j: number, c: Cond) => edit(i, (r) => ({ ...r, all: r.all.map((x, k) => (k === j ? c : x)) }));
-  const usePreset = (id: string) => { const p = PRESETS.find((x) => x.id === id)!; setPreset(id); setRules(p.rules()); };
   const holder = holders?.find((h) => h.address === wallet) ?? null;
   const entryPrice = ex?.entry_price ?? o.avg ?? o.priceSol;
-  const invalid = rules.some((r) => !r.all.length || r.all.some((c) => !CONDS[c.k].noValue && !(Number(c.v) > 0)) || !(r.sell > 0 && r.sell <= 100));
+  const invalid = rulesInvalid(rules);
   const canSave = !busy && !invalid && rules.length > 0 && (ex || !!holder);
 
   async function submit(e: FormEvent) {
@@ -76,47 +73,7 @@ function Editor({ o, onClose }: { o: StrategyOpen; onClose: () => void }) {
         <div className="ts-si-h"><b>Stratégie de sortie · {o.symbol}</b>
           <span>Le serveur vérifie vos règles toutes les 5 secondes et vend avec votre wallet rapide, même outil fermé. La première règle remplie s'exécute ; chacune une seule fois.</span></div>
 
-        {!ex && (
-          <div className="sg-presets" role="radiogroup" aria-label="Modèle">
-            {PRESETS.map((p) => <button key={p.id} type="button" role="radio" aria-checked={preset === p.id} className={preset === p.id ? 'on' : ''} onClick={() => usePreset(p.id)}>{p.l}</button>)}
-            <button type="button" role="radio" aria-checked={preset === null} className={preset === null ? 'on' : ''} onClick={() => setPreset(null)}>Personnalisée</button>
-          </div>
-        )}
-        {preset && <p className="sg-pdesc">{PRESETS.find((p) => p.id === preset)!.d}</p>}
-
-        <ol className="sg-rules">
-          {rules.map((r, i) => {
-            const done = fired.has(r.id);
-            return (
-              <li key={r.id} className={'sg-rule' + (done ? ' done' : '')}>
-                <div className="sg-rule-h"><span className="sg-num">{i + 1}</span><b>{done ? 'Exécutée' : 'Règle ' + (i + 1)}</b>
-                  {!done && rules.length > 1 && <button type="button" className="sg-del" aria-label={'Supprimer la règle ' + (i + 1)} onClick={() => { setPreset(null); setRules((L) => L.filter((_, j) => j !== i)); }}>Supprimer</button>}</div>
-                {done ? <p className="sg-done">{ruleText(r)}</p> : (<>
-                  {r.all.map((c, j) => (
-                    <div key={j} className="sg-cond">
-                      <span className="sg-kw">{j === 0 ? 'Si' : 'et'}</span>
-                      <select value={c.k} aria-label="Condition" onChange={(e) => { const k = e.target.value as CondKind; setCond(i, j, { k, v: CONDS[k].noValue ? undefined : CONDS[k].def, arm: k === 'trail' ? 20 : undefined }); }}>
-                        {COND_ORDER.map((k) => <option key={k} value={k}>{CONDS[k].l}</option>)}
-                      </select>
-                      {!CONDS[c.k].noValue && <Num v={c.v} unit={CONDS[c.k].unit} label={CONDS[c.k].l} onChange={(v) => setCond(i, j, { ...c, v })} />}
-                      {c.k === 'trail' && <span className="sg-arm">après <Num v={c.arm} unit="%" label="Gain avant d'armer le recul" onChange={(arm) => setCond(i, j, { ...c, arm })} allowZero /></span>}
-                      {r.all.length > 1 && <button type="button" className="sg-x" aria-label="Retirer cette condition" onClick={() => edit(i, (x) => ({ ...x, all: x.all.filter((_, k) => k !== j) }))}>×</button>}
-                    </div>
-                  ))}
-                  {r.all.length < 4 && <button type="button" className="sg-and" onClick={() => edit(i, (x) => ({ ...x, all: [...x.all, { k: 'sells', v: 2 }] }))}>+ et une autre condition</button>}
-                  <div className="sg-then"><span className="sg-kw">alors</span>
-                    <div className="sg-sell" role="group" aria-label="Part à vendre">
-                      {SELLS.map((p) => <button key={p} type="button" className={r.sell === p ? 'on' : ''} aria-pressed={r.sell === p} onClick={() => edit(i, (x) => ({ ...x, sell: p }))}>{p === 100 ? 'Tout' : p + ' %'}</button>)}
-                    </div>
-                    <small className="dim">{r.sell >= 100 ? 'de la position' : 'de ce qui reste'}</small>
-                  </div>
-                  <p className="sg-hint">{CONDS[r.all[0]!.k].hint}</p>
-                </>)}
-              </li>
-            );
-          })}
-        </ol>
-        {rules.length < 8 && <button type="button" className="btn sm sg-add" onClick={() => { setPreset(null); setRules((L) => [...L, mkRule([{ k: 'gain', v: 100 }])]); }}>+ Ajouter une règle</button>}
+        <RulesEditor rules={rules} setRules={setRules} preset={preset} setPreset={setPreset} fired={fired} showPresets={!ex} />
 
         <div className="sg-pos">
           <div className="sg-pos-l"><span className="sg-lbl">Position</span>
@@ -148,7 +105,61 @@ function Editor({ o, onClose }: { o: StrategyOpen; onClose: () => void }) {
   );
 }
 
-function Num({ v, unit, label, onChange, allowZero }: { v?: number; unit: string; label: string; onChange: (v: number) => void; allowZero?: boolean }) {
+export const rulesInvalid = (rules: Rule[]) => !rules.length || rules.some((r) => !r.all.length || r.all.some((c) => !CONDS[c.k].noValue && !(Number(c.v) > 0)) || !(r.sell > 0 && r.sell <= 100));
+
+/** Règles de vente : modèles, conditions combinables (ET), part vendue ; partagé avec l'achat automatique */
+export function RulesEditor({ rules, setRules, preset, setPreset, fired = new Set<string>(), showPresets = true }: {
+  rules: Rule[]; setRules: (f: (L: Rule[]) => Rule[]) => void; preset: string | null; setPreset: (p: string | null) => void; fired?: Set<string>; showPresets?: boolean;
+}) {
+  const edit = (i: number, f: (r: Rule) => Rule) => { setPreset(null); setRules((L) => L.map((r, j) => (j === i ? f(r) : r))); };
+  const setCond = (i: number, j: number, c: Cond) => edit(i, (r) => ({ ...r, all: r.all.map((x, k) => (k === j ? c : x)) }));
+  const usePreset = (id: string) => { const p = PRESETS.find((x) => x.id === id)!; setPreset(id); setRules(() => p.rules()); };
+  return (<>
+    {showPresets && (
+      <div className="sg-presets" role="radiogroup" aria-label="Modèle">
+        {PRESETS.map((p) => <button key={p.id} type="button" role="radio" aria-checked={preset === p.id} className={preset === p.id ? 'on' : ''} onClick={() => usePreset(p.id)}>{p.l}</button>)}
+        <button type="button" role="radio" aria-checked={preset === null} className={preset === null ? 'on' : ''} onClick={() => setPreset(null)}>Personnalisée</button>
+      </div>
+    )}
+    {preset && <p className="sg-pdesc">{PRESETS.find((p) => p.id === preset)!.d}</p>}
+
+    <ol className="sg-rules">
+      {rules.map((r, i) => {
+        const done = fired.has(r.id);
+        return (
+          <li key={r.id} className={'sg-rule' + (done ? ' done' : '')}>
+            <div className="sg-rule-h"><span className="sg-num">{i + 1}</span><b>{done ? 'Exécutée' : 'Règle ' + (i + 1)}</b>
+              {!done && rules.length > 1 && <button type="button" className="sg-del" aria-label={'Supprimer la règle ' + (i + 1)} onClick={() => { setPreset(null); setRules((L) => L.filter((_, j) => j !== i)); }}>Supprimer</button>}</div>
+            {done ? <p className="sg-done">{ruleText(r)}</p> : (<>
+              {r.all.map((c, j) => (
+                <div key={j} className="sg-cond">
+                  <span className="sg-kw">{j === 0 ? 'Si' : 'et'}</span>
+                  <select value={c.k} aria-label="Condition" onChange={(e) => { const k = e.target.value as CondKind; setCond(i, j, { k, v: CONDS[k].noValue ? undefined : CONDS[k].def, arm: k === 'trail' ? 20 : undefined }); }}>
+                    {COND_ORDER.map((k) => <option key={k} value={k}>{CONDS[k].l}</option>)}
+                  </select>
+                  {!CONDS[c.k].noValue && <Num v={c.v} unit={CONDS[c.k].unit} label={CONDS[c.k].l} onChange={(v) => setCond(i, j, { ...c, v })} />}
+                  {c.k === 'trail' && <span className="sg-arm">après <Num v={c.arm} unit="%" label="Gain avant d'armer le recul" onChange={(arm) => setCond(i, j, { ...c, arm })} allowZero /></span>}
+                  {r.all.length > 1 && <button type="button" className="sg-x" aria-label="Retirer cette condition" onClick={() => edit(i, (x) => ({ ...x, all: x.all.filter((_, k) => k !== j) }))}>×</button>}
+                </div>
+              ))}
+              {r.all.length < 4 && <button type="button" className="sg-and" onClick={() => edit(i, (x) => ({ ...x, all: [...x.all, { k: 'sells', v: 2 }] }))}>+ et une autre condition</button>}
+              <div className="sg-then"><span className="sg-kw">alors</span>
+                <div className="sg-sell" role="group" aria-label="Part à vendre">
+                  {SELLS.map((p) => <button key={p} type="button" className={r.sell === p ? 'on' : ''} aria-pressed={r.sell === p} onClick={() => edit(i, (x) => ({ ...x, sell: p }))}>{p === 100 ? 'Tout' : p + ' %'}</button>)}
+                </div>
+                <small className="dim">{r.sell >= 100 ? 'de la position' : 'de ce qui reste'}</small>
+              </div>
+              <p className="sg-hint">{CONDS[r.all[0]!.k].hint}</p>
+            </>)}
+          </li>
+        );
+      })}
+    </ol>
+    {rules.length < 8 && <button type="button" className="btn sm sg-add" onClick={() => { setPreset(null); setRules((L) => [...L, mkRule([{ k: 'gain', v: 100 }])]); }}>+ Ajouter une règle</button>}
+  </>);
+}
+
+export function Num({ v, unit, label, onChange, allowZero }: { v?: number; unit: string; label: string; onChange: (v: number) => void; allowZero?: boolean }) {
   const [s, setS] = useState(v != null ? String(v).replace('.', ',') : '');
   useEffect(() => { const n = parse(s); if (v != null && n !== v) setS(String(v).replace('.', ',')); }, [v]);   // eslint-disable-line react-hooks/exhaustive-deps
   return (

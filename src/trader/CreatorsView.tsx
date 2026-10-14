@@ -8,6 +8,8 @@ import {
   ADDR_RE, creatorName, follow, shortAddr, unfollow, updateCreator, useCreatorProfile, useFollowed, useLaunches,
   type CreatorProfile, type Followed,
 } from './creators';
+import { openSnipe } from './SnipeDialog';
+import { useSnipeRuns, useSnipes, type Snipe, type SnipeRun } from './snipes';
 import '../styles/creators.css';
 
 export const openCreator = (address: string) => window.dispatchEvent(new CustomEvent('ts-creator', { detail: address }));
@@ -25,6 +27,8 @@ export function ScoreBadge({ p, size = 'sm' }: { p: CreatorProfile | null; size?
 export function CreatorsView({ onOpen }: { onOpen: (mint: string) => void }) {
   const list = useFollowed();
   const launches = useLaunches();
+  const snipes = useSnipes();
+  const runs = useSnipeRuns();
   const [addr, setAddr] = useState('');
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
@@ -52,7 +56,7 @@ export function CreatorsView({ onOpen }: { onOpen: (mint: string) => void }) {
           <div className="cr-h"><b>Créateurs suivis</b><span className="dim">{list ? list.length : '…'}</span></div>
           {!list ? <div className="empty"><b>Chargement…</b></div> : !list.length ? (
             <div className="empty"><b>Aucun créateur suivi</b><span>Ouvrez un token, onglet <b>Créateur</b>, puis « Suivre ce créateur ». Ou collez une adresse ci-dessus.</span></div>
-          ) : <ul className="cr-rows">{list.map((f) => <CreatorRow key={f.id} f={f} />)}</ul>}
+          ) : <ul className="cr-rows">{list.map((f) => <CreatorRow key={f.id} f={f} snipe={snipes?.find((x) => x.creator === f.address) ?? null} />)}</ul>}
         </section>
 
         <section className="card cr-feed">
@@ -70,11 +74,34 @@ export function CreatorsView({ onOpen }: { onOpen: (mint: string) => void }) {
           )}
         </section>
       </div>
+
+      {!!runs?.length && (
+        <section className="card cr-runs">
+          <div className="cr-h"><b>Achats automatiques</b><span className="dim">dernières tentatives</span></div>
+          <ul>{runs.map((r) => <RunRow key={r.id} r={r} name={names.get(r.creator) ?? shortAddr(r.creator)} onOpen={onOpen} />)}</ul>
+        </section>
+      )}
     </div>
   );
 }
 
-function CreatorRow({ f }: { f: Followed }) {
+const RUN_L: Record<SnipeRun['status'], [string, string]> = {
+  pending: ['En cours', 'a'], sent: ['Envoyé', 'a'], bought: ['Acheté', 'g'], failed: ['Échoué', 'r'], skipped: ['Ignoré', ''],
+};
+function RunRow({ r, name, onOpen }: { r: SnipeRun; name: string; onOpen: (mint: string) => void }) {
+  const [l, c] = RUN_L[r.status];
+  return (
+    <li><button type="button" onClick={() => onOpen(r.mint)}>
+      <span className={'cr-run-st ' + c}>{l}</span>
+      <span className="cr-l-t"><b>{r.symbol ? '$' + r.symbol : shortAddr(r.mint)}</b><small>{name}{r.reason ? ' · ' + r.reason : ''}</small></span>
+      <span className="cr-l-m">
+        <b>{r.sol != null ? <Sol v={Number(r.sol)} d={3} /> : r.amount_sol != null ? <Sol v={Number(r.amount_sol)} d={3} /> : '—'}</b>
+        <small>{r.send_ms != null ? 'parti en ' + (r.send_ms / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' s · ' : ''}il y a {age(Date.parse(r.created_at))}</small></span>
+    </button></li>
+  );
+}
+
+function CreatorRow({ f, snipe }: { f: Followed; snipe: Snipe | null }) {
   const { p } = useCreatorProfile(f.address);
   const [busy, setBusy] = useState(false);
   const toggle = async () => { setBusy(true); try { await updateCreator(f.id, { alerts: !f.alerts }); } catch (e) { toast('Action impossible', readable(e), 'r'); } finally { setBusy(false); } };
@@ -88,6 +115,9 @@ function CreatorRow({ f }: { f: Followed }) {
         <span className="cr-row-k hide-s"><small>Vend après</small><b className="mono">{p ? (p.stats.sellMedianMin == null ? 'jamais' : mins(p.stats.sellMedianMin)) : '…'}</b></span>
         <span className="cr-row-k hide-m"><small>Dernier</small><b>{p?.stats.lastLaunch ? age(p.stats.lastLaunch) : '—'}</b></span>
       </button>
+      <button type="button" className={'cr-auto' + (snipe?.enabled ? ' on' : snipe ? ' off' : '')} onClick={() => openSnipe({ creator: f.address, name: creatorName(f) })}
+        title={snipe?.enabled ? 'Achat automatique actif : ' + snipe.amount_sol + ' SOL' : snipe ? 'Achat automatique en pause' : 'Programmer un achat automatique'}>
+        {snipe?.enabled ? <><i aria-hidden="true" />Auto · {Number(snipe.amount_sol).toLocaleString('fr-FR')}</> : 'Auto'}</button>
       <label className="cr-bell" title={f.alerts ? 'Alertes de lancement activées' : 'Alertes coupées'}>
         <input type="checkbox" checked={f.alerts} disabled={busy} onChange={toggle} /><span aria-hidden="true" /><em className="sr">Alerte de lancement</em>
       </label>
@@ -159,6 +189,7 @@ function Sheet({ address, onClose, onOpen }: { address: string; onClose: () => v
           {f ? (<>
             <label className="cr-name"><span className="sg-lbl">Nom</span><input value={label ?? ''} maxLength={32} onChange={(e) => setLabel(e.target.value)} onBlur={() => { if ((label ?? '') !== (f.label ?? '')) run(() => updateCreator(f.id, { label: (label ?? '').trim() || null }), 'Nom enregistré'); }} placeholder={shortAddr(address)} /></label>
             <label className="sg-check"><input type="checkbox" checked={f.alerts} disabled={busy} onChange={() => run(() => updateCreator(f.id, { alerts: !f.alerts }), f.alerts ? 'Alertes coupées' : 'Alertes activées')} /><span>M'avertir à chaque lancement</span></label>
+            <button type="button" className="btn sm primary" onClick={() => { onClose(); openSnipe({ creator: address, name: creatorName(f) }); }}>Achat automatique</button>
             <button type="button" className="btn sm ghost danger" disabled={busy} onClick={() => run(() => unfollow(f.id), 'Créateur retiré')}>Ne plus suivre</button>
           </>) : <button type="button" className="btn primary" disabled={busy || !list} onClick={() => run(() => follow(address), 'Créateur suivi')}>Suivre ce créateur</button>}
         </div>
