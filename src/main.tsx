@@ -6,8 +6,6 @@ import './styles/account.css';
 import './wallets/catalog';
 // Règle des mots de passe, aussi utilisée par le studio historique (window.TSPassword)
 import './lib/password';
-// Studio historique : s'exécute après le chargement du kit Solana (public/vendor/pumpkit.js)
-import './legacy/studio.js';
 import { App } from './App';
 import { installSelectMenus } from './ui/selectMenu';
 import { installRpcRelay } from './lib/rpcRelay';
@@ -28,14 +26,22 @@ document.addEventListener('error', (e) => {
 try { Object.keys(localStorage).filter((k) => k.startsWith('pstudio_pb_') || k === 'pb-exec').forEach((k) => localStorage.removeItem(k)); } catch { /* navigation privée */ }
 try { indexedDB.deleteDatabase('pstudio_pumpbot'); } catch { /* navigateur sans IndexedDB */ }
 
-// listes de choix aux couleurs du studio, pour tout l'outil
-installSelectMenus();
-// RPC du compte : lecture de la blockchain sans clé Helius personnelle
-installRpcRelay();
-// clic sur une alerte : le studio s'ouvre sur la page des ordres
-installPushRouting();
-// logo et fiche des tokens envoyés par le serveur (pas de clé Pinata nécessaire)
-installTokenMeta();
+declare global { interface Window { __tsBoot?: { done: () => void; fail: (e: unknown) => void } } }
 
-const root = document.getElementById('ts-root');
-if (root) createRoot(root).render(<StrictMode><App /></StrictMode>);
+function start() {
+  // listes de choix aux couleurs du studio, pour tout l'outil
+  installSelectMenus();
+  // RPC du compte : lecture de la blockchain sans clé Helius personnelle
+  installRpcRelay();
+  // clic sur une alerte : le studio s'ouvre sur la page des ordres
+  installPushRouting();
+  // logo et fiche des tokens envoyés par le serveur (pas de clé Pinata nécessaire)
+  installTokenMeta();
+  const root = document.getElementById('ts-root');
+  if (root) createRoot(root).render(<StrictMode><App /></StrictMode>);
+}
+// Studio historique (après le kit Solana, public/vendor/pumpkit.js) : chargé à part, pour qu'une erreur de sa part
+// (donnée locale illisible…) n'empêche pas l'outil de démarrer ; la garde de démarrage propose alors de réparer.
+import('./legacy/studio.js')
+  .then(start)
+  .catch((e) => { console.error(e); window.__tsBoot?.fail(e); try { start(); } catch (e2) { window.__tsBoot?.fail(e2); } });

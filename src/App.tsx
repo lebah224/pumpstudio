@@ -39,8 +39,13 @@ function useConnectBridge() {
   useEffect(() => { if (ready && signed) registerDevice(user!.id); }, [ready, signed, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // wallet rapide serveur du compte (s'il existe)
   useEffect(() => { if (!ready) return; if (signed) refreshServerWallet(); else clearServerWallet(); }, [ready, signed, user?.id]);
-  // sans compte, l'outil renvoie vers la page de connexion
-  useEffect(() => { if (ready && !user && !isQuickSignIn() && !isLeaving()) location.replace('/connexion'); }, [ready, user]);
+  // sans compte, l'outil renvoie vers la page de connexion (l'écran de chargement reste affiché jusque-là) ;
+  // avec un compte confirmé, l'interface apparaît
+  useEffect(() => {
+    if (!ready) return;
+    if (!user && !isQuickSignIn() && !isLeaving()) { location.replace('/connexion'); return; }
+    window.__tsBoot?.done();
+  }, [ready, user]);
   // arrivée depuis la page de connexion : ?signin=quick (ancien wallet rapide), puis adresse nettoyée
   useEffect(() => {
     if (!ready) return;
