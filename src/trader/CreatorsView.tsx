@@ -10,6 +10,7 @@ import {
 } from './creators';
 import { openSnipe } from './SnipeDialog';
 import { useSnipeRuns, useSnipes, type Snipe, type SnipeRun } from './snipes';
+import { CreatorBuyersSection } from './Discovery';
 import '../styles/creators.css';
 
 export const openCreator = (address: string) => window.dispatchEvent(new CustomEvent('ts-creator', { detail: address }));
@@ -185,6 +186,7 @@ function Sheet({ address, onClose, onOpen }: { address: string; onClose: () => v
               ); })}</tbody>
             </table>
           </div>
+          <CreatorBuyersSection address={address} onOpen={onOpen} />
         </>)}
 
         <div className="cr-sheet-f">

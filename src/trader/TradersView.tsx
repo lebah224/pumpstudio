@@ -6,12 +6,14 @@ import { age, fCompact } from './format';
 import { CopyBtn, TokenLogo } from './bits';
 import { ADDR_RE, shortAddr } from './creators';
 import {
-  track, traderName, untrack, updateTracked, useTraderProfile, useTracked, useTrackedTrades,
+  openTrader, track, traderName, untrack, updateTracked, useTraderProfile, useTracked, useTrackedTrades,
   type TraderProfile, type Tracked,
 } from './traders';
+import { DiscoverSection } from './Discovery';
 import '../styles/creators.css';
 
-export const openTrader = (address: string) => window.dispatchEvent(new CustomEvent('ts-trader-sheet', { detail: address }));
+export { openTrader };
+
 const VERDICT_C: Record<string, string> = { Rentable: 'g', Moyen: 'a', Perdant: 'r', Inconnu: '' };
 const mins = (m: number | null) => (m == null ? '—' : m < 1 ? '< 1 min' : m < 60 ? Math.round(m) + ' min' : m < 1440 ? Math.round(m / 60) + ' h' : Math.round(m / 1440) + ' j');
 const secs = (s: number | null) => (s == null ? '—' : s < 90 ? Math.round(s) + ' s' : mins(s / 60));
@@ -75,6 +77,8 @@ export function TradersView({ onOpen }: { onOpen: (mint: string) => void }) {
           )}
         </section>
       </div>
+
+      <DiscoverSection onOpen={onOpen} />
     </div>
   );
 }

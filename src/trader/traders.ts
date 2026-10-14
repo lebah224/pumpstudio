@@ -30,6 +30,7 @@ export type TraderProfile = {
   tokens: TraderToken[];
   trades: { sig: string; t: number; mint: string; side: 'buy' | 'sell'; sol: number; tok: number; symbol: string | null; image: string | null }[];
 };
+export const openTrader = (address: string) => window.dispatchEvent(new CustomEvent('ts-trader-sheet', { detail: address }));
 export const traderName = (f: Pick<Tracked, 'label' | 'address'>) => f.label || shortAddr(f.address);
 
 /* ---------- fiche (cache de 90 s côté serveur, 60 s ici) ---------- */
@@ -109,3 +110,47 @@ export function useTrackedTrades() {
   }, []);
   return list;
 }
+
+/* ---------- découverte : meilleurs acheteurs d'un token, du moment, d'un créateur ---------- */
+export type TokenBuyer = {
+  address: string; buySol: number; sellSol: number; realized: number; unreal: number; pnl: number; roi: number | null; entrySec: number | null;
+  rank: number; holdPct: number; n: number; first: number; creator: boolean; sniper: boolean;
+};
+export type TokenBuyers = { mint: string; symbol: string; created: number | null; creator: string | null; scanned: number; missed: number; buyers: TokenBuyer[] };
+export type TopBuyer = {
+  address: string; count: number; wins: number; pnl: number; realized: number; invested: number; roi: number | null; entryMedianSec: number | null; sniper: boolean;
+  tokens: { mint: string; symbol: string; pnl: number; realized: number; roi: number | null; entrySec: number | null }[];
+};
+export type Discover = { at: number; tokens: { mint: string; symbol: string; image: string | null; mcUsd: number | null }[]; rows: TopBuyer[] };
+export type CreatorBuyers = { address: string; tokens: { mint: string; symbol: string; image: string | null }[]; recurring: TopBuyer[]; best: TopBuyer[] };
+
+const dmemo = new Map<string, { at: number; p: Promise<unknown> }>();
+function market<T>(key: string, body: Record<string, unknown>, ttl: number, force = false): Promise<T> {
+  const c = dmemo.get(key);
+  if (c && !force && Date.now() - c.at < ttl) return c.p as Promise<T>;
+  const p = supabase.functions.invoke('market', { body, region: MARKET_REGION }).then(async ({ data, error }) => {
+    if (error) {
+      let msg = 'Analyse indisponible. Réessayez dans un instant.';
+      try { const j = await (error as { context?: Response }).context?.json(); if (j?.error) msg = j.error; } catch { /* réponse non JSON */ }
+      throw new Error(msg);
+    }
+    return data as T;
+  });
+  dmemo.set(key, { at: Date.now(), p });
+  p.catch(() => dmemo.delete(key));
+  return p;
+}
+function useMarket<T>(key: string | null, body: Record<string, unknown>, ttl: number) {
+  const [st, setSt] = useState<{ d: T | null; err: string | null; busy: boolean }>({ d: null, err: null, busy: false });
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!key) return;
+    let alive = true; setSt((s) => ({ d: tick ? s.d : null, err: null, busy: true }));
+    market<T>(key, body, ttl, tick > 0).then((d) => alive && setSt({ d, err: null, busy: false })).catch((e) => alive && setSt((s) => ({ d: s.d, err: (e as Error).message, busy: false })));
+    return () => { alive = false; };
+  }, [key, tick]);   // eslint-disable-line react-hooks/exhaustive-deps
+  return { ...st, reload: () => setTick((t) => t + 1) };
+}
+export const useTokenBuyers = (mint: string | null) => useMarket<TokenBuyers>(mint ? 'tb:' + mint : null, { action: 'buyers', mint }, 60_000);
+export const useDiscover = () => useMarket<Discover>('disc', { action: 'discover' }, 5 * 60_000);
+export const useCreatorBuyers = (address: string | null) => useMarket<CreatorBuyers>(address ? 'cb:' + address : null, { action: 'creatorBuyers', address }, 5 * 60_000);

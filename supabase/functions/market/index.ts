@@ -468,6 +468,115 @@ async function traderProfile(addr: string) {
   };
 }
 
+/* ---------- découverte : meilleurs acheteurs d'un token, d'un créateur, du moment ---------- */
+type Tr = { t: number; w: string; side: 'buy' | 'sell'; sol: number; tok: number; p: number };
+const PAGE = 'https://swap-api.pump.fun/v2/coins/';
+async function tradePage(mint: string, q: string) {
+  const j = await get(PAGE + mint + '/trades?limit=100' + q, PUMP_H).catch(() => null) as Any | null;
+  const L: Tr[] = ((j?.trades ?? []) as Any[]).map((x) => ({ t: Date.parse(x.timestamp) || 0, w: s(x.userAddress, 50), side: x.type === 'sell' ? 'sell' as const : 'buy' as const, sol: n(x.amountSol) ?? 0, tok: n(x.baseAmount) ?? 0, p: n(x.priceSol) ?? 0 }))
+    .filter((x) => x.t && MINT.test(x.w));
+  return { L, next: j?.pagination?.hasMore ? s(j.pagination.nextCursor, 80) : null };
+}
+// l'historique complet d'un wallet sur un token (300 échanges au plus)
+async function walletOn(mint: string, w: string) {
+  const out: Tr[] = []; let cur: string | null = '';
+  for (let i = 0; i < 3 && cur != null; i++) {
+    const { L, next } = await tradePage(mint, '&userAddress=' + w + (cur ? '&cursor=' + encodeURIComponent(cur) : ''));
+    out.push(...L.filter((x) => x.w === w)); cur = next;
+  }
+  return out;
+}
+type Buyer = {
+  address: string; buySol: number; sellSol: number; realized: number; unreal: number; pnl: number; roi: number | null; entrySec: number | null; rank: number;
+  holdPct: number; n: number; first: number; creator: boolean; sniper: boolean;
+};
+// candidats : les tout premiers acheteurs (90 premières secondes), ceux qui revendent et les plus gros acheteurs récents ;
+// puis l'historique exact de chacun sur ce token. Encaissé = ventes − coût de la part revendue ;
+// latent = ce qu'il garde au prix actuel (indicatif : un gros solde ne se revend pas forcément à ce prix).
+async function tokenBuyers(mint: string, max = 24) {
+  const c = await coin(mint).catch(() => null);
+  if (!c) throw new Fail(404, 'Token introuvable sur pump.fun.');
+  const I = fromPump(c), created = I.created ?? 0;
+  const early: Tr[] = [];
+  if (created) {
+    let cur: string | null = '9999999999999999999999-' + (created + 90_000);
+    for (let i = 0; i < 3 && cur; i++) { const { L, next } = await tradePage(mint, '&cursor=' + encodeURIComponent(cur)); early.push(...L); cur = L.some((x) => x.t < created) ? null : next; }
+  }
+  const recent = (await tradePage(mint, '')).L;
+  // prix actuel : celui du dernier échange (la fiche du token ne le donne pas toujours en SOL)
+  const price = recent.find((x) => x.p > 0)?.p ?? I.priceSol ?? 0;
+  const firstBuy = new Map<string, number>(), vol = new Map<string, number>(), sold = new Map<string, number>();
+  for (const x of [...early, ...recent]) {
+    if (x.side === 'buy') { firstBuy.set(x.w, Math.min(firstBuy.get(x.w) ?? Infinity, x.t)); vol.set(x.w, (vol.get(x.w) ?? 0) + x.sol); }
+    else sold.set(x.w, (sold.get(x.w) ?? 0) + x.sol);
+  }
+  // les micro-échanges (robots de volume) ne sont pas des acheteurs à suivre
+  const top = (m: Map<string, number>) => [...m].filter(([, v]) => v >= 0.02).sort((a, b) => b[1] - a[1]).map(([w]) => w);
+  const byTime = [...firstBuy].filter(([w]) => (vol.get(w) ?? 0) >= 0.02).sort((a, b) => a[1] - b[1]);
+  // les achats des 3 premières secondes sont des robots (souvent groupés avec le créateur) : deux au plus
+  const bots = byTime.filter(([, t]) => created && t - created < 3000).map(([w]) => w), humans = byTime.filter(([w]) => !bots.includes(w)).map(([w]) => w);
+  const cand = [...new Set([...humans.slice(0, Math.ceil(max * 0.4)), ...top(sold).slice(0, Math.ceil(max * 0.3)), ...bots.slice(0, 2), ...top(vol)])].slice(0, max);
+  let missed = 0;
+  const rows = (await pool(cand, 3, async (w): Promise<Buyer | null> => {
+    const L = await walletOn(mint, w).catch(() => [] as Tr[]);
+    if (!L.length) { missed++; return null; }
+    const b = L.filter((x) => x.side === 'buy'), sl = L.filter((x) => x.side === 'sell');
+    const buySol = b.reduce((a, x) => a + x.sol, 0), sellSol = sl.reduce((a, x) => a + x.sol, 0);
+    const buyTok = b.reduce((a, x) => a + x.tok, 0), sellTok = sl.reduce((a, x) => a + x.tok, 0);
+    if (buySol < 0.02 || !buyTok) return null;
+    const ratio = Math.min(1, sellTok / buyTok), hold = Math.max(0, buyTok - sellTok);
+    const realized = sellSol - buySol * ratio, unreal = hold * price - buySol * (1 - ratio);
+    const f = Math.min(...b.map((x) => x.t));
+    return {
+      address: w, buySol, sellSol, realized, unreal, pnl: realized + unreal, roi: buySol > 0 ? (realized + unreal) / buySol : null,
+      entrySec: created ? Math.max(0, (f - created) / 1000) : null, rank: 0,
+      holdPct: (hold / buyTok) * 100, n: L.length, first: f, creator: w === I.creator, sniper: !!created && f - created < 3000,
+    };
+  })).filter((x): x is Buyer => !!x);
+  [...rows].sort((a, b) => a.first - b.first).forEach((r, i) => { r.rank = i + 1; });
+  rows.sort((a, b) => b.pnl - a.pnl);
+  return { mint, symbol: I.symbol, name: I.name, image: I.image, created: I.created, mcUsd: I.mcUsd, complete: I.complete, creator: I.creator, scanned: cand.length, missed, buyers: rows };
+}
+// un trade gagnant = au moins 0,05 SOL et 20 % de gain (encaissé + valeur actuelle de ce qu'il garde)
+const won = (r: Buyer) => r.pnl >= 0.05 && r.pnl >= r.buySol * 0.2;
+type Agg = { address: string; tokens: { mint: string; symbol: string; pnl: number; realized: number; roi: number | null; entrySec: number | null }[]; pnl: number; realized: number; invested: number; wins: number; entries: number[]; sniper: number; creator: number };
+function aggregate(lists: Awaited<ReturnType<typeof tokenBuyers>>[]) {
+  const by = new Map<string, Agg>();
+  for (const T of lists) for (const r of T.buyers) {
+    const a = by.get(r.address) ?? { address: r.address, tokens: [], pnl: 0, realized: 0, invested: 0, wins: 0, entries: [], sniper: 0, creator: 0 };
+    a.tokens.push({ mint: T.mint, symbol: T.symbol, pnl: r.pnl, realized: r.realized, roi: r.roi, entrySec: r.entrySec });
+    a.pnl += r.pnl; a.realized += r.realized; a.invested += r.buySol; if (won(r)) a.wins++; if (r.entrySec != null) a.entries.push(r.entrySec);
+    if (r.sniper) a.sniper++; if (r.creator) a.creator++;
+    by.set(r.address, a);
+  }
+  return [...by.values()].map((a) => ({
+    address: a.address, tokens: a.tokens, count: a.tokens.length, wins: a.wins, pnl: a.pnl, realized: a.realized, invested: a.invested,
+    roi: a.invested > 0 ? a.pnl / a.invested : null, entryMedianSec: median(a.entries), sniper: a.sniper > a.tokens.length / 2, creator: a.creator > 0,
+  }));
+}
+// meilleurs acheteurs du moment : gagnants des tokens pump.fun qui ont réellement réussi ces 3 derniers jours
+// (volume et liquidité réels : les capitalisations gonflées sans échanges sont écartées)
+async function discover() {
+  const [tr, mig] = await Promise.all([cached('list:trending', 20_000, () => lists('trending')).catch(() => [] as Row[]), cached('list:migrated', 8_000, () => lists('migrated')).catch(() => [] as Row[])]);
+  const since = Date.now() - 3 * 864e5, seen = new Set<string>();
+  const picks = [...tr, ...mig].filter((r) => r.pump && r.mint.endsWith('pump') && !seen.has(r.mint) && seen.add(r.mint))
+    .filter((r) => (r.created ?? 0) > since && (r.vol.h24 ?? 0) >= 50_000 && (r.liqUsd ?? 0) >= 15_000)
+    .sort((a, b) => (b.vol.h24 ?? 0) - (a.vol.h24 ?? 0)).slice(0, 12);
+  const lists2 = (await pool(picks, 3, (r) => cached('tb:' + r.mint, 5 * 60_000, () => tokenBuyers(r.mint, 20)).catch(() => null))).filter((x): x is Awaited<ReturnType<typeof tokenBuyers>> => !!x);
+  const rows = aggregate(lists2).filter((a) => a.wins > 0 && !a.creator).sort((a, b) => b.wins - a.wins || b.pnl - a.pnl).slice(0, 40);
+  return { at: Date.now(), tokens: lists2.map((T) => ({ mint: T.mint, symbol: T.symbol, image: T.image, mcUsd: T.mcUsd })), rows };
+}
+// acheteurs récurrents d'un créateur : les wallets présents sur plusieurs de ses derniers lancements
+async function creatorBuyers(addr: string) {
+  const cc = await cached('cc:' + addr, 60_000, () => get(PUMP + '/coins-v2/user-created-coins/' + addr + '?offset=0&limit=30&includeNsfw=true', PUMP_H) as Promise<Any | null>);
+  const coins = ((cc?.coins ?? []) as Any[]).filter((x) => MINT.test(x?.mint ?? '')).map(fromPump).sort((a, b) => (b.created ?? 0) - (a.created ?? 0)).slice(0, 6);
+  const lists = (await pool(coins, 2, (r) => cached('tb:' + r.mint, 5 * 60_000, () => tokenBuyers(r.mint, 16)).catch(() => null))).filter((x): x is Awaited<ReturnType<typeof tokenBuyers>> => !!x);
+  const all = aggregate(lists).filter((a) => !a.creator && a.address !== addr);
+  const recurring = all.filter((a) => a.count >= 2).sort((a, b) => b.count - a.count || b.pnl - a.pnl).slice(0, 15);
+  const best = all.filter((a) => a.wins > 0).sort((a, b) => b.pnl - a.pnl).slice(0, 10);
+  return { address: addr, tokens: lists.map((T) => ({ mint: T.mint, symbol: T.symbol, image: T.image })), recurring, best };
+}
+
 Deno.serve(async (req) => {
   const h = cors(req.headers.get('Origin'));
   if (req.method === 'OPTIONS') return new Response('ok', { headers: h });
@@ -513,6 +622,16 @@ Deno.serve(async (req) => {
         const addr = typeof b.address === 'string' && MINT.test(b.address) ? b.address : null;
         if (!addr) throw new Fail(400, 'Adresse de wallet invalide.');
         return json(200, await cached('trd:' + addr, 90_000, () => traderProfile(addr)), h);
+      }
+      case 'buyers': {
+        if (!mint) throw new Fail(400, 'Adresse de token invalide.');
+        return json(200, await cached('tb:' + mint, 60_000, () => tokenBuyers(mint)), h);
+      }
+      case 'discover': return json(200, await cached('disc', 10 * 60_000, discover), h);
+      case 'creatorBuyers': {
+        const addr = typeof b.address === 'string' && MINT.test(b.address) ? b.address : null;
+        if (!addr) throw new Fail(400, 'Adresse de créateur invalide.');
+        return json(200, await cached('cb:' + addr, 5 * 60_000, () => creatorBuyers(addr)), h);
       }
       default: throw new Fail(400, 'Action inconnue.');
     }

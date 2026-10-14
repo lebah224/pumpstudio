@@ -8,14 +8,15 @@ import { CopyBtn, Star, TokenLogo, useFavs } from './bits';
 import { dexLabel } from './MarketList';
 import { CreatorPanel, HoldersPanel, SecurityPanel, verdict } from './Analysis';
 import { PriceAlerts } from './alerts';
-import { openTrader } from './TradersView';
+import { openTrader } from './traders';
+import { TokenBuyersPanel } from './Discovery';
 
 const EXT = <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5" /></svg>;
 const solscan = (k: 'tx' | 'account' | 'token', id: string) => 'https://solscan.io/' + k + '/' + id;
 
 /** Fiche d'un token : en-tête, graphique en direct, chiffres clés, transactions et panneau de trading */
-type Tab = 'tx' | 'sec' | 'holders' | 'creator';
-const TABS: { id: Tab; l: string }[] = [{ id: 'tx', l: 'Transactions' }, { id: 'sec', l: 'Sécurité' }, { id: 'holders', l: 'Détenteurs' }, { id: 'creator', l: 'Créateur' }];
+type Tab = 'tx' | 'sec' | 'holders' | 'buyers' | 'creator';
+const TABS: { id: Tab; l: string }[] = [{ id: 'tx', l: 'Transactions' }, { id: 'sec', l: 'Sécurité' }, { id: 'holders', l: 'Détenteurs' }, { id: 'buyers', l: 'Meilleurs acheteurs' }, { id: 'creator', l: 'Créateur' }];
 
 export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: Row | null; onBack: () => void; onOpen: (mint: string) => void }) {
   const [info, setInfo] = useState<TokenInfo | null>(seed ? { ...seed, description: '', koth: null, curve: null, dexPair: null } : null);
@@ -148,10 +149,11 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
           <div className="card tr-tape">
             <div className="tr-tabs tr-tok-tabs" role="tablist" aria-label="Analyse du token">
               {TABS.map((x) => <button key={x.id} type="button" role="tab" aria-selected={tab === x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>{x.l}{x.id === 'sec' && (() => { const v = verdict(an, info); return v ? <i className={'tr-dot ' + v.lvl} aria-hidden="true" /> : null; })()}</button>)}
-              <span className="tr-tabs-hint">{tab === 'tx' ? (pump ? 'En direct, au moment où elles passent sur la blockchain.' : 'Actualisées toutes les 5 secondes.') : 'Analyse actualisée chaque minute.'}</span>
+              <span className="tr-tabs-hint">{tab === 'tx' ? (pump ? 'En direct, au moment où elles passent sur la blockchain.' : 'Actualisées toutes les 5 secondes.') : tab === 'buyers' ? 'Résultat de chaque wallet sur ce token, actualisé chaque minute.' : 'Analyse actualisée chaque minute.'}</span>
             </div>
             <div className="tr-tab-body">
-            {tab !== 'tx' ? (!an ? (anErr ? <div className="empty"><b>Analyse indisponible</b><span>{anErr}</span></div> : <div className="empty"><b>Analyse en cours…</b><span>Sécurité, détenteurs et historique du créateur.</span></div>)
+            {tab === 'buyers' ? <TokenBuyersPanel mint={mint} pump={pump} />
+            : tab !== 'tx' ? (!an ? (anErr ? <div className="empty"><b>Analyse indisponible</b><span>{anErr}</span></div> : <div className="empty"><b>Analyse en cours…</b><span>Sécurité, détenteurs et historique du créateur.</span></div>)
               : tab === 'sec' ? <SecurityPanel a={an} info={info} /> : tab === 'holders' ? <HoldersPanel a={an} priceUsd={priceUsd} creator={info?.creator ?? null} /> : <CreatorPanel a={an} info={info} onOpen={onOpen} />)
             : <>
             {!trades ? <div className="empty"><b>Chargement…</b></div> : !trades.length ? <div className="empty"><b>Aucune transaction récente</b>{!pump && <span>Le détail des transactions est disponible pour les tokens pump.fun et PumpSwap.</span>}</div> : (
