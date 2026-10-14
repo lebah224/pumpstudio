@@ -101,6 +101,11 @@ export function exitEngine(admin: SupabaseClient, push: Push, watchKey: () => st
 
   /** transaction reçue du flux pour un token suivi */
   function onTrade(m: TradeMsg) {
+    // vente du créateur (vue sur son wallet) : signal à part, la vente elle-même est déjà comptée par la courbe
+    if (m.txType === 'creator_sell') {
+      for (const l of live.values()) if (l.s.mint === m.mint && l.s.creator && l.s.creator === m.traderPublicKey && Date.now() > l.since) { l.creatorSold = true; evaluate(l); }
+      return;
+    }
     if (!m.mint || (m.txType !== 'buy' && m.txType !== 'sell')) return;
     if (m.signature) { if (sigs.has(m.signature)) return; sigs.add(m.signature); if (sigs.size > 5000) sigs.clear(); }
     const vS = Number(m.vSolInBondingCurve), vT = Number(m.vTokensInBondingCurve), sol = Number(m.solAmount) || 0, tok = Number(m.tokenAmount) || 0;
@@ -112,7 +117,8 @@ export function exitEngine(admin: SupabaseClient, push: Push, watchKey: () => st
       if (Number(m.marketCapSol) > 0) l.mcapSol = Number(m.marketCapSol);
       l.at = now;
       const who = m.traderPublicKey ?? '';
-      if (now > l.since && who && !(ours.get(l.s.user_id)?.has(who))) {
+      // transaction d'un autre (sans auteur connu quand elle vient de la courbe)
+      if (now > l.since && !(who && ours.get(l.s.user_id)?.has(who))) {
         if (m.txType === 'buy') l.buys++; else { l.sells++; l.sellSol += sol; if (who === l.s.creator) l.creatorSold = true; }
       }
       evaluate(l);
@@ -187,5 +193,7 @@ export function exitEngine(admin: SupabaseClient, push: Push, watchKey: () => st
     } finally { l.firing = false; }
   }
 
-  return { load, add, mints, onTrade, tick, size: () => live.size, idle: () => Promise.allSettled([...pending]), stats: () => ({ tracked: live.size, evals, sold }) };
+  /** créateurs des tokens suivis (leur vente est écoutée sur leur wallet) */
+  const creators = () => new Set([...live.values()].filter((l) => l.s.creator && l.s.rules.some((r) => r.all?.some((c) => c.k === 'creator_sell'))).map((l) => l.s.creator!));
+  return { load, add, mints, creators, onTrade, tick, size: () => live.size, idle: () => Promise.allSettled([...pending]), stats: () => ({ tracked: live.size, evals, sold }) };
 }

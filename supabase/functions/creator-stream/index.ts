@@ -1,13 +1,14 @@
-// Écoute en continu des créateurs suivis : connexion permanente au flux temps réel PumpPortal (transactions des
-// wallets suivis + avis de création, triés en mémoire ; aucune interrogation de liste). Dès qu'un créateur suivi crée
-// un token, le lancement est enregistré et notifié dans la seconde.
+// Écoute en continu des créateurs suivis : connexion permanente au flux temps réel PumpPortal (avis de création,
+// triés en mémoire ; aucune interrogation de liste). Dès qu'un créateur suivi crée un token, le lancement est
+// enregistré et notifié dans la seconde.
 // Achat automatique : pour un créateur qui a une règle active, l'achat part dès l'avis de création (filtres lus dans
 // l'avis, wallet déjà prêt), en même temps que l'enregistrement ; la stratégie de sortie est attachée à la confirmation.
-// Ventes en temps réel : les stratégies de sortie actives sont évaluées à chaque transaction de leur token (abonnement
-// aux seuls tokens détenus) et la vente part aussitôt (voir _shared/exits.ts).
+// Ventes en temps réel : les stratégies de sortie actives sont évaluées à chaque changement de la courbe de leur token,
+// écoutée sur la blockchain (_shared/chain.ts), et la vente part aussitôt (voir _shared/exits.ts).
 // Achats programmés : les ordres d'achat actifs sont évalués de la même façon (voir _shared/entries.ts).
-// Acheteurs suivis : les transactions des wallets suivis arrivent sur la même connexion ; chaque achat ou vente est
-// enregistré pour les comptes qui les suivent et notifié dans la seconde.
+// Acheteurs suivis : les transactions des wallets suivis sont écoutées directement sur la blockchain (_shared/chain.ts) ;
+// chaque achat ou vente est enregistré pour les comptes qui les suivent et notifié dans la seconde qui suit sa confirmation.
+// Le flux PumpPortal ne sert plus qu'aux avis de création (gratuits) ; transactions d'un token ou d'un wallet : blockchain.
 // Lancée chaque minute par la tâche planifiée : chaque passage écoute ~75 s en arrière-plan, les passages se
 // chevauchent, il n'y a donc pas de trou d'écoute ; un même lancement n'est enregistré qu'une fois (base).
 import webpush from 'npm:web-push@3.6.7';
@@ -16,6 +17,7 @@ import { buildDirect, buildSell, checkBuy, checkSell, fastBuy, hotWallet, rpc, s
 import { PublicKey } from 'npm:@solana/web3.js@1.98.4';
 import { exitEngine, type Strat, type TradeMsg } from '../_shared/exits.ts';
 import { entryEngine } from '../_shared/entries.ts';
+import { chainFeed, type WalletTrade } from '../_shared/chain.ts';
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
@@ -59,15 +61,19 @@ const exits = exitEngine(admin, (u, t, b, url, tag) => push(u, t, b, url, tag), 
 // achat programmé confirmé : sa stratégie de sortie est suivie aussitôt
 const entries = entryEngine(admin, (u, t, b, url, tag) => push(u, t, b, url, tag), (s) => { exits.add(s); watchMints([s.mint]); });
 const tracked = () => new Set([...exits.mints(), ...entries.mints()]);
-// abonnement aux transactions d'un token (stratégie de sortie), sur la connexion en cours
-let wsCur: WebSocket | null = null;
-const subMints = new Set<string>();
-function watchMints(list: Iterable<string>) {
-  const add = [...list].filter((m) => !subMints.has(m));
-  if (!add.length || wsCur?.readyState !== WebSocket.OPEN) return;
-  wsCur.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: add }));
-  add.forEach((m) => subMints.add(m));
-}
+// écoute blockchain : courbes des tokens suivis, wallets des acheteurs suivis et des créateurs à surveiller
+// (une connexion par passage d'écoute : les passages se chevauchent, chacun garde la sienne)
+let traderSet = new Set<string>();
+const chainHandlers = {
+  onWalletTrade: (t: WalletTrade) => {
+    if (traderSet.has(t.wallet)) track(recordTrade(t).catch(() => 0));
+    if (t.side === 'sell') { const m = { mint: t.mint, txType: 'creator_sell', traderPublicKey: t.wallet, signature: 'cs:' + t.sig }; exits.onTrade(m); entries.onTrade(m); }
+  },
+  onCurveTrade: (m: TradeMsg) => { exits.onTrade(m); entries.onTrade(m); },
+};
+let chainCur: ReturnType<typeof chainFeed> | null = null;
+const chainSync = () => chainCur?.set([...traderSet, ...exits.creators(), ...entries.creators()], tracked());
+function watchMints(_list: Iterable<string>) { chainSync(); }
 
 async function watched(): Promise<Set<string>> {
   const { data } = await admin.rpc('creators_watched');
@@ -98,17 +104,21 @@ function meta(mint: string): Promise<Meta> {
   return p;
 }
 const shortA = (a: string) => a.slice(0, 4) + '…' + a.slice(-4);
-async function recordTrade(m: Msg, trader: string, at: number) {
-  const side = m.txType === 'sell' ? 'sell' : 'buy', sol = Number(m.solAmount ?? 0), mc = m.marketCapSol != null ? Number(m.marketCapSol) : null;
-  const info = await meta(m.mint!);
+let tradesFound = 0;
+async function recordTrade(t: WalletTrade) {
+  const side = t.side, sol = t.sol, trader = t.wallet;
+  // capitalisation au prix de l'échange (offre de 1 milliard de tokens)
+  const mc = t.tokens > 0 ? (sol / t.tokens) * 1e9 : null;
+  const info = await meta(t.mint);
   const { data } = await admin.rpc('trader_trade_record', {
-    p_trader: trader, p_mint: m.mint, p_side: side, p_sol: sol, p_tokens: Number(m.tokenAmount ?? 0), p_mcap: mc,
-    p_symbol: info.symbol, p_name: info.name, p_image: info.image, p_sig: m.signature, p_at: new Date(at).toISOString(),
+    p_trader: trader, p_mint: t.mint, p_side: side, p_sol: sol, p_tokens: t.tokens, p_mcap: mc,
+    p_symbol: info.symbol, p_name: info.name, p_image: info.image, p_sig: t.sig, p_at: new Date().toISOString(),
   });
   const users = (data ?? []) as { r_user: string; r_label: string | null }[];
   await Promise.all(users.map((u) => push(u.r_user, (u.r_label || shortA(trader)) + (side === 'buy' ? ' achète' : ' vend') + ' $' + (info.symbol ?? '?'),
     nf(sol) + ' SOL' + (mc ? ' · capitalisation ' + nf(mc, 0) + ' SOL' : '') + (info.name ? ' · ' + info.name : '') + '. Touchez pour ouvrir le token.',
-    '/app?page=trade&mint=' + m.mint, 'tt-' + m.mint)));
+    '/app?page=trade&mint=' + t.mint, 'tt-' + t.mint)));
+  tradesFound += users.length;
   return users.length;
 }
 
@@ -230,31 +240,17 @@ async function listen() {
   let [creators, traders] = await Promise.all([watched(), watchedTraders()]);
   await Promise.all([loadSnipes(), warm(), exits.load(), entries.load()]);
   if (!creators.size && !traders.size && !exits.size() && !entries.size()) return { creators: 0, traders: 0, exits: 0, entries: 0 };
-  const seen = new Set<string>(), seenSig = new Set<string>();
-  let found = 0, trades = 0, msgs = 0, ws: WebSocket | null = null, subscribed = new Set<string>();
-  const accounts = () => new Set([...creators, ...traders]);
+  const seen = new Set<string>();
+  let found = 0, msgs = 0, ws: WebSocket | null = null;
+  traderSet = traders; tradesFound = 0;
   const connect = () => new Promise<void>((resolve) => {
-    ws = wsCur = new WebSocket('wss://pumpportal.fun/api/data');
-    subMints.clear();
-    // transactions des créateurs suivis + avis de création (filtré ici en mémoire, rien n'est stocké ni interrogé)
-    ws.onopen = () => {
-      subscribed = accounts();
-      if (subscribed.size) ws!.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: [...subscribed] }));
-      ws!.send(JSON.stringify({ method: 'subscribeNewToken' }));
-      watchMints(tracked());
-    };
+    ws = new WebSocket('wss://pumpportal.fun/api/data');
+    // avis de création (filtrés ici en mémoire sur les créateurs suivis, rien n'est stocké ni interrogé)
+    ws.onopen = () => { ws!.send(JSON.stringify({ method: 'subscribeNewToken' })); };
     ws.onmessage = (e) => {
       msgs++;
       let m: Msg; try { m = JSON.parse(String(e.data)); } catch { return; }
-      // stratégies de sortie et achats programmés : évalués tout de suite
-      if (m.mint && subMints.has(m.mint)) { exits.onTrade(m as TradeMsg); entries.onTrade(m as TradeMsg); }
       const who = m.traderPublicKey;
-      // acheteur suivi : chaque achat ou vente, une seule fois par signature
-      if (who && traders.has(who) && m.mint && MINT.test(m.mint) && (m.txType === 'buy' || m.txType === 'sell') && m.signature && !seenSig.has(m.signature)) {
-        seenSig.add(m.signature);
-        if (seenSig.size > 20_000) seenSig.clear();
-        track(recordTrade(m, who, Date.now()).then((n) => { trades += n; }).catch(() => seenSig.delete(m.signature!)));
-      }
       if (!m.mint || !MINT.test(m.mint) || !who || !creators.has(who) || seen.has(m.mint)) return;
       seen.add(m.mint);
       const at = Date.now();
@@ -269,15 +265,25 @@ async function listen() {
   const refresh = setInterval(async () => {
     try {
       [creators, traders] = await Promise.all([watched(), watchedTraders()]);
+      traderSet = traders;
       await Promise.all([loadSnipes(), exits.load(), entries.load()]);
-      watchMints(tracked());
-      const add = [...accounts()].filter((a) => !subscribed.has(a));
-      if (add.length && ws?.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: add })); add.forEach((a) => subscribed.add(a)); }
+      chainSync();
     } catch { /* prochain essai */ }
   }, 15_000);
   // configuration pump.fun et blockhash toujours frais : rien à lire au moment de l'achat
   const warmer = setInterval(() => { if (snipes.size || exits.size() || entries.size()) warm(); }, 8_000);
   const ticker = setInterval(() => { exits.tick(); entries.tick(); }, 1_000);   // durées et échéances
+  // écoute blockchain en parallèle, reconnectée si elle coupe
+  const chain = chainFeed(chainHandlers);
+  chainCur = chain;
+  chainSync();
+  const chainLoop = (async () => {
+    while (Date.now() < end) {
+      const closed = chain.connect();
+      await Promise.race([closed, new Promise<void>((res) => setTimeout(res, Math.max(0, end - Date.now())))]);
+      if (Date.now() < end) await new Promise((res) => setTimeout(res, 500)); else chain.close();
+    }
+  })();
   try {
     while (Date.now() < end) {
       const closed = connect();
@@ -286,10 +292,10 @@ async function listen() {
       if (Date.now() < end) await new Promise((res) => setTimeout(res, 500));   // reconnexion rapide si le flux coupe
       else { try { (ws as WebSocket | null)?.close(); } catch { /* déjà fermé */ } }
     }
-  } finally { clearInterval(refresh); clearInterval(warmer); clearInterval(ticker); }
+  } finally { clearInterval(refresh); clearInterval(warmer); clearInterval(ticker); chain.close(); await chainLoop.catch(() => {}); if (chainCur === chain) chainCur = null; }
   // achats en cours de confirmation : on les mène au bout avant de rendre la main
   await Promise.race([Promise.allSettled([...pending, exits.idle(), entries.idle()]), new Promise((res) => setTimeout(res, 45_000))]);
-  return { creators: creators.size, traders: traders.size, trades, msgs, found, snipes: [...snipes.values()].reduce((a, L) => a + L.length, 0), exits: exits.stats(), entries: entries.stats() };
+  return { creators: creators.size, traders: traders.size, trades: tradesFound, chain: chain.stats(), msgs, found, snipes: [...snipes.values()].reduce((a, L) => a + L.length, 0), exits: exits.stats(), entries: entries.stats() };
 }
 
 Deno.serve(async (req) => {

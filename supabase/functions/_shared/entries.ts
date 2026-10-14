@@ -78,6 +78,11 @@ export function entryEngine(admin: SupabaseClient, push: Push, onBought: (s: Str
   const track = (p: Promise<unknown>) => { pending.add(p); p.finally(() => pending.delete(p)); };
 
   function onTrade(m: TradeMsg) {
+    // vente du créateur (vue sur son wallet) : annule les ordres qui le demandent
+    if (m.txType === 'creator_sell') {
+      for (const l of live.values()) if (l.o.mint === m.mint && !l.done && !l.firing && l.o.cancel_on_creator_sell && l.o.creator === m.traderPublicKey) track(cancel(l));
+      return;
+    }
     if (!m.mint || (m.txType !== 'buy' && m.txType !== 'sell')) return;
     if (m.signature) { if (sigs.has(m.signature)) return; sigs.add(m.signature); if (sigs.size > 5000) sigs.clear(); }
     const vS = Number(m.vSolInBondingCurve), vT = Number(m.vTokensInBondingCurve), sol = Number(m.solAmount) || 0, tok = Number(m.tokenAmount) || 0;
@@ -87,9 +92,9 @@ export function entryEngine(admin: SupabaseClient, push: Push, onBought: (s: Str
       if (l.o.mint !== m.mint || l.done) continue;
       if (price) { l.price = price; l.peak = Math.max(l.peak, price); }
       if (Number(m.marketCapSol) > 0) l.mcapSol = Number(m.marketCapSol);
-      if (who && !(ours.get(l.o.user_id)?.has(who))) {
+      if (!(who && ours.get(l.o.user_id)?.has(who))) {
         if (m.txType === 'buy') { l.buys.push([now, sol]); while (l.buys.length && l.buys[0]![0] < now - WIN_MAX) l.buys.shift(); }
-        else if (who === l.o.creator && l.o.cancel_on_creator_sell && !l.firing) { track(cancel(l)); continue; }
+        else if (who && who === l.o.creator && l.o.cancel_on_creator_sell && !l.firing) { track(cancel(l)); continue; }
       }
       evaluate(l);
     }
@@ -149,6 +154,7 @@ export function entryEngine(admin: SupabaseClient, push: Push, onBought: (s: Str
     finally { l.firing = false; live.delete(o.id); }
   }
 
-  return { load, mints, onTrade, tick: () => { for (const l of live.values()) evaluate(l); }, size: () => live.size,
+  const creators = () => new Set([...live.values()].filter((l) => !l.done && l.o.cancel_on_creator_sell && l.o.creator).map((l) => l.o.creator!));
+  return { load, mints, creators, onTrade, tick: () => { for (const l of live.values()) evaluate(l); }, size: () => live.size,
     idle: () => Promise.allSettled([...pending]), stats: () => ({ tracked: live.size, bought }) };
 }

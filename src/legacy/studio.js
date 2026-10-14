@@ -3221,11 +3221,15 @@
     toast('Réglages enregistrés', FORMS.find((F) => F.id === fs.dataset.form).title, 'g'); renderTop();
   }
   function formCancel(fs) { fieldsOf(fs).forEach(([k, , type]) => { const el = fs.querySelector('[data-k="' + k + '"]'); if (type === 'bool') el.checked = !!cfg[k]; else el.value = cfg[k]; el.classList.remove('err'); }); fs.querySelectorAll('.ferr').forEach((e) => e.remove()); fs.classList.remove('dirty'); }
-  /* ================================================================ temps réel : flux PumpPortal (gratuit, sans clé)
-     Une seule connexion WebSocket pour tous les tokens suivis : PumpPortal bannit les clients qui en ouvrent plusieurs. */
+  /* ================================================================ temps réel
+     - nouveaux tokens : flux PumpPortal (gratuit, sans clé), une seule connexion (PumpPortal bannit les clients qui en ouvrent plusieurs) ;
+     - transactions des tokens suivis : compte de la courbe pump.fun écouté sur la blockchain (PumpPortal réserve désormais ces
+       abonnements aux clés payantes). Chaque changement de la courbe donne le prix, la capitalisation et le SOL échangé. */
   const PP = { ws: null, state: 'off', subs: new Set(), want: new Set(), retry: 0, timer: null, last: 0, msgs: 0, pending: new Set() };
   // page Trader (React) : tokens affichés, écouteurs des transactions brutes, flux des nouveaux tokens (même connexion unique)
   const PPX = { mints: new Set(), fns: new Set(), news: false };
+  // transactions des tokens suivis, écoutées sur la blockchain (voir chConnect)
+  const CH = { ws: null, want: new Set(), subs: new Map(), pend: new Map(), curves: new Map(), retry: 0, timer: null, id: 1, state: 'off' };
   const PP_URL = 'wss://pumpportal.fun/api/data';
   const VIRT_TOK = INIT_CURVE.vTok - INIT_CURVE.realTok; // part virtuelle de la courbe (unités brutes)
   function ppSend(o) { try { if (PP.ws && PP.ws.readyState === 1) { PP.ws.send(JSON.stringify(o)); return true; } } catch (e) {} return false; }
@@ -3245,7 +3249,7 @@
     ws.onclose = () => { if (PP.ws === ws) { PP.ws = null; PP.subs = new Set(); if (PP.state !== 'off') { PP.state = 'error'; ppStatus(); ppRetry(); } } };
   }
   function ppRetry() {
-    if (!cfg.ppLive || (!PP.want.size && !PPX.news)) return;
+    if (!cfg.ppLive || !PPX.news) return;
     const wait = [1000, 2000, 5000, 10000, 30000][Math.min(PP.retry++, 4)];
     clearTimeout(PP.timer); PP.timer = setTimeout(ppConnect, wait);
   }
@@ -3253,9 +3257,6 @@
   // Aligne les abonnements sur la liste voulue (ajouts et retraits en un message chacun)
   function ppDiff() {
     if (!PP.ws || PP.ws.readyState !== 1) return;
-    const add = [...PP.want].filter((m) => !PP.subs.has(m)), del = [...PP.subs].filter((m) => !PP.want.has(m));
-    if (add.length && ppSend({ method: 'subscribeTokenTrade', keys: add })) add.forEach((m) => PP.subs.add(m));
-    if (del.length && ppSend({ method: 'unsubscribeTokenTrade', keys: del })) del.forEach((m) => PP.subs.delete(m));
     const news = !!(cfg.ppLive && PPX.news);
     if (news !== !!PP.newSub && ppSend({ method: news ? 'subscribeNewToken' : 'unsubscribeNewToken' })) PP.newSub = news;
     ppStatus();
@@ -3263,8 +3264,66 @@
   function ppSync(set) {
     PP.ui = new Set([...set].filter(Boolean));               // tokens suivis par l'interface (fiches, ordres)
     PP.want = new Set(cfg.ppLive ? [...PP.ui, ...PPX.mints] : []);
-    if (!PP.want.size && !(cfg.ppLive && PPX.news)) { if (PP.ws && (PP.subs.size || PP.newSub)) ppDiff(); return; }
+    CH.want = PP.want; chSync();                             // transactions : blockchain
+    if (!(cfg.ppLive && PPX.news)) { if (PP.ws && PP.newSub) ppDiff(); return; }
     if (!PP.ws) ppConnect(); else ppDiff();
+  }
+  /* ---------- transactions des tokens suivis : courbe pump.fun écoutée sur la blockchain (nœud gratuit) */
+  // votre clé Helius si elle est enregistrée (Réglages), sinon le nœud public de Solana
+  const chUrl = () => { const r = String(cfg.rpc || ''); return /^https:\/\/[a-z0-9.-]*helius-rpc\.com\//i.test(r) ? r.replace(/^https:/i, 'wss:') : 'wss://api.mainnet-beta.solana.com'; };
+  function chSend(o) { try { if (CH.ws && CH.ws.readyState === 1) { CH.ws.send(JSON.stringify(o)); return true; } } catch (e) {} return false; }
+  function chSync() {
+    if (!CH.want.size) { if (CH.ws) chDiff(); return; }
+    if (!CH.ws) chConnect(); else chDiff();
+  }
+  function chConnect() {
+    if (CH.ws || !cfg.ppLive || !window.WebSocket || !CH.want.size) return;
+    clearTimeout(CH.timer); CH.state = 'connecting';
+    let ws; try { ws = new WebSocket(chUrl()); } catch (e) { CH.state = 'error'; return chRetry(); }
+    CH.ws = ws;
+    ws.onopen = () => { CH.state = 'on'; CH.retry = 0; CH.subs = new Map(); CH.pend = new Map(); chDiff(); ppStatus(); };
+    ws.onmessage = (ev) => {
+      let j; try { j = JSON.parse(ev.data); } catch (e) { return; }
+      if (j && j.id != null && CH.pend.has(j.id)) { const mint = CH.pend.get(j.id); CH.pend.delete(j.id); if (typeof j.result === 'number') CH.subs.set(mint, j.result); return; }
+      if (!j || j.method !== 'accountNotification') return;
+      const sub = j.params && j.params.subscription, v = j.params && j.params.result && j.params.result.value;
+      let mint = null; CH.subs.forEach((s, m) => { if (s === sub) mint = m; });
+      if (mint && v && v.data && v.data[0]) { try { chCurve(mint, v.data[0]); } catch (e) {} }
+    };
+    ws.onerror = () => { CH.state = 'error'; };
+    ws.onclose = () => { if (CH.ws === ws) { CH.ws = null; CH.subs = new Map(); CH.pend = new Map(); CH.state = 'error'; ppStatus(); chRetry(); } };
+  }
+  function chRetry() {
+    if (!cfg.ppLive || !CH.want.size) return;
+    const wait = [1000, 2000, 5000, 10000, 30000][Math.min(CH.retry++, 4)];
+    clearTimeout(CH.timer); CH.timer = setTimeout(chConnect, wait);
+  }
+  function chDiff() {
+    if (!CH.ws || CH.ws.readyState !== 1) return;
+    const pending = new Set(CH.pend.values());
+    CH.want.forEach((m) => {
+      if (CH.subs.has(m) || pending.has(m)) return;
+      let pda; try { pda = curvePda(m); } catch (e) { return; }
+      const id = CH.id++; CH.pend.set(id, m);
+      chSend({ jsonrpc: '2.0', id, method: 'accountSubscribe', params: [pda, { encoding: 'base64', commitment: 'processed' }] });
+    });
+    [...CH.subs].forEach(([m, s]) => { if (!CH.want.has(m)) { chSend({ jsonrpc: '2.0', id: CH.id++, method: 'accountUnsubscribe', params: [s] }); CH.subs.delete(m); CH.curves.delete(m); } });
+    ppStatus();
+  }
+  // courbe : réserves virtuelles en tokens (octet 8), en SOL (16), réserve réelle en SOL (32) ; un écart de réserve = un échange
+  function chCurve(mint, b64) {
+    const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    if (u.length < 49) return;
+    const dv = new DataView(u.buffer), vT = Number(dv.getBigUint64(8, true)), vS = Number(dv.getBigUint64(16, true)), rS = Number(dv.getBigUint64(32, true));
+    const prev = CH.curves.get(mint); CH.curves.set(mint, { rS });
+    if (!prev || !vT) return;
+    const d = rS - prev.rS; if (!d) return;
+    const vSol = vS / 1e9, vTok = vT / 1e6, price = vSol / vTok;
+    const m = { mint, txType: d > 0 ? 'buy' : 'sell', solAmount: Math.abs(d) / 1e9, tokenAmount: Math.abs(d) / 1e9 / price,
+      vSolInBondingCurve: vSol, vTokensInBondingCurve: vTok, marketCapSol: price * 1e9, signature: '', traderPublicKey: '' };
+    PP.last = Date.now(); PP.msgs++;
+    PPX.fns.forEach((f) => { try { f(m); } catch (e) {} });
+    try { ppApply(m); } catch (e) {}
   }
   function ppApply(m) {
     const mint = m.mint, C = S.cache[mint];
@@ -3284,12 +3343,13 @@
       C.trades.unshift({ sig: m.signature, t: Date.now(), wallet: m.traderPublicKey || '', side: m.txType, tokens: tok, sol, price: sol / tok, live: true });
       if (C.trades.length > 300) C.trades.length = 300;
     }
-    C.live = Date.now(); C.liveSrc = 'PumpPortal'; C.at = Date.now();
+    C.live = Date.now(); C.liveSrc = m.signature ? 'PumpPortal' : 'Solana'; C.at = Date.now();
     onLive(mint);
   }
   function ppLabel() {
     if (!cfg.ppLive) return ['', 'coupé'];
-    if (PP.state === 'on') return ['on', PP.subs.size ? PP.subs.size + ' suivi' + (PP.subs.size > 1 ? 's' : '') : 'prêt'];
+    if (CH.state === 'on' && CH.subs.size) return ['on', CH.subs.size + ' suivi' + (CH.subs.size > 1 ? 's' : '')];
+    if (PP.state === 'on') return ['on', 'prêt'];
     if (PP.state === 'connecting') return ['wait', 'connexion…'];
     if (PP.state === 'error') return ['bad', 'reconnexion'];
     return ['', 'prêt · rien à suivre']; // se connecte dès qu'un token est suivi (ordre actif ou fiche ouverte)
@@ -3300,7 +3360,7 @@
     if (S.page === 'mine') { if (S.view.mine) keep.add(S.view.mine); S.tokens.slice(0, 20).forEach((t) => keep.add(t.mint)); }
     return keep;
   }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.ppLive && PP.want.size && !PP.ws) ppConnect(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.ppLive) { if (PPX.news && !PP.ws) ppConnect(); if (CH.want.size && !CH.ws) chConnect(); } });
   /* ---------- clés API : petit panneau en 3 étapes, vérifié avant d'enregistrer */
   const KEYS = {
     helius: { title: 'Ajouter votre clé Helius', label: 'Clé Helius', ph: 'ex. 1a2b3c4d-5e6f-…',
@@ -3967,7 +4027,7 @@
       watch: (mints) => { PPX.mints = new Set((mints || []).filter((m) => typeof m === 'string').slice(0, 60)); ppSync(liveSet()); },
       news: (on) => { PPX.news = !!on; ppSync(liveSet()); },
       on: (fn) => { PPX.fns.add(fn); return () => PPX.fns.delete(fn); },
-      state: () => ({ on: !!cfg.ppLive, state: PP.state, last: PP.last }),
+      state: () => ({ on: !!cfg.ppLive, state: CH.state === 'on' || PP.state === 'on' ? 'on' : CH.state === 'connecting' || PP.state === 'connecting' ? 'connecting' : PP.state, last: PP.last }),
     },
     solUsd: () => S.solUsd,
     // coffre-fort (React) : wallet actif et signature des conversions avec le wallet externe
