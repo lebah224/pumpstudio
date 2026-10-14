@@ -8,6 +8,7 @@ import { CopyBtn, Star, TokenLogo, useFavs } from './bits';
 import { dexLabel } from './MarketList';
 import { CreatorPanel, HoldersPanel, SecurityPanel, verdict } from './Analysis';
 import { PriceAlerts } from './alerts';
+import { openTrader } from './TradersView';
 
 const EXT = <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5" /></svg>;
 const solscan = (k: 'tx' | 'account' | 'token', id: string) => 'https://solscan.io/' + k + '/' + id;
@@ -165,7 +166,7 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
                         <td className={'num mono ' + (x.side === 'buy' ? 'up' : 'down')}>{x.sol != null ? x.sol.toLocaleString('fr-FR', { maximumFractionDigits: 3 }) + ' SOL' : '—'}<small className="dim"> {x.usd != null ? fCompact(x.usd) : ''}</small></td>
                         <td className="num mono hide-s">{fTok(x.tok)}</td>
                         <td className="num mono hide-m">{fPrice(x.pUsd, '$')}</td>
-                        <td className="mono"><a href={solscan('account', x.w)} target="_blank" rel="noopener noreferrer">{short(x.w)}</a></td>
+                        <td className="mono">{x.w ? <button type="button" className="tr-wbtn" onClick={() => openTrader(x.w)} title="Fiche de cet acheteur : résultats, style, suivi">{short(x.w)}</button> : '—'}</td>
                         <td><a className="tr-tx" href={solscan('tx', x.sig)} target="_blank" rel="noopener noreferrer" aria-label="Voir la transaction sur Solscan">{EXT}</a></td>
                       </tr>
                     ))}

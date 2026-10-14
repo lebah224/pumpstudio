@@ -310,7 +310,7 @@ export async function settle(signature: string, owner: string, mint: string, max
       for (let i = 0; i < 6; i++) {
         type Bal = { owner?: string; mint: string; uiTokenAmount: { uiAmount: number | null } };
         const t = await rpc<{ meta: { preBalances: number[]; postBalances: number[]; preTokenBalances?: Bal[]; postTokenBalances?: Bal[] } } | null>('getTransaction',
-          [signature, { maxSupportedTransactionVersion: 0, commitment: 'confirmed', encoding: 'json' }], 5000).catch(() => null);
+          [signature, { maxSupportedTransactionVersion: 1, commitment: 'confirmed', encoding: 'json' }], 5000).catch(() => null);
         if (t?.meta) {
           const tok = (L?: Bal[]) => (L ?? []).filter((b) => b.owner === owner && b.mint === mint).reduce((a, b) => a + (b.uiTokenAmount.uiAmount ?? 0), 0);
           return { ok: true as const, sol: Math.max(0, (t.meta.preBalances[0]! - t.meta.postBalances[0]!) / 1e9), received: Math.max(0, (t.meta.postBalances[0]! - t.meta.preBalances[0]!) / 1e9), tokens: tok(t.meta.postTokenBalances) - tok(t.meta.preTokenBalances) };

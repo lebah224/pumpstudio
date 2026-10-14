@@ -294,7 +294,7 @@
     cache.skip = cache.skip || [];
     for (let i = 0; i < fresh.length; i += 4) {
       const part = fresh.slice(i, i + 4);
-      const txs = await Promise.all(part.map((s) => rpc('getTransaction', [s, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0, commitment: 'confirmed' }]).catch(() => null)));
+      const txs = await Promise.all(part.map((s) => rpc('getTransaction', [s, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 1, commitment: 'confirmed' }]).catch(() => null)));
       txs.forEach((tx, j) => { const tr = parseTrade(tx, mint, part[j]); if (tr) cache.push(tr); else cache.skip.push(part[j]); });
     }
     cache.sort((a, b) => b.t - a.t);
@@ -991,7 +991,7 @@
   }
   async function actualDeltas(sig, mint) {
     try {
-      const tx = await rpc('getTransaction', [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0, commitment: 'confirmed' }]);
+      const tx = await rpc('getTransaction', [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 1, commitment: 'confirmed' }]);
       const tr = parseTrade(tx, mint, sig); return tr ? { sol: tr.sol, tokens: tr.tokens } : null;
     } catch (e) { return null; }
   }

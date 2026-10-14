@@ -114,7 +114,7 @@ export function activity(pk: string, limit = 25): Promise<{ txs: Tx[]; more: boo
       while (next < sigs.length) {
         const k = next++, sig = sigs[k]!.signature;
         try {
-          const x = await rpc<RawTx>('getTransaction', [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0, commitment: 'confirmed' }]);
+          const x = await rpc<RawTx>('getTransaction', [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 1, commitment: 'confirmed' }]);
           out[k] = parseTx(pk, sig, x);
         } catch { /* transaction illisible : ignorée */ }
       }

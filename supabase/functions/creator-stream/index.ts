@@ -6,6 +6,8 @@
 // Ventes en temps réel : les stratégies de sortie actives sont évaluées à chaque transaction de leur token (abonnement
 // aux seuls tokens détenus) et la vente part aussitôt (voir _shared/exits.ts).
 // Achats programmés : les ordres d'achat actifs sont évalués de la même façon (voir _shared/entries.ts).
+// Acheteurs suivis : les transactions des wallets suivis arrivent sur la même connexion ; chaque achat ou vente est
+// enregistré pour les comptes qui les suivent et notifié dans la seconde.
 // Lancée chaque minute par la tâche planifiée : chaque passage écoute ~75 s en arrière-plan, les passages se
 // chevauchent, il n'y a donc pas de trou d'écoute ; un même lancement n'est enregistré qu'une fois (base).
 import webpush from 'npm:web-push@3.6.7';
@@ -44,7 +46,7 @@ async function blockTime(sig: string): Promise<number | null> {
   for (let i = 0; i < 6; i++) {
     try {
       const r = await fetch(rpcUrl(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(6000),
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTransaction', params: [sig, { maxSupportedTransactionVersion: 0, commitment: 'confirmed', encoding: 'json' }] }) });
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTransaction', params: [sig, { maxSupportedTransactionVersion: 1, commitment: 'confirmed', encoding: 'json' }] }) });
       const t = (await r.json())?.result?.blockTime;
       if (t) return Number(t) * 1000;
     } catch { /* nouvel essai */ }
@@ -71,9 +73,44 @@ async function watched(): Promise<Set<string>> {
   const { data } = await admin.rpc('creators_watched');
   return new Set(((data ?? []) as { address: string }[]).map((x) => x.address).filter((a) => MINT.test(a)));
 }
+async function watchedTraders(): Promise<Set<string>> {
+  const { data } = await admin.rpc('traders_watched');
+  return new Set(((data ?? []) as { address: string }[]).map((x) => x.address).filter((a) => MINT.test(a)));
+}
 
 type Msg = { signature?: string; mint?: string; traderPublicKey?: string; txType?: string; name?: string; symbol?: string; uri?: string;
-  solAmount?: number; initialBuy?: number; marketCapSol?: number };
+  solAmount?: number; initialBuy?: number; marketCapSol?: number; tokenAmount?: number };
+
+/* ---------- acheteurs suivis ---------- */
+type Meta = { name: string | null; symbol: string | null; image: string | null };
+const metas = new Map<string, Promise<Meta>>();
+const ipfs = (u: unknown) => { const id = typeof u === 'string' ? u.match(/\/ipfs\/([A-Za-z0-9]{40,80})/)?.[1] : null; return id ? 'https://ipfs.io/ipfs/' + id : null; };
+// nom, ticker et logo du token (une lecture par token, gardée en mémoire) ; au pire 1,2 s
+function meta(mint: string): Promise<Meta> {
+  let p = metas.get(mint);
+  if (!p) {
+    p = fetch('https://frontend-api-v3.pump.fun/coins-v2/' + mint, { headers: PUMP_H, signal: AbortSignal.timeout(1200) }).then((r) => r.json())
+      .then((c) => ({ name: typeof c?.name === 'string' ? c.name.slice(0, 80) : null, symbol: typeof c?.symbol === 'string' ? c.symbol.slice(0, 32) : null, image: ipfs(c?.image_uri) }))
+      .catch(() => { metas.delete(mint); return { name: null, symbol: null, image: null }; });
+    if (metas.size > 3000) metas.clear();
+    metas.set(mint, p);
+  }
+  return p;
+}
+const shortA = (a: string) => a.slice(0, 4) + '…' + a.slice(-4);
+async function recordTrade(m: Msg, trader: string, at: number) {
+  const side = m.txType === 'sell' ? 'sell' : 'buy', sol = Number(m.solAmount ?? 0), mc = m.marketCapSol != null ? Number(m.marketCapSol) : null;
+  const info = await meta(m.mint!);
+  const { data } = await admin.rpc('trader_trade_record', {
+    p_trader: trader, p_mint: m.mint, p_side: side, p_sol: sol, p_tokens: Number(m.tokenAmount ?? 0), p_mcap: mc,
+    p_symbol: info.symbol, p_name: info.name, p_image: info.image, p_sig: m.signature, p_at: new Date(at).toISOString(),
+  });
+  const users = (data ?? []) as { r_user: string; r_label: string | null }[];
+  await Promise.all(users.map((u) => push(u.r_user, (u.r_label || shortA(trader)) + (side === 'buy' ? ' achète' : ' vend') + ' $' + (info.symbol ?? '?'),
+    nf(sol) + ' SOL' + (mc ? ' · capitalisation ' + nf(mc, 0) + ' SOL' : '') + (info.name ? ' · ' + info.name : '') + '. Touchez pour ouvrir le token.',
+    '/app?page=trade&mint=' + m.mint, 'tt-' + m.mint)));
+  return users.length;
+}
 
 /* ---------- achat automatique ---------- */
 type Snipe = { id: string; user_id: string; creator: string; wallet: string; mode: string; amount_sol: number; slippage: number; priority: number;
@@ -190,18 +227,19 @@ async function ownFresh(mint: string, creator: string) {
 
 async function listen() {
   const end = Date.now() + LISTEN_MS;
-  let creators = await watched();
+  let [creators, traders] = await Promise.all([watched(), watchedTraders()]);
   await Promise.all([loadSnipes(), warm(), exits.load(), entries.load()]);
-  if (!creators.size && !exits.size() && !entries.size()) return { creators: 0, exits: 0, entries: 0 };
-  const seen = new Set<string>();
-  let found = 0, msgs = 0, ws: WebSocket | null = null, subscribed = new Set<string>();
+  if (!creators.size && !traders.size && !exits.size() && !entries.size()) return { creators: 0, traders: 0, exits: 0, entries: 0 };
+  const seen = new Set<string>(), seenSig = new Set<string>();
+  let found = 0, trades = 0, msgs = 0, ws: WebSocket | null = null, subscribed = new Set<string>();
+  const accounts = () => new Set([...creators, ...traders]);
   const connect = () => new Promise<void>((resolve) => {
     ws = wsCur = new WebSocket('wss://pumpportal.fun/api/data');
     subMints.clear();
     // transactions des créateurs suivis + avis de création (filtré ici en mémoire, rien n'est stocké ni interrogé)
     ws.onopen = () => {
-      subscribed = new Set(creators);
-      ws!.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: [...creators] }));
+      subscribed = accounts();
+      if (subscribed.size) ws!.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: [...subscribed] }));
       ws!.send(JSON.stringify({ method: 'subscribeNewToken' }));
       watchMints(tracked());
     };
@@ -211,6 +249,12 @@ async function listen() {
       // stratégies de sortie et achats programmés : évalués tout de suite
       if (m.mint && subMints.has(m.mint)) { exits.onTrade(m as TradeMsg); entries.onTrade(m as TradeMsg); }
       const who = m.traderPublicKey;
+      // acheteur suivi : chaque achat ou vente, une seule fois par signature
+      if (who && traders.has(who) && m.mint && MINT.test(m.mint) && (m.txType === 'buy' || m.txType === 'sell') && m.signature && !seenSig.has(m.signature)) {
+        seenSig.add(m.signature);
+        if (seenSig.size > 20_000) seenSig.clear();
+        track(recordTrade(m, who, Date.now()).then((n) => { trades += n; }).catch(() => seenSig.delete(m.signature!)));
+      }
       if (!m.mint || !MINT.test(m.mint) || !who || !creators.has(who) || seen.has(m.mint)) return;
       seen.add(m.mint);
       const at = Date.now();
@@ -224,10 +268,10 @@ async function listen() {
   // nouvelles adresses suivies en cours de route : abonnement sans couper la connexion
   const refresh = setInterval(async () => {
     try {
-      creators = await watched();
+      [creators, traders] = await Promise.all([watched(), watchedTraders()]);
       await Promise.all([loadSnipes(), exits.load(), entries.load()]);
       watchMints(tracked());
-      const add = [...creators].filter((a) => !subscribed.has(a));
+      const add = [...accounts()].filter((a) => !subscribed.has(a));
       if (add.length && ws?.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ method: 'subscribeAccountTrade', keys: add })); add.forEach((a) => subscribed.add(a)); }
     } catch { /* prochain essai */ }
   }, 15_000);
@@ -245,7 +289,7 @@ async function listen() {
   } finally { clearInterval(refresh); clearInterval(warmer); clearInterval(ticker); }
   // achats en cours de confirmation : on les mène au bout avant de rendre la main
   await Promise.race([Promise.allSettled([...pending, exits.idle(), entries.idle()]), new Promise((res) => setTimeout(res, 45_000))]);
-  return { creators: creators.size, msgs, found, snipes: [...snipes.values()].reduce((a, L) => a + L.length, 0), exits: exits.stats(), entries: entries.stats() };
+  return { creators: creators.size, traders: traders.size, trades, msgs, found, snipes: [...snipes.values()].reduce((a, L) => a + L.length, 0), exits: exits.stats(), entries: entries.stats() };
 }
 
 Deno.serve(async (req) => {

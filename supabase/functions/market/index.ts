@@ -358,6 +358,116 @@ async function creatorProfile(addr: string) {
   };
 }
 
+/* ---------- fiche acheteur : ses derniers échanges lus sur Solana, résultats, style, positions ---------- */
+const WSOL = 'So11111111111111111111111111111111111111112';
+const rpcUrls = () => { const own = (Deno.env.get('SOLANA_RPC_URL') ?? '').split(',').map((x) => x.trim()).filter((x) => x.startsWith('https://')); return own.length ? own : ['https://api.mainnet-beta.solana.com']; };
+async function sol<T>(method: string, params: unknown[]): Promise<T> {
+  let last: unknown = null;
+  for (const u of rpcUrls()) {
+    try {
+      const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(9000) });
+      const j = await r.json();
+      if (j?.error) throw new Error(j.error.message ?? 'RPC');
+      return j.result as T;
+    } catch (e) { last = e; }
+  }
+  throw last ?? new Error('RPC');
+}
+async function pool<A, B>(L: A[], n: number, f: (a: A) => Promise<B>): Promise<B[]> {
+  const out: B[] = new Array(L.length); let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, L.length) }, async () => { while (i < L.length) { const k = i++; out[k] = await f(L[k]!); } }));
+  return out;
+}
+type Swap = { sig: string; t: number; mint: string; side: 'buy' | 'sell'; sol: number; tok: number };
+// achat ou vente d'un seul token contre des SOL (courbe pump.fun, PumpSwap ou autre échange) ; le reste est ignoré
+function swapOf(tx: Any, addr: string, sig: string): Swap | null {
+  const m = tx?.meta; if (!m || m.err) return null;
+  const keys = ((tx.transaction?.message?.accountKeys ?? []) as Any[]).map((k) => (typeof k === 'string' ? k : k?.pubkey));
+  const i = keys.indexOf(addr); if (i < 0) return null;
+  const lam = ((m.postBalances?.[i] ?? 0) - (m.preBalances?.[i] ?? 0)) / 1e9 + (i === 0 ? (m.fee ?? 0) / 1e9 : 0);
+  const d = new Map<string, number>();
+  for (const b of (m.preTokenBalances ?? []) as Any[]) if (b.owner === addr) d.set(b.mint, (d.get(b.mint) ?? 0) - (n(b.uiTokenAmount?.uiAmount) ?? 0));
+  for (const b of (m.postTokenBalances ?? []) as Any[]) if (b.owner === addr) d.set(b.mint, (d.get(b.mint) ?? 0) + (n(b.uiTokenAmount?.uiAmount) ?? 0));
+  const solD = lam + (d.get(WSOL) ?? 0);
+  const toks = [...d].filter(([k, v]) => k !== WSOL && Math.abs(v) > 0);
+  if (toks.length !== 1) return null;
+  const [mint, tok] = toks[0]!, t = (n(tx.blockTime) ?? 0) * 1000;
+  if (tok > 0 && solD < -0.0005) return { sig, t, mint, side: 'buy', sol: -solD, tok };
+  if (tok < 0 && solD > 0.0005) return { sig, t, mint, side: 'sell', sol: solD, tok: -tok };
+  return null;
+}
+async function traderProfile(addr: string) {
+  const sigs = ((await sol<Any[]>('getSignaturesForAddress', [addr, { limit: 300 }])) ?? []).filter((x) => !x.err).slice(0, 100);
+  // lecture des transactions, 8 à la fois (limite de débit du nœud), un second essai en cas de refus
+  const read = (sig: string) => sol<Any>('getTransaction', [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 1, commitment: 'confirmed' }]);
+  const txs = await pool(sigs, 8, (x) => read(x.signature).catch(() => new Promise((ok) => setTimeout(ok, 500)).then(() => read(x.signature)).catch(() => null)));
+  const swaps = txs.map((tx, k) => (tx ? swapOf(tx, addr, sigs[k]!.signature) : null)).filter((x): x is Swap => !!x).sort((a, b) => b.t - a.t);
+  // par token : montants, premières dates
+  type Pos = { mint: string; buySol: number; sellSol: number; buyTok: number; sellTok: number; firstBuy: number | null; firstSell: number | null; last: number; n: number };
+  const by = new Map<string, Pos>();
+  for (const w of [...swaps].reverse()) {
+    const p = by.get(w.mint) ?? { mint: w.mint, buySol: 0, sellSol: 0, buyTok: 0, sellTok: 0, firstBuy: null, firstSell: null, last: 0, n: 0 };
+    if (w.side === 'buy') { p.buySol += w.sol; p.buyTok += w.tok; p.firstBuy ??= w.t; } else { p.sellSol += w.sol; p.sellTok += w.tok; p.firstSell ??= w.t; }
+    p.last = Math.max(p.last, w.t); p.n++; by.set(w.mint, p);
+  }
+  const pos = [...by.values()].sort((a, b) => b.last - a.last);
+  // infos des tokens récents (nom, logo, date de création, capitalisation)
+  const info = new Map<string, Row>();
+  await pool(pos.slice(0, 24), 8, async (p) => { const c = await coin(p.mint).catch(() => null); if (c) info.set(p.mint, fromPump(c)); });
+  const rows = pos.map((p) => {
+    const ratio = p.buyTok > 0 ? Math.min(1, p.sellTok / p.buyTok) : 0;
+    const pnl = p.buyTok > 0 && p.sellTok > 0 ? p.sellSol - p.buySol * ratio : null;   // réalisé, sur la part revendue
+    const I = info.get(p.mint);
+    return {
+      mint: p.mint, symbol: I?.symbol ?? null, name: I?.name ?? null, image: I?.image ?? null, mcUsd: I?.mcUsd ?? null, complete: I?.complete ?? null,
+      buySol: p.buySol, sellSol: p.sellSol, pnl, roi: pnl != null && p.buySol * ratio > 0 ? pnl / (p.buySol * ratio) : null,
+      open: p.buyTok > 0 && ratio < 0.9, soldPct: p.buyTok > 0 ? ratio * 100 : null, n: p.n, last: p.last,
+      entrySec: p.firstBuy && I?.created ? Math.max(0, (p.firstBuy - I.created) / 1000) : null,
+      holdMin: p.firstBuy && p.firstSell && p.firstSell >= p.firstBuy ? (p.firstSell - p.firstBuy) / 60000 : null,
+    };
+  });
+  const closed = rows.filter((r) => r.pnl != null);
+  const wins = closed.filter((r) => r.pnl! > 0).length;
+  const pnl = closed.reduce((a, r) => a + r.pnl!, 0);
+  const buys = swaps.filter((w) => w.side === 'buy');
+  const span = swaps.length > 1 ? (swaps[0]!.t - swaps[swaps.length - 1]!.t) / 864e5 : 0;
+  // rythme d'activité : transactions par jour sur la période lue (au moins une minute)
+  const t0 = n(sigs[0]?.blockTime), t1 = n(sigs[sigs.length - 1]?.blockTime);
+  const txDay = sigs.length > 1 && t0 && t1 ? sigs.length / Math.max((t0 - t1) / 86400, 1 / 1440) : null;
+  const entries = rows.map((r) => r.entrySec).filter((v): v is number => v != null);
+  const holds = rows.map((r) => r.holdMin).filter((v): v is number => v != null);
+  const stats = {
+    swaps: swaps.length, tokens: pos.length, closed: closed.length, wins, winRate: closed.length ? wins / closed.length : null, pnlSol: pnl,
+    best: closed.length ? Math.max(...closed.map((r) => r.pnl!)) : null, worst: closed.length ? Math.min(...closed.map((r) => r.pnl!)) : null,
+    buyMedian: median(buys.map((w) => w.sol)), volume: swaps.reduce((a, w) => a + w.sol, 0), entryMedianSec: median(entries), holdMedianMin: median(holds),
+    perDay: txDay, spanDays: span, open: rows.filter((r) => r.open).length,
+    first: swaps.length ? swaps[swaps.length - 1]!.t : null, last: swaps[0]?.t ?? null,
+  };
+  // note indicative sur 100 : réussite, résultat, régularité ; signaux d'alerte
+  let score = 0; const reasons: { t: string; k: 'g' | 'a' | 'r' }[] = [];
+  if (stats.winRate != null) {
+    score += stats.winRate * 45;
+    reasons.push({ t: wins + ' trade' + (wins > 1 ? 's' : '') + ' gagnant' + (wins > 1 ? 's' : '') + ' sur ' + closed.length + ' revendus (' + Math.round(stats.winRate * 100) + ' %)', k: stats.winRate >= 0.55 ? 'g' : stats.winRate >= 0.4 ? 'a' : 'r' });
+  }
+  if (closed.length) {
+    score += pnl > 5 ? 30 : pnl > 1 ? 22 : pnl > 0 ? 14 : pnl > -1 ? 4 : 0;
+    reasons.push({ t: 'Résultat réalisé : ' + (pnl >= 0 ? '+' : '') + pnl.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' SOL sur ses ' + stats.swaps + ' derniers échanges', k: pnl > 0 ? 'g' : 'r' });
+  }
+  if (stats.entryMedianSec != null && stats.entryMedianSec < 5) { reasons.push({ t: 'Achète dans les toutes premières secondes : sans doute un robot, difficile à copier', k: 'a' }); score -= 5; }
+  else if (stats.entryMedianSec != null) reasons.push({ t: 'Entre en général ' + (stats.entryMedianSec < 90 ? Math.round(stats.entryMedianSec) + ' s' : Math.round(stats.entryMedianSec / 60) + ' min') + ' après la création', k: 'g' });
+  if (stats.holdMedianMin != null && stats.holdMedianMin < 1) reasons.push({ t: 'Revend en moins d\'une minute : copie très exigeante en vitesse', k: 'a' });
+  if (stats.perDay != null && stats.perDay > 500) { reasons.push({ t: 'Environ ' + Math.round(stats.perDay).toLocaleString('fr-FR') + ' transactions par jour : activité de robot', k: 'r' }); score -= 10; }
+  score += closed.length >= 10 ? 15 : closed.length >= 4 ? 8 : 0;
+  if (closed.length < 4) reasons.push({ t: 'Peu de trades revendus sur la période : note peu fiable', k: 'a' });
+  score = Math.max(0, Math.min(100, Math.round(score + 5)));
+  const verdict = !closed.length ? 'Inconnu' : score >= 65 ? 'Rentable' : score >= 40 ? 'Moyen' : 'Perdant';
+  return {
+    address: addr, score: closed.length ? score : null, verdict, reasons, stats,
+    tokens: rows.slice(0, 30),
+    trades: swaps.slice(0, 40).map((w) => { const I = info.get(w.mint); return { ...w, symbol: I?.symbol ?? null, image: I?.image ?? null }; }),
+  };
+}
+
 Deno.serve(async (req) => {
   const h = cors(req.headers.get('Origin'));
   if (req.method === 'OPTIONS') return new Response('ok', { headers: h });
@@ -398,6 +508,11 @@ Deno.serve(async (req) => {
         const addr = typeof b.address === 'string' && MINT.test(b.address) ? b.address : null;
         if (!addr) throw new Fail(400, 'Adresse de créateur invalide.');
         return json(200, await cached('cr:' + addr, 45_000, () => creatorProfile(addr)), h);
+      }
+      case 'trader': {
+        const addr = typeof b.address === 'string' && MINT.test(b.address) ? b.address : null;
+        if (!addr) throw new Fail(400, 'Adresse de wallet invalide.');
+        return json(200, await cached('trd:' + addr, 90_000, () => traderProfile(addr)), h);
       }
       default: throw new Fail(400, 'Action inconnue.');
     }

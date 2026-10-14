@@ -115,3 +115,16 @@
 .cr-run-st.a{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber-ink)}
 .cr-run-st.r{background:var(--red-bg);border-color:var(--red-line);color:var(--red-ink)}
 @media (max-width:560px){.cr-auto{padding:4px 8px}}
+
+/* ================================================================ Acheteurs suivis */
+.tt-side{min-width:58px}
+.cr-launches .tt-side{flex:none}
+.tt-alerts{display:flex;flex-direction:column;gap:6px;flex:1 1 220px}
+.tt-min{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);white-space:nowrap}
+.tt-min select{background:var(--bg);border:1px solid var(--line2);border-radius:var(--r-sm);color:var(--text);font:inherit;font-size:13px;padding:6px 8px}
+.cr-coins td small{font-size:11px;opacity:.85}
+.cr-coins .up{color:var(--green)} .cr-coins .down{color:var(--red)}
+.cr-row-k .up{color:var(--green)} .cr-row-k .down{color:var(--red)}
+.tr-wbtn{border:0;background:none;padding:2px 4px;margin:-2px -4px;border-radius:6px;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.tr-wbtn:hover{background:var(--panel2)}
+.tr-wbtn:focus-visible{outline:none;box-shadow:var(--focus)}

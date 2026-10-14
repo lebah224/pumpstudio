@@ -11,6 +11,8 @@ import { BuyOrderDialog, BuyOrderList } from './BuyOrderDialog';
 import { StrategyList } from './StrategyCard';
 import { CreatorSheet, CreatorsView } from './CreatorsView';
 import { useFollowed } from './creators';
+import { TraderSheet, TradersView } from './TradersView';
+import { useTracked } from './traders';
 import '../styles/trader.css';
 
 function useVisible() {
@@ -19,14 +21,17 @@ function useVisible() {
   return on;
 }
 
+type Mode = 'market' | 'creators' | 'traders';
+
 /** Page Trader : marché en direct, fiche du token avec graphique et panneau de trading */
 export function TraderPage() {
   const visible = useVisible();
   const [open, setOpen] = useState<{ mint: string; seed: Row | null } | null>(null);
   const [q, setQ] = useState('');
-  const [mode, setMode] = useState<'market' | 'creators'>(() => { try { return localStorage.getItem('ts-trader-mode') === 'creators' ? 'creators' : 'market'; } catch { return 'market'; } });
-  const setM = (m: 'market' | 'creators') => { setMode(m); setOpen(null); try { localStorage.setItem('ts-trader-mode', m); } catch { /* navigation privée */ } };
+  const [mode, setMode] = useState<Mode>(() => { try { const v = localStorage.getItem('ts-trader-mode'); return v === 'creators' || v === 'traders' ? v : 'market'; } catch { return 'market'; } });
+  const setM = (m: Mode) => { setMode(m); setOpen(null); try { localStorage.setItem('ts-trader-mode', m); } catch { /* navigation privée */ } };
   const followed = useFollowed();
+  const tracked = useTracked();
   const live = useLiveState();
   const search = useRef<HTMLInputElement>(null);
   useAlertWatcher();
@@ -72,15 +77,17 @@ export function TraderPage() {
           <div className="tr-mode" role="tablist" aria-label="Vue">
             <button type="button" role="tab" aria-selected={mode === 'market'} className={mode === 'market' ? 'on' : ''} onClick={() => setM('market')}>Marché</button>
             <button type="button" role="tab" aria-selected={mode === 'creators'} className={mode === 'creators' ? 'on' : ''} onClick={() => setM('creators')}>Créateurs suivis{followed?.length ? <em>{followed.length}</em> : null}</button>
+            <button type="button" role="tab" aria-selected={mode === 'traders'} className={mode === 'traders' ? 'on' : ''} onClick={() => setM('traders')}>Acheteurs suivis{tracked?.length ? <em>{tracked.length}</em> : null}</button>
           </div>
           <BuyOrderList onOpen={(m) => openMint(m)} />
           <StrategyList onOpen={(m) => openMint(m)} />
-          {mode === 'creators' ? <CreatorsView onOpen={(m) => openMint(m)} /> : <MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} />}
+          {mode === 'creators' ? <CreatorsView onOpen={(m) => openMint(m)} /> : mode === 'traders' ? <TradersView onOpen={(m) => openMint(m)} /> : <MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} />}
         </>}
       <StrategyDialog />
       <SnipeDialog />
       <BuyOrderDialog />
       <CreatorSheet onOpen={(m) => openMint(m)} />
+      <TraderSheet onOpen={(m) => openMint(m)} />
     </div>
   );
 }
