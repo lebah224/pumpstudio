@@ -43,15 +43,24 @@ function cached<T>(key: string, ttlMs: number, run: () => Promise<T>): Promise<T
   if (cache.size > 2000) for (const [k, v] of cache) if (now - v.at > v.ttl) cache.delete(k);
   const p = run();
   cache.set(key, { at: now, ttl: ttlMs, p });
-  p.catch(() => { if (cache.get(key)?.p === p) cache.delete(key); });   // une erreur n'est pas gardée en cache
-  return p;
+  p.then((v) => { if (stale.size > 2000) stale.clear(); stale.set(key, { at: Date.now(), v }); },
+    () => { if (cache.get(key)?.p === p) cache.delete(key); });   // une erreur n'est pas gardée en cache
+  // source indisponible : la dernière réponse réussie (moins de 15 min) plutôt qu'une erreur
+  return p.catch((e) => { const o = stale.get(key); if (o && Date.now() - o.at < 15 * 60_000) return o.v as T; throw e; });
 }
+const stale = new Map<string, { at: number; v: unknown }>();
 
 const PUMP_H = { Accept: 'application/json', Origin: 'https://pump.fun', Referer: 'https://pump.fun/' };
 async function get(url: string, headers: Record<string, string> = { Accept: 'application/json' }, ms = 9000): Promise<unknown> {
-  const r = await fetch(url, { headers, signal: AbortSignal.timeout(ms) });
+  let r = await fetch(url, { headers, signal: AbortSignal.timeout(ms) });
+  // refus passager de la source (limite de fréquence, protection anti-robots) : un second essai un peu plus tard
+  if (r.status === 403 || r.status === 429 || r.status >= 500) {
+    await r.body?.cancel();
+    await new Promise((ok) => setTimeout(ok, 700 + Math.random() * 500));
+    r = await fetch(url, { headers, signal: AbortSignal.timeout(ms) });
+  }
   if (r.status === 404) return null;
-  if (!r.ok) throw new Fail(502, 'Source de marché indisponible (' + r.status + ').');
+  if (!r.ok) throw new Fail(502, 'Source de marché momentanément indisponible (' + r.status + ') : réessayez dans un instant.');
   return r.json();
 }
 
