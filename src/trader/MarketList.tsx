@@ -144,7 +144,7 @@ export function MarketList({ onOpen, visible, query }: { onOpen: (r: Row) => voi
       </div>
       {err && <div className="ts-note bad" role="alert" style={{ margin: '0 0 10px' }}>{err}</div>}
       <div className="tr-table-wrap">
-        <table className="tr-table">
+        <table className="tr-table tr-mk">
           <thead>
             <tr>
               <th className="tr-c-fav" aria-label="Favori" />

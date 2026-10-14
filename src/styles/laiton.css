@@ -240,21 +240,21 @@ tbody tr.selrow{background:linear-gradient(90deg,#221c12,transparent);box-shadow
 /* ---------- téléphone : marché en cartes, fiche token avec barre Acheter / Vendre ---------- */
 .tr-mbar{display:none}
 @media (max-width:760px){
-  .tr-table thead{display:none}
-  .tr-table,.tr-table tbody{display:block}
-  .tr-table tbody{display:flex;flex-direction:column;gap:8px;padding:10px}
-  .tr-table tbody tr:not(.tr-skel){display:grid;grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:"f t h" "f a c" "f p p";gap:4px 10px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
-  .tr-table tbody td{display:none;padding:0;border:0;white-space:nowrap}
-  .tr-table tbody td:nth-child(1){display:block;grid-area:f;align-self:start}
-  .tr-table tbody td:nth-child(2){display:block;grid-area:t;min-width:0}
-  .tr-table tbody td:nth-child(9){display:block;grid-area:h;font-size:13.5px}
-  .tr-table tbody td:nth-child(3){display:block;grid-area:a;text-align:left;font-size:12px}
-  .tr-table tbody td:nth-child(5){display:block;grid-area:c;font-size:13px}
-  .tr-table tbody td:nth-child(12){display:block;grid-area:p;text-align:left}
-  .tr-table tbody td:nth-child(12) .tr-prog{display:flex;align-items:center;gap:8px;width:100%}
-  .tr-table tbody td:nth-child(12) .tr-bar{flex:1;width:auto}
-  .tr-table tbody tr.tr-skel td,.tr-table tbody td.tr-empty{display:block}
-  .tr-table .tr-tok-n{display:none}
+  .tr-mk thead{display:none}
+  .tr-mk,.tr-mk tbody{display:block}
+  .tr-mk tbody{display:flex;flex-direction:column;gap:8px;padding:10px}
+  .tr-mk tbody tr:not(.tr-skel){display:grid;grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:"f t h" "f a c" "f p p";gap:4px 10px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+  .tr-mk tbody td{display:none;padding:0;border:0;white-space:nowrap}
+  .tr-mk tbody td:nth-child(1){display:block;grid-area:f;align-self:start}
+  .tr-mk tbody td:nth-child(2){display:block;grid-area:t;min-width:0}
+  .tr-mk tbody td:nth-child(9){display:block;grid-area:h;font-size:13.5px}
+  .tr-mk tbody td:nth-child(3){display:block;grid-area:a;text-align:left;font-size:12px}
+  .tr-mk tbody td:nth-child(5){display:block;grid-area:c;font-size:13px}
+  .tr-mk tbody td:nth-child(12){display:block;grid-area:p;text-align:left}
+  .tr-mk tbody td:nth-child(12) .tr-prog{display:flex;align-items:center;gap:8px;width:100%}
+  .tr-mk tbody td:nth-child(12) .tr-bar{flex:1;width:auto}
+  .tr-mk tbody tr.tr-skel td,.tr-mk tbody td.tr-empty{display:block}
+  .tr-mk .tr-tok-n{display:none}
   /* barre fixe au-dessus des onglets du bas */
   .tr-mbar{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;position:fixed;left:0;right:0;bottom:calc(67px + env(safe-area-inset-bottom,0px));z-index:55;padding:8px 12px;background:color-mix(in oklab,var(--bg2) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line)}
   .tr-mbar .btn{min-height:46px;font-size:15px;font-weight:600}
