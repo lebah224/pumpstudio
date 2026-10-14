@@ -40,7 +40,7 @@ export async function enablePush(userId: string) {
   const sub = (await reg.pushManager.getSubscription()) ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUBLIC) });
   const row = { user_id: userId, endpoint: sub.endpoint, p256dh: toB64u(sub.getKey('p256dh')), auth: toB64u(sub.getKey('auth')), label: uaLabel(navigator.userAgent) };
   const { error } = await supabase.from('push_subscriptions').insert(row);
-  if (error && !/duplicate|unique/i.test(error.message)) { await sub.unsubscribe().catch(() => {}); throw new Error(/row-level|policy/i.test(error.message) ? 'Limite de 10 appareils atteinte : retirez un ancien appareil.' : error.message); }
+  if (error && !/duplicate|unique/i.test(error.message)) { await sub.unsubscribe().catch(() => {}); throw new Error(/row-level security/i.test(error.message) ? 'Limite de 10 appareils atteinte : retirez un ancien appareil.' : error.message); }
 }
 
 /** Désabonne cet appareil (le compte et les autres appareils ne changent pas) */

@@ -55,7 +55,7 @@ export async function follow(address: string, label?: string | null, note?: stri
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Connectez-vous pour suivre un créateur.');
   const { error } = await supabase.from('creators').insert({ user_id: user.id, address: a, label: label?.trim().slice(0, 32) || null, note: note?.trim().slice(0, 280) || null });
-  if (error) throw new Error(/duplicate|unique/.test(error.message) ? 'Ce créateur est déjà dans votre liste.' : /row-level|policy/.test(error.message) ? '100 créateurs suivis au plus.' : error.message);
+  if (error) throw new Error(/duplicate|unique/.test(error.message) ? 'Ce créateur est déjà dans votre liste.' : /row-level security/i.test(error.message) ? '100 créateurs suivis au plus.' : error.message);
   bus();
 }
 export async function updateCreator(id: string, p: Partial<Pick<Followed, 'label' | 'note' | 'alerts'>>) {

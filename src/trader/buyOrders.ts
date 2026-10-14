@@ -49,7 +49,7 @@ export async function saveBuyOrder(o: BuyOrderInput, id?: string) {
   const row = { wallet: o.wallet, amount_sol: o.amount_sol, slippage: o.slippage, priority: o.priority, conds: o.conds, cancel_on_creator_sell: o.cancel_on_creator_sell, expires_at: o.expires_at, exit_rules: o.exit_rules, exit_slippage: o.exit_slippage };
   const { error } = id ? await supabase.from('buy_orders').update(row).eq('id', id)
     : await supabase.from('buy_orders').insert({ ...row, user_id: user.id, mint: o.mint, symbol: o.symbol?.slice(0, 32) ?? null, creator: o.creator });
-  if (error) throw new Error(/row-level|policy/.test(error.message) ? 'Wallet rapide introuvable, ou 50 achats programmés en cours au plus.' : /expires_at/.test(error.message) ? 'Durée de validité : 7 jours au plus.' : error.message);
+  if (error) throw new Error(/row-level security/i.test(error.message) ? 'Wallet rapide introuvable, ou 50 achats programmés en cours au plus.' : /expires_at/.test(error.message) ? 'Durée de validité : 7 jours au plus.' : error.message);
   bus();
 }
 export async function setBuyOrderStatus(id: string, status: 'active' | 'paused' | 'cancelled') {

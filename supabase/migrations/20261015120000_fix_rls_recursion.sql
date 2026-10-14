@@ -25,26 +25,21 @@ revoke all on function rls.own_count(text) from public, anon;
 grant usage on schema rls to authenticated;
 grant execute on function rls.own_count(text) to authenticated;
 
-drop policy "créateurs : ajout" on public.creators;
-create policy "créateurs : ajout" on public.creators for insert to authenticated
+alter policy "créateurs : ajout" on public.creators
   with check (user_id = (select auth.uid()) and rls.own_count('creators') < 100);
 
-drop policy "stratégies : création" on public.strategies;
-create policy "stratégies : création" on public.strategies for insert to authenticated
+alter policy "stratégies : création" on public.strategies
   with check (user_id = (select auth.uid()) and status in ('active', 'paused') and rls.own_count('strategies') < 50);
 
-drop policy "achats auto : création" on public.snipes;
-create policy "achats auto : création" on public.snipes for insert to authenticated
+alter policy "achats auto : création" on public.snipes
   with check (user_id = (select auth.uid())
     and exists (select 1 from public.server_wallets w where w.user_id = (select auth.uid()) and w.address = snipes.wallet)
     and rls.own_count('snipes') < 50);
 
-drop policy "achats programmés : création" on public.buy_orders;
-create policy "achats programmés : création" on public.buy_orders for insert to authenticated
+alter policy "achats programmés : création" on public.buy_orders
   with check (user_id = (select auth.uid()) and status = 'active'
     and exists (select 1 from public.server_wallets w where w.user_id = (select auth.uid()) and w.address = buy_orders.wallet)
     and rls.own_count('buy_orders') < 50);
 
-drop policy "push : ajout d'un appareil" on public.push_subscriptions;
-create policy "push : ajout d'un appareil" on public.push_subscriptions for insert to authenticated
+alter policy "push : ajout d'un appareil" on public.push_subscriptions
   with check (user_id = (select auth.uid()) and rls.own_count('push_subscriptions') < 10);

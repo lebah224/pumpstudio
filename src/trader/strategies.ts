@@ -84,7 +84,7 @@ export async function saveStrategy(s: Partial<Strategy> & { mint: string; rules:
     return id;
   }
   const { data, error } = await supabase.from('strategies').insert({ ...row, user_id: user.id, mint: s.mint, symbol: s.symbol ?? null, wallet: s.wallet ?? null, creator: s.creator ?? null, entry_sol: s.entry_sol ?? null }).select('id').single();
-  if (error) throw new Error(/strategies_one_active|duplicate/.test(error.message) ? 'Une stratégie est déjà active sur ce token : modifiez-la.' : /row-level|policy/.test(error.message) ? '50 stratégies actives au plus.' : error.message);
+  if (error) throw new Error(/strategies_one_active|duplicate/.test(error.message) ? 'Une stratégie est déjà active sur ce token : modifiez-la.' : /row-level security/i.test(error.message) ? '50 stratégies actives au plus.' : error.message);
   window.dispatchEvent(new Event('ts-strategies'));
   return data.id as string;
 }

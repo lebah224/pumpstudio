@@ -31,7 +31,7 @@ export async function saveSnipe(s: Omit<Snipe, 'id' | 'fired_count' | 'last_fire
   if (!user) throw new Error('Connectez-vous pour activer un achat automatique.');
   const row = { wallet: s.wallet, enabled: s.enabled, mode: s.mode, amount_sol: s.amount_sol, slippage: s.slippage, priority: s.priority, max_per_day: s.max_per_day, filters: s.filters, exit_rules: s.exit_rules, exit_slippage: s.exit_slippage };
   const { error } = id ? await supabase.from('snipes').update(row).eq('id', id) : await supabase.from('snipes').insert({ ...row, user_id: user.id, creator: s.creator });
-  if (error) throw new Error(/duplicate|unique/.test(error.message) ? 'Un achat automatique existe déjà pour ce créateur : modifiez-le.' : /row-level|policy/.test(error.message) ? 'Wallet rapide introuvable, ou 50 achats automatiques au plus.' : error.message);
+  if (error) throw new Error(/duplicate|unique/.test(error.message) ? 'Un achat automatique existe déjà pour ce créateur : modifiez-le.' : /row-level security/i.test(error.message) ? 'Wallet rapide introuvable, ou 50 achats automatiques au plus.' : error.message);
   bus();
 }
 export async function setSnipeEnabled(id: string, enabled: boolean) {
