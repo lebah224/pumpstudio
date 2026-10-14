@@ -2459,6 +2459,12 @@
     const sec = $('p-settings'); if (!sec) return;
     let body = $('setBody');
     if (!body) { body = document.createElement('div'); body.id = 'setBody'; [...sec.children].filter((c) => !c.classList.contains('page-head')).forEach((c) => body.appendChild(c)); sec.appendChild(body); }
+    // navigation par section : une colonne de rubriques à gauche, les réglages à droite
+    let main = $('setMain');
+    if (!main) { main = document.createElement('div'); main.id = 'setMain'; main.className = 'set-main'; [...body.children].forEach((c) => main.appendChild(c)); const nav = document.createElement('nav'); nav.id = 'setNav'; nav.className = 'set-nav'; nav.setAttribute('aria-label', 'Rubriques des réglages'); body.append(nav, main); body.classList.add('set-body'); }
+    const secs = [...main.querySelectorAll('fieldset, .card')].filter((el) => el.querySelector('legend, .card-h h3'));
+    $('setNav').innerHTML = secs.map((el, i) => { if (!el.id) el.id = 'set-sec-' + i; const t = (el.querySelector('legend') || el.querySelector('.card-h h3')).textContent.trim(); return '<button type="button" data-set-go="' + el.id + '"' + (i ? '' : ' class="on"') + '>' + esc(t) + '</button>'; }).join('');
+    $('setNav').onclick = (e) => { const b = e.target.closest('[data-set-go]'); if (!b) return; $('setNav').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); const t = $(b.dataset.setGo); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     navOpen(false);
     openPanel('Réglages', body, { intro: '<p class="muted" style="margin:0 0 14px">Chaque bloc a ses boutons Valider et Annuler : rien n\'est appliqué avant validation.</p>' });
   }
@@ -3115,7 +3121,7 @@
     const on = canAuto(), locked = S.wallet && S.wallet.id === 'session' && !SESSW.kp;
     const n = $('ordersNote');
     if (n) { n.className = 'notice ' + (on ? 'good' : locked ? 'warn' : 'info'); n.innerHTML = on ? '<b>Ventes automatiques actives.</b> Votre wallet rapide vend dès qu\'une condition est atteinte : à l\'instant quand l\'outil est ouvert, et par TokenStudio (vérification toutes les 10 secondes) quand il est fermé.' : locked ? '<b>Wallet rapide verrouillé :</b> les ventes automatiques sont en pause.' : 'Avec ' + (S.ext ? esc(S.ext.name) : 'votre wallet') + ', chaque vente demande votre signature. Pour des ventes automatiques, utilisez votre <button class="btn sm" data-sw="' + (SRVPK ? 'use' : 'create') + '" type="button">wallet rapide</button>.';}
-    $('ordersBody').innerHTML = S.orders.length ? '<div class="card">' + S.orders.map(orderRow).join('') + '</div>' : '<div class="card"><div class="empty"><b>Aucun ordre préparé</b>Ouvrez un token (Mes tokens ou Trader) et cliquez sur « Ajouter » dans le bloc Ordres préparés.</div></div>';
+    $('ordersBody').innerHTML = S.orders.length ? '<div class="ord-grid">' + S.orders.map(orderRow).join('') + '</div>' : '<div class="card"><div class="empty"><b>Aucun ordre préparé</b>Ouvrez un token (Mes tokens ou Trader) et cliquez sur « Ajouter » dans le bloc Ordres préparés.</div></div>';
   }
   function renderJournal() {
     const L = S.journal;

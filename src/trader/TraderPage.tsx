@@ -63,24 +63,23 @@ export function TraderPage() {
 
   return (
     <div className="tr-page">
-      <div className="page-head tr-page-head">
-        <div><h1>Trader</h1><p>Le marché pump.fun et Solana en direct : choisissez un token, suivez son graphique et tradez sans quitter la page.</p></div>
-        <div className="spacer" />
+      {/* une seule barre : vue, recherche et état du flux en direct */}
+      <div className="tr-tools">
+        {!open && <div className="tr-mode" role="tablist" aria-label="Vue">
+          <button type="button" role="tab" aria-selected={mode === 'market'} className={mode === 'market' ? 'on' : ''} onClick={() => setM('market')}>Marché</button>
+          <button type="button" role="tab" aria-selected={mode === 'creators'} className={mode === 'creators' ? 'on' : ''} onClick={() => setM('creators')}>Créateurs suivis{followed?.length ? <em>{followed.length}</em> : null}</button>
+          <button type="button" role="tab" aria-selected={mode === 'traders'} className={mode === 'traders' ? 'on' : ''} onClick={() => setM('traders')}>Acheteurs suivis{tracked?.length ? <em>{tracked.length}</em> : null}</button>
+        </div>}
+        <form className="tr-search" onSubmit={submit} role="search">
+          <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+          <input ref={search} value={q} onChange={(e) => setQ(e.target.value)} placeholder={open ? 'Coller l\'adresse d\'un autre token' : 'Nom, ticker ou adresse de token'} aria-label="Rechercher un token" spellCheck={false} autoComplete="off" />
+          {MINT_RE.test(q.trim()) ? <button className="btn sm primary" type="submit">Ouvrir</button> : <kbd aria-hidden="true">/</kbd>}
+        </form>
         <span className={'tr-live ' + live} title="Flux PumpPortal : chaque transaction arrive en moins d'une seconde"><i />{live === 'on' ? 'En direct' : live === 'wait' ? 'Connexion…' : 'Flux coupé'}</span>
       </div>
-      <form className="tr-search" onSubmit={submit} role="search">
-        <svg className="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-        <input ref={search} value={q} onChange={(e) => setQ(e.target.value)} placeholder={open ? 'Coller l\'adresse d\'un autre token' : 'Rechercher un nom, un ticker, ou coller une adresse de token  ( / )'} aria-label="Rechercher un token" spellCheck={false} autoComplete="off" />
-        {MINT_RE.test(q.trim()) && <button className="btn sm primary" type="submit">Ouvrir</button>}
-      </form>
       {/* hors de la page, rien n'est suivi ni relu : la fiche se recharge au retour */}
       {!visible ? null : open ? <TokenView key={open.mint} mint={open.mint} seed={open.seed} onBack={() => setOpen(null)} onOpen={(m) => openMint(m)} />
         : <>
-          <div className="tr-mode" role="tablist" aria-label="Vue">
-            <button type="button" role="tab" aria-selected={mode === 'market'} className={mode === 'market' ? 'on' : ''} onClick={() => setM('market')}>Marché</button>
-            <button type="button" role="tab" aria-selected={mode === 'creators'} className={mode === 'creators' ? 'on' : ''} onClick={() => setM('creators')}>Créateurs suivis{followed?.length ? <em>{followed.length}</em> : null}</button>
-            <button type="button" role="tab" aria-selected={mode === 'traders'} className={mode === 'traders' ? 'on' : ''} onClick={() => setM('traders')}>Acheteurs suivis{tracked?.length ? <em>{tracked.length}</em> : null}</button>
-          </div>
           <BuyOrderList onOpen={(m) => openMint(m)} />
           <StrategyList onOpen={(m) => openMint(m)} />
           {mode === 'creators' ? <CreatorsView onOpen={(m) => openMint(m)} /> : mode === 'traders' ? <TradersView onOpen={(m) => openMint(m)} /> : <MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} />}

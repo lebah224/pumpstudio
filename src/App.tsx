@@ -19,6 +19,8 @@ import { loadProfile } from './account/profile';
 import { Onboarding } from './account/Onboarding';
 import { StepUpDialog } from './security/StepUpDialog';
 import { registerDevice } from './security/device';
+// style Laiton Terminal, chargé après toutes les feuilles des pages
+import './styles/laiton.css';
 
 /** Le studio demande une connexion (wallet manquant, opération sans compte) : on ouvre la fenêtre de connexion du compte */
 function useConnectBridge() {

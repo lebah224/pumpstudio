@@ -1,0 +1,166 @@
+/* Laiton Terminal : graphite chaud et or, interface dense et calme.
+   Chargée après toutes les autres feuilles : elle unifie les couleurs, les en-têtes, les onglets,
+   les tableaux, les boutons et les champs de tout l'outil. La barre latérale garde sa place et son ordre. */
+:root{
+  --bg:#0a0908; --bg2:#070605; --panel:#111010; --panel2:#171512; --panel3:#1e1b17; --line:#221f1a; --line2:#322d25;
+  --text:#f3efe6; --muted:#b9b1a2; --dim:#8b8375;
+  --accent:#d6b26e; --accent-ink:#ecd29a; --on-accent:#1b1407;
+  --accent-bg:#1d1810; --accent-line:#4a3c1f;
+  --green:#4fd69a; --red:#ff7b72; --amber:#f2a65a;
+  --green-bg:#11241a; --green-line:#1f4a33; --green-ink:#8ce6bd;
+  --red-bg:#2a1414; --red-line:#5a2626; --red-ink:#ffb1ab;
+  --amber-bg:#291d0e; --amber-line:#5a3f1c; --amber-ink:#f7c993;
+  --r:16px; --r-sm:11px;
+  --shadow:none;
+  --lt-head:10.5px;
+}
+body{background:radial-gradient(1100px 420px at 85% -12%,#241d10 0%,transparent 60%),var(--bg);background-attachment:fixed}
+
+/* ---------- barre latérale : même place, même ordre, finition plus nette ---------- */
+.side{background:var(--bg2)}
+.menu button{border-radius:12px}
+.menu button.active{background:var(--accent-bg);color:var(--accent-ink);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.menu button.active .count{background:color-mix(in oklab,var(--accent) 18%,transparent)}
+.menu-label,.sc-title{font-size:var(--lt-head);letter-spacing:.1em}
+
+/* ---------- en-tête : un seul titre par page ---------- */
+.top{background:color-mix(in oklab,var(--bg) 90%,transparent);box-shadow:none;border-bottom:1px solid var(--line)}
+.topbar{padding:14px 26px}
+.page-eyebrow{color:var(--dim);font-size:12px;text-transform:none;letter-spacing:0;font-weight:500}
+.page-title{font-size:24px;line-height:1.1;letter-spacing:-.02em}
+.page-sub{display:none}
+.status,.ts-hub-slot>*{border-radius:11px}
+.status{background:var(--panel);border-color:var(--line2);font-family:var(--mono);font-size:12px}
+/* le titre est déjà dans l'en-tête : la page garde sa phrase d'explication et ses actions */
+.page-head{align-items:center;margin-bottom:16px}
+.page-head h1{display:none}
+.page-head p{margin:0;font-size:14px;color:var(--muted)}
+
+/* ---------- surfaces ---------- */
+.card,fieldset,.tablebox,.dcard,.stat{border-radius:var(--r);border-color:var(--line);box-shadow:none}
+.card{background:var(--panel)}
+.card-h h3,.modal h3{letter-spacing:-.02em}
+.empty{border-style:dashed;border-color:var(--line2);background:transparent}
+/* mot en gras dans la phrase d'un état vide : il reste dans la phrase */
+.empty b~* b,.empty span b,.empty p b{display:inline;font-family:inherit;font-size:inherit;margin:0;color:var(--text)}
+.notice{border-radius:12px}
+
+/* ---------- segments, onglets, étapes : options à plat, l'option active en or ---------- */
+.seg,.ltabs,.tr-mode,.stepper{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:var(--panel);border:1px solid var(--line2);box-shadow:none}
+.seg button,.ltabs button,.tr-mode button,.stepper button{border:0;border-radius:9px;min-height:34px;padding:6px 14px;font-weight:600;font-size:13.5px;transition:color .15s,background .15s}
+.seg button:not(.on),.ltabs button:not(.on),.tr-mode button:not(.on),.stepper button:not(.on){background:none;color:var(--muted);box-shadow:none}
+.seg button:not(.on):hover,.ltabs button:not(.on):hover,.tr-mode button:not(.on):hover,.stepper button:not(.on):hover{background:var(--panel3);color:var(--text);box-shadow:none}
+.seg button:not(.on) svg.i,.ltabs button:not(.on) svg.i{color:var(--dim)}
+.seg button.on,.ltabs button.on,.tr-mode button.on,.stepper button.on{background:var(--accent);color:var(--on-accent);box-shadow:0 6px 18px -10px var(--accent)}
+.seg button.on svg.i,.ltabs button.on svg.i{color:var(--on-accent)}
+.seg button.on .count,.ltabs button.on .badge,.tr-mode button.on em{color:var(--on-accent);background:color-mix(in oklab,var(--on-accent) 14%,transparent);border-color:transparent}
+.trade-box .seg button.buy.on{background:var(--green);color:#06170f;box-shadow:none}
+.trade-box .seg button.sell.on{background:var(--red-bg);color:var(--red-ink);box-shadow:inset 0 0 0 1px var(--red-line)}
+/* barre d'étapes : pastilles reliées, l'étape franchie en vert */
+.stepper{display:grid;width:100%}
+.stepper button{justify-content:flex-start}
+.stepper button .n{background:var(--panel3);border-color:var(--line2)}
+.stepper button.on .n{background:var(--on-accent);border-color:var(--on-accent);color:var(--accent-ink)}
+.stepper button.done:not(.on){color:var(--text)}
+.stepper button.done:not(.on) .n{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
+/* onglets soulignés (fiches) */
+.tabs button.active{border-bottom-color:var(--accent);color:var(--accent-ink)}
+
+/* ---------- puces et étiquettes ---------- */
+.chip{border-radius:9px;min-height:32px;padding:5px 12px;font-size:13px}
+.chip:not(.on){background:none;border-color:var(--line2);color:var(--muted);box-shadow:none}
+.chip:not(.on):hover{background:var(--panel3);color:var(--text);border-color:var(--line2);box-shadow:none}
+.chip.on{background:var(--panel3);border-color:var(--accent-line);color:var(--accent-ink);box-shadow:none}
+.badge,.st{border-radius:6px;font-size:11px;letter-spacing:.03em}
+
+/* ---------- boutons ---------- */
+.btn{border-radius:11px;background:linear-gradient(180deg,#24211c,#1b1916);border-color:var(--line2);box-shadow:none}
+.btn:hover{background:linear-gradient(180deg,#2a2620,#201d19);border-color:color-mix(in oklab,var(--line2) 50%,var(--accent))}
+.btn.primary{background:linear-gradient(180deg,#e7c784,#c9a35d);border-color:var(--accent);color:var(--on-accent);box-shadow:0 10px 26px -14px var(--accent)}
+.btn.primary:hover{background:linear-gradient(180deg,#efd394,#d3ad66);border-color:var(--accent-ink);box-shadow:0 10px 26px -12px var(--accent)}
+.btn.ghost{background:none;border-color:transparent}
+.btn.ghost:hover{background:var(--panel3);border-color:var(--line2)}
+.btn.sm{min-height:32px;border-radius:9px}
+
+/* ---------- champs ---------- */
+.search,.f input[type=number],.f input[type=text],.f input[type=password],.sel,input.inp,textarea.inp{border-radius:11px;background:var(--panel2);border-color:var(--line2)}
+.search:focus,.f input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #d6b26e2e}
+.switch input:checked+i{background:var(--accent)}
+.switch input:checked+i:after{background:var(--on-accent)}
+legend{color:var(--accent-ink);font-size:var(--lt-head);letter-spacing:.1em}
+
+/* ---------- tableaux denses ---------- */
+.tablebox{background:var(--panel)}
+th{background:var(--panel);color:var(--dim);font-size:var(--lt-head);letter-spacing:.09em;padding:10px 14px 7px;border-bottom:1px solid var(--line)}
+td{padding:9px 14px;border-top-color:#1a1814;font-size:13.5px}
+tbody tr:hover{background:#15130f}
+tbody tr.click:hover{background:#18150f}
+tbody tr.selrow{background:linear-gradient(90deg,#221c12,transparent);box-shadow:inset 2px 0 0 var(--accent)}
+@keyframes rowIn{from{background:color-mix(in oklab,var(--green) 16%,transparent)}to{background:transparent}}
+.av{border-radius:50%}
+.bar{background:var(--panel3)}
+
+/* ---------- Trader : une seule barre d'outils (vue, recherche, flux en direct) ---------- */
+.tr-tools{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.tr-tools .tr-mode{margin:0;flex:none}
+.tr-tools .tr-search{flex:1 1 280px;margin:0;min-height:42px;border-radius:12px;background:var(--panel);border-color:var(--line2)}
+.tr-tools .tr-search kbd{margin-right:6px}
+.tr-tools .tr-live{flex:none;border-radius:11px;min-height:42px;padding:0 14px;font-family:var(--mono);font-size:12px;border-color:var(--line2)}
+.tr-live.on{color:var(--green)}
+.tr-filters{background:transparent}
+/* titres de section du Trader : le style des titres du compte ne doit pas s'y appliquer */
+.tr-page .cr-h{text-transform:none;letter-spacing:0;color:var(--text);font-weight:400;font-size:14px;flex-wrap:wrap}
+.tr-page .cr-h b{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.tr-page .cr-h .dim{font-size:12.5px}
+.tr-tok-tabs button.on,.tr-tok-tabs button.active{color:var(--accent-ink)}
+@media (max-width:760px){
+  .tr-tools{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px}
+  .tr-tools .tr-mode{order:2;grid-column:1/-1;width:100%}
+  .tr-tools .tr-mode button{flex:1 0 auto}
+  .tr-tools .tr-search{order:1;flex:1 1 0}
+  .tr-tools .tr-live{order:1;width:42px;padding:0;justify-content:center;font-size:0;gap:0}
+}
+
+/* ---------- fenêtres ---------- */
+.modal .box,.pal-box{border-radius:18px;border-color:var(--line2);background:var(--panel)}
+.toast{border-radius:12px;background:var(--panel2)}
+
+/* ---------- mouvements : rien d'animé si le système le demande ---------- */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+/* ---------- téléphone ---------- */
+@media (max-width:760px){
+  .topbar{padding:12px 16px}
+  .page-title{font-size:20px}
+  .seg,.ltabs,.tr-mode{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .seg::-webkit-scrollbar,.ltabs::-webkit-scrollbar,.tr-mode::-webkit-scrollbar{display:none}
+  .seg button,.ltabs button,.tr-mode button{flex:none;white-space:nowrap}
+  /* étapes : sur téléphone, seul le titre de l'étape en cours est écrit */
+  .stepper{display:flex}
+  .stepper button{flex:none;font-size:0;justify-content:center;padding:6px 10px}
+  .stepper button .n{font-size:12.5px}
+  .stepper button.on{flex:1;font-size:13.5px;justify-content:flex-start}
+}
+
+/* ---------- Réglages : rubriques à gauche, réglages à droite ---------- */
+.set-body{display:grid;grid-template-columns:190px minmax(0,1fr);gap:18px;align-items:start}
+.set-nav{position:sticky;top:0;display:flex;flex-direction:column;gap:2px;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.set-nav button{background:none;border:0;border-radius:9px;padding:9px 11px;text-align:left;color:var(--muted);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer}
+.set-nav button:hover{background:var(--panel3);color:var(--text)}
+.set-nav button.on{background:var(--accent-bg);color:var(--accent-ink);box-shadow:inset 0 0 0 1px var(--accent-line)}
+#setMain .forms{grid-template-columns:minmax(0,1fr);columns:auto}
+.set-main fieldset,.set-main .card{scroll-margin-top:8px}
+@media (max-width:760px){
+  .set-body{grid-template-columns:minmax(0,1fr)}
+  .set-nav{flex-direction:row;overflow-x:auto;scrollbar-width:none;z-index:2}
+  .set-nav button{flex:none;white-space:nowrap}
+}
+
+/* ---------- Ordres : une carte par ordre, en grille ---------- */
+.ord-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.ord-grid .orow{flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+.ord-grid .orow:first-child{border-top:1px solid var(--line)}
+.ord-grid .orow>.badge{align-self:flex-start}
+.ord-grid .orow .ot{flex:none}
+.ord-grid .orow .oa{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+@media (max-width:760px){.ord-grid{grid-template-columns:minmax(0,1fr)}}
