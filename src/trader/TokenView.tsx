@@ -187,6 +187,20 @@ export function TokenView({ mint, seed, onBack, onOpen }: { mint: string; seed: 
           <PriceAlerts mint={mint} symbol={sym} mcUsd={mcUsd} />
         </aside>
       </div>
+      {/* téléphone : acheter et vendre toujours à portée du pouce */}
+      <div className="tr-mbar" role="group" aria-label="Trader ce token">
+        <button type="button" className="btn tr-mbar-sell" onClick={() => goTrade('sell')}>Vendre</button>
+        <button type="button" className="btn tr-mbar-buy" onClick={() => goTrade('buy')}>Acheter {sym}</button>
+      </div>
     </div>
   );
+}
+
+/** Amène le panneau de trading à l'écran, sur le bon sens (achat ou vente) */
+function goTrade(side: 'buy' | 'sell') {
+  const p = document.querySelector<HTMLElement>('.tr-panel');
+  if (!p) return;
+  p.querySelector<HTMLButtonElement>('.tr-side button.' + side)?.click();
+  p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => p.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }), 400);
 }

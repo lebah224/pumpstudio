@@ -236,3 +236,32 @@ tbody tr.selrow{background:linear-gradient(90deg,#221c12,transparent);box-shadow
 .vt-hero .vt-kv{border-radius:12px;background:var(--panel2);border-color:var(--line)}
 .vt-big{font-family:var(--display);letter-spacing:-.02em}
 @media (max-width:1000px){.vt-cols{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- téléphone : marché en cartes, fiche token avec barre Acheter / Vendre ---------- */
+.tr-mbar{display:none}
+@media (max-width:760px){
+  .tr-table thead{display:none}
+  .tr-table,.tr-table tbody{display:block}
+  .tr-table tbody{display:flex;flex-direction:column;gap:8px;padding:10px}
+  .tr-table tbody tr:not(.tr-skel){display:grid;grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:"f t h" "f a c" "f p p";gap:4px 10px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+  .tr-table tbody td{display:none;padding:0;border:0;white-space:nowrap}
+  .tr-table tbody td:nth-child(1){display:block;grid-area:f;align-self:start}
+  .tr-table tbody td:nth-child(2){display:block;grid-area:t;min-width:0}
+  .tr-table tbody td:nth-child(9){display:block;grid-area:h;font-size:13.5px}
+  .tr-table tbody td:nth-child(3){display:block;grid-area:a;text-align:left;font-size:12px}
+  .tr-table tbody td:nth-child(5){display:block;grid-area:c;font-size:13px}
+  .tr-table tbody td:nth-child(12){display:block;grid-area:p;text-align:left}
+  .tr-table tbody td:nth-child(12) .tr-prog{display:flex;align-items:center;gap:8px;width:100%}
+  .tr-table tbody td:nth-child(12) .tr-bar{flex:1;width:auto}
+  .tr-table tbody tr.tr-skel td,.tr-table tbody td.tr-empty{display:block}
+  .tr-table .tr-tok-n{display:none}
+  /* barre fixe au-dessus des onglets du bas */
+  .tr-mbar{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;position:fixed;left:0;right:0;bottom:calc(67px + env(safe-area-inset-bottom,0px));z-index:55;padding:8px 12px;background:color-mix(in oklab,var(--bg2) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+  .tr-mbar .btn{min-height:46px;font-size:15px;font-weight:600}
+  .tr-mbar-sell{background:var(--red-bg) !important;border-color:var(--red-line) !important;color:var(--red-ink) !important}
+  .tr-mbar-buy{background:var(--green) !important;border-color:var(--green) !important;color:#06170f !important}
+  .tr-page:has(.tr-mbar){padding-bottom:70px}
+  /* en-tête du téléphone, comme la maquette */
+  .mbar{background:var(--bg2);border-bottom:1px solid var(--line)}
+  .bnav{background:color-mix(in oklab,var(--bg2) 94%,transparent);border-top:1px solid var(--line)}
+}
