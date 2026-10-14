@@ -291,6 +291,64 @@ async function analysis(mint: string) {
   };
 }
 
+/* ---------- fiche créateur : ses tokens, ses habitudes de vente, une note indicative ---------- */
+const median = (L: number[]) => { if (!L.length) return null; const a = [...L].sort((x, y) => x - y), m = Math.floor(a.length / 2); return a.length % 2 ? a[m]! : (a[m - 1]! + a[m]!) / 2; };
+async function creatorProfile(addr: string) {
+  const cc = await get(PUMP + '/coins-v2/user-created-coins/' + addr + '?offset=0&limit=50&includeNsfw=true', PUMP_H) as Any | null;
+  const coins = ((cc?.coins ?? []) as Any[]).filter((x) => MINT.test(x?.mint ?? '')).map(fromPump).sort((a, b) => (b.created ?? 0) - (a.created ?? 0));
+  const count = n(cc?.count) ?? coins.length, now = Date.now();
+  // comportement du créateur sur ses 6 derniers tokens : achat de départ, première vente, part revendue
+  const behav = await Promise.all(coins.slice(0, 6).map(async (c) => {
+    const j = await get('https://swap-api.pump.fun/v2/coins/' + c.mint + '/trades?limit=100&userAddress=' + addr, PUMP_H).catch(() => null) as Any | null;
+    const L = ((j?.trades ?? []) as Any[]).filter((x) => x.userAddress === addr).map((x) => ({ t: Date.parse(x.timestamp) || 0, side: x.type === 'sell' ? 'sell' : 'buy', tok: n(x.baseAmount) ?? 0, sol: n(x.amountSol) ?? 0 }));
+    const buys = L.filter((x) => x.side === 'buy'), sells = L.filter((x) => x.side === 'sell');
+    const bought = buys.reduce((a, x) => a + x.tok, 0), sold = sells.reduce((a, x) => a + x.tok, 0);
+    const first = buys.length ? buys.reduce((a, x) => (x.t < a.t ? x : a)) : null;
+    const firstSell = sells.length ? Math.min(...sells.map((x) => x.t)) : null;
+    return {
+      mint: c.mint, symbol: c.symbol, created: c.created,
+      devBuySol: first?.sol ?? null, devBuyPct: first ? (first.tok / (c.supply ?? 1e9)) * 100 : null,
+      sellAfterMin: firstSell && c.created ? Math.max(0, (firstSell - c.created) / 60000) : null,
+      soldPct: bought > 0 ? Math.min(100, (sold / bought) * 100) : null,
+      pnlSol: sells.reduce((a, x) => a + x.sol, 0) - buys.reduce((a, x) => a + x.sol, 0),
+    };
+  }));
+  const sample = coins.length, migrated = coins.filter((c) => c.complete).length;
+  const aths = coins.map((c) => c.ath ?? c.mcUsd).filter((v): v is number => v != null && v > 0);
+  const day = coins.filter((c) => (c.created ?? 0) > now - 864e5).length, week = coins.filter((c) => (c.created ?? 0) > now - 6048e5).length;
+  const sellMins = behav.map((b) => b.sellAfterMin).filter((v): v is number => v != null);
+  const soldAll = behav.filter((b) => (b.soldPct ?? 0) >= 90).length;
+  const devBuys = behav.map((b) => b.devBuySol).filter((v): v is number => v != null);
+  const stats = {
+    count, sample, migrated, migRate: sample ? migrated / sample : 0, athBest: aths.length ? Math.max(...aths) : null, athMedian: median(aths),
+    day, week, lastLaunch: coins[0]?.created ?? null, sellMedianMin: median(sellMins), neverSold: behav.length - sellMins.length,
+    soldAllShare: behav.length ? soldAll / behav.length : null, devBuyMedian: median(devBuys), pnlSol: behav.reduce((a, b) => a + b.pnlSol, 0),
+  };
+  // note indicative sur 100 : migrations, sommets atteints, patience du créateur, rythme de lancement
+  let score = 0; const reasons: { t: string; k: 'g' | 'a' | 'r' }[] = [];
+  score += Math.min(40, stats.migRate * 100);
+  if (migrated) reasons.push({ t: migrated + ' token' + (migrated > 1 ? 's' : '') + ' migré' + (migrated > 1 ? 's' : '') + ' sur ' + sample + ' (' + Math.round(stats.migRate * 100) + ' %)', k: stats.migRate >= 0.2 ? 'g' : 'a' });
+  else if (sample) reasons.push({ t: 'Aucun de ses ' + sample + ' tokens n\'a migré', k: 'r' });
+  const am = stats.athMedian ?? 0;
+  score += am >= 100_000 ? 25 : am >= 30_000 ? 15 : am >= 10_000 ? 6 : 0;
+  if (stats.athBest) reasons.push({ t: 'Meilleur sommet : ' + Math.round(stats.athBest).toLocaleString('fr-FR') + ' $ de capitalisation', k: stats.athBest >= 100_000 ? 'g' : 'a' });
+  const sm = stats.sellMedianMin;
+  if (behav.length && sm == null) { score += 20; reasons.push({ t: 'N\'a pas vendu sur ses derniers tokens', k: 'g' }); }
+  else if (sm != null) {
+    score += sm > 60 ? 15 : sm > 10 ? 8 : sm > 2 ? 0 : -10;
+    reasons.push({ t: 'Vend en général ' + (sm < 1 ? 'moins d\'une minute' : Math.round(sm) + ' min') + ' après le lancement', k: sm > 60 ? 'g' : sm > 10 ? 'a' : 'r' });
+  }
+  if (stats.soldAllShare != null && stats.soldAllShare >= 0.5) { score -= 10; reasons.push({ t: 'Revend presque tout sur ' + Math.round(stats.soldAllShare * 100) + ' % de ses tokens', k: 'r' }); }
+  if (day > 10) { score -= 15; reasons.push({ t: day + ' lancements en 24 h : production en série', k: 'r' }); }
+  else if (day > 3) { score -= 5; reasons.push({ t: day + ' lancements en 24 h', k: 'a' }); }
+  score = Math.max(0, Math.min(100, Math.round(score + 15)));
+  const verdict = !sample ? 'Inconnu' : score >= 70 ? 'Solide' : score >= 45 ? 'Moyen' : 'Risqué';
+  return {
+    address: addr, score: sample ? score : null, verdict, reasons, stats, behav,
+    coins: coins.slice(0, 30).map((c) => ({ mint: c.mint, name: c.name, symbol: c.symbol, image: c.image, created: c.created, mcUsd: c.mcUsd, ath: c.ath, complete: c.complete, progress: c.progress })),
+  };
+}
+
 Deno.serve(async (req) => {
   const h = cors(req.headers.get('Origin'));
   if (req.method === 'OPTIONS') return new Response('ok', { headers: h });
@@ -326,6 +384,11 @@ Deno.serve(async (req) => {
       case 'analysis': {
         if (!mint) throw new Fail(400, 'Adresse de token invalide.');
         return json(200, await cached('an:' + mint, 20_000, () => analysis(mint)), h);
+      }
+      case 'creator': {
+        const addr = typeof b.address === 'string' && MINT.test(b.address) ? b.address : null;
+        if (!addr) throw new Fail(400, 'Adresse de créateur invalide.');
+        return json(200, await cached('cr:' + addr, 45_000, () => creatorProfile(addr)), h);
       }
       default: throw new Fail(400, 'Action inconnue.');
     }

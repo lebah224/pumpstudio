@@ -3,6 +3,9 @@ import type { Analysis, TokenInfo } from './api';
 import { age, fCompact, fPct, fTok, short } from './format';
 import { CopyBtn, TokenLogo } from './bits';
 import { Sol } from '../ui/Sol';
+import { toast } from '../legacy/bridge';
+import { follow, useFollowed } from './creators';
+import { openCreator } from './CreatorsView';
 
 const solscan = (k: 'tx' | 'account', id: string) => 'https://solscan.io/' + k + '/' + id;
 type Lvl = 'g' | 'a' | 'r' | 'b';
@@ -130,6 +133,7 @@ export function CreatorPanel({ a, info, onOpen }: { a: Analysis; info: TokenInfo
       <div className="an-who">
         <span className="mono"><a href={solscan('account', C.address)} target="_blank" rel="noopener noreferrer">{short(C.address, 6)}</a></span><CopyBtn text={C.address} label="Copier l'adresse du créateur" />
         <a className="tr-badge b" href={'https://pump.fun/profile/' + C.address} target="_blank" rel="noopener noreferrer">Profil pump.fun</a>
+        <FollowCreator address={C.address} />
       </div>
       <div className="an-kpis">
         <div><span>Solde actuel</span><b className="mono">{C.balance != null ? fTok(C.balance) : '—'}</b><small className="dim">{C.pct != null ? fPct(C.pct).replace('+', '') + ' de l\'offre' : ''}</small></div>
@@ -169,5 +173,20 @@ export function CreatorPanel({ a, info, onOpen }: { a: Analysis; info: TokenInfo
         </div>
       )}
     </div>
+  );
+}
+
+/** Suivre le créateur, ou ouvrir sa fiche complète */
+function FollowCreator({ address }: { address: string }) {
+  const list = useFollowed();
+  const f = list?.find((x) => x.address === address);
+  const [busy, setBusy] = useState(false);
+  return (
+    <span className="an-follow">
+      <button type="button" className="btn sm ghost" onClick={() => openCreator(address)}>Fiche créateur</button>
+      {f ? <span className="ts-hub-pill ok">Suivi</span> : (
+        <button type="button" className="btn sm primary" disabled={busy || !list} onClick={async () => { setBusy(true); try { await follow(address); toast('Créateur suivi', 'Vous serez prévenu à chaque nouveau lancement.', 'g'); } catch (e) { toast('Ajout impossible', (e as Error).message, 'r'); } finally { setBusy(false); } }}>Suivre ce créateur</button>
+      )}
+    </span>
   );
 }

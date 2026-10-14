@@ -7,6 +7,8 @@ import { useLiveState } from './live';
 import { useAlertWatcher } from './alerts';
 import { StrategyDialog } from './StrategyDialog';
 import { StrategyList } from './StrategyCard';
+import { CreatorSheet, CreatorsView } from './CreatorsView';
+import { useFollowed } from './creators';
 import '../styles/trader.css';
 
 function useVisible() {
@@ -20,6 +22,9 @@ export function TraderPage() {
   const visible = useVisible();
   const [open, setOpen] = useState<{ mint: string; seed: Row | null } | null>(null);
   const [q, setQ] = useState('');
+  const [mode, setMode] = useState<'market' | 'creators'>(() => { try { return localStorage.getItem('ts-trader-mode') === 'creators' ? 'creators' : 'market'; } catch { return 'market'; } });
+  const setM = (m: 'market' | 'creators') => { setMode(m); setOpen(null); try { localStorage.setItem('ts-trader-mode', m); } catch { /* navigation privée */ } };
+  const followed = useFollowed();
   const live = useLiveState();
   const search = useRef<HTMLInputElement>(null);
   useAlertWatcher();
@@ -61,8 +66,16 @@ export function TraderPage() {
       </form>
       {/* hors de la page, rien n'est suivi ni relu : la fiche se recharge au retour */}
       {!visible ? null : open ? <TokenView key={open.mint} mint={open.mint} seed={open.seed} onBack={() => setOpen(null)} onOpen={(m) => openMint(m)} />
-        : <><StrategyList onOpen={(m) => openMint(m)} /><MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} /></>}
+        : <>
+          <div className="tr-mode" role="tablist" aria-label="Vue">
+            <button type="button" role="tab" aria-selected={mode === 'market'} className={mode === 'market' ? 'on' : ''} onClick={() => setM('market')}>Marché</button>
+            <button type="button" role="tab" aria-selected={mode === 'creators'} className={mode === 'creators' ? 'on' : ''} onClick={() => setM('creators')}>Créateurs suivis{followed?.length ? <em>{followed.length}</em> : null}</button>
+          </div>
+          <StrategyList onOpen={(m) => openMint(m)} />
+          {mode === 'creators' ? <CreatorsView onOpen={(m) => openMint(m)} /> : <MarketList visible query={MINT_RE.test(q.trim()) ? '' : q} onOpen={(r) => openMint(r.mint, r)} />}
+        </>}
       <StrategyDialog />
+      <CreatorSheet onOpen={(m) => openMint(m)} />
     </div>
   );
 }

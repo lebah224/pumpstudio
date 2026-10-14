@@ -76,9 +76,12 @@ export async function removeDevice(id: string, endpoint: string) {
 /** Clic sur une notification : le studio s'ouvre sur la bonne page (?page=orders, ou message du service worker) */
 export function installPushRouting() {
   const PAGES = ['orders', 'dash', 'wallet', 'mine', 'trade', 'journal', 'account'];
-  const open = (url: string) => { try { const p = new URL(url, location.origin).searchParams.get('page'); if (p && PAGES.includes(p)) goTo(p); } catch { /* adresse invalide */ } };
-  const p = new URLSearchParams(location.search).get('page');
-  if (p && PAGES.includes(p)) { setTimeout(() => goTo(p), 300); history.replaceState(null, '', location.pathname); }
+  // ?page=trade&mint=… : la fiche du token s'ouvre directement (alerte de lancement d'un créateur suivi)
+  const MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+  const token = (m: string | null, wait: number) => { if (m && MINT.test(m)) setTimeout(() => window.dispatchEvent(new CustomEvent('ts-trade', { detail: m })), wait); };
+  const open = (url: string) => { try { const q = new URL(url, location.origin).searchParams, p = q.get('page'); if (p && PAGES.includes(p)) { goTo(p); if (p === 'trade') token(q.get('mint'), 250); } } catch { /* adresse invalide */ } };
+  const q0 = new URLSearchParams(location.search), p = q0.get('page');
+  if (p && PAGES.includes(p)) { setTimeout(() => goTo(p), 300); if (p === 'trade') token(q0.get('mint'), 1200); history.replaceState(null, '', location.pathname); }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (e) => { if (e.data?.type === 'ts-open') open(e.data.url); });
     // l'appareil déjà abonné garde un service worker à jour
